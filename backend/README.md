@@ -21,13 +21,9 @@ This template is prepared for public sharing.
 If you plan to use it for your own service, you must update the following items.
 
 
-1️⃣ Change Base Package (com.godsmove → your domain)
-All modules (api / application / domain / batch) use package com.godsmove.
-Rename it to your organization or project domain.
-
-  IntelliJ shortcut:
-Right-click package → Refactor → Rename (Shift + F6)
-Imports will update automatically.
+1️⃣ Base Package: com.godsmove
+All modules (api / application / domain / batch) use the project package
+com.godsmove.
 
 2️⃣ Configure Your Own Database
 The template uses H2 for easy execution.

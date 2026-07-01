@@ -24,8 +24,8 @@ class SwaggerConfig {
 
     private fun apiInfo(): Info {
         return Info()
-            .title("example API")
-            .description("example API Documentation")
+            .title("GodsMove API")
+            .description("GodsMove Backend API Documentation")
             .version("v1")
     }
 
