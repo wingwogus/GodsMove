@@ -4,7 +4,7 @@ spring:
       on-profile: local
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/godsmove_local}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5444/godsmovedb}
     username: ${SPRING_DATASOURCE_USERNAME:godsmove}
     password: ${SPRING_DATASOURCE_PASSWORD:godsmove}
     driver-class-name: org.postgresql.Driver
@@ -21,8 +21,8 @@ spring:
   mail:
     host: smtp.gmail.com
     port: 587
-    username: ${MAIL_USERNAME}
-    password: ${MAIL_PASSWORD}
+    username: ${MAIL_USERNAME:test}
+    password: ${MAIL_PASSWORD:test}
     properties:
       mail:
         smtp:
