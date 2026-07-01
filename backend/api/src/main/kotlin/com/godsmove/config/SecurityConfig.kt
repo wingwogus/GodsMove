@@ -7,6 +7,8 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.boot.web.servlet.FilterRegistrationBean
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
+import org.springframework.core.env.Environment
+import org.springframework.core.env.Profiles
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity
 import org.springframework.security.config.http.SessionCreationPolicy
@@ -22,7 +24,8 @@ class SecurityConfig(
     private val authenticationEntryPoint: CustomAuthenticationEntryPoint,
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val mdcLoggingFilter: MDCLoggingFilter,
-    @Value("\${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
+    private val environment: Environment,
+    @Value("\${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}")
     allowedCorsOrigins: String
 ) {
     private val corsAllowedOrigins = parseCorsOrigins(allowedCorsOrigins)
@@ -47,6 +50,10 @@ class SecurityConfig(
             "/api/v1/auth/kakao/login",
             "/api/v1/auth/reissue",
             "/error",                // 스프링 내부 오류 페이지
+        )
+
+        private val LOCAL_PUBLIC_ENDPOINTS = listOf(
+            "/api/v1/dev/rag/seed",
         )
     }
 
@@ -80,7 +87,7 @@ class SecurityConfig(
 
             .authorizeHttpRequests {
                 it
-                    .requestMatchers(*PUBLIC_ENDPOINTS.toTypedArray())
+                    .requestMatchers(*publicEndpoints().toTypedArray())
                     .permitAll()
                     .anyRequest().authenticated()
             }
@@ -110,6 +117,13 @@ class SecurityConfig(
         return value.split(",")
             .map(String::trim)
             .filter(String::isNotEmpty)
+    }
+
+    private fun publicEndpoints(): List<String> {
+        if (!environment.acceptsProfiles(Profiles.of("local"))) {
+            return PUBLIC_ENDPOINTS
+        }
+        return PUBLIC_ENDPOINTS + LOCAL_PUBLIC_ENDPOINTS
     }
 
 }

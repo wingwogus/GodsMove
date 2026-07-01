@@ -2,9 +2,14 @@ package com.godsmove.api.dev.controller
 
 import com.godsmove.application.coaching.rag.seed.DevRagSeedCommand
 import com.godsmove.api.exception.GlobalExceptionHandler
+import com.godsmove.api.security.CustomAccessDeniedHandler
+import com.godsmove.api.security.CustomAuthenticationEntryPoint
+import com.godsmove.api.security.JwtAuthenticationFilter
 import com.godsmove.application.coaching.rag.seed.DevRagSeedResult
 import com.godsmove.application.coaching.rag.seed.DevRagSeedService
 import com.godsmove.application.security.TokenProvider
+import com.godsmove.config.MDCLoggingFilter
+import com.godsmove.config.SecurityConfig
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
@@ -22,8 +27,15 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.util.UUID
 
 @WebMvcTest(DevRagSeedController::class)
-@AutoConfigureMockMvc(addFilters = false)
-@Import(GlobalExceptionHandler::class)
+@AutoConfigureMockMvc
+@Import(
+    GlobalExceptionHandler::class,
+    SecurityConfig::class,
+    CustomAccessDeniedHandler::class,
+    CustomAuthenticationEntryPoint::class,
+    JwtAuthenticationFilter::class,
+    MDCLoggingFilter::class
+)
 @ActiveProfiles("local")
 class DevRagSeedControllerTest(
     @Autowired private val mockMvc: MockMvc
