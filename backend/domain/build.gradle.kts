@@ -5,7 +5,7 @@ plugins {
     id("java-library")
 }
 
-group = "com.example"
+group = "com.godsmove"
 version = "0.0.1-SNAPSHOT"
 
 repositories {

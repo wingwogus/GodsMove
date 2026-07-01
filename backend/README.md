@@ -21,8 +21,8 @@ This template is prepared for public sharing.
 If you plan to use it for your own service, you must update the following items.
 
 
-1️⃣ Change Base Package (com.example → your domain)
-All modules (api / application / domain / batch) use package com.example.
+1️⃣ Change Base Package (com.godsmove → your domain)
+All modules (api / application / domain / batch) use package com.godsmove.
 Rename it to your organization or project domain.
 
   IntelliJ shortcut:
