@@ -1,6 +1,9 @@
 package com.godsmove.api.security
 
 import com.godsmove.application.security.TokenProvider
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.SignatureAlgorithm
+import io.jsonwebtoken.security.Keys
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.Test
@@ -19,6 +22,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.util.Base64
+import java.util.Date
 import java.util.UUID
 
 @SpringBootTest(
@@ -35,6 +40,7 @@ class AuthSecurityIntegrationTest(
     @Autowired private val tokenProvider: TokenProvider
 ) {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000042")
+    private val secret = "t2oRk29vBQZWS8GEt4xr8AJznlPK0ipBKUwdyqe10SOGZB26vVBMjzqualdJsjcOY1wX9DOqJC9V1DFl58F0tQ=="
 
     @Test
     fun `auth endpoints are publicly accessible`() {
@@ -152,6 +158,17 @@ class AuthSecurityIntegrationTest(
     }
 
     @Test
+    fun `protected endpoint rejects signed access token with non uuid subject`() {
+        val accessToken = signedAccessToken(subject = "42")
+
+        mockMvc.perform(
+            get("/api/v1/test/me")
+                .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
+        )
+            .andExpect(status().isUnauthorized)
+    }
+
+    @Test
     fun `refresh token cannot authenticate protected endpoint`() {
         val refreshToken = tokenProvider.createRefreshToken(memberId)
 
@@ -166,5 +183,17 @@ class AuthSecurityIntegrationTest(
     fun `logout requires authentication`() {
         mockMvc.perform(post("/api/v1/auth/logout"))
             .andExpect(status().isUnauthorized)
+    }
+
+    private fun signedAccessToken(subject: String): String {
+        val now = Date()
+        return Jwts.builder()
+            .setSubject(subject)
+            .claim("role", "ROLE_USER")
+            .claim("tokenType", "access")
+            .setIssuedAt(now)
+            .setExpiration(Date(now.time + 60_000L))
+            .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)), SignatureAlgorithm.HS512)
+            .compact()
     }
 }

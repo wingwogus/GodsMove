@@ -5,6 +5,7 @@ import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
 import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.MalformedJwtException
 import io.jsonwebtoken.SignatureAlgorithm
 import io.jsonwebtoken.security.Keys
 import org.springframework.beans.factory.annotation.Value
@@ -77,8 +78,9 @@ class TokenProvider(
 
     fun validateToken(token: String): Boolean {
         return try {
-            Jwts.parserBuilder().setSigningKey(key).build()
-                .parseClaimsJws(token)
+            val claims = Jwts.parserBuilder().setSigningKey(key).build()
+                .parseClaimsJws(token).body
+            parseMemberId(claims.subject)
             true
         } catch (e: JwtException) {
             false
@@ -97,7 +99,7 @@ class TokenProvider(
     }
 
     fun getMemberId(token: String): UUID {
-        return UUID.fromString(parseClaims(token).subject)
+        return parseMemberId(parseClaims(token).subject)
     }
 
     fun getRole(token: String): String? {
@@ -123,5 +125,17 @@ class TokenProvider(
             null,
             authorities
         )
+    }
+
+    private fun parseMemberId(subject: String?): UUID {
+        if (subject == null) {
+            throw MalformedJwtException("JWT subject must be a valid member UUID")
+        }
+
+        return try {
+            UUID.fromString(subject)
+        } catch (e: IllegalArgumentException) {
+            throw MalformedJwtException("JWT subject must be a valid member UUID", e)
+        }
     }
 }

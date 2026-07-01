@@ -7,6 +7,9 @@ import com.godsmove.application.redis.RefreshTokenRepository
 import com.godsmove.application.security.TokenProvider
 import com.godsmove.domain.member.Member
 import com.godsmove.domain.member.MemberRepository
+import io.jsonwebtoken.Jwts
+import io.jsonwebtoken.SignatureAlgorithm
+import io.jsonwebtoken.security.Keys
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -17,11 +20,14 @@ import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.security.crypto.password.PasswordEncoder
+import java.util.Base64
+import java.util.Date
 import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
 class AuthServiceTest {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
+    private val secret = "t2oRk29vBQZWS8GEt4xr8AJznlPK0ipBKUwdyqe10SOGZB26vVBMjzqualdJsjcOY1wX9DOqJC9V1DFl58F0tQ=="
 
     @Mock
     private lateinit var tokenProvider: TokenProvider
@@ -140,11 +146,44 @@ class AuthServiceTest {
     }
 
     @Test
+    fun `reissue rejects signed refresh token with non uuid subject`() {
+        val service = AuthService(
+            TokenProvider(secret),
+            emailSender,
+            verificationCodeGenerator,
+            emailVerificationRepository,
+            refreshTokenRepository,
+            memberRepository,
+            passwordEncoder,
+            codeTtlMillis,
+            verifiedTtlMillis
+        )
+        val legacyRefreshToken = signedRefreshToken(subject = "42")
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.reissue(AuthCommand.Reissue(legacyRefreshToken))
+        }
+
+        assertEquals(ErrorCode.UNAUTHORIZED, exception.errorCode)
+    }
+
+    @Test
     fun `logout deletes stored refresh token`() {
         `when`(refreshTokenRepository.get(memberId)).thenReturn("refresh-token")
 
         authService.logout(memberId.toString())
 
         verify(refreshTokenRepository).delete(memberId)
+    }
+
+    private fun signedRefreshToken(subject: String): String {
+        val now = Date()
+        return Jwts.builder()
+            .setSubject(subject)
+            .claim("tokenType", "refresh")
+            .setIssuedAt(now)
+            .setExpiration(Date(now.time + 60_000L))
+            .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)), SignatureAlgorithm.HS512)
+            .compact()
     }
 }
