@@ -14,7 +14,7 @@ repositories {
 
 dependencies {
     implementation(project(":application"))
-    implementation("com.h2database:h2")
+    testRuntimeOnly("com.h2database:h2")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-mail")
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin")

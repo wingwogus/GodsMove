@@ -27,7 +27,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
     ]
 )
 @AutoConfigureMockMvc
-@ActiveProfiles("local")
+@ActiveProfiles("test")
 @ExtendWith(OutputCaptureExtension::class)
 class AuthSecurityIntegrationTest(
     @Autowired private val mockMvc: MockMvc,
