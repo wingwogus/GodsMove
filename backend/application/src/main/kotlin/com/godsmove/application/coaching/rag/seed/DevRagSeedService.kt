@@ -12,7 +12,6 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.LocalDateTime
-import java.time.OffsetDateTime
 import java.time.ZoneOffset
 import java.util.UUID
 
@@ -63,7 +62,7 @@ class DevRagSeedService(
     }
 
     private fun seedRelationalData() {
-        val now = OffsetDateTime.now(ZoneOffset.UTC)
+        val now = LocalDateTime.now(ZoneOffset.UTC)
         jdbcTemplate.update(
             """
                 insert into member (
@@ -174,7 +173,7 @@ class DevRagSeedService(
                 SeedIds.FARM_ID,
                 SeedIds.CROP_ID,
                 record.workTypeId,
-                record.workedAt.atOffset(ZoneOffset.ofHours(9)),
+                record.workedAt,
                 record.memo,
                 now,
                 now
