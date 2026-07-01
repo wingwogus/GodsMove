@@ -24,6 +24,11 @@ enum class ErrorCode(
     KAKAO_VERIFIED_EMAIL_REQUIRED("AUTH_012", "error.kakao_verified_email_required", 422),
     SOCIAL_ONLY_MEMBER_LOCAL_LOGIN_FORBIDDEN("AUTH_013", "error.social_only_member_local_login_forbidden", 400),
     KAKAO_OIDC_UNAVAILABLE("AUTH_014", "error.kakao_oidc_unavailable", 503),
+    RAG_INVALID_REQUEST("RAG_001", "error.rag_invalid_request", 400),
+    RAG_EMBEDDING_UNAVAILABLE("RAG_002", "error.rag_embedding_unavailable", 503),
+    RAG_CHAT_UNAVAILABLE("RAG_003", "error.rag_chat_unavailable", 503),
+    RAG_INDEX_UNAVAILABLE("RAG_004", "error.rag_index_unavailable", 503),
+    RAG_EMBEDDING_DIMENSION_MISMATCH("RAG_005", "error.rag_embedding_dimension_mismatch", 500),
     UNAUTHORIZED("AUTH_001", "error.unauthorized", 401),
     FORBIDDEN("AUTH_002", "error.forbidden", 403),
 
