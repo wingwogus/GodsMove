@@ -14,6 +14,8 @@ import com.godsmove.application.coaching.rag.RagRetrievalFilter
 import com.godsmove.application.coaching.rag.RagSourceType
 import com.godsmove.application.security.TokenProvider
 import org.hamcrest.Matchers.equalTo
+import org.hamcrest.Matchers.hasSize
+import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
@@ -51,8 +53,16 @@ class CoachingRagControllerTest(
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.answer", equalTo("답변 [chunk:00000000-0000-0000-0000-000000000101]")))
+            .andExpect(jsonPath("$.data.result.summary", equalTo("답변 [chunk:00000000-0000-0000-0000-000000000101]")))
+            .andExpect(jsonPath("$.data.result.citations", hasSize<Any>(1)))
+            .andExpect(jsonPath("$.data.result.citations[0].chunkId", equalTo("00000000-0000-0000-0000-000000000101")))
+            .andExpect(jsonPath("$.data.result.citations[0].label", equalTo("영농일지 관수")))
+            .andExpect(jsonPath("$.data.result.citations[0].sourceType", equalTo("FARMING_RECORD")))
+            .andExpect(jsonPath("$.data.audit.status", equalTo("PASS")))
+            .andExpect(jsonPath("$.data.audit.warnings", hasSize<Any>(0)))
             .andExpect(jsonPath("$.data.model.embedding", equalTo("bge-m3")))
+            .andExpect(jsonPath("$.data.model.chat", equalTo("openclaw/agri-rag-coach")))
+            .andExpect(jsonPath("$.data.savedFeedbackId", nullValue()))
     }
 
     @Test
