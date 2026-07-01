@@ -36,8 +36,9 @@ class CoachingRagService(
                 citations = emptyList()
             )
             return CoachingRagResult(
-                answer = "현재 자료만으로는 판단할 수 없습니다. 영농일지나 기술문서 색인 상태를 확인해주세요.",
-                citations = emptyList(),
+                result = CoachingStructuredResult.insufficientEvidence(
+                    "현재 자료만으로는 판단할 수 없습니다. 영농일지나 기술문서 색인 상태를 확인해주세요."
+                ),
                 audit = audit,
                 model = modelInfo()
             )
@@ -82,8 +83,7 @@ class CoachingRagService(
         }
 
         return CoachingRagResult(
-            answer = answerText,
-            citations = toCitations(audit, chunks),
+            result = toStructuredResult(answerText, audit, chunks),
             audit = audit,
             model = modelInfo()
         )
@@ -123,16 +123,32 @@ class CoachingRagService(
         )
     }
 
-    private fun toCitations(audit: RagAuditResult, chunks: List<RagEvidenceChunk>): List<RagCitation> {
+    private fun toStructuredResult(
+        answerText: String,
+        audit: RagAuditResult,
+        chunks: List<RagEvidenceChunk>
+    ): CoachingStructuredResult {
+        return CoachingStructuredResult(
+            summary = answerText,
+            riskLevel = CoachingRiskLevel.UNKNOWN,
+            confidence = 0.0,
+            observations = emptyList(),
+            diagnosis = answerText,
+            recommendations = emptyList(),
+            nextActions = emptyList(),
+            followUpQuestions = emptyList(),
+            citations = toCitationRefs(audit, chunks)
+        )
+    }
+
+    private fun toCitationRefs(audit: RagAuditResult, chunks: List<RagEvidenceChunk>): List<CoachingCitationRef> {
         val chunkById = chunks.associateBy { it.id.toString() }
         return audit.citations.distinct().mapNotNull { citation ->
             chunkById[citation]?.let { chunk ->
-                RagCitation(
+                CoachingCitationRef(
                     chunkId = citation,
-                    sourceType = chunk.sourceType,
-                    sourceId = chunk.sourceId,
                     label = chunk.label,
-                    similarityScore = chunk.similarityScore
+                    sourceType = chunk.sourceType
                 )
             }
         }

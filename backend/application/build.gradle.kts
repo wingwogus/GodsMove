@@ -1,4 +1,5 @@
 plugins {
+    `java-library`
     kotlin("jvm")
     kotlin("plugin.spring")
 }
@@ -11,7 +12,7 @@ group = "com.godsmove"
 version = "0.0.1-SNAPSHOT"
 
 dependencies {
-    implementation(project(":domain"))
+    api(project(":domain"))
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("io.github.microutils:kotlin-logging-jvm:3.0.5")
     implementation("org.springframework.boot:spring-boot-starter-data-redis")

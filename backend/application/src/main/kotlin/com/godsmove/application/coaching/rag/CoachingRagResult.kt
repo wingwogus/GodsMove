@@ -1,5 +1,7 @@
 package com.godsmove.application.coaching.rag
 
+import java.util.UUID
+
 enum class RagAuditStatus {
     PASS,
     WARN,
@@ -18,8 +20,14 @@ data class RagModelInfo(
 )
 
 data class CoachingRagResult(
-    val answer: String,
-    val citations: List<RagCitation>,
+    val result: CoachingStructuredResult,
     val audit: RagAuditResult,
-    val model: RagModelInfo
-)
+    val model: RagModelInfo,
+    val savedFeedbackId: UUID? = null
+) {
+    val answer: String
+        get() = result.summary
+
+    val citations: List<CoachingCitationRef>
+        get() = result.citations
+}

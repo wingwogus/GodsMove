@@ -1,17 +1,12 @@
 package com.godsmove.application.coaching.rag
 
+import com.godsmove.domain.coaching.CoachingMode
 import java.time.LocalDate
 import java.util.UUID
 
-enum class CoachingRagMode {
-    CHAT,
-    RECORD_AUTO,
-    REPORT_MANUAL
-}
-
 data class CoachingRagCommand(
     val memberId: UUID,
-    val mode: CoachingRagMode = CoachingRagMode.CHAT,
+    val mode: CoachingMode = CoachingMode.CHAT,
     val question: String,
     val farmId: UUID? = null,
     val cropId: UUID? = null,

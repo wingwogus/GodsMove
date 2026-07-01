@@ -1,6 +1,7 @@
 package com.godsmove.api.coaching.dto
 
 import com.godsmove.application.coaching.rag.CoachingRagCommand
+import com.godsmove.domain.coaching.CoachingMode
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
@@ -11,6 +12,7 @@ object CoachingRagRequests {
     data class QueryRequest(
         @field:NotBlank(message = "질문을 입력해주세요")
         val question: String,
+        val mode: CoachingMode = CoachingMode.CHAT,
         val farmId: UUID? = null,
         val cropId: UUID? = null,
         val workTypeId: UUID? = null,
@@ -24,6 +26,7 @@ object CoachingRagRequests {
         fun toCommand(memberId: UUID): CoachingRagCommand {
             return CoachingRagCommand(
                 memberId = memberId,
+                mode = mode,
                 question = question,
                 farmId = farmId,
                 cropId = cropId,
