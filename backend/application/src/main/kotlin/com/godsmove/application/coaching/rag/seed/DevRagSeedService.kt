@@ -33,6 +33,7 @@ class DevRagSeedService(
     private val ragProperties: RagProperties,
     private val vectorStore: VectorStore,
     private val farmingRecordDocumentFactory: FarmingRecordDocumentFactory,
+    private val pdfTextExtractor: PdfTextExtractor,
     @Value("\${app.dev.rag-seed-dir:}")
     private val seedDirectory: String = ""
 ) {
@@ -293,26 +294,92 @@ class DevRagSeedService(
             throw invalidSeedRequest("PDF file is too large for local seed: $fileSize bytes (max $MAX_SEED_PDF_BYTES)")
         }
 
+        return pdfTextExtractor.extract(path)
+    }
+
+    private fun chunkText(
+        rawText: String,
+        maxChunkChars: Int = 1_200,
+        overlapChars: Int = 160,
+        maxChunks: Int
+    ): List<String> {
+        val paragraphs = rawText
+            .replace('\u0000', ' ')
+            .replace(Regex("[ \\t\\x0B\\f\\r]+"), " ")
+            .split(Regex("\\n{2,}"))
+            .map { it.lines().joinToString(" ").replace(Regex("\\s+"), " ").trim() }
+            .filter { it.length >= 80 }
+
+        val chunks = mutableListOf<String>()
+        var current = StringBuilder()
+        for (paragraph in paragraphs) {
+            if (current.isNotEmpty() && current.length + paragraph.length + 1 > maxChunkChars) {
+                chunks += current.toString().trim()
+                if (chunks.size >= maxChunks) {
+                    return chunks
+                }
+                val overlap = current.takeLast(overlapChars)
+                current = StringBuilder(overlap.trim())
+            }
+            if (current.isNotEmpty()) {
+                current.append('\n')
+            }
+            current.append(paragraph)
+        }
+        if (current.isNotBlank() && chunks.size < maxChunks) {
+            chunks += current.toString().trim()
+        }
+        return chunks.take(maxChunks)
+    }
+
+    private fun Document.withSeedName(): Document {
+        return Document(
+            id,
+            requireNotNull(text),
+            metadata + ("seedName" to SEED_NAME)
+        )
+    }
+
+    private fun seedDocumentId(sourceId: String, chunkIndex: Int): String {
+        return UUID.nameUUIDFromBytes("$sourceId:$chunkIndex".toByteArray(StandardCharsets.UTF_8)).toString()
+    }
+
+    companion object {
+        internal const val MAX_SEED_PDF_BYTES = 30L * 1024 * 1024
+        private const val SEED_NAME = "local-rag-demo"
+        private const val TECH_DOC_SOURCE_ID = "agri-tech-guide-7-medicinal-crops"
+    }
+}
+
+interface PdfTextExtractor {
+    fun extract(path: Path): String
+}
+
+@Profile("local")
+@Service
+class PdftotextPdfTextExtractor internal constructor(
+    private val processFactory: PdfTextProcessFactory = DefaultPdfTextProcessFactory,
+    private val timeoutSeconds: Long = DEFAULT_TIMEOUT_SECONDS,
+    private val maxOutputBytes: Int = DEFAULT_MAX_OUTPUT_BYTES
+) : PdfTextExtractor {
+    constructor() : this(
+        processFactory = DefaultPdfTextProcessFactory,
+        timeoutSeconds = DEFAULT_TIMEOUT_SECONDS,
+        maxOutputBytes = DEFAULT_MAX_OUTPUT_BYTES
+    )
+
+    override fun extract(path: Path): String {
         val process = try {
-            ProcessBuilder(
-                "pdftotext",
-                "-layout",
-                "-enc",
-                "UTF-8",
-                path.toString(),
-                "-"
-            )
-                .redirectErrorStream(true)
-                .start()
+            processFactory.start(path)
         } catch (exception: IOException) {
             throw invalidSeedRequest("pdftotext is not available or failed to start")
         }
 
         val outputFuture = CompletableFuture.supplyAsync {
-            readProcessOutput(process.inputStream, MAX_EXTRACTED_TEXT_BYTES)
+            readProcessOutput(process.inputStream, maxOutputBytes)
         }
         val finished = try {
-            process.waitFor(PDF_TEXT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+            process.waitFor(timeoutSeconds, TimeUnit.SECONDS)
         } catch (exception: InterruptedException) {
             Thread.currentThread().interrupt()
             process.destroyForcibly()
@@ -322,7 +389,7 @@ class DevRagSeedService(
         if (!finished) {
             process.destroyForcibly()
             outputFuture.cancel(true)
-            throw invalidSeedRequest("pdftotext timed out after $PDF_TEXT_TIMEOUT_SECONDS seconds")
+            throw invalidSeedRequest("pdftotext timed out after $timeoutSeconds seconds")
         }
 
         val output = awaitProcessOutput(outputFuture)
@@ -373,64 +440,62 @@ class DevRagSeedService(
         }
     }
 
-    private fun chunkText(
-        rawText: String,
-        maxChunkChars: Int = 1_200,
-        overlapChars: Int = 160,
-        maxChunks: Int
-    ): List<String> {
-        val paragraphs = rawText
-            .replace('\u0000', ' ')
-            .replace(Regex("[ \\t\\x0B\\f\\r]+"), " ")
-            .split(Regex("\\n{2,}"))
-            .map { it.lines().joinToString(" ").replace(Regex("\\s+"), " ").trim() }
-            .filter { it.length >= 80 }
-
-        val chunks = mutableListOf<String>()
-        var current = StringBuilder()
-        for (paragraph in paragraphs) {
-            if (current.isNotEmpty() && current.length + paragraph.length + 1 > maxChunkChars) {
-                chunks += current.toString().trim()
-                if (chunks.size >= maxChunks) {
-                    return chunks
-                }
-                val overlap = current.takeLast(overlapChars)
-                current = StringBuilder(overlap.trim())
-            }
-            if (current.isNotEmpty()) {
-                current.append('\n')
-            }
-            current.append(paragraph)
-        }
-        if (current.isNotBlank() && chunks.size < maxChunks) {
-            chunks += current.toString().trim()
-        }
-        return chunks.take(maxChunks)
+    private companion object {
+        const val DEFAULT_TIMEOUT_SECONDS = 20L
+        const val DEFAULT_MAX_OUTPUT_BYTES = 5 * 1024 * 1024
     }
+}
 
-    private fun Document.withSeedName(): Document {
-        return Document(
-            id,
-            requireNotNull(text),
-            metadata + ("seedName" to SEED_NAME)
+interface PdfTextProcessFactory {
+    @Throws(IOException::class)
+    fun start(path: Path): PdfTextProcess
+}
+
+interface PdfTextProcess {
+    val inputStream: InputStream
+    fun waitFor(timeout: Long, unit: TimeUnit): Boolean
+    fun destroyForcibly()
+    fun exitValue(): Int
+}
+
+private object DefaultPdfTextProcessFactory : PdfTextProcessFactory {
+    override fun start(path: Path): PdfTextProcess {
+        val process = ProcessBuilder(
+            "pdftotext",
+            "-layout",
+            "-enc",
+            "UTF-8",
+            path.toString(),
+            "-"
         )
+            .redirectErrorStream(true)
+            .start()
+
+        return ProcessBackedPdfTextProcess(process)
+    }
+}
+
+private class ProcessBackedPdfTextProcess(
+    private val process: Process
+) : PdfTextProcess {
+    override val inputStream: InputStream
+        get() = process.inputStream
+
+    override fun waitFor(timeout: Long, unit: TimeUnit): Boolean {
+        return process.waitFor(timeout, unit)
     }
 
-    private fun seedDocumentId(sourceId: String, chunkIndex: Int): String {
-        return UUID.nameUUIDFromBytes("$sourceId:$chunkIndex".toByteArray(StandardCharsets.UTF_8)).toString()
+    override fun destroyForcibly() {
+        process.destroyForcibly()
     }
 
-    private fun invalidSeedRequest(detail: String): BusinessException {
-        return BusinessException(ErrorCode.RAG_INVALID_REQUEST, detail = detail)
+    override fun exitValue(): Int {
+        return process.exitValue()
     }
+}
 
-    companion object {
-        internal const val MAX_SEED_PDF_BYTES = 30L * 1024 * 1024
-        private const val MAX_EXTRACTED_TEXT_BYTES = 5 * 1024 * 1024
-        private const val PDF_TEXT_TIMEOUT_SECONDS = 20L
-        private const val SEED_NAME = "local-rag-demo"
-        private const val TECH_DOC_SOURCE_ID = "agri-tech-guide-7-medicinal-crops"
-    }
+private fun invalidSeedRequest(detail: String): BusinessException {
+    return BusinessException(ErrorCode.RAG_INVALID_REQUEST, detail = detail)
 }
 
 data class DevRagSeedCommand(
