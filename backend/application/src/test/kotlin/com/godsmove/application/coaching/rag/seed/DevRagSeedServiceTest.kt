@@ -12,11 +12,15 @@ import org.springframework.ai.vectorstore.SearchRequest
 import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.ai.vectorstore.filter.Filter
 import org.springframework.jdbc.core.JdbcTemplate
+import java.io.ByteArrayInputStream
+import java.io.IOException
 import java.io.RandomAccessFile
+import java.io.InputStream
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
+import java.util.concurrent.TimeUnit
 
 class DevRagSeedServiceTest {
     @Test
@@ -26,7 +30,8 @@ class DevRagSeedServiceTest {
             jdbcTemplate = jdbcTemplate,
             ragProperties = RagProperties(),
             vectorStore = NoopVectorStore(),
-            farmingRecordDocumentFactory = FarmingRecordDocumentFactory()
+            farmingRecordDocumentFactory = FarmingRecordDocumentFactory(),
+            pdfTextExtractor = NoopPdfTextExtractor()
         )
 
         service.seed(
@@ -154,6 +159,7 @@ class DevRagSeedServiceTest {
             ragProperties = RagProperties(),
             vectorStore = NoopVectorStore(),
             farmingRecordDocumentFactory = FarmingRecordDocumentFactory(),
+            pdfTextExtractor = NoopPdfTextExtractor(),
             seedDirectory = seedDirectory?.toString() ?: ""
         )
     }
@@ -180,5 +186,99 @@ class DevRagSeedServiceTest {
         override fun delete(filterExpression: Filter.Expression) = Unit
 
         override fun similaritySearch(request: SearchRequest): List<Document> = emptyList()
+    }
+
+    private class NoopPdfTextExtractor : PdfTextExtractor {
+        override fun extract(path: Path): String = ""
+    }
+}
+
+class PdftotextPdfTextExtractorTest {
+    @Test
+    fun `startup failure maps to invalid seed request`() {
+        val extractor = PdftotextPdfTextExtractor(
+            processFactory = object : PdfTextProcessFactory {
+                override fun start(path: Path): PdfTextProcess {
+                    throw IOException("missing binary")
+                }
+            }
+        )
+
+        assertInvalidSeedRequest("pdftotext is not available or failed to start") {
+            extractor.extract(Path.of("/tmp/guide.pdf"))
+        }
+    }
+
+    @Test
+    fun `non zero exit maps to invalid seed request`() {
+        val extractor = PdftotextPdfTextExtractor(
+            processFactory = StaticProcessFactory(
+                FakePdfTextProcess(output = "parse error", exitCode = 1)
+            )
+        )
+
+        assertInvalidSeedRequest("pdftotext failed with exit code 1") {
+            extractor.extract(Path.of("/tmp/guide.pdf"))
+        }
+    }
+
+    @Test
+    fun `timeout maps to invalid seed request and destroys process`() {
+        val process = FakePdfTextProcess(output = "", finishes = false)
+        val extractor = PdftotextPdfTextExtractor(
+            processFactory = StaticProcessFactory(process),
+            timeoutSeconds = 1
+        )
+
+        assertInvalidSeedRequest("pdftotext timed out after 1 seconds") {
+            extractor.extract(Path.of("/tmp/guide.pdf"))
+        }
+        assertThat(process.destroyed).isTrue()
+    }
+
+    @Test
+    fun `oversized output maps to invalid seed request`() {
+        val extractor = PdftotextPdfTextExtractor(
+            processFactory = StaticProcessFactory(
+                FakePdfTextProcess(output = "abcdef", exitCode = 0)
+            ),
+            maxOutputBytes = 3
+        )
+
+        assertInvalidSeedRequest("pdftotext output exceeds 3 bytes") {
+            extractor.extract(Path.of("/tmp/guide.pdf"))
+        }
+    }
+
+    private fun assertInvalidSeedRequest(expectedDetail: String, action: () -> Unit) {
+        assertThatThrownBy(action)
+            .isInstanceOf(BusinessException::class.java)
+            .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RAG_INVALID_REQUEST)
+            .isInstanceOfSatisfying(BusinessException::class.java) { exception ->
+                assertThat(exception.detail.toString()).contains(expectedDetail)
+            }
+    }
+
+    private class StaticProcessFactory(
+        private val process: PdfTextProcess
+    ) : PdfTextProcessFactory {
+        override fun start(path: Path): PdfTextProcess = process
+    }
+
+    private class FakePdfTextProcess(
+        output: String,
+        private val finishes: Boolean = true,
+        private val exitCode: Int = 0
+    ) : PdfTextProcess {
+        override val inputStream: InputStream = ByteArrayInputStream(output.toByteArray())
+        var destroyed: Boolean = false
+
+        override fun waitFor(timeout: Long, unit: TimeUnit): Boolean = finishes
+
+        override fun destroyForcibly() {
+            destroyed = true
+        }
+
+        override fun exitValue(): Int = exitCode
     }
 }
