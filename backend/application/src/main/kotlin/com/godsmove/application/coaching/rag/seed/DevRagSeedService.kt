@@ -5,10 +5,13 @@ import com.godsmove.application.coaching.rag.IndexedFarmingRecord
 import com.godsmove.application.coaching.rag.RagProperties
 import org.springframework.ai.document.Document
 import org.springframework.ai.vectorstore.VectorStore
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Profile
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.io.ByteArrayOutputStream
+import java.io.IOException
 import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
@@ -27,9 +30,22 @@ class DevRagSeedService(
     private val jdbcTemplate: JdbcTemplate,
     private val ragProperties: RagProperties,
     private val vectorStore: VectorStore,
-    private val farmingRecordDocumentFactory: FarmingRecordDocumentFactory
+    private val farmingRecordDocumentFactory: FarmingRecordDocumentFactory,
+    @Value("\${app.dev.rag-seed-dir:}")
+    private val seedDirectory: String = ""
 ) {
+    @Transactional
     fun seed(command: DevRagSeedCommand): DevRagSeedResult {
+        val pdfSeed = if (command.includePdf) {
+            val rawPath = requireNotNull(command.pdfPath?.takeIf { it.isNotBlank() }) {
+                "pdfPath is required when includePdf is true"
+            }
+            val path = resolveSeedPdfPath(rawPath)
+            ExtractedPdfSeed(path = path.toString(), text = extractPdfText(path))
+        } else {
+            null
+        }
+
         if (command.resetIndex) {
             resetSeedIndex()
         }
@@ -43,10 +59,7 @@ class DevRagSeedService(
         }
 
         val pdfChunksIndexed = if (command.includePdf) {
-            val path = requireNotNull(command.pdfPath?.takeIf { it.isNotBlank() }) {
-                "pdfPath is required when includePdf is true"
-            }
-            seedPdfChunks(path, command.maxPdfChunks)
+            seedPdfChunks(requireNotNull(pdfSeed), command.maxPdfChunks)
         } else {
             0
         }
@@ -215,9 +228,8 @@ class DevRagSeedService(
         return documents.size
     }
 
-    private fun seedPdfChunks(pdfPath: String, maxPdfChunks: Int): Int {
-        val text = extractPdfText(pdfPath)
-        val chunks = chunkText(text, maxChunks = maxPdfChunks)
+    private fun seedPdfChunks(pdfSeed: ExtractedPdfSeed, maxPdfChunks: Int): Int {
+        val chunks = chunkText(pdfSeed.text, maxChunks = maxPdfChunks)
         val documents = chunks.mapIndexed { index, content ->
             Document(
                 seedDocumentId(TECH_DOC_SOURCE_ID, index),
@@ -227,7 +239,7 @@ class DevRagSeedService(
                     "sourceId" to TECH_DOC_SOURCE_ID,
                     "label" to "농업기술길잡이7 약용작물 ${index + 1}",
                     "documentTitle" to "농업기술길잡이7 약용작물",
-                    "pdfPath" to pdfPath,
+                    "pdfPath" to pdfSeed.path,
                     "seedName" to SEED_NAME,
                     "chunkIndex" to index
                 )
@@ -240,11 +252,41 @@ class DevRagSeedService(
         return documents.size
     }
 
-    private fun extractPdfText(pdfPath: String): String {
-        val path = Path.of(pdfPath).toAbsolutePath().normalize()
-        require(Files.isRegularFile(path)) {
-            "PDF file does not exist: $path"
+    private fun resolveSeedPdfPath(pdfPath: String): Path {
+        require(seedDirectory.isNotBlank()) {
+            "app.dev.rag-seed-dir must be configured when includePdf is true"
         }
+
+        val seedRoot = resolveRealPath(Path.of(seedDirectory).toAbsolutePath().normalize())
+        require(Files.isDirectory(seedRoot)) {
+            "Seed PDF directory does not exist: $seedRoot"
+        }
+
+        val requestedPath = Path.of(pdfPath)
+        val normalizedPath = if (requestedPath.isAbsolute) {
+            requestedPath.normalize()
+        } else {
+            seedRoot.resolve(requestedPath).normalize()
+        }
+        val realPath = resolveRealPath(normalizedPath)
+        require(realPath.startsWith(seedRoot)) {
+            "PDF file must be under configured seed directory"
+        }
+        require(Files.isRegularFile(realPath)) {
+            "PDF file does not exist: $realPath"
+        }
+        return realPath
+    }
+
+    private fun resolveRealPath(path: Path): Path {
+        return try {
+            path.toRealPath()
+        } catch (exception: IOException) {
+            throw IllegalArgumentException("Path does not exist: $path", exception)
+        }
+    }
+
+    private fun extractPdfText(path: Path): String {
         val fileSize = Files.size(path)
         require(fileSize <= MAX_SEED_PDF_BYTES) {
             "PDF file is too large for local seed: $fileSize bytes (max $MAX_SEED_PDF_BYTES)"
@@ -399,6 +441,11 @@ data class DevRagSeedResult(
     val pdfChunksIndexed: Int,
     val farmingRecordChunksIndexed: Int,
     val embeddingModel: String
+)
+
+private data class ExtractedPdfSeed(
+    val path: String,
+    val text: String
 )
 
 private object SeedIds {

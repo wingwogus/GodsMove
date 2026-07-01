@@ -12,6 +12,7 @@ import org.springframework.ai.vectorstore.filter.Filter
 import org.springframework.jdbc.core.JdbcTemplate
 import java.io.RandomAccessFile
 import java.nio.file.Files
+import java.nio.file.Path
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 
@@ -54,18 +55,14 @@ class DevRagSeedServiceTest {
 
     @Test
     fun `seed rejects oversized pdf before text extraction`() {
-        val pdf = Files.createTempFile("godsmove-rag-seed-", ".pdf")
+        val seedDirectory = Files.createTempDirectory("godsmove-rag-seed-dir-")
+        val pdf = Files.createTempFile(seedDirectory, "oversized-", ".pdf")
         RandomAccessFile(pdf.toFile(), "rw").use { file ->
             file.setLength(DevRagSeedService.MAX_SEED_PDF_BYTES + 1)
         }
 
         try {
-            val service = DevRagSeedService(
-                jdbcTemplate = RecordingJdbcTemplate(),
-                ragProperties = RagProperties(),
-                vectorStore = NoopVectorStore(),
-                farmingRecordDocumentFactory = FarmingRecordDocumentFactory()
-            )
+            val service = service(seedDirectory = seedDirectory)
 
             assertThatThrownBy {
                 service.seed(
@@ -82,7 +79,75 @@ class DevRagSeedServiceTest {
                 .hasMessageContaining("PDF file is too large for local seed")
         } finally {
             Files.deleteIfExists(pdf)
+            Files.deleteIfExists(seedDirectory)
         }
+    }
+
+    @Test
+    fun `seed rejects pdf outside configured seed directory`() {
+        val seedDirectory = Files.createTempDirectory("godsmove-rag-seed-dir-")
+        val outsidePdf = Files.createTempFile("outside-rag-seed-", ".pdf")
+
+        try {
+            val service = service(seedDirectory = seedDirectory)
+
+            assertThatThrownBy {
+                service.seed(
+                    DevRagSeedCommand(
+                        pdfPath = outsidePdf.toString(),
+                        resetIndex = false,
+                        includePdf = true,
+                        includeFarmingRecords = false,
+                        maxPdfChunks = 1
+                    )
+                )
+            }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("PDF file must be under configured seed directory")
+        } finally {
+            Files.deleteIfExists(outsidePdf)
+            Files.deleteIfExists(seedDirectory)
+        }
+    }
+
+    @Test
+    fun `seed does not write relational data when pdf validation fails`() {
+        val seedDirectory = Files.createTempDirectory("godsmove-rag-seed-dir-")
+        val jdbcTemplate = RecordingJdbcTemplate()
+
+        try {
+            val service = service(jdbcTemplate = jdbcTemplate, seedDirectory = seedDirectory)
+
+            assertThatThrownBy {
+                service.seed(
+                    DevRagSeedCommand(
+                        pdfPath = "missing.pdf",
+                        resetIndex = true,
+                        includePdf = true,
+                        includeFarmingRecords = true,
+                        maxPdfChunks = 1
+                    )
+                )
+            }
+                .isInstanceOf(IllegalArgumentException::class.java)
+
+            assertThat(jdbcTemplate.updates).isEmpty()
+        } finally {
+            Files.deleteIfExists(seedDirectory)
+        }
+    }
+
+    private fun service(
+        jdbcTemplate: RecordingJdbcTemplate = RecordingJdbcTemplate(),
+        seedDirectory: Path? = null
+    ): DevRagSeedService {
+        return DevRagSeedService(
+            jdbcTemplate = jdbcTemplate,
+            ragProperties = RagProperties(),
+            vectorStore = NoopVectorStore(),
+            farmingRecordDocumentFactory = FarmingRecordDocumentFactory(),
+            seedDirectory = seedDirectory?.toString() ?: ""
+        )
     }
 
     private data class RecordedUpdate(
