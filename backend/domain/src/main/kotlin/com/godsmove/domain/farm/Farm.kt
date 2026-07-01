@@ -36,7 +36,4 @@ class Farm(
 
     @Column(nullable = false, length = 255)
     val street: String,
-
-    @Column(name = "farm_type", length = 32)
-    val farmType: String? = null,
 ) : BaseTimeEntity()

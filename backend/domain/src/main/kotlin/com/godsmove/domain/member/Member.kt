@@ -43,10 +43,6 @@ class Member(
     val experienceLevel: String? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "farm_type", length = 32)
-    val farmType: FarmType? = null,
-
-    @Enumerated(EnumType.STRING)
     @Column(name = "management_type", nullable = false, length = 32)
     val managementType: ManagementType = ManagementType.UNREGISTERED,
 
