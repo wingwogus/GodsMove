@@ -3,6 +3,8 @@ package com.godsmove.application.coaching.rag.seed
 import com.godsmove.application.coaching.rag.FarmingRecordDocumentFactory
 import com.godsmove.application.coaching.rag.IndexedFarmingRecord
 import com.godsmove.application.coaching.rag.RagProperties
+import com.godsmove.application.exception.ErrorCode
+import com.godsmove.application.exception.business.BusinessException
 import org.springframework.ai.document.Document
 import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.beans.factory.annotation.Value
@@ -37,9 +39,8 @@ class DevRagSeedService(
     @Transactional
     fun seed(command: DevRagSeedCommand): DevRagSeedResult {
         val pdfSeed = if (command.includePdf) {
-            val rawPath = requireNotNull(command.pdfPath?.takeIf { it.isNotBlank() }) {
-                "pdfPath is required when includePdf is true"
-            }
+            val rawPath = command.pdfPath?.takeIf { it.isNotBlank() }
+                ?: throw invalidSeedRequest("pdfPath is required when includePdf is true")
             val path = resolveSeedPdfPath(rawPath)
             ExtractedPdfSeed(path = path.toString(), text = extractPdfText(path))
         } else {
@@ -253,13 +254,13 @@ class DevRagSeedService(
     }
 
     private fun resolveSeedPdfPath(pdfPath: String): Path {
-        require(seedDirectory.isNotBlank()) {
-            "app.dev.rag-seed-dir must be configured when includePdf is true"
+        if (seedDirectory.isBlank()) {
+            throw invalidSeedRequest("app.dev.rag-seed-dir must be configured when includePdf is true")
         }
 
         val seedRoot = resolveRealPath(Path.of(seedDirectory).toAbsolutePath().normalize())
-        require(Files.isDirectory(seedRoot)) {
-            "Seed PDF directory does not exist: $seedRoot"
+        if (!Files.isDirectory(seedRoot)) {
+            throw invalidSeedRequest("Seed PDF directory does not exist")
         }
 
         val requestedPath = Path.of(pdfPath)
@@ -269,11 +270,11 @@ class DevRagSeedService(
             seedRoot.resolve(requestedPath).normalize()
         }
         val realPath = resolveRealPath(normalizedPath)
-        require(realPath.startsWith(seedRoot)) {
-            "PDF file must be under configured seed directory"
+        if (!realPath.startsWith(seedRoot)) {
+            throw invalidSeedRequest("PDF file must be under configured seed directory")
         }
-        require(Files.isRegularFile(realPath)) {
-            "PDF file does not exist: $realPath"
+        if (!Files.isRegularFile(realPath)) {
+            throw invalidSeedRequest("PDF file does not exist")
         }
         return realPath
     }
@@ -282,26 +283,30 @@ class DevRagSeedService(
         return try {
             path.toRealPath()
         } catch (exception: IOException) {
-            throw IllegalArgumentException("Path does not exist: $path", exception)
+            throw invalidSeedRequest("Path does not exist")
         }
     }
 
     private fun extractPdfText(path: Path): String {
         val fileSize = Files.size(path)
-        require(fileSize <= MAX_SEED_PDF_BYTES) {
-            "PDF file is too large for local seed: $fileSize bytes (max $MAX_SEED_PDF_BYTES)"
+        if (fileSize > MAX_SEED_PDF_BYTES) {
+            throw invalidSeedRequest("PDF file is too large for local seed: $fileSize bytes (max $MAX_SEED_PDF_BYTES)")
         }
 
-        val process = ProcessBuilder(
-            "pdftotext",
-            "-layout",
-            "-enc",
-            "UTF-8",
-            path.toString(),
-            "-"
-        )
-            .redirectErrorStream(true)
-            .start()
+        val process = try {
+            ProcessBuilder(
+                "pdftotext",
+                "-layout",
+                "-enc",
+                "UTF-8",
+                path.toString(),
+                "-"
+            )
+                .redirectErrorStream(true)
+                .start()
+        } catch (exception: IOException) {
+            throw invalidSeedRequest("pdftotext is not available or failed to start")
+        }
 
         val outputFuture = CompletableFuture.supplyAsync {
             readProcessOutput(process.inputStream, MAX_EXTRACTED_TEXT_BYTES)
@@ -312,18 +317,18 @@ class DevRagSeedService(
             Thread.currentThread().interrupt()
             process.destroyForcibly()
             outputFuture.cancel(true)
-            throw IllegalArgumentException("pdftotext was interrupted", exception)
+            throw invalidSeedRequest("pdftotext was interrupted")
         }
         if (!finished) {
             process.destroyForcibly()
             outputFuture.cancel(true)
-            throw IllegalArgumentException("pdftotext timed out after $PDF_TEXT_TIMEOUT_SECONDS seconds")
+            throw invalidSeedRequest("pdftotext timed out after $PDF_TEXT_TIMEOUT_SECONDS seconds")
         }
 
         val output = awaitProcessOutput(outputFuture)
         val exitCode = process.exitValue()
-        require(exitCode == 0) {
-            "pdftotext failed with exit code $exitCode: ${output.take(400)}"
+        if (exitCode != 0) {
+            throw invalidSeedRequest("pdftotext failed with exit code $exitCode: ${output.take(400)}")
         }
 
         return output
@@ -334,15 +339,15 @@ class DevRagSeedService(
             outputFuture.get(1, TimeUnit.SECONDS)
         } catch (exception: InterruptedException) {
             Thread.currentThread().interrupt()
-            throw IllegalArgumentException("pdftotext output read was interrupted", exception)
+            throw invalidSeedRequest("pdftotext output read was interrupted")
         } catch (exception: TimeoutException) {
-            throw IllegalArgumentException("pdftotext output read timed out", exception)
+            throw invalidSeedRequest("pdftotext output read timed out")
         } catch (exception: ExecutionException) {
             val cause = exception.cause
-            if (cause is IllegalArgumentException) {
+            if (cause is BusinessException) {
                 throw cause
             }
-            throw IllegalArgumentException("pdftotext output read failed", cause)
+            throw invalidSeedRequest("pdftotext output read failed")
         }
     }
 
@@ -358,8 +363,8 @@ class DevRagSeedService(
                     break
                 }
                 totalBytes += read
-                require(totalBytes <= maxBytes) {
-                    "pdftotext output exceeds $maxBytes bytes"
+                if (totalBytes > maxBytes) {
+                    throw invalidSeedRequest("pdftotext output exceeds $maxBytes bytes")
                 }
                 output.write(buffer, 0, read)
             }
@@ -413,6 +418,10 @@ class DevRagSeedService(
 
     private fun seedDocumentId(sourceId: String, chunkIndex: Int): String {
         return UUID.nameUUIDFromBytes("$sourceId:$chunkIndex".toByteArray(StandardCharsets.UTF_8)).toString()
+    }
+
+    private fun invalidSeedRequest(detail: String): BusinessException {
+        return BusinessException(ErrorCode.RAG_INVALID_REQUEST, detail = detail)
     }
 
     companion object {

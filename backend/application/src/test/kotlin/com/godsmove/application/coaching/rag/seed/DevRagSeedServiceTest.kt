@@ -2,6 +2,8 @@ package com.godsmove.application.coaching.rag.seed
 
 import com.godsmove.application.coaching.rag.FarmingRecordDocumentFactory
 import com.godsmove.application.coaching.rag.RagProperties
+import com.godsmove.application.exception.ErrorCode
+import com.godsmove.application.exception.business.BusinessException
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -75,8 +77,12 @@ class DevRagSeedServiceTest {
                     )
                 )
             }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("PDF file is too large for local seed")
+                .isInstanceOf(BusinessException::class.java)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RAG_INVALID_REQUEST)
+                .isInstanceOfSatisfying(BusinessException::class.java) { exception ->
+                    assertThat(exception.detail.toString())
+                        .contains("PDF file is too large for local seed")
+                }
         } finally {
             Files.deleteIfExists(pdf)
             Files.deleteIfExists(seedDirectory)
@@ -102,8 +108,9 @@ class DevRagSeedServiceTest {
                     )
                 )
             }
-                .isInstanceOf(IllegalArgumentException::class.java)
-                .hasMessageContaining("PDF file must be under configured seed directory")
+                .isInstanceOf(BusinessException::class.java)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RAG_INVALID_REQUEST)
+                .hasFieldOrPropertyWithValue("detail", "PDF file must be under configured seed directory")
         } finally {
             Files.deleteIfExists(outsidePdf)
             Files.deleteIfExists(seedDirectory)
@@ -129,7 +136,8 @@ class DevRagSeedServiceTest {
                     )
                 )
             }
-                .isInstanceOf(IllegalArgumentException::class.java)
+                .isInstanceOf(BusinessException::class.java)
+                .hasFieldOrPropertyWithValue("errorCode", ErrorCode.RAG_INVALID_REQUEST)
 
             assertThat(jdbcTemplate.updates).isEmpty()
         } finally {

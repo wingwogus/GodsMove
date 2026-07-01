@@ -7,6 +7,8 @@ import com.godsmove.api.security.CustomAuthenticationEntryPoint
 import com.godsmove.api.security.JwtAuthenticationFilter
 import com.godsmove.application.coaching.rag.seed.DevRagSeedResult
 import com.godsmove.application.coaching.rag.seed.DevRagSeedService
+import com.godsmove.application.exception.ErrorCode
+import com.godsmove.application.exception.business.BusinessException
 import com.godsmove.application.security.TokenProvider
 import com.godsmove.config.MDCLoggingFilter
 import com.godsmove.config.SecurityConfig
@@ -112,6 +114,28 @@ class DevRagSeedControllerTest(
         )
             .andExpect(status().isForbidden)
             .andExpect(jsonPath("$.error.code", equalTo("AUTH_002")))
+    }
+
+    @Test
+    fun `seed maps seed validation failures to bad request`() {
+        val command = DevRagSeedCommand(
+            pdfPath = null,
+            resetIndex = true,
+            includePdf = true,
+            includeFarmingRecords = true,
+            maxPdfChunks = 300
+        )
+        `when`(devRagSeedService.seed(command))
+            .thenThrow(BusinessException(ErrorCode.RAG_INVALID_REQUEST, detail = "pdfPath is required"))
+
+        mockMvc.perform(
+            post("/api/v1/dev/rag/seed")
+                .header(DEV_SEED_KEY_HEADER, DEV_SEED_KEY)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{}""")
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo("RAG_001")))
     }
 
     @Test
