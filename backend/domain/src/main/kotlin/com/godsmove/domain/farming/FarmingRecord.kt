@@ -39,9 +39,6 @@ class FarmingRecord(
     @JoinColumn(name = "work_type_id", nullable = false)
     val workType: WorkType,
 
-    @Column(name = "weather_snapshot_id", columnDefinition = "uuid")
-    val weatherSnapshotId: UUID? = null,
-
     @Column(name = "worked_at", nullable = false)
     val workedAt: LocalDateTime,
 
