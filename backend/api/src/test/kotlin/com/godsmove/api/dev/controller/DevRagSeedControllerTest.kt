@@ -21,6 +21,7 @@ import org.springframework.context.annotation.Import
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.TestPropertySource
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
@@ -40,6 +41,7 @@ import java.util.UUID
     MDCLoggingFilter::class
 )
 @ActiveProfiles("local")
+@TestPropertySource(properties = ["app.dev.rag-seed-key=test-seed-key"])
 class DevRagSeedControllerTest(
     @Autowired private val mockMvc: MockMvc
 ) {
@@ -79,6 +81,7 @@ class DevRagSeedControllerTest(
 
         mockMvc.perform(
             post("/api/v1/dev/rag/seed")
+                .header(DEV_SEED_KEY_HEADER, DEV_SEED_KEY)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"pdfPath":"/tmp/guide.pdf","maxPdfChunks":12}""")
         )
@@ -93,10 +96,22 @@ class DevRagSeedControllerTest(
     fun `seed rejects too many pdf chunks`() {
         mockMvc.perform(
             post("/api/v1/dev/rag/seed")
+                .header(DEV_SEED_KEY_HEADER, DEV_SEED_KEY)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"pdfPath":"/tmp/guide.pdf","maxPdfChunks":1001}""")
         )
             .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `seed rejects missing dev seed key`() {
+        mockMvc.perform(
+            post("/api/v1/dev/rag/seed")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"pdfPath":"/tmp/guide.pdf","maxPdfChunks":12}""")
+        )
+            .andExpect(status().isForbidden)
+            .andExpect(jsonPath("$.error.code", equalTo("AUTH_002")))
     }
 
     @Test
@@ -108,5 +123,10 @@ class DevRagSeedControllerTest(
         )
             .andExpect(status().isOk)
             .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"))
+    }
+
+    private companion object {
+        const val DEV_SEED_KEY_HEADER = "X-GodsMove-Dev-Seed-Key"
+        const val DEV_SEED_KEY = "test-seed-key"
     }
 }
