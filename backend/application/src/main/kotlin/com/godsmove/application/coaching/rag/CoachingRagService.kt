@@ -4,7 +4,7 @@ import com.godsmove.application.exception.ErrorCode
 import com.godsmove.application.exception.business.BusinessException
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor
-import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever
+import org.springframework.ai.rag.retrieval.search.DocumentRetriever
 import org.springframework.ai.vectorstore.SearchRequest
 import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.stereotype.Service
@@ -48,12 +48,7 @@ class CoachingRagService(
 
         val context = contextProvider.build(command)
         val advisor = RetrievalAugmentationAdvisor.builder()
-            .documentRetriever(
-                VectorStoreDocumentRetriever.builder()
-                    .vectorStore(vectorStore)
-                    .topK(topK)
-                    .build()
-            )
+            .documentRetriever(DocumentRetriever { retrievedDocuments })
             .build()
 
         val result = try {
@@ -61,11 +56,10 @@ class CoachingRagService(
                 .system(systemPrompt())
                 .user(userPrompt(normalizedQuestion, context))
                 .advisors(advisor)
-                .advisors { spec ->
-                    spec.param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, filterExpression)
-                }
                 .call()
                 .entity(CoachingStructuredResult::class.java)
+        } catch (exception: BusinessException) {
+            throw exception
         } catch (_: RuntimeException) {
             throw BusinessException(ErrorCode.RAG_STRUCTURED_OUTPUT_INVALID)
         }
