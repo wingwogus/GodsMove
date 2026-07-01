@@ -1,0 +1,86 @@
+package com.godsmove.api.dev.controller
+
+import com.godsmove.application.coaching.rag.seed.DevRagSeedCommand
+import com.godsmove.api.exception.GlobalExceptionHandler
+import com.godsmove.application.coaching.rag.seed.DevRagSeedResult
+import com.godsmove.application.coaching.rag.seed.DevRagSeedService
+import com.godsmove.application.security.TokenProvider
+import org.hamcrest.Matchers.equalTo
+import org.junit.jupiter.api.Test
+import org.mockito.Mockito.`when`
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
+import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.annotation.Import
+import org.springframework.http.MediaType
+import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.util.UUID
+
+@WebMvcTest(DevRagSeedController::class)
+@AutoConfigureMockMvc(addFilters = false)
+@Import(GlobalExceptionHandler::class)
+@ActiveProfiles("local")
+class DevRagSeedControllerTest(
+    @Autowired private val mockMvc: MockMvc
+) {
+    @MockBean
+    private lateinit var devRagSeedService: DevRagSeedService
+
+    @MockBean
+    private lateinit var tokenProvider: TokenProvider
+
+    @Test
+    fun `seed returns generated token and indexed counts`() {
+        val memberId = UUID.fromString("00000000-0000-0000-0000-000000000042")
+        val farmId = UUID.fromString("10000000-0000-0000-0000-000000000042")
+        val cropId = UUID.fromString("20000000-0000-0000-0000-000000000042")
+        val command = DevRagSeedCommand(
+            pdfPath = "/tmp/guide.pdf",
+            resetIndex = true,
+            includePdf = true,
+            includeFarmingRecords = true,
+            maxPdfChunks = 12
+        )
+        `when`(devRagSeedService.seed(command))
+            .thenReturn(
+                DevRagSeedResult(
+                    memberId = memberId,
+                    farmId = farmId,
+                    cropId = cropId,
+                    workTypeIds = mapOf("irrigation" to UUID.fromString("30000000-0000-0000-0000-000000000002")),
+                    recordIds = listOf(UUID.fromString("40000000-0000-0000-0000-000000000002")),
+                    pdfChunksIndexed = 12,
+                    farmingRecordChunksIndexed = 5,
+                    embeddingModel = "bge-m3"
+                )
+            )
+        `when`(tokenProvider.createAccessToken(memberId, "ROLE_USER"))
+            .thenReturn("access-token")
+
+        mockMvc.perform(
+            post("/api/v1/dev/rag/seed")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"pdfPath":"/tmp/guide.pdf","maxPdfChunks":12}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.accessToken", equalTo("access-token")))
+            .andExpect(jsonPath("$.data.memberId", equalTo(memberId.toString())))
+            .andExpect(jsonPath("$.data.pdfChunksIndexed", equalTo(12)))
+            .andExpect(jsonPath("$.data.farmingRecordChunksIndexed", equalTo(5)))
+    }
+
+    @Test
+    fun `seed rejects too many pdf chunks`() {
+        mockMvc.perform(
+            post("/api/v1/dev/rag/seed")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"pdfPath":"/tmp/guide.pdf","maxPdfChunks":1001}""")
+        )
+            .andExpect(status().isBadRequest)
+    }
+}
