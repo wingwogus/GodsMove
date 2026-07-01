@@ -18,10 +18,13 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
 import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.context.annotation.Import
+import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.test.web.servlet.MockMvc
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.util.UUID
@@ -94,5 +97,16 @@ class DevRagSeedControllerTest(
                 .content("""{"pdfPath":"/tmp/guide.pdf","maxPdfChunks":1001}""")
         )
             .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `seed allows file origin preflight in local profile`() {
+        mockMvc.perform(
+            options("/api/v1/dev/rag/seed")
+                .header(HttpHeaders.ORIGIN, "null")
+                .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+        )
+            .andExpect(status().isOk)
+            .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "null"))
     }
 }
