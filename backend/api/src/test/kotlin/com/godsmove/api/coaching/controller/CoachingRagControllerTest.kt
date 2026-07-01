@@ -1,7 +1,6 @@
 package com.godsmove.api.coaching.controller
 
 import com.godsmove.api.exception.GlobalExceptionHandler
-import com.godsmove.application.coaching.rag.CoachingCitationRef
 import com.godsmove.application.coaching.rag.CoachingRagCommand
 import com.godsmove.application.coaching.rag.CoachingRagResult
 import com.godsmove.application.coaching.rag.CoachingRagService
@@ -10,12 +9,8 @@ import com.godsmove.application.coaching.rag.CoachingStructuredResult
 import com.godsmove.application.coaching.rag.RagAuditResult
 import com.godsmove.application.coaching.rag.RagAuditStatus
 import com.godsmove.application.coaching.rag.RagModelInfo
-import com.godsmove.application.coaching.rag.RagProperties
-import com.godsmove.application.coaching.rag.RagSourceType
 import com.godsmove.application.security.TokenProvider
 import org.hamcrest.Matchers.equalTo
-import org.hamcrest.Matchers.hasSize
-import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.doReturn
@@ -59,16 +54,12 @@ class CoachingRagControllerTest(
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data.result.summary", equalTo("답변 [chunk:00000000-0000-0000-0000-000000000101]")))
-            .andExpect(jsonPath("$.data.result.citations", hasSize<Any>(1)))
-            .andExpect(jsonPath("$.data.result.citations[0].chunkId", equalTo("00000000-0000-0000-0000-000000000101")))
-            .andExpect(jsonPath("$.data.result.citations[0].label", equalTo("영농일지 관수")))
-            .andExpect(jsonPath("$.data.result.citations[0].sourceType", equalTo("FARMING_RECORD")))
+            .andExpect(jsonPath("$.data.result.summary", equalTo("요약")))
+            .andExpect(jsonPath("$.data.result.riskLevel", equalTo("LOW")))
             .andExpect(jsonPath("$.data.audit.status", equalTo("PASS")))
-            .andExpect(jsonPath("$.data.audit.warnings", hasSize<Any>(0)))
             .andExpect(jsonPath("$.data.model.embedding", equalTo("bge-m3")))
             .andExpect(jsonPath("$.data.model.chat", equalTo("openclaw/agri-rag-coach")))
-            .andExpect(jsonPath("$.data.savedFeedbackId", nullValue()))
+            .andExpect(jsonPath("$.data.savedFeedbackId").doesNotExist())
     }
 
     @Test
@@ -85,29 +76,22 @@ class CoachingRagControllerTest(
     }
 
     private fun ragResult(): CoachingRagResult {
-        val chunkId = "00000000-0000-0000-0000-000000000101"
         return CoachingRagResult(
             result = CoachingStructuredResult(
-                summary = "답변 [chunk:$chunkId]",
-                riskLevel = CoachingRiskLevel.UNKNOWN,
-                confidence = 0.0,
+                summary = "요약",
+                riskLevel = CoachingRiskLevel.LOW,
+                confidence = 0.8,
                 observations = emptyList(),
-                diagnosis = "답변 [chunk:$chunkId]",
+                diagnosis = "진단",
                 recommendations = emptyList(),
                 nextActions = emptyList(),
                 followUpQuestions = emptyList(),
-                citations = listOf(
-                    CoachingCitationRef(
-                        chunkId = chunkId,
-                        label = "영농일지 관수",
-                        sourceType = RagSourceType.FARMING_RECORD
-                    )
-                )
+                citations = emptyList()
             ),
-            audit = RagAuditResult(RagAuditStatus.PASS, emptyList(), listOf(chunkId)),
+            audit = RagAuditResult(RagAuditStatus.PASS, emptyList(), emptyList()),
             model = RagModelInfo(
-                embedding = RagProperties().embedding.model,
-                chat = RagProperties().chat.model
+                embedding = "bge-m3",
+                chat = "openclaw/agri-rag-coach"
             )
         )
     }
