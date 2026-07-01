@@ -2,90 +2,87 @@ package com.godsmove.application.coaching.rag
 
 import com.godsmove.application.exception.ErrorCode
 import com.godsmove.application.exception.business.BusinessException
+import org.springframework.ai.chat.client.ChatClient
+import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor
+import org.springframework.ai.rag.retrieval.search.VectorStoreDocumentRetriever
+import org.springframework.ai.vectorstore.SearchRequest
+import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 @Service
 class CoachingRagService(
-    private val embeddingClient: EmbeddingClient,
-    private val chatCompletionClient: ChatCompletionClient,
-    private val ragIndexRepository: RagIndexRepository,
-    private val promptBuilder: RagPromptBuilder,
-    private val citationAuditor: RagCitationAuditor,
+    private val chatClient: ChatClient,
+    private val vectorStore: VectorStore,
+    private val contextProvider: CoachingContextProvider,
+    private val filterBuilder: CoachingRetrievalFilterBuilder,
+    private val validator: CoachingStructuredOutputValidator,
+    private val persistencePolicy: CoachingFeedbackPersistencePolicy,
     private val ragProperties: RagProperties
 ) {
+    @Transactional
     fun answer(command: CoachingRagCommand): CoachingRagResult {
         val normalizedQuestion = normalizeQuestion(command.question)
         val topK = normalizeTopK(command.topK)
         validatePeriod(command)
 
-        val embedding = embeddingClient.embed(normalizedQuestion, ragProperties.embedding.model)
-        if (embedding.size != ragProperties.embedding.dimension) {
-            throw BusinessException(ErrorCode.RAG_EMBEDDING_DIMENSION_MISMATCH)
-        }
-
-        val chunks = ragIndexRepository.retrieve(
-            embedding = embedding,
-            filters = command.toRetrievalFilter(),
-            topK = topK
+        val filterExpression = filterBuilder.build(command)
+        val retrievedDocuments = vectorStore.similaritySearch(
+            SearchRequest.builder()
+                .query(normalizedQuestion)
+                .topK(topK)
+                .filterExpression(filterExpression)
+                .build()
         )
 
-        if (chunks.isEmpty()) {
-            val audit = RagAuditResult(
-                status = RagAuditStatus.WARN,
-                warnings = listOf("no_retrieved_chunks"),
-                citations = emptyList()
+        if (retrievedDocuments.isEmpty()) {
+            val result = CoachingStructuredResult.insufficientEvidence(
+                "현재 자료만으로는 판단할 수 없습니다. 영농일지나 기술문서 색인 상태를 확인해주세요."
             )
             return CoachingRagResult(
-                result = CoachingStructuredResult.insufficientEvidence(
-                    "현재 자료만으로는 판단할 수 없습니다. 영농일지나 기술문서 색인 상태를 확인해주세요."
-                ),
-                audit = audit,
+                result = result,
+                audit = RagAuditResult(RagAuditStatus.WARN, listOf("no_retrieved_documents"), emptyList()),
                 model = modelInfo()
             )
         }
 
-        var answerText = chatCompletionClient.complete(
-            messages = promptBuilder.buildPrompt(normalizedQuestion, chunks),
-            model = ragProperties.chat.model
-        )
-        var audit = citationAuditor.audit(
-            answerText = answerText,
-            retrievedChunks = chunks,
-            lowSimilarityThreshold = ragProperties.retrieval.lowSimilarityThreshold
-        )
+        val context = contextProvider.build(command)
+        val advisor = RetrievalAugmentationAdvisor.builder()
+            .documentRetriever(
+                VectorStoreDocumentRetriever.builder()
+                    .vectorStore(vectorStore)
+                    .topK(topK)
+                    .build()
+            )
+            .build()
 
-        if (citationAuditor.shouldRetry(audit)) {
-            answerText = chatCompletionClient.complete(
-                messages = promptBuilder.buildCitationRetryPrompt(normalizedQuestion, chunks),
-                model = ragProperties.chat.model
-            )
-            audit = citationAuditor.audit(
-                answerText = answerText,
-                retrievedChunks = chunks,
-                lowSimilarityThreshold = ragProperties.retrieval.lowSimilarityThreshold
-            )
+        val result = try {
+            chatClient.prompt()
+                .system(systemPrompt())
+                .user(userPrompt(normalizedQuestion, context))
+                .advisors(advisor)
+                .advisors { spec ->
+                    spec.param(VectorStoreDocumentRetriever.FILTER_EXPRESSION, filterExpression)
+                }
+                .call()
+                .entity(CoachingStructuredResult::class.java)
+        } catch (_: RuntimeException) {
+            throw BusinessException(ErrorCode.RAG_STRUCTURED_OUTPUT_INVALID)
         }
 
-        if (citationAuditor.shouldRetry(audit)) {
-            answerText = citationAuditor.buildExtractiveFallbackAnswer(
-                question = normalizedQuestion,
-                retrievedChunks = chunks
-            )
-            val fallbackAudit = citationAuditor.audit(
-                answerText = answerText,
-                retrievedChunks = chunks,
-                lowSimilarityThreshold = ragProperties.retrieval.lowSimilarityThreshold
-            )
-            audit = fallbackAudit.copy(
-                status = RagAuditStatus.WARN,
-                warnings = (fallbackAudit.warnings + "citation_retry_failed_used_extractive_fallback").distinct()
-            )
+        val allowedCitationIds = retrievedDocuments.map { it.id }.toSet()
+        val audit = validator.validate(result, allowedCitationIds)
+        val savedFeedbackId = if (persistencePolicy.shouldSave(command)) {
+            null
+        } else {
+            null
         }
 
         return CoachingRagResult(
-            result = toStructuredResult(answerText, audit, chunks),
+            result = result,
             audit = audit,
-            model = modelInfo()
+            model = modelInfo(),
+            savedFeedbackId = savedFeedbackId
         )
     }
 
@@ -111,47 +108,23 @@ class CoachingRagService(
         }
     }
 
-    private fun CoachingRagCommand.toRetrievalFilter(): RagRetrievalFilter {
-        return RagRetrievalFilter(
-            memberId = memberId,
-            farmId = farmId,
-            cropId = cropId,
-            workTypeId = workTypeId,
-            recordId = recordId,
-            periodStart = periodStart,
-            periodEnd = periodEnd
-        )
+    private fun systemPrompt(): String {
+        return """
+            너는 농업 영농 코칭 보조자다.
+            반드시 제공된 재배 context와 검색 근거만 사용한다.
+            근거가 부족하면 riskLevel은 UNKNOWN, confidence는 0.3 이하로 둔다.
+            모든 권장 작업과 다음 행동에는 근거 citationIds를 포함한다.
+            응답은 요청된 JSON schema만 따른다.
+        """.trimIndent()
     }
 
-    private fun toStructuredResult(
-        answerText: String,
-        audit: RagAuditResult,
-        chunks: List<RagEvidenceChunk>
-    ): CoachingStructuredResult {
-        return CoachingStructuredResult(
-            summary = answerText,
-            riskLevel = CoachingRiskLevel.UNKNOWN,
-            confidence = 0.0,
-            observations = emptyList(),
-            diagnosis = answerText,
-            recommendations = emptyList(),
-            nextActions = emptyList(),
-            followUpQuestions = emptyList(),
-            citations = toCitationRefs(audit, chunks)
-        )
-    }
+    private fun userPrompt(question: String, context: CoachingContext): String {
+        return """
+            질문:
+            $question
 
-    private fun toCitationRefs(audit: RagAuditResult, chunks: List<RagEvidenceChunk>): List<CoachingCitationRef> {
-        val chunkById = chunks.associateBy { it.id.toString() }
-        return audit.citations.distinct().mapNotNull { citation ->
-            chunkById[citation]?.let { chunk ->
-                CoachingCitationRef(
-                    chunkId = citation,
-                    label = chunk.label,
-                    sourceType = chunk.sourceType
-                )
-            }
-        }
+            ${context.text}
+        """.trimIndent()
     }
 
     private fun modelInfo(): RagModelInfo {
