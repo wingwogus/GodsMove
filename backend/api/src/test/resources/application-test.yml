@@ -41,7 +41,7 @@ spring:
         model: ${RAG_EMBEDDING_MODEL:bge-m3}
     vectorstore:
       pgvector:
-        initialize-schema: true
+        initialize-schema: false
         schema-name: public
         table-name: vector_store
         dimensions: ${RAG_EMBEDDING_DIMENSION:1024}

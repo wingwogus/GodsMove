@@ -12,7 +12,7 @@ import org.springframework.web.client.RestClientException
 @Component
 class OllamaEmbeddingClient(
     restClientBuilder: RestClient.Builder,
-    @Value("\${ollama.base-url}")
+    @Value("\${spring.ai.ollama.base-url}")
     baseUrl: String
 ) : EmbeddingClient {
     private val restClient = restClientBuilder.baseUrl(baseUrl.trimEnd('/')).build()
