@@ -56,7 +56,7 @@ Key files to modify after copy:
 - Create: `backend/`
 - Source: `/Users/wingwogus/IdeaProjects/springboot-kotlin-initial-template/`
 
-- [ ] **Step 1: Copy only source-controlled template content**
+- [ ] **Step 1: Copy current template source files and exclude generated artifacts**
 
 Run:
 
@@ -102,7 +102,7 @@ git commit \
   -m "Not-tested: Build not run before project-specific package and dependency adaptation"
 ```
 
-Expected: a commit containing only copied backend template files.
+Expected: a commit containing only copied backend template source files and no generated or local artifacts.
 
 ## Task 2: Rename Project Package And Metadata
 
