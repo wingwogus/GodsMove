@@ -146,8 +146,23 @@ Schema requirements:
   and `email_at_link_time`.
 - `(provider, provider_subject)` must be unique.
 
-Flyway is not included in this backend. Apply schema changes through the
-project's migration process for the target environment.
+## Database Schema Strategy
+
+Runtime database environments use PostgreSQL.
+
+The local profile may recreate the schema with `ddl-auto: create` for fast
+developer iteration. Dev and prod use `ddl-auto: none`; those environments
+require an explicitly prepared schema before the application boots.
+
+This initial backend has no production data migration path yet. Do not point
+dev or prod at an existing schema that still has bigint/Long auth identifiers
+for `member` or `external_identity` IDs. For empty non-production environments
+only, a destructive rebuild may drop and recreate the schema before first boot.
+Production must use a reviewed migration plan.
+
+Flyway is not included in this backend. Add Flyway or equivalent migration
+tooling before expanding beyond the auth foundation or before preserving real
+data across schema changes.
 
 ## API Addition Flow
 

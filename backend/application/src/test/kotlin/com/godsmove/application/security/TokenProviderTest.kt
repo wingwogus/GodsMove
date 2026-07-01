@@ -1,24 +1,20 @@
 package com.godsmove.application.security
 
+import com.godsmove.application.testsupport.signedTestToken
+import com.godsmove.application.testsupport.testTokenProvider
 import io.jsonwebtoken.JwtException
-import io.jsonwebtoken.Jwts
-import io.jsonwebtoken.SignatureAlgorithm
-import io.jsonwebtoken.security.Keys
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
-import java.util.Base64
-import java.util.Date
 import java.util.UUID
 
 class TokenProviderTest {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000007")
     private val adminMemberId = UUID.fromString("00000000-0000-0000-0000-000000000009")
-    private val secret = "t2oRk29vBQZWS8GEt4xr8AJznlPK0ipBKUwdyqe10SOGZB26vVBMjzqualdJsjcOY1wX9DOqJC9V1DFl58F0tQ=="
 
-    private val tokenProvider = TokenProvider(secret)
+    private val tokenProvider = testTokenProvider()
 
     @Test
     fun `generateToken embeds member id and role in access token`() {
@@ -46,7 +42,7 @@ class TokenProviderTest {
 
     @Test
     fun `validateToken rejects signed access token with non uuid subject`() {
-        val token = signedToken(subject = "42", tokenType = "access", role = "ROLE_USER")
+        val token = signedTestToken(subject = "42", tokenType = "access", role = "ROLE_USER")
 
         assertFalse(tokenProvider.validateToken(token))
         assertThrows(JwtException::class.java) {
@@ -56,7 +52,7 @@ class TokenProviderTest {
 
     @Test
     fun `validateToken rejects signed refresh token with non uuid subject`() {
-        val token = signedToken(subject = "42", tokenType = "refresh")
+        val token = signedTestToken(subject = "42", tokenType = "refresh")
 
         assertFalse(tokenProvider.validateToken(token))
         assertThrows(JwtException::class.java) {
@@ -64,20 +60,4 @@ class TokenProviderTest {
         }
     }
 
-    private fun signedToken(subject: String, tokenType: String, role: String? = null): String {
-        val now = Date()
-        val builder = Jwts.builder()
-            .setSubject(subject)
-            .claim("tokenType", tokenType)
-            .setIssuedAt(now)
-            .setExpiration(Date(now.time + 60_000L))
-
-        if (role != null) {
-            builder.claim("role", role)
-        }
-
-        return builder
-            .signWith(Keys.hmacShaKeyFor(Base64.getDecoder().decode(secret)), SignatureAlgorithm.HS512)
-            .compact()
-    }
 }
