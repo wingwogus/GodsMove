@@ -55,3 +55,23 @@ auth:
       discovery-uri: https://kauth.kakao.com/.well-known/openid-configuration
       allowed-clock-skew-seconds: 60
       nonce-replay-ttl-seconds: 600
+
+rag:
+  embedding:
+    model: ${RAG_EMBEDDING_MODEL:bge-m3}
+    dimension: ${RAG_EMBEDDING_DIMENSION:1024}
+  chat:
+    model: ${RAG_CHAT_MODEL:openclaw/agri-rag-coach}
+  retrieval:
+    top-k-default: ${RAG_TOP_K_DEFAULT:6}
+    top-k-max: ${RAG_TOP_K_MAX:20}
+    low-similarity-threshold: ${RAG_LOW_SIMILARITY_THRESHOLD:0.55}
+  timeout-millis: ${RAG_TIMEOUT_MILLIS:30000}
+
+ollama:
+  base-url: ${OLLAMA_BASE_URL:http://localhost:11434}
+
+openclaw:
+  base-url: ${OPENCLAW_BASE_URL:http://127.0.0.1:18789}
+  api-key: ${OPENCLAW_API_KEY:}
+  agent-id: ${OPENCLAW_AGENT_ID:agri-rag-coach}
