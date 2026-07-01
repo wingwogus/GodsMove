@@ -8,12 +8,18 @@ import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.context.annotation.Profile
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.stereotype.Service
+import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.LocalDateTime
 import java.time.ZoneOffset
 import java.util.UUID
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.ExecutionException
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.TimeoutException
 
 @Profile("local")
 @Service
@@ -239,6 +245,10 @@ class DevRagSeedService(
         require(Files.isRegularFile(path)) {
             "PDF file does not exist: $path"
         }
+        val fileSize = Files.size(path)
+        require(fileSize <= MAX_SEED_PDF_BYTES) {
+            "PDF file is too large for local seed: $fileSize bytes (max $MAX_SEED_PDF_BYTES)"
+        }
 
         val process = ProcessBuilder(
             "pdftotext",
@@ -251,13 +261,69 @@ class DevRagSeedService(
             .redirectErrorStream(true)
             .start()
 
-        val output = process.inputStream.bufferedReader(StandardCharsets.UTF_8).use { it.readText() }
-        val exitCode = process.waitFor()
+        val outputFuture = CompletableFuture.supplyAsync {
+            readProcessOutput(process.inputStream, MAX_EXTRACTED_TEXT_BYTES)
+        }
+        val finished = try {
+            process.waitFor(PDF_TEXT_TIMEOUT_SECONDS, TimeUnit.SECONDS)
+        } catch (exception: InterruptedException) {
+            Thread.currentThread().interrupt()
+            process.destroyForcibly()
+            outputFuture.cancel(true)
+            throw IllegalArgumentException("pdftotext was interrupted", exception)
+        }
+        if (!finished) {
+            process.destroyForcibly()
+            outputFuture.cancel(true)
+            throw IllegalArgumentException("pdftotext timed out after $PDF_TEXT_TIMEOUT_SECONDS seconds")
+        }
+
+        val output = awaitProcessOutput(outputFuture)
+        val exitCode = process.exitValue()
         require(exitCode == 0) {
             "pdftotext failed with exit code $exitCode: ${output.take(400)}"
         }
 
         return output
+    }
+
+    private fun awaitProcessOutput(outputFuture: CompletableFuture<String>): String {
+        return try {
+            outputFuture.get(1, TimeUnit.SECONDS)
+        } catch (exception: InterruptedException) {
+            Thread.currentThread().interrupt()
+            throw IllegalArgumentException("pdftotext output read was interrupted", exception)
+        } catch (exception: TimeoutException) {
+            throw IllegalArgumentException("pdftotext output read timed out", exception)
+        } catch (exception: ExecutionException) {
+            val cause = exception.cause
+            if (cause is IllegalArgumentException) {
+                throw cause
+            }
+            throw IllegalArgumentException("pdftotext output read failed", cause)
+        }
+    }
+
+    private fun readProcessOutput(input: InputStream, maxBytes: Int): String {
+        input.use { source ->
+            val output = ByteArrayOutputStream()
+            val buffer = ByteArray(8 * 1024)
+            var totalBytes = 0
+
+            while (true) {
+                val read = source.read(buffer)
+                if (read < 0) {
+                    break
+                }
+                totalBytes += read
+                require(totalBytes <= maxBytes) {
+                    "pdftotext output exceeds $maxBytes bytes"
+                }
+                output.write(buffer, 0, read)
+            }
+
+            return String(output.toByteArray(), StandardCharsets.UTF_8)
+        }
     }
 
     private fun chunkText(
@@ -308,6 +374,9 @@ class DevRagSeedService(
     }
 
     companion object {
+        internal const val MAX_SEED_PDF_BYTES = 30L * 1024 * 1024
+        private const val MAX_EXTRACTED_TEXT_BYTES = 5 * 1024 * 1024
+        private const val PDF_TEXT_TIMEOUT_SECONDS = 20L
         private const val SEED_NAME = "local-rag-demo"
         private const val TECH_DOC_SOURCE_ID = "agri-tech-guide-7-medicinal-crops"
     }

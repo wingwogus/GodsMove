@@ -100,13 +100,13 @@ class DevRagSeedControllerTest(
     }
 
     @Test
-    fun `seed allows file origin preflight in local profile`() {
+    fun `seed allows localhost frontend preflight in local profile`() {
         mockMvc.perform(
             options("/api/v1/dev/rag/seed")
-                .header(HttpHeaders.ORIGIN, "null")
+                .header(HttpHeaders.ORIGIN, "http://localhost:5173")
                 .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
         )
             .andExpect(status().isOk)
-            .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "null"))
+            .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"))
     }
 }
