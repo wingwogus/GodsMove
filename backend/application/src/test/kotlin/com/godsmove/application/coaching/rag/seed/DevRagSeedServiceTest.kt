@@ -3,12 +3,15 @@ package com.godsmove.application.coaching.rag.seed
 import com.godsmove.application.coaching.rag.FarmingRecordDocumentFactory
 import com.godsmove.application.coaching.rag.RagProperties
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import org.springframework.ai.document.Document
 import org.springframework.ai.vectorstore.SearchRequest
 import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.ai.vectorstore.filter.Filter
 import org.springframework.jdbc.core.JdbcTemplate
+import java.io.RandomAccessFile
+import java.nio.file.Files
 import java.time.LocalDateTime
 import java.time.OffsetDateTime
 
@@ -47,6 +50,39 @@ class DevRagSeedServiceTest {
             LocalDateTime.of(2026, 6, 28, 17, 20),
             LocalDateTime.of(2026, 6, 30, 9, 0)
         )
+    }
+
+    @Test
+    fun `seed rejects oversized pdf before text extraction`() {
+        val pdf = Files.createTempFile("godsmove-rag-seed-", ".pdf")
+        RandomAccessFile(pdf.toFile(), "rw").use { file ->
+            file.setLength(DevRagSeedService.MAX_SEED_PDF_BYTES + 1)
+        }
+
+        try {
+            val service = DevRagSeedService(
+                jdbcTemplate = RecordingJdbcTemplate(),
+                ragProperties = RagProperties(),
+                vectorStore = NoopVectorStore(),
+                farmingRecordDocumentFactory = FarmingRecordDocumentFactory()
+            )
+
+            assertThatThrownBy {
+                service.seed(
+                    DevRagSeedCommand(
+                        pdfPath = pdf.toString(),
+                        resetIndex = false,
+                        includePdf = true,
+                        includeFarmingRecords = false,
+                        maxPdfChunks = 1
+                    )
+                )
+            }
+                .isInstanceOf(IllegalArgumentException::class.java)
+                .hasMessageContaining("PDF file is too large for local seed")
+        } finally {
+            Files.deleteIfExists(pdf)
+        }
     }
 
     private data class RecordedUpdate(
