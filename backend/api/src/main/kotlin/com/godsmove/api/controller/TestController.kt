@@ -15,7 +15,7 @@ class TestController {
     }
 
     @GetMapping("/me")
-    fun getMyInfo(@AuthenticationPrincipal userId: String): String {
-        return "인증 성공, 현재 로그인한 유저의 ID(PK)는: $userId"
+    fun getMyInfo(@AuthenticationPrincipal memberId: String): String {
+        return "인증 성공, 현재 로그인한 회원의 ID(PK)는: $memberId"
     }
 }

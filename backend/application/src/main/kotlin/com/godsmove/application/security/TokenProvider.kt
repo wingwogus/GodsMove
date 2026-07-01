@@ -41,11 +41,11 @@ class TokenProvider(
 
     private val key = Keys.hmacShaKeyFor(decodedSecretKey)
 
-    fun createAccessToken(userId: Long, role: String): String {
+    fun createAccessToken(memberId: UUID, role: String): String {
         val now = Date()
 
         return Jwts.builder()
-            .setSubject(userId.toString())
+            .setSubject(memberId.toString())
             .claim(ROLE_CLAIM, role)
             .claim(TOKEN_TYPE_CLAIM, ACCESS_TOKEN_TYPE)
             .setIssuedAt(now)
@@ -54,11 +54,11 @@ class TokenProvider(
             .compact()
     }
 
-    fun createRefreshToken(userId: Long): String {
+    fun createRefreshToken(memberId: UUID): String {
         val now = Date()
 
         return Jwts.builder()
-            .setSubject(userId.toString())
+            .setSubject(memberId.toString())
             .claim(TOKEN_TYPE_CLAIM, REFRESH_TOKEN_TYPE)
             .setIssuedAt(now)
             .setExpiration(Date(now.time + REFRESH_TOKEN_VALIDITY))
@@ -66,10 +66,10 @@ class TokenProvider(
             .compact()
     }
 
-    fun generateToken(userId: Long, role: String): AuthResult.TokenPair {
+    fun generateToken(memberId: UUID, role: String): AuthResult.TokenPair {
         return AuthResult.TokenPair(
-            accessToken = createAccessToken(userId, role),
-            refreshToken = createRefreshToken(userId)
+            accessToken = createAccessToken(memberId, role),
+            refreshToken = createRefreshToken(memberId)
         )
     }
 
@@ -96,8 +96,8 @@ class TokenProvider(
         }
     }
 
-    fun getUserId(token: String): Long {
-        return parseClaims(token).subject.toLong()
+    fun getMemberId(token: String): UUID {
+        return UUID.fromString(parseClaims(token).subject)
     }
 
     fun getRole(token: String): String? {
@@ -113,10 +113,10 @@ class TokenProvider(
     }
 
     fun getAuthentication(token: String): Authentication {
-        val userId = getUserId(token)
+        val memberId = getMemberId(token)
         val role = getRole(token)
         val authorities = role?.let { listOf(SimpleGrantedAuthority(it)) } ?: emptyList()
-        val principal = userId.toString()
+        val principal = memberId.toString()
 
         return UsernamePasswordAuthenticationToken(
             principal,

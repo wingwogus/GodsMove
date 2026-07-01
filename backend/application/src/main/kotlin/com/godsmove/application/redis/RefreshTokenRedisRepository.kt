@@ -2,6 +2,7 @@ package com.godsmove.application.redis
 
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Repository
+import java.util.UUID
 import java.util.concurrent.TimeUnit
 
 @Repository
@@ -14,23 +15,23 @@ class RefreshTokenRedisRepository(
     }
 
     override fun save(
-        userId: Long,
+        memberId: UUID,
         refreshToken: String,
         expiresInSeconds: Long
     ) {
         redis.opsForValue().set(
-            PREFIX + userId,
+            PREFIX + memberId,
             refreshToken,
             expiresInSeconds,
             TimeUnit.SECONDS
         )
     }
 
-    override fun get(userId: Long): String? {
-        return redis.opsForValue().get(PREFIX + userId)
+    override fun get(memberId: UUID): String? {
+        return redis.opsForValue().get(PREFIX + memberId)
     }
 
-    override fun delete(userId: Long) {
-        redis.delete(PREFIX + userId)
+    override fun delete(memberId: UUID) {
+        redis.delete(PREFIX + memberId)
     }
 }

@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import java.util.UUID
 
 @Entity
 @Table(
@@ -24,8 +25,10 @@ import jakarta.persistence.UniqueConstraint
     ]
 )
 class ExternalIdentity(
-    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
-    val id: Long = 0L,
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false, columnDefinition = "uuid")
+    val id: UUID? = null,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)

@@ -41,7 +41,7 @@ class MDCLoggingFilter : OncePerRequestFilter() {
             MDC.put("traceId", UUID.randomUUID().toString())
             MDC.put("eventId", LoggingUtil.generateEventId())
             MDC.put("clientIp", clientIp)
-            refreshUserId()
+            refreshMemberId()
 
             log.info("[REQ START] method={} path={} client={}", request.method, request.requestURI, clientIp)
 
@@ -50,7 +50,7 @@ class MDCLoggingFilter : OncePerRequestFilter() {
             thrown = ex
             throw ex
         } finally {
-            refreshUserId()
+            refreshMemberId()
 
             val durationMs = System.currentTimeMillis() - startTime
             val status = if (thrown != null && response.status < 400) {
@@ -72,18 +72,18 @@ class MDCLoggingFilter : OncePerRequestFilter() {
         }
     }
 
-    private fun refreshUserId() {
+    private fun refreshMemberId() {
         val authentication = SecurityContextHolder.getContext().authentication
-        val userId = authentication
+        val memberId = authentication
             ?.takeIf { it.isAuthenticated }
             ?.takeUnless { it is AnonymousAuthenticationToken }
             ?.principal
             ?.toString()
             ?.takeUnless { it == "anonymousUser" }
             ?.takeIf { it.isNotBlank() }
-            ?: GUEST_USER_ID
+            ?: GUEST_MEMBER_ID
 
-        MDC.put("userId", userId)
+        MDC.put("memberId", memberId)
     }
 
     private fun clientIp(request: HttpServletRequest): String {
@@ -166,8 +166,8 @@ class MDCLoggingFilter : OncePerRequestFilter() {
     }
 
     private companion object {
-        const val GUEST_USER_ID = "GUEST"
-        val MDC_KEYS = listOf("traceId", "eventId", "clientIp", "userId")
+        const val GUEST_MEMBER_ID = "GUEST"
+        val MDC_KEYS = listOf("traceId", "eventId", "clientIp", "memberId")
         val IPV6_LITERAL_CHARS = Regex("^[0-9A-Fa-f:.%]+$")
         val CLIENT_IP_HEADERS = listOf(
             "X-Forwarded-For",

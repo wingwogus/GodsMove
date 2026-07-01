@@ -86,9 +86,9 @@ class AuthController(
 
     @PostMapping("/logout")
     fun logout(
-        @AuthenticationPrincipal userId: String
+        @AuthenticationPrincipal memberId: String
     ): ResponseEntity<ApiResponse<Unit>> {
-        authService.logout(userId)
+        authService.logout(memberId)
         return ResponseEntity.ok()
             .header(HttpHeaders.SET_COOKIE, clearRefreshTokenCookie().toString())
             .body(ApiResponse.empty(Unit))

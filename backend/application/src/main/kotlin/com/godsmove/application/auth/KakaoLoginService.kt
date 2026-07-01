@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
 
 @Service
 @Transactional
@@ -89,12 +90,17 @@ class KakaoLoginService(
     }
 
     private fun issueAndStoreTokens(member: Member): AuthResult.TokenPair {
-        val tokenPair = tokenProvider.generateToken(member.id, member.role)
+        val memberId = requirePersistedMemberId(member)
+        val tokenPair = tokenProvider.generateToken(memberId, member.role)
         refreshTokenRepository.save(
-            member.id,
+            memberId,
             tokenPair.refreshToken,
             tokenProvider.getRefreshTokenValiditySeconds()
         )
         return tokenPair
+    }
+
+    private fun requirePersistedMemberId(member: Member): UUID {
+        return member.id ?: throw BusinessException(ErrorCode.MEMBER_NOT_FOUND)
     }
 }

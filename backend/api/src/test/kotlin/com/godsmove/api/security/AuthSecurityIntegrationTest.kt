@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.content
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.util.UUID
 
 @SpringBootTest(
     properties = [
@@ -33,6 +34,7 @@ class AuthSecurityIntegrationTest(
     @Autowired private val mockMvc: MockMvc,
     @Autowired private val tokenProvider: TokenProvider
 ) {
+    private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000042")
 
     @Test
     fun `auth endpoints are publicly accessible`() {
@@ -67,7 +69,7 @@ class AuthSecurityIntegrationTest(
     }
 
     @Test
-    fun `protected api denial is logged with final status guest user and forwarded client ip`(
+    fun `protected api denial is logged with final status guest member and forwarded client ip`(
         output: CapturedOutput
     ) {
         mockMvc.perform(
@@ -83,12 +85,12 @@ class AuthSecurityIntegrationTest(
             .contains("status=401")
             .contains("WARN")
             .contains("client=203.0.113.7")
-            .contains("[userId=GUEST]")
+            .contains("[memberId=GUEST]")
             .contains("[ip=203.0.113.7]")
 
         assertThat(MDC.get("traceId")).isNull()
         assertThat(MDC.get("eventId")).isNull()
-        assertThat(MDC.get("userId")).isNull()
+        assertThat(MDC.get("memberId")).isNull()
         assertThat(MDC.get("clientIp")).isNull()
     }
 
@@ -139,19 +141,19 @@ class AuthSecurityIntegrationTest(
 
     @Test
     fun `protected endpoint accepts valid jwt`() {
-        val accessToken = tokenProvider.createAccessToken(42L, "ROLE_USER")
+        val accessToken = tokenProvider.createAccessToken(memberId, "ROLE_USER")
 
         mockMvc.perform(
             get("/api/v1/test/me")
-                .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
+            .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
         )
             .andExpect(status().isOk)
-            .andExpect(content().string(containsString("42")))
+            .andExpect(content().string(containsString(memberId.toString())))
     }
 
     @Test
     fun `refresh token cannot authenticate protected endpoint`() {
-        val refreshToken = tokenProvider.createRefreshToken(42L)
+        val refreshToken = tokenProvider.createRefreshToken(memberId)
 
         mockMvc.perform(
             get("/api/v1/test/me")

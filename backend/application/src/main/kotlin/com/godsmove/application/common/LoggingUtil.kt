@@ -23,7 +23,7 @@ object LoggingUtil {
     ): String {
         val eventId = MDC.get("eventId")
         val traceId = MDC.get("traceId")
-        val userId = MDC.get("userId")
+        val memberId = MDC.get("memberId")
         val clientIp = MDC.get("clientIp")
 
         val root = ExceptionUtils.getRootCause(ex) ?: ex
@@ -35,7 +35,7 @@ object LoggingUtil {
 
         val logMsg = buildString {
             appendLine("[Unexpected Error]")
-            appendLine("eventId=$eventId traceId=$traceId userId=$userId ip=$clientIp")
+            appendLine("eventId=$eventId traceId=$traceId memberId=$memberId ip=$clientIp")
             appendLine("method=$method")
             appendLine("rootCause=$root")
             if (param != null) appendLine("param=$param")

@@ -17,9 +17,11 @@ import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.security.crypto.password.PasswordEncoder
+import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
 class AuthServiceTest {
+    private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
 
     @Mock
     private lateinit var tokenProvider: TokenProvider
@@ -87,7 +89,7 @@ class AuthServiceTest {
     @Test
     fun `login stores refresh token and returns tokens`() {
         val member = Member(
-            id = 1L,
+            id = memberId,
             email = "user@example.com",
             passwordHash = "hashed",
             role = "ROLE_USER"
@@ -96,19 +98,19 @@ class AuthServiceTest {
 
         `when`(memberRepository.findByEmail("user@example.com")).thenReturn(member)
         `when`(passwordEncoder.matches("password123", "hashed")).thenReturn(true)
-        `when`(tokenProvider.generateToken(1L, "ROLE_USER")).thenReturn(tokenPair)
+        `when`(tokenProvider.generateToken(memberId, "ROLE_USER")).thenReturn(tokenPair)
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
         val result = authService.login(AuthCommand.Login("user@example.com", "password123"))
 
         assertEquals(tokenPair, result)
-        verify(refreshTokenRepository).save(1L, "refresh-token", 120L)
+        verify(refreshTokenRepository).save(memberId, "refresh-token", 120L)
     }
 
     @Test
     fun `login rejects social-only member without password hash`() {
         val member = Member(
-            id = 1L,
+            id = memberId,
             email = "user@example.com",
             passwordHash = null,
             role = "ROLE_USER"
@@ -127,8 +129,8 @@ class AuthServiceTest {
     fun `reissue rejects refresh token mismatch`() {
         `when`(tokenProvider.validateToken("refresh-token")).thenReturn(true)
         `when`(tokenProvider.isRefreshToken("refresh-token")).thenReturn(true)
-        `when`(tokenProvider.getUserId("refresh-token")).thenReturn(1L)
-        `when`(refreshTokenRepository.get(1L)).thenReturn("different-refresh-token")
+        `when`(tokenProvider.getMemberId("refresh-token")).thenReturn(memberId)
+        `when`(refreshTokenRepository.get(memberId)).thenReturn("different-refresh-token")
 
         val exception = assertThrows(BusinessException::class.java) {
             authService.reissue(AuthCommand.Reissue("refresh-token"))
@@ -139,10 +141,10 @@ class AuthServiceTest {
 
     @Test
     fun `logout deletes stored refresh token`() {
-        `when`(refreshTokenRepository.get(1L)).thenReturn("refresh-token")
+        `when`(refreshTokenRepository.get(memberId)).thenReturn("refresh-token")
 
-        authService.logout("1")
+        authService.logout(memberId.toString())
 
-        verify(refreshTokenRepository).delete(1L)
+        verify(refreshTokenRepository).delete(memberId)
     }
 }

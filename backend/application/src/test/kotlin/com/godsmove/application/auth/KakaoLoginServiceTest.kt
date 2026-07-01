@@ -27,9 +27,14 @@ import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import java.time.Duration
 import java.time.Instant
+import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
 class KakaoLoginServiceTest {
+    private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
+    private val linkedMemberId = UUID.fromString("00000000-0000-0000-0000-000000000002")
+    private val newMemberId = UUID.fromString("00000000-0000-0000-0000-000000000003")
+    private val externalIdentityId = UUID.fromString("00000000-0000-0000-0000-000000000101")
 
     @Mock
     private lateinit var kakaoOidcTokenVerifier: KakaoOidcTokenVerifier
@@ -66,13 +71,21 @@ class KakaoLoginServiceTest {
 
     @Test
     fun `login reuses existing external identity`() {
-        val member = Member(1L, "user@example.com", null, "ROLE_USER")
+        val member = Member(id = memberId, email = "user@example.com", passwordHash = null, role = "ROLE_USER")
         val claims = claims()
 
         `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce")).thenReturn(claims)
         `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.KAKAO, "kakao-sub"))
-            .thenReturn(ExternalIdentity(1L, member, AuthProvider.KAKAO, "kakao-sub", "user@example.com"))
-        `when`(tokenProvider.generateToken(1L, "ROLE_USER"))
+            .thenReturn(
+                ExternalIdentity(
+                    id = externalIdentityId,
+                    member = member,
+                    provider = AuthProvider.KAKAO,
+                    providerSubject = "kakao-sub",
+                    emailAtLinkTime = "user@example.com"
+                )
+            )
+        `when`(tokenProvider.generateToken(memberId, "ROLE_USER"))
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
@@ -80,12 +93,12 @@ class KakaoLoginServiceTest {
 
         assertEquals(AuthResult.TokenPair("access-token", "refresh-token"), result)
         assertEquals("nonce", nonceRepository.lastNonce)
-        verify(refreshTokenRepository).save(1L, "refresh-token", 120L)
+        verify(refreshTokenRepository).save(memberId, "refresh-token", 120L)
     }
 
     @Test
     fun `login links existing member by verified email`() {
-        val member = Member(2L, "user@example.com", "hashed-password", "ROLE_USER")
+        val member = Member(id = linkedMemberId, email = "user@example.com", passwordHash = "hashed-password", role = "ROLE_USER")
         val claims = claims()
 
         `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce")).thenReturn(claims)
@@ -94,7 +107,7 @@ class KakaoLoginServiceTest {
         `when`(memberRepository.findByEmail("user@example.com")).thenReturn(member)
         `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
             .thenAnswer { it.getArgument(0) }
-        `when`(tokenProvider.generateToken(2L, "ROLE_USER"))
+        `when`(tokenProvider.generateToken(linkedMemberId, "ROLE_USER"))
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
@@ -109,7 +122,7 @@ class KakaoLoginServiceTest {
 
     @Test
     fun `login creates new member with null password hash`() {
-        val savedMember = Member(3L, "new@example.com", null, "ROLE_USER")
+        val savedMember = Member(id = newMemberId, email = "new@example.com", passwordHash = null, role = "ROLE_USER")
 
         `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce")).thenReturn(claims(email = "new@example.com"))
         `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.KAKAO, "kakao-sub"))
@@ -118,7 +131,7 @@ class KakaoLoginServiceTest {
         `when`(memberRepository.save(Mockito.any(Member::class.java))).thenReturn(savedMember)
         `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
             .thenAnswer { it.getArgument(0) }
-        `when`(tokenProvider.generateToken(3L, "ROLE_USER"))
+        `when`(tokenProvider.generateToken(newMemberId, "ROLE_USER"))
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
@@ -158,14 +171,22 @@ class KakaoLoginServiceTest {
 
     @Test
     fun `login reserves nonce for token accepted within clock skew`() {
-        val member = Member(1L, "user@example.com", null, "ROLE_USER")
+        val member = Member(id = memberId, email = "user@example.com", passwordHash = null, role = "ROLE_USER")
 
         `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce")).thenReturn(
             claims(expiresAt = Instant.now().minusSeconds(10))
         )
         `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.KAKAO, "kakao-sub"))
-            .thenReturn(ExternalIdentity(1L, member, AuthProvider.KAKAO, "kakao-sub", "user@example.com"))
-        `when`(tokenProvider.generateToken(1L, "ROLE_USER"))
+            .thenReturn(
+                ExternalIdentity(
+                    id = externalIdentityId,
+                    member = member,
+                    provider = AuthProvider.KAKAO,
+                    providerSubject = "kakao-sub",
+                    emailAtLinkTime = "user@example.com"
+                )
+            )
+        `when`(tokenProvider.generateToken(memberId, "ROLE_USER"))
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 

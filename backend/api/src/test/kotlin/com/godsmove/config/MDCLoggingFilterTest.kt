@@ -43,7 +43,7 @@ class MDCLoggingFilterTest {
             assertThat(MDC.get("traceId")).isNull()
             assertThat(MDC.get("eventId")).isNull()
             assertThat(MDC.get("clientIp")).isNull()
-            assertThat(MDC.get("userId")).isNull()
+            assertThat(MDC.get("memberId")).isNull()
             assertThat(MDC.get("unrelated")).isEqualTo("kept")
         } finally {
             MDC.remove("unrelated")

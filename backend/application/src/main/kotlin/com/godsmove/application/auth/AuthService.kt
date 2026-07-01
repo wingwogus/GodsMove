@@ -13,6 +13,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Duration
+import java.util.UUID
 
 @Service
 @Transactional
@@ -105,40 +106,52 @@ class AuthService(
             throw BusinessException(ErrorCode.UNAUTHORIZED)
         }
 
-        val userId = tokenProvider.getUserId(command.refreshToken)
-        val storedRefreshToken = refreshTokenRepository.get(userId)
+        val memberId = tokenProvider.getMemberId(command.refreshToken)
+        val storedRefreshToken = refreshTokenRepository.get(memberId)
             ?: throw BusinessException(ErrorCode.UNAUTHORIZED)
 
         if (storedRefreshToken != command.refreshToken) {
             throw BusinessException(ErrorCode.UNAUTHORIZED)
         }
 
-        val member = memberRepository.findById(userId).orElseThrow {
-            BusinessException(ErrorCode.USER_NOT_FOUND)
+        val member = memberRepository.findById(memberId).orElseThrow {
+            BusinessException(ErrorCode.MEMBER_NOT_FOUND)
         }
 
         return issueAndStoreTokens(member)
     }
 
-    fun logout(userId: String) {
-        val parsedUserId = userId.toLongOrNull()
-            ?: throw BusinessException(ErrorCode.UNAUTHORIZED)
+    fun logout(memberId: String) {
+        val parsedMemberId = parseMemberId(memberId)
 
-        if (refreshTokenRepository.get(parsedUserId) == null) {
+        if (refreshTokenRepository.get(parsedMemberId) == null) {
             throw BusinessException(ErrorCode.ALREADY_LOGGED_OUT)
         }
 
-        refreshTokenRepository.delete(parsedUserId)
-        logger.info("Member logged out. userHash={}", userId.hashCode())
+        refreshTokenRepository.delete(parsedMemberId)
+        logger.info("Member logged out. memberHash={}", memberId.hashCode())
     }
 
     private fun issueAndStoreTokens(member: Member): AuthResult.TokenPair {
-        val tokenPair = tokenProvider.generateToken(member.id, member.role)
+        val memberId = requirePersistedMemberId(member)
+        val tokenPair = tokenProvider.generateToken(memberId, member.role)
         refreshTokenRepository.save(
-            member.id,
+            memberId,
             tokenPair.refreshToken,
             tokenProvider.getRefreshTokenValiditySeconds()
         )
         return tokenPair
+    }
+
+    private fun requirePersistedMemberId(member: Member): UUID {
+        return member.id ?: throw BusinessException(ErrorCode.MEMBER_NOT_FOUND)
+    }
+
+    private fun parseMemberId(memberId: String): UUID {
+        return try {
+            UUID.fromString(memberId)
+        } catch (_: IllegalArgumentException) {
+            throw BusinessException(ErrorCode.UNAUTHORIZED)
+        }
     }
 }

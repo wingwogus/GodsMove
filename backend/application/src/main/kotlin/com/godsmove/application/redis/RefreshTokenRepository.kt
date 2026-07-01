@@ -1,9 +1,11 @@
 package com.godsmove.application.redis
 
+import java.util.UUID
+
 interface RefreshTokenRepository {
-    fun save(userId: Long, refreshToken: String, expiresInSeconds: Long)
+    fun save(memberId: UUID, refreshToken: String, expiresInSeconds: Long)
 
-    fun get(userId: Long): String?
+    fun get(memberId: UUID): String?
 
-    fun delete(userId: Long)
+    fun delete(memberId: UUID)
 }
