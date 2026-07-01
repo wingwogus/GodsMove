@@ -52,4 +52,19 @@ class CoachingFeedbackMapperTest {
         )
         assertThat(payload.confidenceScore).isEqualByComparingTo(BigDecimal("0.8000"))
     }
+
+    @Test
+    fun `payload rounds confidence to four decimals`() {
+        val mapper = CoachingFeedbackMapper()
+        val command = CoachingRagCommand(
+            memberId = UUID.fromString("00000000-0000-0000-0000-000000000042"),
+            mode = CoachingMode.REPORT_MANUAL,
+            question = "리포트"
+        )
+        val result = CoachingStructuredResult.insufficientEvidence("부족").copy(confidence = 0.83335)
+
+        val payload = mapper.toPayload(command, result)
+
+        assertThat(payload.confidenceScore).isEqualByComparingTo(BigDecimal("0.8334"))
+    }
 }

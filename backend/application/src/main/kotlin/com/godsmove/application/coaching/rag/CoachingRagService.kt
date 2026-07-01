@@ -4,6 +4,7 @@ import com.godsmove.application.exception.ErrorCode
 import com.godsmove.application.exception.business.BusinessException
 import com.godsmove.domain.coaching.CoachingFeedback
 import com.godsmove.domain.coaching.CoachingFeedbackRepository
+import com.godsmove.domain.coaching.CoachingMode
 import com.godsmove.domain.crop.CropRepository
 import com.godsmove.domain.farm.FarmRepository
 import com.godsmove.domain.farming.FarmingRecordRepository
@@ -79,7 +80,7 @@ class CoachingRagService(
 
         val allowedCitationIds = retrievedDocuments.map { it.id }.toSet()
         val audit = validator.validate(result, allowedCitationIds)
-        val savedFeedbackId = if (persistencePolicy.shouldSave(command)) {
+        val savedFeedbackId = if (shouldSaveFeedback(command, audit)) {
             saveFeedback(command, result, audit)
         } else {
             null
@@ -113,6 +114,13 @@ class CoachingRagService(
         if (command.periodStart != null && command.periodEnd != null && command.periodStart.isAfter(command.periodEnd)) {
             throw BusinessException(ErrorCode.RAG_INVALID_REQUEST)
         }
+    }
+
+    private fun shouldSaveFeedback(command: CoachingRagCommand, audit: RagAuditResult): Boolean {
+        if (command.mode == CoachingMode.RECORD_AUTO && command.recordId == null) {
+            throw BusinessException(ErrorCode.RAG_INVALID_REQUEST)
+        }
+        return persistencePolicy.shouldSave(command) && audit.status != RagAuditStatus.FAIL
     }
 
     private fun saveFeedback(

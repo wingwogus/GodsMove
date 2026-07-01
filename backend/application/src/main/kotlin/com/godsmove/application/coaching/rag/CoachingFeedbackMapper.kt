@@ -2,6 +2,7 @@ package com.godsmove.application.coaching.rag
 
 import org.springframework.stereotype.Component
 import java.math.BigDecimal
+import java.math.RoundingMode
 
 data class CoachingFeedbackJsonPayload(
     val structuredResult: Map<String, Any?>,
@@ -21,7 +22,7 @@ class CoachingFeedbackMapper {
                     "sourceType" to it.sourceType.name
                 )
             },
-            confidenceScore = BigDecimal.valueOf(result.confidence).setScale(4)
+            confidenceScore = BigDecimal.valueOf(result.confidence).setScale(4, RoundingMode.HALF_UP)
         )
     }
 

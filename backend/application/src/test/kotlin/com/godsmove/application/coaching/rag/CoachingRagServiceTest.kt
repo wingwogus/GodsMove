@@ -20,6 +20,7 @@ import org.junit.jupiter.api.Test
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mockito.mock
+import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.springframework.ai.chat.client.ChatClient
@@ -196,6 +197,52 @@ class CoachingRagServiceTest {
             .isInstanceOfSatisfying(BusinessException::class.java) {
                 assertThat(it.errorCode).isEqualTo(ErrorCode.RAG_INVALID_REQUEST)
             }
+    }
+
+    @Test
+    fun `answer does not save durable feedback when audit fails`() {
+        val feedbackRepository = mock(CoachingFeedbackRepository::class.java)
+        val service = service(
+            vectorStore = FakeVectorStore(listOf(document("doc-1"))),
+            chatClient = FakeChatClient(result = structuredResult(citationId = "unknown-doc")),
+            feedbackRepository = feedbackRepository
+        )
+
+        val result = service.answer(
+            CoachingRagCommand(
+                memberId = memberId,
+                mode = CoachingMode.REPORT_MANUAL,
+                question = "리포트"
+            )
+        )
+
+        assertThat(result.audit.status).isEqualTo(RagAuditStatus.FAIL)
+        assertThat(result.savedFeedbackId).isNull()
+        verify(feedbackRepository, never()).save(any(CoachingFeedback::class.java))
+    }
+
+    @Test
+    fun `answer rejects record auto durable feedback without record id`() {
+        val feedbackRepository = mock(CoachingFeedbackRepository::class.java)
+        val service = service(
+            vectorStore = FakeVectorStore(listOf(document("doc-1"))),
+            chatClient = FakeChatClient(result = structuredResult(citationId = "doc-1")),
+            feedbackRepository = feedbackRepository
+        )
+
+        assertThatThrownBy {
+            service.answer(
+                CoachingRagCommand(
+                    memberId = memberId,
+                    mode = CoachingMode.RECORD_AUTO,
+                    question = "자동 코칭"
+                )
+            )
+        }
+            .isInstanceOfSatisfying(BusinessException::class.java) {
+                assertThat(it.errorCode).isEqualTo(ErrorCode.RAG_INVALID_REQUEST)
+            }
+        verify(feedbackRepository, never()).save(any(CoachingFeedback::class.java))
     }
 
     @Test
