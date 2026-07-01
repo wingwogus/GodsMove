@@ -203,6 +203,9 @@ class DevRagSeedService(
             )
             document.withSeedName()
         }
+        if (documents.isEmpty()) {
+            return 0
+        }
         vectorStore.add(documents)
         return documents.size
     }
@@ -212,7 +215,7 @@ class DevRagSeedService(
         val chunks = chunkText(text, maxChunks = maxPdfChunks)
         val documents = chunks.mapIndexed { index, content ->
             Document(
-                "$TECH_DOC_SOURCE_ID:$index",
+                seedDocumentId(TECH_DOC_SOURCE_ID, index),
                 content,
                 mapOf(
                     "sourceType" to "TECH_DOCUMENT",
@@ -224,6 +227,9 @@ class DevRagSeedService(
                     "chunkIndex" to index
                 )
             )
+        }
+        if (documents.isEmpty()) {
+            return 0
         }
         vectorStore.add(documents)
         return documents.size
@@ -298,10 +304,13 @@ class DevRagSeedService(
         )
     }
 
+    private fun seedDocumentId(sourceId: String, chunkIndex: Int): String {
+        return UUID.nameUUIDFromBytes("$sourceId:$chunkIndex".toByteArray(StandardCharsets.UTF_8)).toString()
+    }
+
     companion object {
         private const val SEED_NAME = "local-rag-demo"
         private const val TECH_DOC_SOURCE_ID = "agri-tech-guide-7-medicinal-crops"
-
     }
 }
 
