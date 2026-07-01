@@ -23,9 +23,15 @@ class CoachingContextProvider(
         val member = memberRepository.findById(command.memberId).orElseThrow {
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)
         }
-        val farm = command.farmId?.let { farmRepository.findById(it).orElse(null) }
+        val farm = command.farmId?.let {
+            farmRepository.findByIdAndOwner_Id(it, command.memberId)
+                ?: throw BusinessException(ErrorCode.RAG_INVALID_REQUEST)
+        }
         val crop = command.cropId?.let { cropRepository.findById(it).orElse(null) }
-        val record = command.recordId?.let { farmingRecordRepository.findById(it).orElse(null) }
+        val record = command.recordId?.let {
+            farmingRecordRepository.findByIdAndMember_Id(it, command.memberId)
+                ?: throw BusinessException(ErrorCode.RAG_INVALID_REQUEST)
+        }
 
         return CoachingContext(
             text = buildString {
