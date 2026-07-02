@@ -1,10 +1,23 @@
 package com.chamchamcham.domain.member
 
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
 
 class MemberTest {
+    @Test
+    fun `social member can be created without email`() {
+        val member = Member(
+            email = null,
+            passwordHash = null
+        )
+
+        assertNull(member.email)
+        assertNull(member.passwordHash)
+        assertEquals(MemberStatus.ACTIVE, member.status)
+    }
+
     @Test
     fun `completeOnboarding overwrites all onboarding profile fields`() {
         val member = member(

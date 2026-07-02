@@ -40,8 +40,5 @@ class ExternalIdentity(
     val provider: AuthProvider,
 
     @Column(name = "provider_subject", nullable = false, length = 128)
-    val providerSubject: String,
-
-    @Column(name = "email_at_link_time", nullable = false)
-    val emailAtLinkTime: String
+    val providerSubject: String
 ) : BaseTimeEntity()

@@ -21,8 +21,8 @@ class Member(
     @Column(nullable = false, updatable = false, columnDefinition = "uuid")
     val id: UUID? = null,
 
-    @Column(nullable = false, unique = true)
-    val email: String,
+    @Column(nullable = true, unique = true)
+    val email: String?,
 
     @Column(length = 32)
     var phone: String? = null,
