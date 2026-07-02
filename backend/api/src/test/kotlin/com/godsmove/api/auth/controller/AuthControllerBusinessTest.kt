@@ -10,7 +10,6 @@ import com.godsmove.application.exception.business.BusinessException
 import com.godsmove.application.security.TokenProvider
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
@@ -26,6 +25,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.time.LocalDate
+import java.util.UUID
 
 @WebMvcTest(AuthController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -127,9 +128,41 @@ class AuthControllerBusinessTest(
     }
 
     private fun kakaoLoginResult(): AuthResult.Login {
-        val result = Mockito.mock(AuthResult.Login::class.java)
-        `when`(result.accessToken).thenReturn("access-token")
-        `when`(result.refreshToken).thenReturn("refresh-token")
-        return result
+        return AuthResult.Login(
+            accessToken = "access-token",
+            refreshToken = "refresh-token",
+            member = memberProfile(),
+            onboarding = AuthResult.Onboarding(AuthResult.OnboardingStatus.REQUIRED)
+        )
+    }
+
+    private fun memberProfile(): AuthResult.MemberProfile {
+        val managementTypeClass = Class.forName("com.godsmove.domain.member.ManagementType")
+        val managementType = managementTypeClass.enumConstants
+            .first { (it as Enum<*>).name == "UNREGISTERED" }
+
+        return AuthResult.MemberProfile::class.java
+            .getDeclaredConstructor(
+                UUID::class.java,
+                String::class.java,
+                String::class.java,
+                String::class.java,
+                LocalDate::class.java,
+                String::class.java,
+                String::class.java,
+                String::class.java,
+                managementTypeClass
+            )
+            .newInstance(
+                UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                "kakao@example.com",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                managementType
+            )
     }
 }
