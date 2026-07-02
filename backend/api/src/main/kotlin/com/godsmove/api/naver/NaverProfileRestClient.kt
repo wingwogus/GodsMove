@@ -4,21 +4,38 @@ import com.godsmove.application.auth.NaverProfile
 import com.godsmove.application.auth.NaverProfileClient
 import com.godsmove.application.exception.ErrorCode
 import com.godsmove.application.exception.business.BusinessException
+import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
+import org.springframework.http.HttpStatus
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
+import org.springframework.web.client.RestClientResponseException
 import java.time.LocalDate
 import java.time.format.DateTimeParseException
 
 @Component
-class NaverProfileRestClient(
-    restClientBuilder: RestClient.Builder,
-    @Value("\${auth.naver.profile-uri:https://openapi.naver.com/v1/nid/me}")
+class NaverProfileRestClient internal constructor(
+    private val restClient: RestClient,
     private val profileUri: String
 ) : NaverProfileClient {
-    private val restClient = restClientBuilder.build()
+    @Autowired
+    constructor(
+        restClientBuilder: RestClient.Builder,
+        @Value("\${auth.naver.profile-uri:https://openapi.naver.com/v1/nid/me}")
+        profileUri: String,
+        @Value("\${auth.naver.connect-timeout-millis:2000}")
+        connectTimeoutMillis: Int,
+        @Value("\${auth.naver.read-timeout-millis:2000}")
+        readTimeoutMillis: Int
+    ) : this(
+        restClientBuilder
+            .requestFactory(createRequestFactory(connectTimeoutMillis, readTimeoutMillis))
+            .build(),
+        profileUri
+    )
 
     override fun fetch(accessToken: String): NaverProfile {
         val body = try {
@@ -27,6 +44,8 @@ class NaverProfileRestClient(
                 .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
                 .retrieve()
                 .body(NaverProfileResponse::class.java)
+        } catch (exception: RestClientResponseException) {
+            throw BusinessException(exception.toErrorCode())
         } catch (exception: RestClientException) {
             throw BusinessException(ErrorCode.NAVER_PROFILE_UNAVAILABLE)
         }
@@ -77,5 +96,23 @@ class NaverProfileRestClient(
 
     companion object {
         private const val SUCCESS_RESULT_CODE = "00"
+
+        private fun createRequestFactory(
+            connectTimeoutMillis: Int,
+            readTimeoutMillis: Int
+        ): SimpleClientHttpRequestFactory =
+            SimpleClientHttpRequestFactory().apply {
+                setConnectTimeout(connectTimeoutMillis)
+                setReadTimeout(readTimeoutMillis)
+            }
+
+        private fun RestClientResponseException.toErrorCode(): ErrorCode =
+            when {
+                statusCode == HttpStatus.UNAUTHORIZED -> ErrorCode.INVALID_NAVER_TOKEN
+                statusCode == HttpStatus.FORBIDDEN -> ErrorCode.INVALID_NAVER_TOKEN
+                statusCode.is4xxClientError -> ErrorCode.INVALID_NAVER_TOKEN
+                statusCode.is5xxServerError -> ErrorCode.NAVER_PROFILE_UNAVAILABLE
+                else -> ErrorCode.NAVER_PROFILE_UNAVAILABLE
+            }
     }
 }

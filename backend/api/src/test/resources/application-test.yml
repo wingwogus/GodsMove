@@ -63,3 +63,5 @@ auth:
       allowed-clock-skew-seconds: 60
   naver:
     profile-uri: ${NAVER_PROFILE_URI:https://openapi.naver.com/v1/nid/me}
+    connect-timeout-millis: ${NAVER_CONNECT_TIMEOUT_MILLIS:2000}
+    read-timeout-millis: ${NAVER_READ_TIMEOUT_MILLIS:2000}

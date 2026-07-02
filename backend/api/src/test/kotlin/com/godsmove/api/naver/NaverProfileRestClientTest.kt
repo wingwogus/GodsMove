@@ -28,7 +28,7 @@ class NaverProfileRestClientTest {
     fun setUp() {
         val restClientBuilder = RestClient.builder()
         server = MockRestServiceServer.bindTo(restClientBuilder).build()
-        client = NaverProfileRestClient(restClientBuilder, PROFILE_URI)
+        client = NaverProfileRestClient(restClientBuilder.build(), PROFILE_URI)
     }
 
     @Test
@@ -77,6 +77,30 @@ class NaverProfileRestClientTest {
         }
 
         assertEquals(ErrorCode.NAVER_PROFILE_UNAVAILABLE, exception.errorCode)
+    }
+
+    @Test
+    fun `fetch maps unauthorized response to invalid naver token`() {
+        server.expect(requestTo(PROFILE_URI))
+            .andRespond(withStatus(HttpStatus.UNAUTHORIZED))
+
+        val exception = assertThrows(BusinessException::class.java) {
+            client.fetch("access-token")
+        }
+
+        assertEquals(ErrorCode.INVALID_NAVER_TOKEN, exception.errorCode)
+    }
+
+    @Test
+    fun `fetch maps forbidden response to invalid naver token`() {
+        server.expect(requestTo(PROFILE_URI))
+            .andRespond(withStatus(HttpStatus.FORBIDDEN))
+
+        val exception = assertThrows(BusinessException::class.java) {
+            client.fetch("access-token")
+        }
+
+        assertEquals(ErrorCode.INVALID_NAVER_TOKEN, exception.errorCode)
     }
 
     @Test
