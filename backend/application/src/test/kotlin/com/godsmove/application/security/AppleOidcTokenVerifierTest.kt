@@ -73,6 +73,60 @@ class AppleOidcTokenVerifierTest {
     }
 
     @Test
+    fun `verify rejects wrong issuer`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            verifier.verify(token(issuer = "https://invalid.example.com"), RAW_NONCE)
+        }
+
+        assertEquals(ErrorCode.INVALID_APPLE_TOKEN, exception.errorCode)
+    }
+
+    @Test
+    fun `verify rejects expired token`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            verifier.verify(token(expiresAt = Instant.now().minusSeconds(60)), RAW_NONCE)
+        }
+
+        assertEquals(ErrorCode.INVALID_APPLE_TOKEN, exception.errorCode)
+    }
+
+    @Test
+    fun `verify rejects future issued at`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            verifier.verify(token(issuedAt = Instant.now().plusSeconds(60)), RAW_NONCE)
+        }
+
+        assertEquals(ErrorCode.INVALID_APPLE_TOKEN, exception.errorCode)
+    }
+
+    @Test
+    fun `verify rejects missing subject`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            verifier.verify(token(subject = null), RAW_NONCE)
+        }
+
+        assertEquals(ErrorCode.INVALID_APPLE_TOKEN, exception.errorCode)
+    }
+
+    @Test
+    fun `verify rejects blank subject`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            verifier.verify(token(subject = ""), RAW_NONCE)
+        }
+
+        assertEquals(ErrorCode.INVALID_APPLE_TOKEN, exception.errorCode)
+    }
+
+    @Test
+    fun `verify rejects missing nonce`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            verifier.verify(token(nonce = null), RAW_NONCE)
+        }
+
+        assertEquals(ErrorCode.APPLE_NONCE_MISMATCH, exception.errorCode)
+    }
+
+    @Test
     fun `verify rejects bad signature`() {
         val otherKeyPair = rsaKeyPair()
         val exception = assertThrows(BusinessException::class.java) {
@@ -116,21 +170,25 @@ class AppleOidcTokenVerifierTest {
         signingKeyPair: KeyPair = keyPair,
         issuer: String = ISSUER,
         audience: String = AUDIENCE,
-        subject: String = "apple-sub",
+        subject: String? = "apple-sub",
         email: String? = "user@example.com",
         emailVerified: Any? = true,
-        nonce: String = HASHED_NONCE,
+        nonce: String? = HASHED_NONCE,
         expiresAt: Instant = Instant.now().plusSeconds(300),
         issuedAt: Instant = Instant.now().minusSeconds(10)
     ): String {
         val claims = JWTClaimsSet.Builder()
             .issuer(issuer)
             .audience(audience)
-            .subject(subject)
             .expirationTime(Date.from(expiresAt))
             .issueTime(Date.from(issuedAt))
-            .claim("nonce", nonce)
             .apply {
+                if (subject != null) {
+                    subject(subject)
+                }
+                if (nonce != null) {
+                    claim("nonce", nonce)
+                }
                 if (email != null) {
                     claim("email", email)
                 }
