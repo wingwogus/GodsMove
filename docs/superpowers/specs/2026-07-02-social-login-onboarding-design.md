@@ -4,11 +4,11 @@ Date: 2026-07-02
 
 ## Purpose
 
-Add app-only Kakao, Apple, and Naver social login to the GodsMove backend and
+Add app-only Kakao, Apple, and Naver social login to the ChamChamCham backend and
 connect it to a one-shot onboarding completion API.
 
 The MVP excludes terms and privacy-policy consent handling. The backend should
-create or reuse a `Member` during social login, issue GodsMove tokens, return a
+create or reuse a `Member` during social login, issue ChamChamCham tokens, return a
 simple onboarding status, and let the app collect any missing profile fields
 locally before submitting one final onboarding request.
 
@@ -77,7 +77,7 @@ Backend behavior:
 4. If no identity exists, find or create a `Member` by verified provider email.
 5. Persist the new `ExternalIdentity` if needed.
 6. Prefill `Member` fields only when the provider supplies trusted values.
-7. Issue GodsMove access and refresh tokens.
+7. Issue ChamChamCham access and refresh tokens.
 8. Return `LoginResponse`.
 
 ### Apple Login
@@ -146,7 +146,7 @@ Backend behavior:
 6. Issue tokens and return `LoginResponse`.
 
 Naver provider data is for account setup convenience, not identity-proof for
-regulated real-name verification. If GodsMove later needs legally reliable
+regulated real-name verification. If ChamChamCham later needs legally reliable
 identity, add a separate identity-verification provider.
 
 ### Login Response
@@ -155,8 +155,8 @@ All provider login endpoints return the same top-level DTO:
 
 ```json
 {
-  "accessToken": "<godsmove_access_token>",
-  "refreshToken": "<godsmove_refresh_token>",
+  "accessToken": "<chamchamcham_access_token>",
+  "refreshToken": "<chamchamcham_refresh_token>",
   "member": {
     "id": "00000000-0000-0000-0000-000000000000",
     "email": "member@example.com",
@@ -192,7 +192,7 @@ tokens.
 ### Complete Onboarding
 
 ```http
-POST /api/v1/onboarding/complete
+POST /api/v1/auth/onboarding/complete
 Authorization: Bearer <accessToken>
 ```
 
@@ -270,7 +270,7 @@ For MVP, app routing can rely on the login response and the complete-onboarding
 response. Backend enforcement should be added only where needed:
 
 - Always allow auth endpoints.
-- Always allow `POST /api/v1/onboarding/complete`.
+- Require authentication for `POST /api/v1/auth/onboarding/complete`.
 - Allow token reissue and logout for authenticated or refresh-token flows.
 - For features that require a completed profile, check onboarding status in the
   application service or a focused request guard and reject incomplete members.

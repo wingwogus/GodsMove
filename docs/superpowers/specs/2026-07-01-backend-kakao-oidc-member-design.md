@@ -12,8 +12,8 @@ The imported backend should keep the template's Spring Boot Kotlin multi-module 
 
 Current workspace:
 
-- `/Users/wingwogus/Projects/GodsMove/backend` is empty.
-- `/Users/wingwogus/Projects/GodsMove/frontend` is empty.
+- `/Users/wingwogus/Projects/ChamChamCham/backend` is empty.
+- `/Users/wingwogus/Projects/ChamChamCham/frontend` is empty.
 - The workspace is not currently a git repository.
 - The provided ERD is user-centered and uses plural table names. This design replaces those terms with member-centered, singular table naming.
 
@@ -33,7 +33,7 @@ Use the template's module layout:
 - `domain`: JPA entities and repositories.
 - `batch`: imported as a skeleton for later scheduled or batch work.
 
-The root package must be changed from `com.example` to the project package selected during implementation. Until a package name is explicitly chosen, use `com.godsmove` as the default.
+The root package must be changed from `com.example` to the project package selected during implementation. Until a package name is explicitly chosen, use `com.chamchamcham` as the default.
 
 ## Domain Language
 

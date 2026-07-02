@@ -12,7 +12,7 @@
 
 ## File Structure
 
-The implementation creates a self-contained backend under `/Users/wingwogus/Projects/GodsMove/backend`.
+The implementation creates a self-contained backend under `/Users/wingwogus/Projects/ChamChamCham/backend`.
 
 Created by copying the template:
 
@@ -26,28 +26,28 @@ Created by copying the template:
 
 Key files to modify after copy:
 
-- `backend/settings.gradle.kts`: set `rootProject.name = "godsmove-backend"`.
-- `backend/build.gradle.kts`, `backend/api/build.gradle.kts`, `backend/application/build.gradle.kts`, `backend/domain/build.gradle.kts`, `backend/batch/build.gradle.kts`: set `group = "com.godsmove"` and switch DB dependencies.
+- `backend/settings.gradle.kts`: set `rootProject.name = "chamchamcham-backend"`.
+- `backend/build.gradle.kts`, `backend/api/build.gradle.kts`, `backend/application/build.gradle.kts`, `backend/domain/build.gradle.kts`, `backend/batch/build.gradle.kts`: set `group = "com.chamchamcham"` and switch DB dependencies.
 - `backend/api/src/main/resources/application.yml`: change log pattern from `userId` to `memberId`.
 - `backend/api/src/main/resources/application-local.yml`: use PostgreSQL datasource.
 - `backend/api/src/main/resources/application-dev.yml`: use PostgreSQL datasource.
 - `backend/api/src/main/resources/application-prod.yml`: use PostgreSQL datasource.
 - `backend/api/src/test/resources/application-test.yml`: add H2 PostgreSQL-mode test datasource so tests do not require a running local DB.
-- `backend/domain/src/main/kotlin/com/godsmove/domain/member/Member.kt`: UUID ID and table name `member`.
-- `backend/domain/src/main/kotlin/com/godsmove/domain/member/ExternalIdentity.kt`: UUID ID and `member_id` FK.
-- `backend/domain/src/main/kotlin/com/godsmove/domain/member/MemberRepository.kt`: repository key type `UUID`.
-- `backend/domain/src/main/kotlin/com/godsmove/domain/member/ExternalIdentityRepository.kt`: repository key type `UUID`.
-- `backend/application/src/main/kotlin/com/godsmove/application/security/TokenProvider.kt`: `memberId: UUID` token subject API.
-- `backend/application/src/main/kotlin/com/godsmove/application/redis/RefreshTokenRepository.kt`: `memberId: UUID` API.
-- `backend/application/src/main/kotlin/com/godsmove/application/redis/RefreshTokenRedisRepository.kt`: Redis key from UUID member ID.
-- `backend/application/src/main/kotlin/com/godsmove/application/auth/AuthService.kt`: reissue/logout use UUID `memberId`.
-- `backend/application/src/main/kotlin/com/godsmove/application/auth/KakaoLoginService.kt`: issue tokens with persisted UUID member ID.
-- `backend/application/src/main/kotlin/com/godsmove/application/exception/ErrorCode.kt`: `MEMBER_NOT_FOUND`.
-- `backend/application/src/main/kotlin/com/godsmove/application/common/LoggingUtil.kt`: MDC message uses `memberId`.
-- `backend/api/src/main/kotlin/com/godsmove/config/MDCLoggingFilter.kt`: MDC key `memberId`.
-- `backend/api/src/main/kotlin/com/godsmove/api/auth/controller/AuthController.kt`: principal variable `memberId`.
-- `backend/api/src/main/kotlin/com/godsmove/api/controller/TestController.kt`: response text says member ID.
-- Existing tests under `backend/api/src/test/kotlin/com/godsmove` and `backend/application/src/test/kotlin/com/godsmove`: update imports, UUID values, names, and assertions.
+- `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/Member.kt`: UUID ID and table name `member`.
+- `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/ExternalIdentity.kt`: UUID ID and `member_id` FK.
+- `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/MemberRepository.kt`: repository key type `UUID`.
+- `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/ExternalIdentityRepository.kt`: repository key type `UUID`.
+- `backend/application/src/main/kotlin/com/chamchamcham/application/security/TokenProvider.kt`: `memberId: UUID` token subject API.
+- `backend/application/src/main/kotlin/com/chamchamcham/application/redis/RefreshTokenRepository.kt`: `memberId: UUID` API.
+- `backend/application/src/main/kotlin/com/chamchamcham/application/redis/RefreshTokenRedisRepository.kt`: Redis key from UUID member ID.
+- `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AuthService.kt`: reissue/logout use UUID `memberId`.
+- `backend/application/src/main/kotlin/com/chamchamcham/application/auth/KakaoLoginService.kt`: issue tokens with persisted UUID member ID.
+- `backend/application/src/main/kotlin/com/chamchamcham/application/exception/ErrorCode.kt`: `MEMBER_NOT_FOUND`.
+- `backend/application/src/main/kotlin/com/chamchamcham/application/common/LoggingUtil.kt`: MDC message uses `memberId`.
+- `backend/api/src/main/kotlin/com/chamchamcham/config/MDCLoggingFilter.kt`: MDC key `memberId`.
+- `backend/api/src/main/kotlin/com/chamchamcham/api/auth/controller/AuthController.kt`: principal variable `memberId`.
+- `backend/api/src/main/kotlin/com/chamchamcham/api/controller/TestController.kt`: response text says member ID.
+- Existing tests under `backend/api/src/test/kotlin/com/chamchamcham` and `backend/application/src/test/kotlin/com/chamchamcham`: update imports, UUID values, names, and assertions.
 
 ## Task 1: Copy Template Into Backend
 
@@ -114,37 +114,37 @@ Expected: a commit containing only copied backend template source files and no g
 - Modify: `backend/application/build.gradle.kts`
 - Modify: `backend/domain/build.gradle.kts`
 - Modify: `backend/batch/build.gradle.kts`
-- Move package directories under `backend/*/src/{main,test}/kotlin/com/example` to `backend/*/src/{main,test}/kotlin/com/godsmove`
+- Move package directories under `backend/*/src/{main,test}/kotlin/com/example` to `backend/*/src/{main,test}/kotlin/com/chamchamcham`
 
 - [ ] **Step 1: Move Kotlin package directories**
 
 Run:
 
 ```bash
-mkdir -p backend/api/src/main/kotlin/com/godsmove
-mkdir -p backend/api/src/test/kotlin/com/godsmove
-mkdir -p backend/application/src/main/kotlin/com/godsmove
-mkdir -p backend/application/src/test/kotlin/com/godsmove
-mkdir -p backend/domain/src/main/kotlin/com/godsmove
-mkdir -p backend/domain/src/test/kotlin/com/godsmove
-mkdir -p backend/batch/src/main/kotlin/com/godsmove
-cp -R backend/api/src/main/kotlin/com/example/. backend/api/src/main/kotlin/com/godsmove/
-cp -R backend/api/src/test/kotlin/com/example/. backend/api/src/test/kotlin/com/godsmove/
-cp -R backend/application/src/main/kotlin/com/example/. backend/application/src/main/kotlin/com/godsmove/
-cp -R backend/application/src/test/kotlin/com/example/. backend/application/src/test/kotlin/com/godsmove/
-cp -R backend/domain/src/main/kotlin/com/example/. backend/domain/src/main/kotlin/com/godsmove/
-cp -R backend/domain/src/test/kotlin/com/example/. backend/domain/src/test/kotlin/com/godsmove/
-cp -R backend/batch/src/main/kotlin/com/example/. backend/batch/src/main/kotlin/com/godsmove/
+mkdir -p backend/api/src/main/kotlin/com/chamchamcham
+mkdir -p backend/api/src/test/kotlin/com/chamchamcham
+mkdir -p backend/application/src/main/kotlin/com/chamchamcham
+mkdir -p backend/application/src/test/kotlin/com/chamchamcham
+mkdir -p backend/domain/src/main/kotlin/com/chamchamcham
+mkdir -p backend/domain/src/test/kotlin/com/chamchamcham
+mkdir -p backend/batch/src/main/kotlin/com/chamchamcham
+cp -R backend/api/src/main/kotlin/com/example/. backend/api/src/main/kotlin/com/chamchamcham/
+cp -R backend/api/src/test/kotlin/com/example/. backend/api/src/test/kotlin/com/chamchamcham/
+cp -R backend/application/src/main/kotlin/com/example/. backend/application/src/main/kotlin/com/chamchamcham/
+cp -R backend/application/src/test/kotlin/com/example/. backend/application/src/test/kotlin/com/chamchamcham/
+cp -R backend/domain/src/main/kotlin/com/example/. backend/domain/src/main/kotlin/com/chamchamcham/
+cp -R backend/domain/src/test/kotlin/com/example/. backend/domain/src/test/kotlin/com/chamchamcham/
+cp -R backend/batch/src/main/kotlin/com/example/. backend/batch/src/main/kotlin/com/chamchamcham/
 ```
 
-Expected: new `com/godsmove` directories contain the copied Kotlin files.
+Expected: new `com/chamchamcham` directories contain the copied Kotlin files.
 
 - [ ] **Step 2: Remove old package directories after verifying the copy**
 
 Run:
 
 ```bash
-find backend -path '*/src/*/kotlin/com/godsmove' -type d -print
+find backend -path '*/src/*/kotlin/com/chamchamcham' -type d -print
 rm -rf backend/api/src/main/kotlin/com/example
 rm -rf backend/api/src/test/kotlin/com/example
 rm -rf backend/application/src/main/kotlin/com/example
@@ -161,7 +161,7 @@ Expected: no `backend/*/src/*/kotlin/com/example` directory remains.
 Run:
 
 ```bash
-perl -pi -e 's/com\.example/com.godsmove/g' $(find backend -name '*.kt' -o -name '*.kts')
+perl -pi -e 's/com\.example/com.chamchamcham/g' $(find backend -name '*.kt' -o -name '*.kts')
 ```
 
 Expected: `rg -n "com\\.example|com/example" backend` has no output.
@@ -171,36 +171,36 @@ Expected: `rg -n "com\\.example|com/example" backend` has no output.
 Change `backend/settings.gradle.kts` to:
 
 ```kotlin
-rootProject.name = "godsmove-backend"
+rootProject.name = "chamchamcham-backend"
 
 include("api", "application", "domain", "batch")
 ```
 
-Set `group = "com.godsmove"` in:
+Set `group = "com.chamchamcham"` in:
 
 ```kotlin
 // backend/build.gradle.kts
-group = "com.godsmove"
+group = "com.chamchamcham"
 ```
 
 ```kotlin
 // backend/api/build.gradle.kts
-group = "com.godsmove"
+group = "com.chamchamcham"
 ```
 
 ```kotlin
 // backend/application/build.gradle.kts
-group = "com.godsmove"
+group = "com.chamchamcham"
 ```
 
 ```kotlin
 // backend/domain/build.gradle.kts
-group = "com.godsmove"
+group = "com.chamchamcham"
 ```
 
 ```kotlin
 // backend/batch/build.gradle.kts
-group = "com.godsmove"
+group = "com.chamchamcham"
 ```
 
 - [ ] **Step 5: Run package rename verification**
@@ -220,9 +220,9 @@ Run:
 ```bash
 git add backend
 git commit \
-  -m "Align backend package identity with GodsMove" \
+  -m "Align backend package identity with ChamChamCham" \
   -m "The imported template used placeholder package and Gradle metadata. Renaming the package root before domain edits prevents new code from depending on template identity." \
-  -m "Constraint: Default approved package root is com.godsmove" \
+  -m "Constraint: Default approved package root is com.chamchamcham" \
   -m "Confidence: high" \
   -m "Scope-risk: narrow" \
   -m "Tested: rg scan for com.example and example project metadata" \
@@ -278,9 +278,9 @@ In `backend/api/src/main/resources/application-local.yml`, replace the datasourc
 
 ```yaml
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/godsmove_local}
-    username: ${SPRING_DATASOURCE_USERNAME:godsmove}
-    password: ${SPRING_DATASOURCE_PASSWORD:godsmove}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5432/chamchamcham_local}
+    username: ${SPRING_DATASOURCE_USERNAME:chamchamcham}
+    password: ${SPRING_DATASOURCE_PASSWORD:chamchamcham}
     driver-class-name: org.postgresql.Driver
 ```
 
@@ -360,7 +360,7 @@ redis:
 
 app:
   mail:
-    from-name: GodsMove
+    from-name: ChamChamCham
 
 auth:
   kakao:
@@ -374,7 +374,7 @@ auth:
 
 - [ ] **Step 6: Switch Spring Boot integration tests to test profile**
 
-In `backend/api/src/test/kotlin/com/godsmove/api/security/AuthSecurityIntegrationTest.kt`, replace:
+In `backend/api/src/test/kotlin/com/chamchamcham/api/security/AuthSecurityIntegrationTest.kt`, replace:
 
 ```kotlin
 @ActiveProfiles("local")
@@ -423,18 +423,18 @@ Expected: PostgreSQL runtime config is committed.
 
 **Files:**
 
-- Modify: `backend/domain/src/main/kotlin/com/godsmove/domain/member/Member.kt`
-- Modify: `backend/domain/src/main/kotlin/com/godsmove/domain/member/ExternalIdentity.kt`
-- Modify: `backend/domain/src/main/kotlin/com/godsmove/domain/member/MemberRepository.kt`
-- Modify: `backend/domain/src/main/kotlin/com/godsmove/domain/member/ExternalIdentityRepository.kt`
-- Test: `backend/domain/src/test/kotlin/com/godsmove/domain/member/MemberMappingTest.kt`
+- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/Member.kt`
+- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/ExternalIdentity.kt`
+- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/MemberRepository.kt`
+- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/ExternalIdentityRepository.kt`
+- Test: `backend/domain/src/test/kotlin/com/chamchamcham/domain/member/MemberMappingTest.kt`
 
 - [ ] **Step 1: Add a mapping test for UUID IDs and table names**
 
-Create `backend/domain/src/test/kotlin/com/godsmove/domain/member/MemberMappingTest.kt`:
+Create `backend/domain/src/test/kotlin/com/chamchamcham/domain/member/MemberMappingTest.kt`:
 
 ```kotlin
-package com.godsmove.domain.member
+package com.chamchamcham.domain.member
 
 import jakarta.persistence.Table
 import org.junit.jupiter.api.Assertions.assertEquals
@@ -465,11 +465,11 @@ class MemberMappingTest {
         val externalIdentityRepositoryType = ExternalIdentityRepository::class.java.genericInterfaces.single().typeName
 
         assertEquals(
-            "org.springframework.data.jpa.repository.JpaRepository<com.godsmove.domain.member.Member, java.util.UUID>",
+            "org.springframework.data.jpa.repository.JpaRepository<com.chamchamcham.domain.member.Member, java.util.UUID>",
             memberRepositoryType
         )
         assertEquals(
-            "org.springframework.data.jpa.repository.JpaRepository<com.godsmove.domain.member.ExternalIdentity, java.util.UUID>",
+            "org.springframework.data.jpa.repository.JpaRepository<com.chamchamcham.domain.member.ExternalIdentity, java.util.UUID>",
             externalIdentityRepositoryType
         )
         assertEquals(UUID::class.java.name, UUID.randomUUID()::class.java.name)
@@ -484,17 +484,17 @@ Run:
 
 ```bash
 cd backend
-./gradlew :domain:test --tests com.godsmove.domain.member.MemberMappingTest
+./gradlew :domain:test --tests com.chamchamcham.domain.member.MemberMappingTest
 ```
 
 Expected: FAIL because `Member` lacks `@Table(name = "member")` and repositories still use `Long`.
 
 - [ ] **Step 3: Update `Member.kt`**
 
-Replace `backend/domain/src/main/kotlin/com/godsmove/domain/member/Member.kt` with:
+Replace `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/Member.kt` with:
 
 ```kotlin
-package com.godsmove.domain.member
+package com.chamchamcham.domain.member
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -525,10 +525,10 @@ class Member(
 
 - [ ] **Step 4: Update `ExternalIdentity.kt`**
 
-Replace `backend/domain/src/main/kotlin/com/godsmove/domain/member/ExternalIdentity.kt` with:
+Replace `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/ExternalIdentity.kt` with:
 
 ```kotlin
-package com.godsmove.domain.member
+package com.chamchamcham.domain.member
 
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -578,10 +578,10 @@ class ExternalIdentity(
 
 - [ ] **Step 5: Update repositories to UUID**
 
-Set `backend/domain/src/main/kotlin/com/godsmove/domain/member/MemberRepository.kt` to:
+Set `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/MemberRepository.kt` to:
 
 ```kotlin
-package com.godsmove.domain.member
+package com.chamchamcham.domain.member
 
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
@@ -592,10 +592,10 @@ interface MemberRepository : JpaRepository<Member, UUID> {
 }
 ```
 
-Set `backend/domain/src/main/kotlin/com/godsmove/domain/member/ExternalIdentityRepository.kt` to:
+Set `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/ExternalIdentityRepository.kt` to:
 
 ```kotlin
-package com.godsmove.domain.member
+package com.chamchamcham.domain.member
 
 import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
@@ -643,17 +643,17 @@ Expected: domain UUID changes are committed.
 
 **Files:**
 
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/security/TokenProvider.kt`
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/redis/RefreshTokenRepository.kt`
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/redis/RefreshTokenRedisRepository.kt`
-- Test: `backend/application/src/test/kotlin/com/godsmove/application/security/TokenProviderTest.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/security/TokenProvider.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/redis/RefreshTokenRepository.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/redis/RefreshTokenRedisRepository.kt`
+- Test: `backend/application/src/test/kotlin/com/chamchamcham/application/security/TokenProviderTest.kt`
 
 - [ ] **Step 1: Replace token provider tests with UUID/memberId expectations**
 
-Replace `backend/application/src/test/kotlin/com/godsmove/application/security/TokenProviderTest.kt` with:
+Replace `backend/application/src/test/kotlin/com/chamchamcham/application/security/TokenProviderTest.kt` with:
 
 ```kotlin
-package com.godsmove.application.security
+package com.chamchamcham.application.security
 
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -700,19 +700,19 @@ Run:
 
 ```bash
 cd backend
-./gradlew :application:test --tests com.godsmove.application.security.TokenProviderTest
+./gradlew :application:test --tests com.chamchamcham.application.security.TokenProviderTest
 ```
 
 Expected: FAIL because `generateToken`, `createRefreshToken`, and `getMemberId` do not yet use UUID/memberId.
 
 - [ ] **Step 3: Replace `TokenProvider.kt`**
 
-Replace `backend/application/src/main/kotlin/com/godsmove/application/security/TokenProvider.kt` with:
+Replace `backend/application/src/main/kotlin/com/chamchamcham/application/security/TokenProvider.kt` with:
 
 ```kotlin
-package com.godsmove.application.security
+package com.chamchamcham.application.security
 
-import com.godsmove.application.auth.AuthResult
+import com.chamchamcham.application.auth.AuthResult
 import io.jsonwebtoken.Claims
 import io.jsonwebtoken.ExpiredJwtException
 import io.jsonwebtoken.JwtException
@@ -843,10 +843,10 @@ class TokenProvider(
 
 - [ ] **Step 4: Replace refresh token repository interfaces**
 
-Set `backend/application/src/main/kotlin/com/godsmove/application/redis/RefreshTokenRepository.kt` to:
+Set `backend/application/src/main/kotlin/com/chamchamcham/application/redis/RefreshTokenRepository.kt` to:
 
 ```kotlin
-package com.godsmove.application.redis
+package com.chamchamcham.application.redis
 
 import java.util.UUID
 
@@ -859,10 +859,10 @@ interface RefreshTokenRepository {
 }
 ```
 
-Set `backend/application/src/main/kotlin/com/godsmove/application/redis/RefreshTokenRedisRepository.kt` to:
+Set `backend/application/src/main/kotlin/com/chamchamcham/application/redis/RefreshTokenRedisRepository.kt` to:
 
 ```kotlin
-package com.godsmove.application.redis
+package com.chamchamcham.application.redis
 
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Repository
@@ -907,7 +907,7 @@ Run:
 
 ```bash
 cd backend
-./gradlew :application:test --tests com.godsmove.application.security.TokenProviderTest
+./gradlew :application:test --tests com.chamchamcham.application.security.TokenProviderTest
 ```
 
 Expected: PASS for `TokenProviderTest`.
@@ -926,7 +926,7 @@ git commit \
   -m "Confidence: high" \
   -m "Scope-risk: moderate" \
   -m "Directive: Keep TokenProvider method names memberId-based" \
-  -m "Tested: ./gradlew :application:test --tests com.godsmove.application.security.TokenProviderTest" \
+  -m "Tested: ./gradlew :application:test --tests com.chamchamcham.application.security.TokenProviderTest" \
   -m "Not-tested: Full application tests pending service-layer UUID adaptation"
 ```
 
@@ -936,11 +936,11 @@ Expected: token/Redis API changes are committed.
 
 **Files:**
 
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/auth/AuthService.kt`
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/auth/KakaoLoginService.kt`
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/exception/ErrorCode.kt`
-- Test: `backend/application/src/test/kotlin/com/godsmove/application/auth/AuthServiceTest.kt`
-- Test: `backend/application/src/test/kotlin/com/godsmove/application/auth/KakaoLoginServiceTest.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AuthService.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/KakaoLoginService.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/exception/ErrorCode.kt`
+- Test: `backend/application/src/test/kotlin/com/chamchamcham/application/auth/AuthServiceTest.kt`
+- Test: `backend/application/src/test/kotlin/com/chamchamcham/application/auth/KakaoLoginServiceTest.kt`
 
 - [ ] **Step 1: Update application auth tests to use UUIDs**
 
@@ -986,14 +986,14 @@ Run:
 
 ```bash
 cd backend
-./gradlew :application:test --tests com.godsmove.application.auth.AuthServiceTest --tests com.godsmove.application.auth.KakaoLoginServiceTest
+./gradlew :application:test --tests com.chamchamcham.application.auth.AuthServiceTest --tests com.chamchamcham.application.auth.KakaoLoginServiceTest
 ```
 
 Expected: FAIL because services still call `getUserId`, pass Long IDs, and reference `USER_NOT_FOUND`.
 
 - [ ] **Step 3: Rename `USER_NOT_FOUND` error**
 
-In `backend/application/src/main/kotlin/com/godsmove/application/exception/ErrorCode.kt`, replace:
+In `backend/application/src/main/kotlin/com/chamchamcham/application/exception/ErrorCode.kt`, replace:
 
 ```kotlin
 USER_NOT_FOUND("AUTH_006", "error.user_not_found", 404),
@@ -1105,7 +1105,7 @@ Run:
 
 ```bash
 cd backend
-./gradlew :application:test --tests com.godsmove.application.auth.AuthServiceTest --tests com.godsmove.application.auth.KakaoLoginServiceTest
+./gradlew :application:test --tests com.chamchamcham.application.auth.AuthServiceTest --tests com.chamchamcham.application.auth.KakaoLoginServiceTest
 ```
 
 Expected: PASS for both auth test classes.
@@ -1134,13 +1134,13 @@ Expected: auth service UUID changes are committed.
 
 **Files:**
 
-- Modify: `backend/api/src/main/kotlin/com/godsmove/api/auth/controller/AuthController.kt`
-- Modify: `backend/api/src/main/kotlin/com/godsmove/api/controller/TestController.kt`
-- Modify: `backend/api/src/main/kotlin/com/godsmove/config/MDCLoggingFilter.kt`
+- Modify: `backend/api/src/main/kotlin/com/chamchamcham/api/auth/controller/AuthController.kt`
+- Modify: `backend/api/src/main/kotlin/com/chamchamcham/api/controller/TestController.kt`
+- Modify: `backend/api/src/main/kotlin/com/chamchamcham/config/MDCLoggingFilter.kt`
 - Modify: `backend/api/src/main/resources/application.yml`
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/common/LoggingUtil.kt`
-- Test: `backend/api/src/test/kotlin/com/godsmove/api/security/AuthSecurityIntegrationTest.kt`
-- Test: `backend/api/src/test/kotlin/com/godsmove/config/MDCLoggingFilterTest.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/common/LoggingUtil.kt`
+- Test: `backend/api/src/test/kotlin/com/chamchamcham/api/security/AuthSecurityIntegrationTest.kt`
+- Test: `backend/api/src/test/kotlin/com/chamchamcham/config/MDCLoggingFilterTest.kt`
 
 - [ ] **Step 1: Update logging tests first**
 
@@ -1177,14 +1177,14 @@ Run:
 
 ```bash
 cd backend
-./gradlew :api:test --tests com.godsmove.api.security.AuthSecurityIntegrationTest --tests com.godsmove.config.MDCLoggingFilterTest
+./gradlew :api:test --tests com.chamchamcham.api.security.AuthSecurityIntegrationTest --tests com.chamchamcham.config.MDCLoggingFilterTest
 ```
 
 Expected: FAIL because production code still uses `userId`.
 
 - [ ] **Step 3: Update application log formatting utility**
 
-In `backend/application/src/main/kotlin/com/godsmove/application/common/LoggingUtil.kt`, replace the MDC lookup and output label:
+In `backend/application/src/main/kotlin/com/chamchamcham/application/common/LoggingUtil.kt`, replace the MDC lookup and output label:
 
 ```kotlin
 val memberId = MDC.get("memberId")
@@ -1293,7 +1293,7 @@ Expected: PASS or fail only in tests not yet adapted to UUID/memberId. If additi
 Run:
 
 ```bash
-git add backend/api backend/application/src/main/kotlin/com/godsmove/application/common/LoggingUtil.kt
+git add backend/api backend/application/src/main/kotlin/com/chamchamcham/application/common/LoggingUtil.kt
 git commit \
   -m "Expose authenticated principal as memberId in API logs" \
   -m "API controllers, MDC, and log patterns now use memberId consistently, matching the service identity contract used by JWT and Redis." \
@@ -1362,7 +1362,7 @@ Expected: PASS.
 If no local PostgreSQL instance is available, append this exact note to the implementation final report:
 
 ```markdown
-PostgreSQL runtime connection was not manually exercised because no local `godsmove_local` PostgreSQL service was available in this session. Configuration is set for PostgreSQL, and tests use the `test` profile with H2 PostgreSQL mode. A follow-up Testcontainers or local PostgreSQL smoke test is recommended before deploy.
+PostgreSQL runtime connection was not manually exercised because no local `chamchamcham_local` PostgreSQL service was available in this session. Configuration is set for PostgreSQL, and tests use the `test` profile with H2 PostgreSQL mode. A follow-up Testcontainers or local PostgreSQL smoke test is recommended before deploy.
 ```
 
 - [ ] **Step 6: Commit final cleanup**

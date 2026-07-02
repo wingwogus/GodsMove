@@ -45,7 +45,7 @@ app:
   auth:
     refresh-cookie-secure: false
   mail:
-    from-name: GodsMove
+    from-name: ChamChamCham
 
 auth:
   kakao:
@@ -58,7 +58,7 @@ auth:
   apple:
     oidc:
       issuer: https://appleid.apple.com
-      audience: ${APPLE_CLIENT_ID:com.godsmove.ios}
+      audience: ${APPLE_CLIENT_ID:com.chamchamcham.ios}
       jwks-uri: https://appleid.apple.com/auth/keys
       allowed-clock-skew-seconds: 60
   naver:

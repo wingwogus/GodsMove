@@ -14,7 +14,7 @@
 
 Spec: `docs/superpowers/specs/2026-07-02-social-login-onboarding-design.md`
 
-Worktree: `/private/tmp/GodsMove-social-login`
+Worktree: `/private/tmp/ChamChamCham-social-login`
 
 Branch: `feat/social-login-onboarding`
 
@@ -35,58 +35,58 @@ git commit -m "feat(auth): 온보딩 상태 응답 추가" \
 
 Domain:
 
-- Modify `backend/domain/src/main/kotlin/com/godsmove/domain/member/AuthProvider.kt`
+- Modify `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/AuthProvider.kt`
   - Add `APPLE` and `NAVER`.
-- Modify `backend/domain/src/main/kotlin/com/godsmove/domain/member/Member.kt`
+- Modify `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/Member.kt`
   - Add nullable `birthDate: LocalDate?`.
   - Make onboarding profile fields mutable through a focused `completeOnboarding(...)` method.
 
 Application auth:
 
-- Modify `backend/application/src/main/kotlin/com/godsmove/application/auth/AuthCommand.kt`
+- Modify `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AuthCommand.kt`
   - Add `AppleLogin`, `NaverLogin`, and `CompleteOnboarding`.
-- Modify `backend/application/src/main/kotlin/com/godsmove/application/auth/AuthResult.kt`
+- Modify `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AuthResult.kt`
   - Add `Login`, `MemberProfile`, `Onboarding`, `OnboardingStatus`, and `OnboardingComplete`.
-- Modify `backend/application/src/main/kotlin/com/godsmove/application/auth/KakaoLoginService.kt`
+- Modify `backend/application/src/main/kotlin/com/chamchamcham/application/auth/KakaoLoginService.kt`
   - Return `AuthResult.Login` instead of token-only `TokenPair`.
   - Use shared social-login member/token support.
-- Create `backend/application/src/main/kotlin/com/godsmove/application/auth/SocialLoginSupport.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/SocialLoginSupport.kt`
   - Link or create provider identities and issue token-bearing login results.
-- Create `backend/application/src/main/kotlin/com/godsmove/application/auth/OnboardingStatusResolver.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/OnboardingStatusResolver.kt`
   - Calculate `REQUIRED` or `COMPLETE` from current `Member` fields.
-- Create `backend/application/src/main/kotlin/com/godsmove/application/auth/OnboardingService.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/OnboardingService.kt`
   - Complete onboarding for authenticated members.
-- Create `backend/application/src/main/kotlin/com/godsmove/application/auth/AppleLoginService.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AppleLoginService.kt`
   - Verify Apple credential, link/create member, issue login response.
-- Create `backend/application/src/main/kotlin/com/godsmove/application/auth/NaverLoginService.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverLoginService.kt`
   - Fetch Naver profile through application port, link/create member, issue login response.
-- Create `backend/application/src/main/kotlin/com/godsmove/application/auth/NaverProfileClient.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverProfileClient.kt`
   - Application port for Naver profile lookup.
-- Create `backend/application/src/main/kotlin/com/godsmove/application/auth/NaverProfile.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverProfile.kt`
   - Provider-neutral profile data returned by the port.
 
 Application security and Redis:
 
-- Create `backend/application/src/main/kotlin/com/godsmove/application/security/AppleOidcClaims.kt`
-- Create `backend/application/src/main/kotlin/com/godsmove/application/security/AppleOidcTokenVerifier.kt`
-- Create `backend/application/src/main/kotlin/com/godsmove/application/redis/AppleNonceReplayRepository.kt`
-- Create `backend/application/src/main/kotlin/com/godsmove/application/redis/AppleNonceReplayRedisRepository.kt`
-- Modify `backend/application/src/main/kotlin/com/godsmove/application/exception/ErrorCode.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/security/AppleOidcClaims.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/security/AppleOidcTokenVerifier.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRepository.kt`
+- Create `backend/application/src/main/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRedisRepository.kt`
+- Modify `backend/application/src/main/kotlin/com/chamchamcham/application/exception/ErrorCode.kt`
   - Add Apple and Naver auth error codes.
 
 API:
 
-- Modify `backend/api/src/main/kotlin/com/godsmove/api/auth/dto/AuthRequests.kt`
+- Modify `backend/api/src/main/kotlin/com/chamchamcham/api/auth/dto/AuthRequests.kt`
   - Add `AppleLoginRequest`, `NaverLoginRequest`, and `CompleteOnboardingRequest`.
-- Modify `backend/api/src/main/kotlin/com/godsmove/api/auth/dto/AuthResponses.kt`
+- Modify `backend/api/src/main/kotlin/com/chamchamcham/api/auth/dto/AuthResponses.kt`
   - Add `LoginResponse`, `MemberProfileResponse`, `OnboardingResponse`, and `OnboardingCompleteResponse`.
-- Modify `backend/api/src/main/kotlin/com/godsmove/api/auth/controller/AuthController.kt`
+- Modify `backend/api/src/main/kotlin/com/chamchamcham/api/auth/controller/AuthController.kt`
   - Inject Apple/Naver login services.
   - Return `LoginResponse` from social login endpoints.
-- Create `backend/api/src/main/kotlin/com/godsmove/api/onboarding/controller/OnboardingController.kt`
-- Create `backend/api/src/main/kotlin/com/godsmove/api/naver/NaverProfileRestClient.kt`
+- Create `backend/api/src/main/kotlin/com/chamchamcham/api/auth/controller/AuthController.kt`
+- Create `backend/api/src/main/kotlin/com/chamchamcham/api/naver/NaverProfileRestClient.kt`
   - HTTP adapter using `RestClient.Builder`.
-- Modify `backend/api/src/main/kotlin/com/godsmove/config/SecurityConfig.kt`
+- Modify `backend/api/src/main/kotlin/com/chamchamcham/config/SecurityConfig.kt`
   - Publicly allow Apple/Naver login endpoints.
   - Keep onboarding completion protected.
 - Modify `backend/api/src/main/resources/application-local.yml`
@@ -97,39 +97,39 @@ API:
 
 Tests:
 
-- Create `backend/application/src/test/kotlin/com/godsmove/application/auth/OnboardingStatusResolverTest.kt`
-- Create `backend/application/src/test/kotlin/com/godsmove/application/auth/OnboardingServiceTest.kt`
-- Modify `backend/application/src/test/kotlin/com/godsmove/application/auth/KakaoLoginServiceTest.kt`
-- Create `backend/application/src/test/kotlin/com/godsmove/application/security/AppleOidcTokenVerifierTest.kt`
-- Create `backend/application/src/test/kotlin/com/godsmove/application/redis/AppleNonceReplayRedisRepositoryTest.kt`
-- Create `backend/application/src/test/kotlin/com/godsmove/application/auth/AppleLoginServiceTest.kt`
-- Create `backend/application/src/test/kotlin/com/godsmove/application/auth/NaverLoginServiceTest.kt`
-- Create `backend/api/src/test/kotlin/com/godsmove/api/naver/NaverProfileRestClientTest.kt`
-- Modify `backend/api/src/test/kotlin/com/godsmove/api/auth/controller/AuthControllerBusinessTest.kt`
-- Modify `backend/api/src/test/kotlin/com/godsmove/api/auth/controller/AuthControllerValidationTest.kt`
-- Create `backend/api/src/test/kotlin/com/godsmove/api/onboarding/controller/OnboardingControllerTest.kt`
-- Modify `backend/api/src/test/kotlin/com/godsmove/api/security/AuthSecurityIntegrationTest.kt`
+- Create `backend/application/src/test/kotlin/com/chamchamcham/application/auth/OnboardingStatusResolverTest.kt`
+- Create `backend/application/src/test/kotlin/com/chamchamcham/application/auth/OnboardingServiceTest.kt`
+- Modify `backend/application/src/test/kotlin/com/chamchamcham/application/auth/KakaoLoginServiceTest.kt`
+- Create `backend/application/src/test/kotlin/com/chamchamcham/application/security/AppleOidcTokenVerifierTest.kt`
+- Create `backend/application/src/test/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRedisRepositoryTest.kt`
+- Create `backend/application/src/test/kotlin/com/chamchamcham/application/auth/AppleLoginServiceTest.kt`
+- Create `backend/application/src/test/kotlin/com/chamchamcham/application/auth/NaverLoginServiceTest.kt`
+- Create `backend/api/src/test/kotlin/com/chamchamcham/api/naver/NaverProfileRestClientTest.kt`
+- Modify `backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerBusinessTest.kt`
+- Modify `backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerValidationTest.kt`
+- Create `backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerBusinessTest.kt`
+- Modify `backend/api/src/test/kotlin/com/chamchamcham/api/security/AuthSecurityIntegrationTest.kt`
 
 ---
 
 ### Task 1: Domain And Auth Result Foundation
 
 **Files:**
-- Modify: `backend/domain/src/main/kotlin/com/godsmove/domain/member/AuthProvider.kt`
-- Modify: `backend/domain/src/main/kotlin/com/godsmove/domain/member/Member.kt`
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/auth/AuthCommand.kt`
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/auth/AuthResult.kt`
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/auth/OnboardingStatusResolver.kt`
-- Test: `backend/application/src/test/kotlin/com/godsmove/application/auth/OnboardingStatusResolverTest.kt`
+- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/AuthProvider.kt`
+- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/Member.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AuthCommand.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AuthResult.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/OnboardingStatusResolver.kt`
+- Test: `backend/application/src/test/kotlin/com/chamchamcham/application/auth/OnboardingStatusResolverTest.kt`
 
 - [ ] **Step 1: Write the failing onboarding status tests**
 
-Create `backend/application/src/test/kotlin/com/godsmove/application/auth/OnboardingStatusResolverTest.kt`:
+Create `backend/application/src/test/kotlin/com/chamchamcham/application/auth/OnboardingStatusResolverTest.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
-import com.godsmove.domain.member.Member
+import com.chamchamcham.domain.member.Member
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -189,17 +189,17 @@ class OnboardingStatusResolverTest {
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.auth.OnboardingStatusResolverTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.auth.OnboardingStatusResolverTest'
 ```
 
 Expected: FAIL because `birthDate`, `AuthResult.OnboardingStatus`, and `OnboardingStatusResolver` do not exist.
 
 - [ ] **Step 3: Extend the domain model and auth result types**
 
-Modify `backend/domain/src/main/kotlin/com/godsmove/domain/member/AuthProvider.kt`:
+Modify `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/AuthProvider.kt`:
 
 ```kotlin
-package com.godsmove.domain.member
+package com.chamchamcham.domain.member
 
 enum class AuthProvider {
     KAKAO,
@@ -208,12 +208,12 @@ enum class AuthProvider {
 }
 ```
 
-Modify `backend/domain/src/main/kotlin/com/godsmove/domain/member/Member.kt`:
+Modify `backend/domain/src/main/kotlin/com/chamchamcham/domain/member/Member.kt`:
 
 ```kotlin
-package com.godsmove.domain.member
+package com.chamchamcham.domain.member
 
-import com.godsmove.domain.common.BaseTimeEntity
+import com.chamchamcham.domain.common.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -306,10 +306,10 @@ class Member(
 }
 ```
 
-Modify `backend/application/src/main/kotlin/com/godsmove/application/auth/AuthCommand.kt`:
+Modify `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AuthCommand.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
 import java.time.LocalDate
 
@@ -365,13 +365,13 @@ object AuthCommand {
 }
 ```
 
-Modify `backend/application/src/main/kotlin/com/godsmove/application/auth/AuthResult.kt`:
+Modify `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AuthResult.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
-import com.godsmove.domain.member.ManagementType
-import com.godsmove.domain.member.Member
+import com.chamchamcham.domain.member.ManagementType
+import com.chamchamcham.domain.member.Member
 import java.time.LocalDate
 import java.util.UUID
 
@@ -434,12 +434,12 @@ object AuthResult {
 
 - [ ] **Step 4: Add the onboarding status resolver**
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/auth/OnboardingStatusResolver.kt`:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/OnboardingStatusResolver.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
-import com.godsmove.domain.member.Member
+import com.chamchamcham.domain.member.Member
 import org.springframework.stereotype.Component
 
 @Component
@@ -468,7 +468,7 @@ class OnboardingStatusResolver {
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.auth.OnboardingStatusResolverTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.auth.OnboardingStatusResolverTest'
 ```
 
 Expected: PASS.
@@ -476,12 +476,12 @@ Expected: PASS.
 - [ ] **Step 6: Commit Task 1**
 
 ```bash
-git add backend/domain/src/main/kotlin/com/godsmove/domain/member/AuthProvider.kt \
-  backend/domain/src/main/kotlin/com/godsmove/domain/member/Member.kt \
-  backend/application/src/main/kotlin/com/godsmove/application/auth/AuthCommand.kt \
-  backend/application/src/main/kotlin/com/godsmove/application/auth/AuthResult.kt \
-  backend/application/src/main/kotlin/com/godsmove/application/auth/OnboardingStatusResolver.kt \
-  backend/application/src/test/kotlin/com/godsmove/application/auth/OnboardingStatusResolverTest.kt
+git add backend/domain/src/main/kotlin/com/chamchamcham/domain/member/AuthProvider.kt \
+  backend/domain/src/main/kotlin/com/chamchamcham/domain/member/Member.kt \
+  backend/application/src/main/kotlin/com/chamchamcham/application/auth/AuthCommand.kt \
+  backend/application/src/main/kotlin/com/chamchamcham/application/auth/AuthResult.kt \
+  backend/application/src/main/kotlin/com/chamchamcham/application/auth/OnboardingStatusResolver.kt \
+  backend/application/src/test/kotlin/com/chamchamcham/application/auth/OnboardingStatusResolverTest.kt
 git commit -m "feat(auth): 온보딩 상태 계산 추가"
 ```
 
@@ -490,20 +490,20 @@ git commit -m "feat(auth): 온보딩 상태 계산 추가"
 ### Task 2: Onboarding Completion Service
 
 **Files:**
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/auth/OnboardingService.kt`
-- Test: `backend/application/src/test/kotlin/com/godsmove/application/auth/OnboardingServiceTest.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/OnboardingService.kt`
+- Test: `backend/application/src/test/kotlin/com/chamchamcham/application/auth/OnboardingServiceTest.kt`
 
 - [ ] **Step 1: Write the failing service tests**
 
-Create `backend/application/src/test/kotlin/com/godsmove/application/auth/OnboardingServiceTest.kt`:
+Create `backend/application/src/test/kotlin/com/chamchamcham/application/auth/OnboardingServiceTest.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
-import com.godsmove.domain.member.Member
-import com.godsmove.domain.member.MemberRepository
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.member.MemberRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -606,21 +606,21 @@ class OnboardingServiceTest {
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.auth.OnboardingServiceTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.auth.OnboardingServiceTest'
 ```
 
 Expected: FAIL because `OnboardingService` does not exist.
 
 - [ ] **Step 3: Implement onboarding completion**
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/auth/OnboardingService.kt`:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/OnboardingService.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
-import com.godsmove.domain.member.MemberRepository
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.domain.member.MemberRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -667,7 +667,7 @@ class OnboardingService(
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.auth.OnboardingServiceTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.auth.OnboardingServiceTest'
 ```
 
 Expected: PASS.
@@ -675,8 +675,8 @@ Expected: PASS.
 - [ ] **Step 5: Commit Task 2**
 
 ```bash
-git add backend/application/src/main/kotlin/com/godsmove/application/auth/OnboardingService.kt \
-  backend/application/src/test/kotlin/com/godsmove/application/auth/OnboardingServiceTest.kt
+git add backend/application/src/main/kotlin/com/chamchamcham/application/auth/OnboardingService.kt \
+  backend/application/src/test/kotlin/com/chamchamcham/application/auth/OnboardingServiceTest.kt
 git commit -m "feat(auth): 온보딩 완료 서비스 추가"
 ```
 
@@ -685,13 +685,13 @@ git commit -m "feat(auth): 온보딩 완료 서비스 추가"
 ### Task 3: Shared Social Login Support And Kakao LoginResponse
 
 **Files:**
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/auth/SocialLoginSupport.kt`
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/auth/KakaoLoginService.kt`
-- Modify: `backend/application/src/test/kotlin/com/godsmove/application/auth/KakaoLoginServiceTest.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/SocialLoginSupport.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/KakaoLoginService.kt`
+- Modify: `backend/application/src/test/kotlin/com/chamchamcham/application/auth/KakaoLoginServiceTest.kt`
 
 - [ ] **Step 1: Update Kakao tests to expect `AuthResult.Login`**
 
-In `backend/application/src/test/kotlin/com/godsmove/application/auth/KakaoLoginServiceTest.kt`, add a mock:
+In `backend/application/src/test/kotlin/com/chamchamcham/application/auth/KakaoLoginServiceTest.kt`, add a mock:
 
 ```kotlin
 private lateinit var onboardingStatusResolver: OnboardingStatusResolver
@@ -734,27 +734,27 @@ assertEquals(AuthResult.OnboardingStatus.REQUIRED, result.onboarding.status)
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.auth.KakaoLoginServiceTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.auth.KakaoLoginServiceTest'
 ```
 
 Expected: FAIL because `SocialLoginSupport` does not exist and `KakaoLoginService` still returns `TokenPair`.
 
 - [ ] **Step 3: Implement shared social login support**
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/auth/SocialLoginSupport.kt`:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/SocialLoginSupport.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
-import com.godsmove.application.redis.RefreshTokenRepository
-import com.godsmove.application.security.TokenProvider
-import com.godsmove.domain.member.AuthProvider
-import com.godsmove.domain.member.ExternalIdentity
-import com.godsmove.domain.member.ExternalIdentityRepository
-import com.godsmove.domain.member.Member
-import com.godsmove.domain.member.MemberRepository
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.redis.RefreshTokenRepository
+import com.chamchamcham.application.security.TokenProvider
+import com.chamchamcham.domain.member.AuthProvider
+import com.chamchamcham.domain.member.ExternalIdentity
+import com.chamchamcham.domain.member.ExternalIdentityRepository
+import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.member.MemberRepository
 import org.springframework.stereotype.Component
 import java.time.LocalDate
 import java.util.UUID
@@ -847,7 +847,7 @@ class SocialLoginSupport(
 }
 ```
 
-Modify `backend/application/src/main/kotlin/com/godsmove/application/auth/KakaoLoginService.kt` constructor and `login`:
+Modify `backend/application/src/main/kotlin/com/chamchamcham/application/auth/KakaoLoginService.kt` constructor and `login`:
 
 ```kotlin
 class KakaoLoginService(
@@ -880,7 +880,7 @@ Keep the existing private nonce methods in `KakaoLoginService`.
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.auth.KakaoLoginServiceTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.auth.KakaoLoginServiceTest'
 ```
 
 Expected: PASS after updating all assertions from token pair to login fields.
@@ -888,9 +888,9 @@ Expected: PASS after updating all assertions from token pair to login fields.
 - [ ] **Step 5: Commit Task 3**
 
 ```bash
-git add backend/application/src/main/kotlin/com/godsmove/application/auth/SocialLoginSupport.kt \
-  backend/application/src/main/kotlin/com/godsmove/application/auth/KakaoLoginService.kt \
-  backend/application/src/test/kotlin/com/godsmove/application/auth/KakaoLoginServiceTest.kt
+git add backend/application/src/main/kotlin/com/chamchamcham/application/auth/SocialLoginSupport.kt \
+  backend/application/src/main/kotlin/com/chamchamcham/application/auth/KakaoLoginService.kt \
+  backend/application/src/test/kotlin/com/chamchamcham/application/auth/KakaoLoginServiceTest.kt
 git commit -m "refactor(auth): 소셜 로그인 응답 조립 공통화"
 ```
 
@@ -899,23 +899,23 @@ git commit -m "refactor(auth): 소셜 로그인 응답 조립 공통화"
 ### Task 4: Apple OIDC Verification And Replay Storage
 
 **Files:**
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/security/AppleOidcClaims.kt`
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/security/AppleOidcTokenVerifier.kt`
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/redis/AppleNonceReplayRepository.kt`
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/redis/AppleNonceReplayRedisRepository.kt`
-- Modify: `backend/application/src/main/kotlin/com/godsmove/application/exception/ErrorCode.kt`
-- Test: `backend/application/src/test/kotlin/com/godsmove/application/security/AppleOidcTokenVerifierTest.kt`
-- Test: `backend/application/src/test/kotlin/com/godsmove/application/redis/AppleNonceReplayRedisRepositoryTest.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/security/AppleOidcClaims.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/security/AppleOidcTokenVerifier.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRepository.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRedisRepository.kt`
+- Modify: `backend/application/src/main/kotlin/com/chamchamcham/application/exception/ErrorCode.kt`
+- Test: `backend/application/src/test/kotlin/com/chamchamcham/application/security/AppleOidcTokenVerifierTest.kt`
+- Test: `backend/application/src/test/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRedisRepositoryTest.kt`
 
 - [ ] **Step 1: Add failing Apple verifier tests**
 
-Create `backend/application/src/test/kotlin/com/godsmove/application/security/AppleOidcTokenVerifierTest.kt` by copying the structure of `KakaoOidcTokenVerifierTest` and changing constants:
+Create `backend/application/src/test/kotlin/com/chamchamcham/application/security/AppleOidcTokenVerifierTest.kt` by copying the structure of `KakaoOidcTokenVerifierTest` and changing constants:
 
 ```kotlin
-package com.godsmove.application.security
+package com.chamchamcham.application.security
 
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
 import com.nimbusds.jose.JWSAlgorithm
 import com.nimbusds.jose.JWSHeader
 import com.nimbusds.jose.crypto.RSASSASigner
@@ -1020,7 +1020,7 @@ class AppleOidcTokenVerifierTest {
 
     companion object {
         private const val ISSUER = "https://appleid.apple.com"
-        private const val AUDIENCE = "com.godsmove.ios"
+        private const val AUDIENCE = "com.chamchamcham.ios"
         private const val RAW_NONCE = "client-raw-nonce"
     }
 }
@@ -1028,10 +1028,10 @@ class AppleOidcTokenVerifierTest {
 
 - [ ] **Step 2: Add failing Apple Redis tests**
 
-Create `backend/application/src/test/kotlin/com/godsmove/application/redis/AppleNonceReplayRedisRepositoryTest.kt`:
+Create `backend/application/src/test/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRedisRepositoryTest.kt`:
 
 ```kotlin
-package com.godsmove.application.redis
+package com.chamchamcham.application.redis
 
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -1088,14 +1088,14 @@ class AppleNonceReplayRedisRepositoryTest {
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.security.AppleOidcTokenVerifierTest' --tests 'com.godsmove.application.redis.AppleNonceReplayRedisRepositoryTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.security.AppleOidcTokenVerifierTest' --tests 'com.chamchamcham.application.redis.AppleNonceReplayRedisRepositoryTest'
 ```
 
 Expected: FAIL because Apple classes and error codes do not exist.
 
 - [ ] **Step 4: Implement Apple error codes**
 
-Modify `backend/application/src/main/kotlin/com/godsmove/application/exception/ErrorCode.kt` by adding after `KAKAO_OIDC_UNAVAILABLE`:
+Modify `backend/application/src/main/kotlin/com/chamchamcham/application/exception/ErrorCode.kt` by adding after `KAKAO_OIDC_UNAVAILABLE`:
 
 ```kotlin
 INVALID_APPLE_TOKEN("AUTH_015", "error.invalid_apple_token", 401),
@@ -1109,10 +1109,10 @@ NAVER_EMAIL_REQUIRED("AUTH_021", "error.naver_email_required", 422),
 
 - [ ] **Step 5: Implement Apple verifier and nonce repository**
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/security/AppleOidcClaims.kt`:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/security/AppleOidcClaims.kt`:
 
 ```kotlin
-package com.godsmove.application.security
+package com.chamchamcham.application.security
 
 import java.time.Instant
 
@@ -1125,13 +1125,13 @@ data class AppleOidcClaims(
 )
 ```
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/security/AppleOidcTokenVerifier.kt` using NuguSauce's pattern:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/security/AppleOidcTokenVerifier.kt` using NuguSauce's pattern:
 
 ```kotlin
-package com.godsmove.application.security
+package com.chamchamcham.application.security
 
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
 import com.nimbusds.jwt.JWTParser
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.beans.factory.annotation.Value
@@ -1263,10 +1263,10 @@ class AppleOidcTokenVerifier private constructor(
 }
 ```
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/redis/AppleNonceReplayRepository.kt`:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRepository.kt`:
 
 ```kotlin
-package com.godsmove.application.redis
+package com.chamchamcham.application.redis
 
 import java.time.Duration
 
@@ -1275,10 +1275,10 @@ interface AppleNonceReplayRepository {
 }
 ```
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/redis/AppleNonceReplayRedisRepository.kt`:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRedisRepository.kt`:
 
 ```kotlin
-package com.godsmove.application.redis
+package com.chamchamcham.application.redis
 
 import org.springframework.data.redis.core.StringRedisTemplate
 import org.springframework.stereotype.Repository
@@ -1312,7 +1312,7 @@ class AppleNonceReplayRedisRepository(
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.security.AppleOidcTokenVerifierTest' --tests 'com.godsmove.application.redis.AppleNonceReplayRedisRepositoryTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.security.AppleOidcTokenVerifierTest' --tests 'com.chamchamcham.application.redis.AppleNonceReplayRedisRepositoryTest'
 ```
 
 Expected: PASS.
@@ -1320,13 +1320,13 @@ Expected: PASS.
 - [ ] **Step 7: Commit Task 4**
 
 ```bash
-git add backend/application/src/main/kotlin/com/godsmove/application/exception/ErrorCode.kt \
-  backend/application/src/main/kotlin/com/godsmove/application/security/AppleOidcClaims.kt \
-  backend/application/src/main/kotlin/com/godsmove/application/security/AppleOidcTokenVerifier.kt \
-  backend/application/src/main/kotlin/com/godsmove/application/redis/AppleNonceReplayRepository.kt \
-  backend/application/src/main/kotlin/com/godsmove/application/redis/AppleNonceReplayRedisRepository.kt \
-  backend/application/src/test/kotlin/com/godsmove/application/security/AppleOidcTokenVerifierTest.kt \
-  backend/application/src/test/kotlin/com/godsmove/application/redis/AppleNonceReplayRedisRepositoryTest.kt
+git add backend/application/src/main/kotlin/com/chamchamcham/application/exception/ErrorCode.kt \
+  backend/application/src/main/kotlin/com/chamchamcham/application/security/AppleOidcClaims.kt \
+  backend/application/src/main/kotlin/com/chamchamcham/application/security/AppleOidcTokenVerifier.kt \
+  backend/application/src/main/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRepository.kt \
+  backend/application/src/main/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRedisRepository.kt \
+  backend/application/src/test/kotlin/com/chamchamcham/application/security/AppleOidcTokenVerifierTest.kt \
+  backend/application/src/test/kotlin/com/chamchamcham/application/redis/AppleNonceReplayRedisRepositoryTest.kt
 git commit -m "feat(auth): 애플 OIDC 검증 추가"
 ```
 
@@ -1335,28 +1335,28 @@ git commit -m "feat(auth): 애플 OIDC 검증 추가"
 ### Task 5: Apple Login Service
 
 **Files:**
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/auth/AppleLoginService.kt`
-- Test: `backend/application/src/test/kotlin/com/godsmove/application/auth/AppleLoginServiceTest.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AppleLoginService.kt`
+- Test: `backend/application/src/test/kotlin/com/chamchamcham/application/auth/AppleLoginServiceTest.kt`
 
 - [ ] **Step 1: Write failing Apple login service tests**
 
-Create `backend/application/src/test/kotlin/com/godsmove/application/auth/AppleLoginServiceTest.kt`:
+Create `backend/application/src/test/kotlin/com/chamchamcham/application/auth/AppleLoginServiceTest.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
-import com.godsmove.application.redis.AppleNonceReplayRepository
-import com.godsmove.application.redis.RefreshTokenRepository
-import com.godsmove.application.security.AppleOidcClaims
-import com.godsmove.application.security.AppleOidcTokenVerifier
-import com.godsmove.application.security.TokenProvider
-import com.godsmove.domain.member.AuthProvider
-import com.godsmove.domain.member.ExternalIdentity
-import com.godsmove.domain.member.ExternalIdentityRepository
-import com.godsmove.domain.member.Member
-import com.godsmove.domain.member.MemberRepository
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.redis.AppleNonceReplayRepository
+import com.chamchamcham.application.redis.RefreshTokenRepository
+import com.chamchamcham.application.security.AppleOidcClaims
+import com.chamchamcham.application.security.AppleOidcTokenVerifier
+import com.chamchamcham.application.security.TokenProvider
+import com.chamchamcham.domain.member.AuthProvider
+import com.chamchamcham.domain.member.ExternalIdentity
+import com.chamchamcham.domain.member.ExternalIdentityRepository
+import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.member.MemberRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -1465,24 +1465,24 @@ class AppleLoginServiceTest {
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.auth.AppleLoginServiceTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.auth.AppleLoginServiceTest'
 ```
 
 Expected: FAIL because `AppleLoginService` does not exist.
 
 - [ ] **Step 3: Implement Apple login service**
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/auth/AppleLoginService.kt`:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/AppleLoginService.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
-import com.godsmove.application.redis.AppleNonceReplayRepository
-import com.godsmove.application.security.AppleOidcClaims
-import com.godsmove.application.security.AppleOidcTokenVerifier
-import com.godsmove.domain.member.AuthProvider
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.redis.AppleNonceReplayRepository
+import com.chamchamcham.application.security.AppleOidcClaims
+import com.chamchamcham.application.security.AppleOidcTokenVerifier
+import com.chamchamcham.domain.member.AuthProvider
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -1538,7 +1538,7 @@ class AppleLoginService(
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.auth.AppleLoginServiceTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.auth.AppleLoginServiceTest'
 ```
 
 Expected: PASS.
@@ -1546,8 +1546,8 @@ Expected: PASS.
 - [ ] **Step 5: Commit Task 5**
 
 ```bash
-git add backend/application/src/main/kotlin/com/godsmove/application/auth/AppleLoginService.kt \
-  backend/application/src/test/kotlin/com/godsmove/application/auth/AppleLoginServiceTest.kt
+git add backend/application/src/main/kotlin/com/chamchamcham/application/auth/AppleLoginService.kt \
+  backend/application/src/test/kotlin/com/chamchamcham/application/auth/AppleLoginServiceTest.kt
 git commit -m "feat(auth): 애플 로그인 서비스 추가"
 ```
 
@@ -1556,28 +1556,28 @@ git commit -m "feat(auth): 애플 로그인 서비스 추가"
 ### Task 6: Naver Login Port, Service, And HTTP Adapter
 
 **Files:**
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/auth/NaverProfile.kt`
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/auth/NaverProfileClient.kt`
-- Create: `backend/application/src/main/kotlin/com/godsmove/application/auth/NaverLoginService.kt`
-- Create: `backend/api/src/main/kotlin/com/godsmove/api/naver/NaverProfileRestClient.kt`
-- Test: `backend/application/src/test/kotlin/com/godsmove/application/auth/NaverLoginServiceTest.kt`
-- Test: `backend/api/src/test/kotlin/com/godsmove/api/naver/NaverProfileRestClientTest.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverProfile.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverProfileClient.kt`
+- Create: `backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverLoginService.kt`
+- Create: `backend/api/src/main/kotlin/com/chamchamcham/api/naver/NaverProfileRestClient.kt`
+- Test: `backend/application/src/test/kotlin/com/chamchamcham/application/auth/NaverLoginServiceTest.kt`
+- Test: `backend/api/src/test/kotlin/com/chamchamcham/api/naver/NaverProfileRestClientTest.kt`
 
 - [ ] **Step 1: Write failing Naver login service tests**
 
-Create `backend/application/src/test/kotlin/com/godsmove/application/auth/NaverLoginServiceTest.kt`:
+Create `backend/application/src/test/kotlin/com/chamchamcham/application/auth/NaverLoginServiceTest.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
-import com.godsmove.application.redis.RefreshTokenRepository
-import com.godsmove.application.security.TokenProvider
-import com.godsmove.domain.member.AuthProvider
-import com.godsmove.domain.member.ExternalIdentityRepository
-import com.godsmove.domain.member.Member
-import com.godsmove.domain.member.MemberRepository
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.redis.RefreshTokenRepository
+import com.chamchamcham.application.security.TokenProvider
+import com.chamchamcham.domain.member.AuthProvider
+import com.chamchamcham.domain.member.ExternalIdentityRepository
+import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.member.MemberRepository
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
@@ -1663,17 +1663,17 @@ class NaverLoginServiceTest {
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.auth.NaverLoginServiceTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.auth.NaverLoginServiceTest'
 ```
 
 Expected: FAIL because Naver classes do not exist.
 
 - [ ] **Step 3: Implement Naver application port and service**
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/auth/NaverProfile.kt`:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverProfile.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
 import java.time.LocalDate
 
@@ -1686,24 +1686,24 @@ data class NaverProfile(
 )
 ```
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/auth/NaverProfileClient.kt`:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverProfileClient.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
 interface NaverProfileClient {
     fun fetch(accessToken: String): NaverProfile
 }
 ```
 
-Create `backend/application/src/main/kotlin/com/godsmove/application/auth/NaverLoginService.kt`:
+Create `backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverLoginService.kt`:
 
 ```kotlin
-package com.godsmove.application.auth
+package com.chamchamcham.application.auth
 
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
-import com.godsmove.domain.member.AuthProvider
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.domain.member.AuthProvider
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -1733,20 +1733,20 @@ class NaverLoginService(
 Run:
 
 ```bash
-./gradlew :application:test --tests 'com.godsmove.application.auth.NaverLoginServiceTest'
+./gradlew :application:test --tests 'com.chamchamcham.application.auth.NaverLoginServiceTest'
 ```
 
 Expected: PASS.
 
 - [ ] **Step 5: Write failing Naver HTTP adapter tests**
 
-Create `backend/api/src/test/kotlin/com/godsmove/api/naver/NaverProfileRestClientTest.kt`:
+Create `backend/api/src/test/kotlin/com/chamchamcham/api/naver/NaverProfileRestClientTest.kt`:
 
 ```kotlin
-package com.godsmove.api.naver
+package com.chamchamcham.api.naver
 
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
@@ -1809,23 +1809,23 @@ class NaverProfileRestClientTest {
 Run:
 
 ```bash
-./gradlew :api:test --tests 'com.godsmove.api.naver.NaverProfileRestClientTest'
+./gradlew :api:test --tests 'com.chamchamcham.api.naver.NaverProfileRestClientTest'
 ```
 
 Expected: FAIL because `NaverProfileRestClient` does not exist.
 
 - [ ] **Step 7: Implement Naver HTTP adapter**
 
-Create `backend/api/src/main/kotlin/com/godsmove/api/naver/NaverProfileRestClient.kt`:
+Create `backend/api/src/main/kotlin/com/chamchamcham/api/naver/NaverProfileRestClient.kt`:
 
 ```kotlin
-package com.godsmove.api.naver
+package com.chamchamcham.api.naver
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties
-import com.godsmove.application.auth.NaverProfile
-import com.godsmove.application.auth.NaverProfileClient
-import com.godsmove.application.exception.ErrorCode
-import com.godsmove.application.exception.business.BusinessException
+import com.chamchamcham.application.auth.NaverProfile
+import com.chamchamcham.application.auth.NaverProfileClient
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
 import org.springframework.beans.factory.annotation.Value
 import org.springframework.http.HttpHeaders
 import org.springframework.stereotype.Component
@@ -1903,7 +1903,7 @@ class NaverProfileRestClient(
 Run:
 
 ```bash
-./gradlew :api:test --tests 'com.godsmove.api.naver.NaverProfileRestClientTest'
+./gradlew :api:test --tests 'com.chamchamcham.api.naver.NaverProfileRestClientTest'
 ```
 
 Expected: PASS.
@@ -1911,12 +1911,12 @@ Expected: PASS.
 - [ ] **Step 9: Commit Task 6**
 
 ```bash
-git add backend/application/src/main/kotlin/com/godsmove/application/auth/NaverProfile.kt \
-  backend/application/src/main/kotlin/com/godsmove/application/auth/NaverProfileClient.kt \
-  backend/application/src/main/kotlin/com/godsmove/application/auth/NaverLoginService.kt \
-  backend/application/src/test/kotlin/com/godsmove/application/auth/NaverLoginServiceTest.kt \
-  backend/api/src/main/kotlin/com/godsmove/api/naver/NaverProfileRestClient.kt \
-  backend/api/src/test/kotlin/com/godsmove/api/naver/NaverProfileRestClientTest.kt
+git add backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverProfile.kt \
+  backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverProfileClient.kt \
+  backend/application/src/main/kotlin/com/chamchamcham/application/auth/NaverLoginService.kt \
+  backend/application/src/test/kotlin/com/chamchamcham/application/auth/NaverLoginServiceTest.kt \
+  backend/api/src/main/kotlin/com/chamchamcham/api/naver/NaverProfileRestClient.kt \
+  backend/api/src/test/kotlin/com/chamchamcham/api/naver/NaverProfileRestClientTest.kt
 git commit -m "feat(auth): 네이버 앱 로그인 추가"
 ```
 
@@ -1925,15 +1925,15 @@ git commit -m "feat(auth): 네이버 앱 로그인 추가"
 ### Task 7: API DTOs, Controllers, And Security
 
 **Files:**
-- Modify: `backend/api/src/main/kotlin/com/godsmove/api/auth/dto/AuthRequests.kt`
-- Modify: `backend/api/src/main/kotlin/com/godsmove/api/auth/dto/AuthResponses.kt`
-- Modify: `backend/api/src/main/kotlin/com/godsmove/api/auth/controller/AuthController.kt`
-- Create: `backend/api/src/main/kotlin/com/godsmove/api/onboarding/controller/OnboardingController.kt`
-- Modify: `backend/api/src/main/kotlin/com/godsmove/config/SecurityConfig.kt`
-- Test: `backend/api/src/test/kotlin/com/godsmove/api/auth/controller/AuthControllerBusinessTest.kt`
-- Test: `backend/api/src/test/kotlin/com/godsmove/api/auth/controller/AuthControllerValidationTest.kt`
-- Test: `backend/api/src/test/kotlin/com/godsmove/api/onboarding/controller/OnboardingControllerTest.kt`
-- Test: `backend/api/src/test/kotlin/com/godsmove/api/security/AuthSecurityIntegrationTest.kt`
+- Modify: `backend/api/src/main/kotlin/com/chamchamcham/api/auth/dto/AuthRequests.kt`
+- Modify: `backend/api/src/main/kotlin/com/chamchamcham/api/auth/dto/AuthResponses.kt`
+- Modify: `backend/api/src/main/kotlin/com/chamchamcham/api/auth/controller/AuthController.kt`
+- Create: `backend/api/src/main/kotlin/com/chamchamcham/api/auth/controller/AuthController.kt`
+- Modify: `backend/api/src/main/kotlin/com/chamchamcham/config/SecurityConfig.kt`
+- Test: `backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerBusinessTest.kt`
+- Test: `backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerValidationTest.kt`
+- Test: `backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerBusinessTest.kt`
+- Test: `backend/api/src/test/kotlin/com/chamchamcham/api/security/AuthSecurityIntegrationTest.kt`
 
 - [ ] **Step 1: Update controller tests for LoginResponse and new endpoints**
 
@@ -1963,7 +1963,7 @@ private fun loginResult(): AuthResult.Login {
             nickname = null,
             region = null,
             experienceLevel = null,
-            managementType = com.godsmove.domain.member.ManagementType.UNREGISTERED
+            managementType = com.chamchamcham.domain.member.ManagementType.UNREGISTERED
         ),
         onboarding = AuthResult.Onboarding(AuthResult.OnboardingStatus.REQUIRED)
     )
@@ -2026,16 +2026,16 @@ fun `naver login returns LoginResponse from service`() {
 
 - [ ] **Step 2: Write onboarding controller test**
 
-Create `backend/api/src/test/kotlin/com/godsmove/api/onboarding/controller/OnboardingControllerTest.kt`:
+Create `backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerBusinessTest.kt`:
 
 ```kotlin
-package com.godsmove.api.onboarding.controller
+package com.chamchamcham.api.auth.controller
 
-import com.godsmove.api.exception.GlobalExceptionHandler
-import com.godsmove.application.auth.AuthCommand
-import com.godsmove.application.auth.AuthResult
-import com.godsmove.application.auth.OnboardingService
-import com.godsmove.domain.member.ManagementType
+import com.chamchamcham.api.exception.GlobalExceptionHandler
+import com.chamchamcham.application.auth.AuthCommand
+import com.chamchamcham.application.auth.AuthResult
+import com.chamchamcham.application.auth.OnboardingService
+import com.chamchamcham.domain.member.ManagementType
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
@@ -2053,10 +2053,10 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDate
 import java.util.UUID
 
-@WebMvcTest(OnboardingController::class)
+@WebMvcTest(AuthController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler::class)
-class OnboardingControllerTest(
+class AuthControllerBusinessTest(
     @Autowired private val mockMvc: MockMvc
 ) {
     @MockBean
@@ -2095,7 +2095,7 @@ class OnboardingControllerTest(
         )
 
         mockMvc.perform(
-            post("/api/v1/onboarding/complete")
+            post("/api/v1/auth/onboarding/complete")
                 .with(user(memberId))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"홍길동","phone":"010-1234-5678","birthDate":"1990-10-01","nickname":"농부길동","region":"전라남도 나주시","experienceLevel":"BEGINNER"}""")
@@ -2109,7 +2109,7 @@ class OnboardingControllerTest(
     @Test
     fun `complete rejects blank nickname`() {
         mockMvc.perform(
-            post("/api/v1/onboarding/complete")
+            post("/api/v1/auth/onboarding/complete")
                 .with(user("00000000-0000-0000-0000-000000000001"))
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""{"name":"홍길동","phone":"010-1234-5678","birthDate":"1990-10-01","nickname":"","region":"전라남도 나주시","experienceLevel":"BEGINNER"}""")
@@ -2125,14 +2125,14 @@ class OnboardingControllerTest(
 Run:
 
 ```bash
-./gradlew :api:test --tests 'com.godsmove.api.auth.controller.AuthControllerBusinessTest' --tests 'com.godsmove.api.onboarding.controller.OnboardingControllerTest'
+./gradlew :api:test --tests 'com.chamchamcham.api.auth.controller.AuthControllerBusinessTest' --tests 'com.chamchamcham.api.auth.controller.AuthControllerBusinessTest'
 ```
 
 Expected: FAIL because DTOs and controller wiring are not updated.
 
 - [ ] **Step 4: Implement API request and response DTOs**
 
-Modify `backend/api/src/main/kotlin/com/godsmove/api/auth/dto/AuthRequests.kt` by adding:
+Modify `backend/api/src/main/kotlin/com/chamchamcham/api/auth/dto/AuthRequests.kt` by adding:
 
 ```kotlin
 data class AppleLoginRequest(
@@ -2172,13 +2172,13 @@ import jakarta.validation.constraints.NotNull
 import java.time.LocalDate
 ```
 
-Modify `backend/api/src/main/kotlin/com/godsmove/api/auth/dto/AuthResponses.kt`:
+Modify `backend/api/src/main/kotlin/com/chamchamcham/api/auth/dto/AuthResponses.kt`:
 
 ```kotlin
-package com.godsmove.api.auth.dto
+package com.chamchamcham.api.auth.dto
 
-import com.godsmove.application.auth.AuthResult
-import com.godsmove.domain.member.ManagementType
+import com.chamchamcham.application.auth.AuthResult
+import com.chamchamcham.domain.member.ManagementType
 import java.time.LocalDate
 import java.util.UUID
 
@@ -2321,16 +2321,16 @@ fun naverLogin(
 }
 ```
 
-Create `backend/api/src/main/kotlin/com/godsmove/api/onboarding/controller/OnboardingController.kt`:
+Create `backend/api/src/main/kotlin/com/chamchamcham/api/auth/controller/AuthController.kt`:
 
 ```kotlin
-package com.godsmove.api.onboarding.controller
+package com.chamchamcham.api.auth.controller
 
-import com.godsmove.api.auth.dto.AuthRequests
-import com.godsmove.api.auth.dto.AuthResponses
-import com.godsmove.api.common.ApiResponse
-import com.godsmove.application.auth.AuthCommand
-import com.godsmove.application.auth.OnboardingService
+import com.chamchamcham.api.auth.dto.AuthRequests
+import com.chamchamcham.api.auth.dto.AuthResponses
+import com.chamchamcham.api.common.ApiResponse
+import com.chamchamcham.application.auth.AuthCommand
+import com.chamchamcham.application.auth.OnboardingService
 import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
@@ -2340,8 +2340,8 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 
 @RestController
-@RequestMapping("/api/v1/onboarding")
-class OnboardingController(
+@RequestMapping("/api/v1/auth")
+class AuthController(
     private val onboardingService: OnboardingService
 ) {
     @PostMapping("/complete")
@@ -2372,14 +2372,14 @@ Modify `SecurityConfig.PUBLIC_ENDPOINTS`:
 "/api/v1/auth/naver/login",
 ```
 
-Do not add `/api/v1/onboarding/complete` to public endpoints.
+Keep `/api/v1/auth/onboarding/complete` out of public endpoints.
 
 - [ ] **Step 6: Run API tests**
 
 Run:
 
 ```bash
-./gradlew :api:test --tests 'com.godsmove.api.auth.controller.AuthControllerBusinessTest' --tests 'com.godsmove.api.auth.controller.AuthControllerValidationTest' --tests 'com.godsmove.api.onboarding.controller.OnboardingControllerTest' --tests 'com.godsmove.api.security.AuthSecurityIntegrationTest'
+./gradlew :api:test --tests 'com.chamchamcham.api.auth.controller.AuthControllerBusinessTest' --tests 'com.chamchamcham.api.auth.controller.AuthControllerValidationTest' --tests 'com.chamchamcham.api.auth.controller.AuthControllerBusinessTest' --tests 'com.chamchamcham.api.security.AuthSecurityIntegrationTest'
 ```
 
 Expected: PASS after adding required mocks in affected WebMvc tests.
@@ -2387,15 +2387,15 @@ Expected: PASS after adding required mocks in affected WebMvc tests.
 - [ ] **Step 7: Commit Task 7**
 
 ```bash
-git add backend/api/src/main/kotlin/com/godsmove/api/auth/dto/AuthRequests.kt \
-  backend/api/src/main/kotlin/com/godsmove/api/auth/dto/AuthResponses.kt \
-  backend/api/src/main/kotlin/com/godsmove/api/auth/controller/AuthController.kt \
-  backend/api/src/main/kotlin/com/godsmove/api/onboarding/controller/OnboardingController.kt \
-  backend/api/src/main/kotlin/com/godsmove/config/SecurityConfig.kt \
-  backend/api/src/test/kotlin/com/godsmove/api/auth/controller/AuthControllerBusinessTest.kt \
-  backend/api/src/test/kotlin/com/godsmove/api/auth/controller/AuthControllerValidationTest.kt \
-  backend/api/src/test/kotlin/com/godsmove/api/onboarding/controller/OnboardingControllerTest.kt \
-  backend/api/src/test/kotlin/com/godsmove/api/security/AuthSecurityIntegrationTest.kt
+git add backend/api/src/main/kotlin/com/chamchamcham/api/auth/dto/AuthRequests.kt \
+  backend/api/src/main/kotlin/com/chamchamcham/api/auth/dto/AuthResponses.kt \
+  backend/api/src/main/kotlin/com/chamchamcham/api/auth/controller/AuthController.kt \
+  backend/api/src/main/kotlin/com/chamchamcham/api/auth/controller/AuthController.kt \
+  backend/api/src/main/kotlin/com/chamchamcham/config/SecurityConfig.kt \
+  backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerBusinessTest.kt \
+  backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerValidationTest.kt \
+  backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerBusinessTest.kt \
+  backend/api/src/test/kotlin/com/chamchamcham/api/security/AuthSecurityIntegrationTest.kt
 git commit -m "feat(auth): 소셜 로그인 API 응답 확장"
 ```
 
@@ -2417,7 +2417,7 @@ Add this under `auth:` in all API resource YAML files, preserving existing Kakao
   apple:
     oidc:
       issuer: https://appleid.apple.com
-      audience: ${APPLE_CLIENT_ID:com.godsmove.ios}
+      audience: ${APPLE_CLIENT_ID:com.chamchamcham.ios}
       jwks-uri: https://appleid.apple.com/auth/keys
       allowed-clock-skew-seconds: 60
   naver:
@@ -2467,7 +2467,7 @@ git commit -m "chore(auth): 소셜 로그인 설정 추가"
 - [ ] `./gradlew test` passes from `backend/`.
 - [ ] Social login endpoints return `LoginResponse`.
 - [ ] Local email/password login still returns token-only `TokenResponse`.
-- [ ] `POST /api/v1/onboarding/complete` is authenticated.
+- [ ] `POST /api/v1/auth/onboarding/complete` is authenticated.
 - [ ] Apple/Naver login endpoints are public.
 - [ ] No backend onboarding draft-save API exists.
 - [ ] No terms consent logic is added.

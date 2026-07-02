@@ -4,9 +4,9 @@ spring:
       on-profile: local
 
   datasource:
-    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5444/godsmovedb}
-    username: ${SPRING_DATASOURCE_USERNAME:godsmove}
-    password: ${SPRING_DATASOURCE_PASSWORD:godsmove}
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://localhost:5444/chamchamchamdb}
+    username: ${SPRING_DATASOURCE_USERNAME:chamchamcham}
+    password: ${SPRING_DATASOURCE_PASSWORD:chamchamcham}
     driver-class-name: org.postgresql.Driver
 
   jpa:
@@ -62,7 +62,7 @@ auth:
   apple:
     oidc:
       issuer: https://appleid.apple.com
-      audience: ${APPLE_CLIENT_ID:com.godsmove.ios}
+      audience: ${APPLE_CLIENT_ID:com.chamchamcham.ios}
       jwks-uri: https://appleid.apple.com/auth/keys
       allowed-clock-skew-seconds: 60
   naver:
