@@ -59,7 +59,7 @@ class KakaoUserInfoRestClient internal constructor(
             subject = subject,
             email = response.email.takeIf { response.emailVerified == true },
             name = response.name,
-            phone = response.phoneNumber,
+            phone = response.phoneNumber.takeIf { response.phoneNumberVerified == true },
             birthDate = parseBirthDate(response.birthdate)
         )
     }

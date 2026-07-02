@@ -185,6 +185,20 @@ class KakaoUserInfoRestClientTest {
     }
 
     @Test
+    fun `fetch maps unverified phone to null`() {
+        server.expect(requestTo(USER_INFO_URI))
+            .andRespond(
+                withStatus(HttpStatus.OK)
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .body("""{"sub":"kakao-sub","phone_number":"010-1234-5678","phone_number_verified":false}""")
+            )
+
+        val userInfo = client.fetch("access-token")
+
+        assertNull(userInfo.phone)
+    }
+
+    @Test
     fun `fetch maps partial and placeholder birthdate to null`() {
         val birthdates = listOf("1990", "0000-05-12", "1990-13-40")
         birthdates.forEach { birthdate ->
