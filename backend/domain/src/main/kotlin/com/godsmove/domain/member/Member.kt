@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -24,23 +25,26 @@ class Member(
     val email: String,
 
     @Column(length = 32)
-    val phone: String? = null,
+    var phone: String? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
     val status: MemberStatus = MemberStatus.ACTIVE,
 
     @Column(length = 64)
-    val name: String? = null,
+    var name: String? = null,
+
+    @Column(name = "birth_date")
+    var birthDate: LocalDate? = null,
 
     @Column(length = 64)
-    val nickname: String? = null,
+    var nickname: String? = null,
 
     @Column(length = 128)
-    val region: String? = null,
+    var region: String? = null,
 
     @Column(name = "experience_level", length = 32)
-    val experienceLevel: String? = null,
+    var experienceLevel: String? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "management_type", nullable = false, length = 32)
@@ -54,4 +58,36 @@ class Member(
 
     @Column(name = "withdrawn_at")
     val withdrawnAt: LocalDateTime? = null,
-) : BaseTimeEntity()
+) : BaseTimeEntity() {
+    fun completeOnboarding(
+        name: String,
+        phone: String,
+        birthDate: LocalDate,
+        nickname: String,
+        region: String,
+        experienceLevel: String
+    ) {
+        this.name = name
+        this.phone = phone
+        this.birthDate = birthDate
+        this.nickname = nickname
+        this.region = region
+        this.experienceLevel = experienceLevel
+    }
+
+    fun prefillProfile(
+        name: String?,
+        phone: String?,
+        birthDate: LocalDate?
+    ) {
+        if (this.name.isNullOrBlank() && !name.isNullOrBlank()) {
+            this.name = name
+        }
+        if (this.phone.isNullOrBlank() && !phone.isNullOrBlank()) {
+            this.phone = phone
+        }
+        if (this.birthDate == null && birthDate != null) {
+            this.birthDate = birthDate
+        }
+    }
+}

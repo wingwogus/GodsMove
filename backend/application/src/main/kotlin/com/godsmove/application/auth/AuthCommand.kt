@@ -1,5 +1,7 @@
 package com.godsmove.application.auth
 
+import java.time.LocalDate
+
 object AuthCommand {
     data class SendVerificationCode(
         val email: String
@@ -23,6 +25,27 @@ object AuthCommand {
     data class KakaoLogin(
         val idToken: String,
         val nonce: String
+    )
+
+    data class AppleLogin(
+        val identityToken: String,
+        val nonce: String,
+        val authorizationCode: String?,
+        val userIdentifier: String?
+    )
+
+    data class NaverLogin(
+        val accessToken: String
+    )
+
+    data class CompleteOnboarding(
+        val memberId: String,
+        val name: String,
+        val phone: String,
+        val birthDate: LocalDate,
+        val nickname: String,
+        val region: String,
+        val experienceLevel: String
     )
 
     data class Reissue(
