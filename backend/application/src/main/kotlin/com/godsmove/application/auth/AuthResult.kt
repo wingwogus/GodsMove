@@ -3,6 +3,7 @@ package com.godsmove.application.auth
 import com.godsmove.domain.member.ManagementType
 import com.godsmove.domain.member.Member
 import java.time.LocalDate
+import java.util.UUID
 
 object AuthResult {
     data class TokenPair(
@@ -23,7 +24,7 @@ object AuthResult {
     )
 
     data class MemberProfile(
-        val id: String,
+        val id: UUID,
         val email: String,
         val name: String?,
         val phone: String?,
@@ -36,7 +37,7 @@ object AuthResult {
         companion object {
             fun from(member: Member): MemberProfile {
                 return MemberProfile(
-                    id = requireNotNull(member.id) { "Persisted member id is required" }.toString(),
+                    id = requireNotNull(member.id) { "Persisted member id is required" },
                     email = member.email,
                     name = member.name,
                     phone = member.phone,

@@ -1,6 +1,7 @@
 package com.godsmove.application.auth
 
 import java.time.LocalDate
+import java.util.UUID
 
 object AuthCommand {
     data class SendVerificationCode(
@@ -39,7 +40,7 @@ object AuthCommand {
     )
 
     data class CompleteOnboarding(
-        val memberId: String,
+        val memberId: UUID,
         val name: String,
         val phone: String,
         val birthDate: LocalDate,
