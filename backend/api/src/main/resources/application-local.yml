@@ -59,6 +59,9 @@ auth:
       discovery-uri: https://kauth.kakao.com/.well-known/openid-configuration
       allowed-clock-skew-seconds: 60
       nonce-replay-ttl-seconds: 600
+      user-info-uri: ${KAKAO_USER_INFO_URI:https://kapi.kakao.com/v1/oidc/userinfo}
+      connect-timeout-millis: ${KAKAO_CONNECT_TIMEOUT_MILLIS:2000}
+      read-timeout-millis: ${KAKAO_READ_TIMEOUT_MILLIS:2000}
   apple:
     oidc:
       issuer: https://appleid.apple.com

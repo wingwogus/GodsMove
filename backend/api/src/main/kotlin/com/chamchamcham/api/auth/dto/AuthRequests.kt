@@ -43,7 +43,8 @@ object AuthRequests {
         @field:NotBlank(message = "카카오 ID 토큰을 입력해주세요")
         val idToken: String,
         @field:NotBlank(message = "nonce를 입력해주세요")
-        val nonce: String
+        val nonce: String,
+        val kakaoAccessToken: String? = null
     )
 
     data class AppleLoginRequest(

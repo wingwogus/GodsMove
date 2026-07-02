@@ -1,6 +1,8 @@
 package com.chamchamcham.api.auth.controller
 
 import com.chamchamcham.api.exception.GlobalExceptionHandler
+import com.chamchamcham.application.auth.common.AuthCommand
+import com.chamchamcham.application.auth.common.AuthResult
 import com.chamchamcham.application.auth.common.OnboardingService
 import com.chamchamcham.application.auth.local.AuthService
 import com.chamchamcham.application.auth.social.AppleLoginService
@@ -10,6 +12,8 @@ import com.chamchamcham.application.security.TokenProvider
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -22,7 +26,7 @@ import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import org.junit.jupiter.api.extension.ExtendWith
+import java.util.UUID
 
 @WebMvcTest(AuthController::class)
 @AutoConfigureMockMvc(addFilters = false)
@@ -92,6 +96,19 @@ class AuthControllerValidationTest(
     }
 
     @Test
+    fun `kakao login accepts missing access token`() {
+        `when`(kakaoLoginService.login(AuthCommand.KakaoLogin("id-token", "nonce", null)))
+            .thenReturn(loginResult())
+
+        mockMvc.perform(
+            post("/api/v1/auth/kakao/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"idToken":"id-token","nonce":"nonce"}""")
+        )
+            .andExpect(status().isOk)
+    }
+
+    @Test
     fun `apple login rejects missing identity token`() {
         mockMvc.perform(
             post("/api/v1/auth/apple/login")
@@ -137,5 +154,27 @@ class AuthControllerValidationTest(
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
             .andExpect(jsonPath("$.error.detail.field", equalTo("nickname")))
+    }
+
+    private fun loginResult(): AuthResult.Login {
+        return AuthResult.Login(
+            accessToken = "access-token",
+            refreshToken = "refresh-token",
+            member = AuthResult.MemberProfile(
+                id = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                email = null,
+                name = null,
+                phone = null,
+                birthDate = null,
+                nickname = null,
+                region = null,
+                experienceLevel = null,
+                managementType = "UNREGISTERED"
+            ),
+            onboarding = AuthResult.Onboarding(
+                status = AuthResult.OnboardingStatus.REQUIRED,
+                missingFields = emptyList()
+            )
+        )
     }
 }

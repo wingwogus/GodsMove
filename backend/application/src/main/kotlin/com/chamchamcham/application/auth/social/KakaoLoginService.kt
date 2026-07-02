@@ -18,6 +18,7 @@ import java.time.Instant
 @Transactional
 class KakaoLoginService(
     private val kakaoOidcTokenVerifier: KakaoOidcTokenVerifier,
+    private val kakaoUserInfoClient: KakaoUserInfoClient,
     private val kakaoNonceReplayRepository: KakaoNonceReplayRepository,
     private val socialLoginSupport: SocialLoginSupport,
     @Value("\${auth.kakao.oidc.nonce-replay-ttl-seconds:600}")
@@ -30,12 +31,22 @@ class KakaoLoginService(
 
     fun login(command: AuthCommand.KakaoLogin): AuthResult.Login {
         val claims = kakaoOidcTokenVerifier.verify(command.idToken, command.nonce)
-        reserveNonce(claims)
+        val userInfo = command.kakaoAccessToken
+            ?.takeIf { it.isNotBlank() }
+            ?.let { kakaoUserInfoClient.fetch(it) }
+
+        if (userInfo != null && userInfo.subject != claims.subject) {
+            throw BusinessException(ErrorCode.INVALID_KAKAO_TOKEN)
+        }
 
         return socialLoginSupport.login(
             provider = AuthProvider.KAKAO,
             providerSubject = claims.subject,
-            email = claims.email?.takeIf { claims.emailVerified }
+            email = userInfo?.email ?: claims.email?.takeIf { claims.emailVerified },
+            name = userInfo?.name,
+            phone = userInfo?.phone,
+            birthDate = userInfo?.birthDate,
+            beforeSideEffects = { reserveNonce(claims) }
         )
     }
 

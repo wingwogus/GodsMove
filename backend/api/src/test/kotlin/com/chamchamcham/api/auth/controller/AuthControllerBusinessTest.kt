@@ -114,7 +114,7 @@ class AuthControllerBusinessTest(
 
     @Test
     fun `kakao login returns login response from service`() {
-        `when`(kakaoLoginService.login(AuthCommand.KakaoLogin("id-token", "nonce")))
+        `when`(kakaoLoginService.login(AuthCommand.KakaoLogin("id-token", "nonce", null)))
             .thenReturn(loginResult())
 
         mockMvc.perform(
@@ -136,6 +136,29 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.data.onboarding.missingFields[3]", equalTo("NICKNAME")))
             .andExpect(jsonPath("$.data.onboarding.missingFields[4]", equalTo("REGION")))
             .andExpect(jsonPath("$.data.onboarding.missingFields[5]", equalTo("EXPERIENCE_LEVEL")))
+    }
+
+    @Test
+    fun `kakao login passes optional access token to service`() {
+        `when`(kakaoLoginService.login(AuthCommand.KakaoLogin("id-token", "nonce", "kakao-access-token")))
+            .thenReturn(loginResult())
+
+        mockMvc.perform(
+            post("/api/v1/auth/kakao/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "idToken":"id-token",
+                      "nonce":"nonce",
+                      "kakaoAccessToken":"kakao-access-token"
+                    }
+                    """.trimIndent()
+                )
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.accessToken", equalTo("access-token")))
     }
 
     @Test
@@ -197,7 +220,7 @@ class AuthControllerBusinessTest(
     fun `kakao login maps invalid token to unauthorized`() {
         doThrow(object : BusinessException(ErrorCode.INVALID_KAKAO_TOKEN) {})
             .`when`(kakaoLoginService)
-            .login(AuthCommand.KakaoLogin("bad-token", "nonce"))
+            .login(AuthCommand.KakaoLogin("bad-token", "nonce", null))
 
         mockMvc.perform(
             post("/api/v1/auth/kakao/login")

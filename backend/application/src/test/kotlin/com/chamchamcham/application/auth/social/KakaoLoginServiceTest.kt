@@ -31,6 +31,7 @@ import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import java.time.Duration
 import java.time.Instant
+import java.time.LocalDate
 import java.util.UUID
 
 @ExtendWith(MockitoExtension::class)
@@ -41,6 +42,9 @@ class KakaoLoginServiceTest {
 
     @Mock
     private lateinit var kakaoOidcTokenVerifier: KakaoOidcTokenVerifier
+
+    @Mock
+    private lateinit var kakaoUserInfoClient: KakaoUserInfoClient
 
     @Mock
     private lateinit var externalIdentityRepository: ExternalIdentityRepository
@@ -70,6 +74,7 @@ class KakaoLoginServiceTest {
         )
         service = KakaoLoginService(
             kakaoOidcTokenVerifier,
+            kakaoUserInfoClient,
             nonceRepository,
             socialLoginSupport,
             600L,
@@ -96,7 +101,7 @@ class KakaoLoginServiceTest {
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
-        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce", null))
 
         assertLoginResult(result, memberId, "user@example.com")
         assertEquals("nonce", nonceRepository.lastNonce)
@@ -119,7 +124,7 @@ class KakaoLoginServiceTest {
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
-        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce", null))
 
         val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
         verify(memberRepository).save(memberCaptor.capture())
@@ -148,7 +153,7 @@ class KakaoLoginServiceTest {
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
-        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce", null))
 
         val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
         verify(memberRepository).save(memberCaptor.capture())
@@ -173,7 +178,7 @@ class KakaoLoginServiceTest {
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
-        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce", null))
 
         val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
         verify(memberRepository).save(memberCaptor.capture())
@@ -188,7 +193,7 @@ class KakaoLoginServiceTest {
         `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce")).thenReturn(claims())
 
         val exception = assertThrows(BusinessException::class.java) {
-            service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
+            service.login(AuthCommand.KakaoLogin("id-token", "nonce", null))
         }
 
         assertEquals(ErrorCode.KAKAO_NONCE_REPLAY, exception.errorCode)
@@ -214,12 +219,89 @@ class KakaoLoginServiceTest {
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
-        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce", null))
 
         val ttl = nonceRepository.lastTtl ?: error("nonce TTL was not recorded")
         assertTrue(ttl > Duration.ZERO)
         assertTrue(ttl <= Duration.ofSeconds(60))
         assertLoginResult(result, memberId, "user@example.com")
+    }
+
+    @Test
+    fun `login creates new member without email when access token is absent and id token email is unavailable`() {
+        val savedMember = Member(id = newMemberId, email = null, passwordHash = null, role = "ROLE_USER")
+
+        `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce"))
+            .thenReturn(claims(email = "user@example.com", emailVerified = false))
+        `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.KAKAO, "kakao-sub"))
+            .thenReturn(null)
+        `when`(memberRepository.save(Mockito.any(Member::class.java))).thenReturn(savedMember)
+        `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
+            .thenAnswer { it.getArgument(0) }
+        `when`(tokenProvider.generateToken(newMemberId, "ROLE_USER"))
+            .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
+        `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
+
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce", null))
+
+        val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
+        verify(memberRepository).save(memberCaptor.capture())
+        assertNull(memberCaptor.value.email)
+        assertLoginResult(result, newMemberId, null)
+        Mockito.verifyNoInteractions(kakaoUserInfoClient)
+    }
+
+    @Test
+    fun `login prefills profile from userinfo when access token is present`() {
+        val savedMember = Member(id = newMemberId, email = "userinfo@example.com", passwordHash = null, role = "ROLE_USER")
+
+        `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce"))
+            .thenReturn(claims(email = "claims@example.com", emailVerified = true))
+        `when`(kakaoUserInfoClient.fetch("access-token"))
+            .thenReturn(
+                KakaoUserInfo(
+                    subject = "kakao-sub",
+                    email = "userinfo@example.com",
+                    name = "카카오회원",
+                    phone = "010-1234-5678",
+                    birthDate = LocalDate.of(1990, 5, 12)
+                )
+            )
+        `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.KAKAO, "kakao-sub"))
+            .thenReturn(null)
+        `when`(memberRepository.save(Mockito.any(Member::class.java))).thenReturn(savedMember)
+        `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
+            .thenAnswer { it.getArgument(0) }
+        `when`(tokenProvider.generateToken(newMemberId, "ROLE_USER"))
+            .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
+        `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
+
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce", "access-token"))
+
+        val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
+        verify(memberRepository).save(memberCaptor.capture())
+        assertEquals("userinfo@example.com", memberCaptor.value.email)
+        assertEquals("카카오회원", memberCaptor.value.name)
+        assertEquals("010-1234-5678", memberCaptor.value.phone)
+        assertEquals(LocalDate.of(1990, 5, 12), memberCaptor.value.birthDate)
+        assertLoginResult(result, newMemberId, "userinfo@example.com")
+        assertEquals("nonce", nonceRepository.lastNonce)
+    }
+
+    @Test
+    fun `login rejects userinfo subject mismatch before nonce reservation and member writes`() {
+        `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce")).thenReturn(claims())
+        `when`(kakaoUserInfoClient.fetch("access-token"))
+            .thenReturn(KakaoUserInfo(subject = "other-sub", email = "userinfo@example.com", name = null, phone = null, birthDate = null))
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.login(AuthCommand.KakaoLogin("id-token", "nonce", "access-token"))
+        }
+
+        assertEquals(ErrorCode.INVALID_KAKAO_TOKEN, exception.errorCode)
+        assertNull(nonceRepository.lastNonce)
+        verify(memberRepository, Mockito.never()).save(Mockito.any(Member::class.java))
+        verify(externalIdentityRepository, Mockito.never()).save(Mockito.any(ExternalIdentity::class.java))
     }
 
     private fun assertLoginResult(
