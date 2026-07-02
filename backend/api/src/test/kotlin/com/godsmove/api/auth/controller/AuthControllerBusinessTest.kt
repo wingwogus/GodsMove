@@ -1,10 +1,12 @@
 package com.godsmove.api.auth.controller
 
 import com.godsmove.api.exception.GlobalExceptionHandler
+import com.godsmove.application.auth.AppleLoginService
 import com.godsmove.application.auth.AuthCommand
 import com.godsmove.application.auth.AuthResult
 import com.godsmove.application.auth.AuthService
 import com.godsmove.application.auth.KakaoLoginService
+import com.godsmove.application.auth.NaverLoginService
 import com.godsmove.application.exception.ErrorCode
 import com.godsmove.application.exception.business.BusinessException
 import com.godsmove.application.security.TokenProvider
@@ -41,6 +43,12 @@ class AuthControllerBusinessTest(
 
     @MockBean
     private lateinit var kakaoLoginService: KakaoLoginService
+
+    @MockBean
+    private lateinit var appleLoginService: AppleLoginService
+
+    @MockBean
+    private lateinit var naverLoginService: NaverLoginService
 
     @MockBean
     private lateinit var tokenProvider: TokenProvider
@@ -96,9 +104,9 @@ class AuthControllerBusinessTest(
     }
 
     @Test
-    fun `kakao login returns token pair from service`() {
+    fun `kakao login returns login response from service`() {
         `when`(kakaoLoginService.login(AuthCommand.KakaoLogin("id-token", "nonce")))
-            .thenReturn(kakaoLoginResult())
+            .thenReturn(loginResult())
 
         mockMvc.perform(
             post("/api/v1/auth/kakao/login")
@@ -109,6 +117,63 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.accessToken", equalTo("access-token")))
             .andExpect(jsonPath("$.data.refreshToken", equalTo("refresh-token")))
+            .andExpect(jsonPath("$.data.member.id", equalTo("00000000-0000-0000-0000-000000000001")))
+            .andExpect(jsonPath("$.data.member.email", equalTo("social@example.com")))
+            .andExpect(jsonPath("$.data.member.managementType", equalTo("UNREGISTERED")))
+            .andExpect(jsonPath("$.data.onboarding.status", equalTo("REQUIRED")))
+    }
+
+    @Test
+    fun `apple login returns login response from service`() {
+        `when`(
+            appleLoginService.login(
+                AuthCommand.AppleLogin(
+                    identityToken = "identity-token",
+                    nonce = "nonce",
+                    authorizationCode = "authorization-code",
+                    userIdentifier = "apple-user-id"
+                )
+            )
+        ).thenReturn(loginResult())
+
+        mockMvc.perform(
+            post("/api/v1/auth/apple/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "identityToken":"identity-token",
+                      "nonce":"nonce",
+                      "authorizationCode":"authorization-code",
+                      "userIdentifier":"apple-user-id"
+                    }
+                    """.trimIndent()
+                )
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.accessToken", equalTo("access-token")))
+            .andExpect(jsonPath("$.data.refreshToken", equalTo("refresh-token")))
+            .andExpect(jsonPath("$.data.member.email", equalTo("social@example.com")))
+            .andExpect(jsonPath("$.data.onboarding.status", equalTo("REQUIRED")))
+    }
+
+    @Test
+    fun `naver login returns login response from service`() {
+        `when`(naverLoginService.login(AuthCommand.NaverLogin("naver-access-token")))
+            .thenReturn(loginResult())
+
+        mockMvc.perform(
+            post("/api/v1/auth/naver/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"accessToken":"naver-access-token"}""")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data.accessToken", equalTo("access-token")))
+            .andExpect(jsonPath("$.data.refreshToken", equalTo("refresh-token")))
+            .andExpect(jsonPath("$.data.member.email", equalTo("social@example.com")))
+            .andExpect(jsonPath("$.data.onboarding.status", equalTo("REQUIRED")))
     }
 
     @Test
@@ -127,7 +192,7 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.error.code", equalTo("AUTH_009")))
     }
 
-    private fun kakaoLoginResult(): AuthResult.Login {
+    private fun loginResult(): AuthResult.Login {
         return AuthResult.Login(
             accessToken = "access-token",
             refreshToken = "refresh-token",
@@ -155,7 +220,7 @@ class AuthControllerBusinessTest(
             )
             .newInstance(
                 UUID.fromString("00000000-0000-0000-0000-000000000001"),
-                "kakao@example.com",
+                "social@example.com",
                 null,
                 null,
                 null,

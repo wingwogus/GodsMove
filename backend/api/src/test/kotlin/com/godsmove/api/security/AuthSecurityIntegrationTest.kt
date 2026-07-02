@@ -60,6 +60,47 @@ class AuthSecurityIntegrationTest(
     }
 
     @Test
+    fun `apple auth endpoint is publicly accessible`() {
+        mockMvc.perform(
+            post("/api/v1/auth/apple/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"identityToken":"","nonce":"nonce"}""")
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `naver auth endpoint is publicly accessible`() {
+        mockMvc.perform(
+            post("/api/v1/auth/naver/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"accessToken":""}""")
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `onboarding complete requires authentication`() {
+        mockMvc.perform(
+            post("/api/v1/onboarding/complete")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {
+                      "name":"홍길동",
+                      "phone":"010-1234-5678",
+                      "birthDate":"1990-01-01",
+                      "nickname":"길동",
+                      "region":"서울",
+                      "experienceLevel":"BEGINNER"
+                    }
+                    """.trimIndent()
+                )
+        )
+            .andExpect(status().isUnauthorized)
+    }
+
+    @Test
     fun `oauth redirect routes are not public auth routes`() {
         mockMvc.perform(get("/oauth2/authorization/kakao"))
             .andExpect(status().isUnauthorized)

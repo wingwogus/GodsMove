@@ -3,9 +3,11 @@ package com.godsmove.api.auth.controller
 import com.godsmove.api.common.ApiResponse
 import com.godsmove.api.auth.dto.AuthRequests
 import com.godsmove.api.auth.dto.AuthResponses
+import com.godsmove.application.auth.AppleLoginService
 import com.godsmove.application.auth.AuthCommand
 import com.godsmove.application.auth.AuthService
 import com.godsmove.application.auth.KakaoLoginService
+import com.godsmove.application.auth.NaverLoginService
 import com.godsmove.application.exception.ErrorCode
 import com.godsmove.application.exception.business.BusinessException
 import com.godsmove.application.security.TokenProvider
@@ -27,6 +29,8 @@ import org.springframework.web.bind.annotation.RestController
 class AuthController(
     private val authService: AuthService,
     private val kakaoLoginService: KakaoLoginService,
+    private val appleLoginService: AppleLoginService,
+    private val naverLoginService: NaverLoginService,
     private val tokenProvider: TokenProvider,
     @Value("\${app.auth.refresh-cookie-secure:true}")
     private val refreshCookieSecure: Boolean
@@ -69,9 +73,32 @@ class AuthController(
     @PostMapping("/kakao/login")
     fun kakaoLogin(
         @Valid @RequestBody request: AuthRequests.KakaoLoginRequest
-    ): ResponseEntity<ApiResponse<AuthResponses.TokenResponse>> {
+    ): ResponseEntity<ApiResponse<AuthResponses.LoginResponse>> {
         val result = kakaoLoginService.login(AuthCommand.KakaoLogin(request.idToken, request.nonce))
-        return ResponseEntity.ok(ApiResponse.ok(AuthResponses.TokenResponse.from(result)))
+        return ResponseEntity.ok(ApiResponse.ok(AuthResponses.LoginResponse.from(result)))
+    }
+
+    @PostMapping("/apple/login")
+    fun appleLogin(
+        @Valid @RequestBody request: AuthRequests.AppleLoginRequest
+    ): ResponseEntity<ApiResponse<AuthResponses.LoginResponse>> {
+        val result = appleLoginService.login(
+            AuthCommand.AppleLogin(
+                identityToken = request.identityToken,
+                nonce = request.nonce,
+                authorizationCode = request.authorizationCode,
+                userIdentifier = request.userIdentifier
+            )
+        )
+        return ResponseEntity.ok(ApiResponse.ok(AuthResponses.LoginResponse.from(result)))
+    }
+
+    @PostMapping("/naver/login")
+    fun naverLogin(
+        @Valid @RequestBody request: AuthRequests.NaverLoginRequest
+    ): ResponseEntity<ApiResponse<AuthResponses.LoginResponse>> {
+        val result = naverLoginService.login(AuthCommand.NaverLogin(request.accessToken))
+        return ResponseEntity.ok(ApiResponse.ok(AuthResponses.LoginResponse.from(result)))
     }
 
     @PostMapping("/reissue")
