@@ -10,6 +10,7 @@ import com.godsmove.application.exception.business.BusinessException
 import com.godsmove.application.security.TokenProvider
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
+import org.mockito.Mockito
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
@@ -96,7 +97,7 @@ class AuthControllerBusinessTest(
     @Test
     fun `kakao login returns token pair from service`() {
         `when`(kakaoLoginService.login(AuthCommand.KakaoLogin("id-token", "nonce")))
-            .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
+            .thenReturn(kakaoLoginResult())
 
         mockMvc.perform(
             post("/api/v1/auth/kakao/login")
@@ -123,5 +124,12 @@ class AuthControllerBusinessTest(
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code", equalTo("AUTH_009")))
+    }
+
+    private fun kakaoLoginResult(): AuthResult.Login {
+        val result = Mockito.mock(AuthResult.Login::class.java)
+        `when`(result.accessToken).thenReturn("access-token")
+        `when`(result.refreshToken).thenReturn("refresh-token")
+        return result
     }
 }

@@ -52,27 +52,32 @@ class KakaoLoginServiceTest {
     private lateinit var refreshTokenRepository: RefreshTokenRepository
 
     private lateinit var nonceRepository: RecordingNonceRepository
+    private lateinit var socialLoginSupport: SocialLoginSupport
     private lateinit var service: KakaoLoginService
 
     @BeforeEach
     fun setUp() {
         nonceRepository = RecordingNonceRepository()
-        service = KakaoLoginService(
-            kakaoOidcTokenVerifier,
-            nonceRepository,
+        socialLoginSupport = SocialLoginSupport(
             externalIdentityRepository,
             memberRepository,
             tokenProvider,
             refreshTokenRepository,
+            OnboardingStatusResolver()
+        )
+        service = KakaoLoginService(
+            kakaoOidcTokenVerifier,
+            nonceRepository,
+            socialLoginSupport,
             600L,
             60L
         )
     }
 
     @Test
-    fun `login reuses existing external identity`() {
+    fun `login reuses existing external identity without requiring email`() {
         val member = Member(id = memberId, email = "user@example.com", passwordHash = null, role = "ROLE_USER")
-        val claims = claims()
+        val claims = claims(email = null, emailVerified = false)
 
         `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce")).thenReturn(claims)
         `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.KAKAO, "kakao-sub"))
@@ -91,8 +96,9 @@ class KakaoLoginServiceTest {
 
         val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
 
-        assertEquals(AuthResult.TokenPair("access-token", "refresh-token"), result)
+        assertLoginResult(result, memberId, "user@example.com")
         assertEquals("nonce", nonceRepository.lastNonce)
+        verify(memberRepository, Mockito.never()).findByEmail(Mockito.anyString())
         verify(refreshTokenRepository).save(memberId, "refresh-token", 120L)
     }
 
@@ -111,13 +117,15 @@ class KakaoLoginServiceTest {
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
-        service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
 
         val identityCaptor = ArgumentCaptor.forClass(ExternalIdentity::class.java)
         verify(externalIdentityRepository).save(identityCaptor.capture())
         assertEquals(member, identityCaptor.value.member)
         assertEquals(AuthProvider.KAKAO, identityCaptor.value.provider)
         assertEquals("kakao-sub", identityCaptor.value.providerSubject)
+        assertEquals("user@example.com", identityCaptor.value.emailAtLinkTime)
+        assertLoginResult(result, linkedMemberId, "user@example.com")
     }
 
     @Test
@@ -135,12 +143,13 @@ class KakaoLoginServiceTest {
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
-        service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
 
         val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
         verify(memberRepository).save(memberCaptor.capture())
         assertEquals("new@example.com", memberCaptor.value.email)
         assertNull(memberCaptor.value.passwordHash)
+        assertLoginResult(result, newMemberId, "new@example.com")
     }
 
     @Test
@@ -190,11 +199,24 @@ class KakaoLoginServiceTest {
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
-        service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
 
         val ttl = nonceRepository.lastTtl ?: error("nonce TTL was not recorded")
         assertTrue(ttl > Duration.ZERO)
         assertTrue(ttl <= Duration.ofSeconds(60))
+        assertLoginResult(result, memberId, "user@example.com")
+    }
+
+    private fun assertLoginResult(
+        result: AuthResult.Login,
+        expectedMemberId: UUID,
+        expectedEmail: String
+    ) {
+        assertEquals("access-token", result.accessToken)
+        assertEquals("refresh-token", result.refreshToken)
+        assertEquals(expectedMemberId, result.member.id)
+        assertEquals(expectedEmail, result.member.email)
+        assertEquals(AuthResult.OnboardingStatus.REQUIRED, result.onboarding.status)
     }
 
     private fun claims(

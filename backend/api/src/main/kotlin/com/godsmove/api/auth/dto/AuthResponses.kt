@@ -14,6 +14,13 @@ object AuthResponses {
                     refreshToken = result.refreshToken
                 )
             }
+
+            fun from(result: AuthResult.Login): TokenResponse {
+                return TokenResponse(
+                    accessToken = result.accessToken,
+                    refreshToken = result.refreshToken
+                )
+            }
         }
     }
 }
