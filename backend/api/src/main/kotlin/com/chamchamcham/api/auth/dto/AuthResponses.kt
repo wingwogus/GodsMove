@@ -53,7 +53,7 @@ object AuthResponses {
 
     data class MemberProfileResponse(
         val id: UUID,
-        val email: String,
+        val email: String?,
         val name: String?,
         val phone: String?,
         val birthDate: LocalDate?,
@@ -80,11 +80,15 @@ object AuthResponses {
     }
 
     data class OnboardingResponse(
-        val status: AuthResult.OnboardingStatus
+        val status: AuthResult.OnboardingStatus,
+        val missingFields: List<AuthResult.OnboardingField>
     ) {
         companion object {
             fun from(result: AuthResult.Onboarding): OnboardingResponse {
-                return OnboardingResponse(status = result.status)
+                return OnboardingResponse(
+                    status = result.status,
+                    missingFields = result.missingFields
+                )
             }
         }
     }

@@ -24,7 +24,7 @@ object AuthResult {
 
     data class MemberProfile(
         val id: UUID,
-        val email: String,
+        val email: String?,
         val name: String?,
         val phone: String?,
         val birthDate: LocalDate?,
@@ -51,11 +51,21 @@ object AuthResult {
     }
 
     data class Onboarding(
-        val status: OnboardingStatus
+        val status: OnboardingStatus,
+        val missingFields: List<OnboardingField>
     )
 
     enum class OnboardingStatus {
         REQUIRED,
         COMPLETE
+    }
+
+    enum class OnboardingField {
+        NAME,
+        PHONE,
+        BIRTH_DATE,
+        NICKNAME,
+        REGION,
+        EXPERIENCE_LEVEL
     }
 }

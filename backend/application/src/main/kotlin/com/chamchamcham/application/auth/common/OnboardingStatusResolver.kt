@@ -6,21 +6,36 @@ import org.springframework.stereotype.Component
 @Component
 class OnboardingStatusResolver {
     fun resolve(member: Member): AuthResult.Onboarding {
-        val status = if (isComplete(member)) {
+        val missingFields = missingFields(member)
+        val status = if (missingFields.isEmpty()) {
             AuthResult.OnboardingStatus.COMPLETE
         } else {
             AuthResult.OnboardingStatus.REQUIRED
         }
 
-        return AuthResult.Onboarding(status)
+        return AuthResult.Onboarding(status, missingFields)
     }
 
-    private fun isComplete(member: Member): Boolean {
-        return !member.name.isNullOrBlank() &&
-            !member.phone.isNullOrBlank() &&
-            member.birthDate != null &&
-            !member.nickname.isNullOrBlank() &&
-            !member.region.isNullOrBlank() &&
-            !member.experienceLevel.isNullOrBlank()
+    private fun missingFields(member: Member): List<AuthResult.OnboardingField> {
+        return buildList {
+            if (member.name.isNullOrBlank()) {
+                add(AuthResult.OnboardingField.NAME)
+            }
+            if (member.phone.isNullOrBlank()) {
+                add(AuthResult.OnboardingField.PHONE)
+            }
+            if (member.birthDate == null) {
+                add(AuthResult.OnboardingField.BIRTH_DATE)
+            }
+            if (member.nickname.isNullOrBlank()) {
+                add(AuthResult.OnboardingField.NICKNAME)
+            }
+            if (member.region.isNullOrBlank()) {
+                add(AuthResult.OnboardingField.REGION)
+            }
+            if (member.experienceLevel.isNullOrBlank()) {
+                add(AuthResult.OnboardingField.EXPERIENCE_LEVEL)
+            }
+        }
     }
 }

@@ -130,6 +130,12 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.data.member.email", equalTo("social@example.com")))
             .andExpect(jsonPath("$.data.member.managementType", equalTo("UNREGISTERED")))
             .andExpect(jsonPath("$.data.onboarding.status", equalTo("REQUIRED")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields[0]", equalTo("NAME")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields[1]", equalTo("PHONE")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields[2]", equalTo("BIRTH_DATE")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields[3]", equalTo("NICKNAME")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields[4]", equalTo("REGION")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields[5]", equalTo("EXPERIENCE_LEVEL")))
     }
 
     @Test
@@ -165,6 +171,7 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.data.refreshToken", equalTo("refresh-token")))
             .andExpect(jsonPath("$.data.member.email", equalTo("social@example.com")))
             .andExpect(jsonPath("$.data.onboarding.status", equalTo("REQUIRED")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields[0]", equalTo("NAME")))
     }
 
     @Test
@@ -183,6 +190,7 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.data.refreshToken", equalTo("refresh-token")))
             .andExpect(jsonPath("$.data.member.email", equalTo("social@example.com")))
             .andExpect(jsonPath("$.data.onboarding.status", equalTo("REQUIRED")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields[0]", equalTo("NAME")))
     }
 
     @Test
@@ -229,6 +237,7 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.data.member.nickname", equalTo("길동")))
             .andExpect(jsonPath("$.data.member.managementType", equalTo("REGISTERED")))
             .andExpect(jsonPath("$.data.onboarding.status", equalTo("COMPLETE")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields").isEmpty())
     }
 
     @Test
@@ -249,7 +258,17 @@ class AuthControllerBusinessTest(
             accessToken = "access-token",
             refreshToken = "refresh-token",
             member = memberProfile(),
-            onboarding = AuthResult.Onboarding(AuthResult.OnboardingStatus.REQUIRED)
+            onboarding = AuthResult.Onboarding(
+                status = AuthResult.OnboardingStatus.REQUIRED,
+                missingFields = listOf(
+                    AuthResult.OnboardingField.NAME,
+                    AuthResult.OnboardingField.PHONE,
+                    AuthResult.OnboardingField.BIRTH_DATE,
+                    AuthResult.OnboardingField.NICKNAME,
+                    AuthResult.OnboardingField.REGION,
+                    AuthResult.OnboardingField.EXPERIENCE_LEVEL
+                )
+            )
         )
     }
 
@@ -270,7 +289,10 @@ class AuthControllerBusinessTest(
     private fun onboardingCompleteResult(): AuthResult.OnboardingComplete {
         return AuthResult.OnboardingComplete(
             member = completedMemberProfile(),
-            onboarding = AuthResult.Onboarding(AuthResult.OnboardingStatus.COMPLETE)
+            onboarding = AuthResult.Onboarding(
+                status = AuthResult.OnboardingStatus.COMPLETE,
+                missingFields = emptyList()
+            )
         )
     }
 
