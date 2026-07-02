@@ -2,8 +2,6 @@ package com.chamchamcham.application.auth.social
 
 import com.chamchamcham.application.auth.common.AuthCommand
 import com.chamchamcham.application.auth.common.AuthResult
-import com.chamchamcham.application.auth.common.OnboardingStatusResolver
-
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.redis.AppleNonceReplayRepository
@@ -35,7 +33,6 @@ class AppleLoginService(
             provider = AuthProvider.APPLE,
             providerSubject = claims.subject,
             email = claims.email?.takeIf { claims.emailVerified },
-            emailRequiredErrorCode = ErrorCode.APPLE_VERIFIED_EMAIL_REQUIRED,
             beforeSideEffects = { reserveNonce(claims) }
         )
     }

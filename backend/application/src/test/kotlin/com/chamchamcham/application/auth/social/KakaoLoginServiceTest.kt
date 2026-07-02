@@ -36,7 +36,6 @@ import java.util.UUID
 @ExtendWith(MockitoExtension::class)
 class KakaoLoginServiceTest {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
-    private val linkedMemberId = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val newMemberId = UUID.fromString("00000000-0000-0000-0000-000000000003")
     private val externalIdentityId = UUID.fromString("00000000-0000-0000-0000-000000000101")
 
@@ -90,8 +89,7 @@ class KakaoLoginServiceTest {
                     id = externalIdentityId,
                     member = member,
                     provider = AuthProvider.KAKAO,
-                    providerSubject = "kakao-sub",
-                    emailAtLinkTime = "user@example.com"
+                    providerSubject = "kakao-sub"
                 )
             )
         `when`(tokenProvider.generateToken(memberId, "ROLE_USER"))
@@ -107,29 +105,33 @@ class KakaoLoginServiceTest {
     }
 
     @Test
-    fun `login links existing member by verified email`() {
-        val member = Member(id = linkedMemberId, email = "user@example.com", passwordHash = "hashed-password", role = "ROLE_USER")
+    fun `login creates new member by provider subject without linking by email`() {
+        val savedMember = Member(id = newMemberId, email = "user@example.com", passwordHash = null, role = "ROLE_USER")
         val claims = claims()
 
         `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce")).thenReturn(claims)
         `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.KAKAO, "kakao-sub"))
             .thenReturn(null)
-        `when`(memberRepository.findByEmail("user@example.com")).thenReturn(member)
+        `when`(memberRepository.save(Mockito.any(Member::class.java))).thenReturn(savedMember)
         `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
             .thenAnswer { it.getArgument(0) }
-        `when`(tokenProvider.generateToken(linkedMemberId, "ROLE_USER"))
+        `when`(tokenProvider.generateToken(newMemberId, "ROLE_USER"))
             .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
         `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
         val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
 
+        val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
+        verify(memberRepository).save(memberCaptor.capture())
+        assertEquals("user@example.com", memberCaptor.value.email)
+
         val identityCaptor = ArgumentCaptor.forClass(ExternalIdentity::class.java)
         verify(externalIdentityRepository).save(identityCaptor.capture())
-        assertEquals(member, identityCaptor.value.member)
+        assertEquals(savedMember, identityCaptor.value.member)
         assertEquals(AuthProvider.KAKAO, identityCaptor.value.provider)
         assertEquals("kakao-sub", identityCaptor.value.providerSubject)
-        assertEquals("user@example.com", identityCaptor.value.emailAtLinkTime)
-        assertLoginResult(result, linkedMemberId, "user@example.com")
+        assertLoginResult(result, newMemberId, "user@example.com")
+        verify(memberRepository, Mockito.never()).findByEmail(Mockito.anyString())
     }
 
     @Test
@@ -139,7 +141,6 @@ class KakaoLoginServiceTest {
         `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce")).thenReturn(claims(email = "new@example.com"))
         `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.KAKAO, "kakao-sub"))
             .thenReturn(null)
-        `when`(memberRepository.findByEmail("new@example.com")).thenReturn(null)
         `when`(memberRepository.save(Mockito.any(Member::class.java))).thenReturn(savedMember)
         `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
             .thenAnswer { it.getArgument(0) }
@@ -154,20 +155,31 @@ class KakaoLoginServiceTest {
         assertEquals("new@example.com", memberCaptor.value.email)
         assertNull(memberCaptor.value.passwordHash)
         assertLoginResult(result, newMemberId, "new@example.com")
+        verify(memberRepository, Mockito.never()).findByEmail(Mockito.anyString())
     }
 
     @Test
-    fun `login rejects missing verified email`() {
+    fun `login creates new member without email`() {
+        val savedMember = Member(id = newMemberId, email = null, passwordHash = null, role = "ROLE_USER")
+
         `when`(kakaoOidcTokenVerifier.verify("id-token", "nonce"))
             .thenReturn(claims(email = null, emailVerified = false))
         `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.KAKAO, "kakao-sub"))
             .thenReturn(null)
+        `when`(memberRepository.save(Mockito.any(Member::class.java))).thenReturn(savedMember)
+        `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
+            .thenAnswer { it.getArgument(0) }
+        `when`(tokenProvider.generateToken(newMemberId, "ROLE_USER"))
+            .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
+        `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
-        val exception = assertThrows(BusinessException::class.java) {
-            service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
-        }
+        val result = service.login(AuthCommand.KakaoLogin("id-token", "nonce"))
 
-        assertEquals(ErrorCode.KAKAO_VERIFIED_EMAIL_REQUIRED, exception.errorCode)
+        val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
+        verify(memberRepository).save(memberCaptor.capture())
+        assertNull(memberCaptor.value.email)
+        assertLoginResult(result, newMemberId, null)
+        verify(memberRepository, Mockito.never()).findByEmail(Mockito.anyString())
     }
 
     @Test
@@ -195,8 +207,7 @@ class KakaoLoginServiceTest {
                     id = externalIdentityId,
                     member = member,
                     provider = AuthProvider.KAKAO,
-                    providerSubject = "kakao-sub",
-                    emailAtLinkTime = "user@example.com"
+                    providerSubject = "kakao-sub"
                 )
             )
         `when`(tokenProvider.generateToken(memberId, "ROLE_USER"))
@@ -214,7 +225,7 @@ class KakaoLoginServiceTest {
     private fun assertLoginResult(
         result: AuthResult.Login,
         expectedMemberId: UUID,
-        expectedEmail: String
+        expectedEmail: String?
     ) {
         assertEquals("access-token", result.accessToken)
         assertEquals("refresh-token", result.refreshToken)

@@ -3,7 +3,6 @@ package com.chamchamcham.application.auth.social
 import com.chamchamcham.application.auth.common.AuthCommand
 import com.chamchamcham.application.auth.common.AuthResult
 import com.chamchamcham.application.auth.common.OnboardingStatusResolver
-
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.redis.AppleNonceReplayRepository
@@ -23,6 +22,7 @@ import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
+import org.mockito.ArgumentCaptor
 import org.mockito.Mock
 import org.mockito.Mockito
 import org.mockito.Mockito.verify
@@ -127,19 +127,27 @@ class AppleLoginServiceTest {
     }
 
     @Test
-    fun `login rejects missing verified email for new identity`() {
+    fun `login creates member without email for new identity`() {
+        val savedMember = Member(id = newMemberId, email = null, passwordHash = null, role = "ROLE_USER")
+
         `when`(appleOidcTokenVerifier.verify("identity-token", "raw-nonce"))
             .thenReturn(claims(email = null, emailVerified = false))
         `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.APPLE, "apple-sub"))
             .thenReturn(null)
+        `when`(memberRepository.save(Mockito.any(Member::class.java))).thenReturn(savedMember)
+        `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
+            .thenAnswer { it.getArgument(0) }
+        `when`(tokenProvider.generateToken(newMemberId, "ROLE_USER"))
+            .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
+        `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
 
-        val exception = assertThrows(BusinessException::class.java) {
-            service.login(command())
-        }
+        val result = service.login(command())
 
-        assertEquals(ErrorCode.APPLE_VERIFIED_EMAIL_REQUIRED, exception.errorCode)
-        assertNull(nonceRepository.lastNonceHash)
-        assertNull(nonceRepository.lastTtl)
+        val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
+        verify(memberRepository).save(memberCaptor.capture())
+        assertNull(memberCaptor.value.email)
+        assertLoginResult(result, newMemberId, null)
+        verify(memberRepository, Mockito.never()).findByEmail(Mockito.anyString())
     }
 
     @Test
@@ -174,7 +182,6 @@ class AppleLoginServiceTest {
             .thenReturn(claims(email = "new@example.com"))
         `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.APPLE, "apple-sub"))
             .thenReturn(null)
-        `when`(memberRepository.findByEmail("new@example.com")).thenReturn(null)
         `when`(memberRepository.save(Mockito.any(Member::class.java))).thenReturn(savedMember)
         `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
             .thenAnswer { it.getArgument(0) }
@@ -185,12 +192,13 @@ class AppleLoginServiceTest {
         val result = service.login(command(userIdentifier = ""))
 
         assertLoginResult(result, newMemberId, "new@example.com")
+        verify(memberRepository, Mockito.never()).findByEmail(Mockito.anyString())
     }
 
     private fun assertLoginResult(
         result: AuthResult.Login,
         expectedMemberId: UUID,
-        expectedEmail: String
+        expectedEmail: String?
     ) {
         assertEquals("access-token", result.accessToken)
         assertEquals("refresh-token", result.refreshToken)
@@ -204,8 +212,7 @@ class AppleLoginServiceTest {
             id = externalIdentityId,
             member = member,
             provider = AuthProvider.APPLE,
-            providerSubject = "apple-sub",
-            emailAtLinkTime = "user@example.com"
+            providerSubject = "apple-sub"
         )
     }
 

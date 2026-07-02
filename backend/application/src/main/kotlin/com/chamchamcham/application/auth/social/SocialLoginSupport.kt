@@ -1,9 +1,7 @@
 package com.chamchamcham.application.auth.social
 
-import com.chamchamcham.application.auth.common.AuthCommand
 import com.chamchamcham.application.auth.common.AuthResult
 import com.chamchamcham.application.auth.common.OnboardingStatusResolver
-
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.redis.RefreshTokenRepository
@@ -31,7 +29,6 @@ class SocialLoginSupport(
         provider: AuthProvider,
         providerSubject: String,
         email: String?,
-        emailRequiredErrorCode: ErrorCode,
         name: String? = null,
         phone: String? = null,
         birthDate: LocalDate? = null,
@@ -43,11 +40,10 @@ class SocialLoginSupport(
             beforeSideEffects()
             existingIdentity.member
         } else {
-            linkOrCreateMember(
+            createMember(
                 provider = provider,
                 providerSubject = providerSubject,
                 email = email,
-                emailRequiredErrorCode = emailRequiredErrorCode,
                 name = name,
                 phone = phone,
                 birthDate = birthDate,
@@ -59,40 +55,32 @@ class SocialLoginSupport(
         return issueAndStoreLogin(member)
     }
 
-    private fun linkOrCreateMember(
+    private fun createMember(
         provider: AuthProvider,
         providerSubject: String,
         email: String?,
-        emailRequiredErrorCode: ErrorCode,
         name: String?,
         phone: String?,
         birthDate: LocalDate?,
         beforeSideEffects: () -> Unit
     ): Member {
-        val requiredEmail = email
-            ?.takeIf { it.isNotBlank() }
-            ?: throw BusinessException(emailRequiredErrorCode)
-
-        val existingMember = memberRepository.findByEmail(requiredEmail)
         beforeSideEffects()
 
-        val member = existingMember
-            ?: memberRepository.save(
-                Member(
-                    email = requiredEmail,
-                    name = name,
-                    phone = phone,
-                    birthDate = birthDate,
-                    passwordHash = null
-                )
+        val member = memberRepository.save(
+            Member(
+                email = email?.takeIf { it.isNotBlank() },
+                name = name,
+                phone = phone,
+                birthDate = birthDate,
+                passwordHash = null
             )
+        )
 
         externalIdentityRepository.save(
             ExternalIdentity(
                 member = member,
                 provider = provider,
-                providerSubject = providerSubject,
-                emailAtLinkTime = requiredEmail
+                providerSubject = providerSubject
             )
         )
 
