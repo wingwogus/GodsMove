@@ -68,7 +68,7 @@ class SocialLoginSupport(
 
         val member = memberRepository.save(
             Member(
-                email = email?.takeIf { it.isNotBlank() },
+                email = availableEmailOrNull(email),
                 name = name,
                 phone = phone,
                 birthDate = birthDate,
@@ -85,6 +85,11 @@ class SocialLoginSupport(
         )
 
         return member
+    }
+
+    private fun availableEmailOrNull(email: String?): String? {
+        val candidate = email?.takeIf { it.isNotBlank() } ?: return null
+        return candidate.takeUnless { memberRepository.existsByEmail(it) }
     }
 
     private fun issueAndStoreLogin(member: Member): AuthResult.Login {

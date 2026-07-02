@@ -124,6 +124,33 @@ class NaverLoginServiceTest {
     }
 
     @Test
+    fun `login creates member without email when provider email already belongs to another member`() {
+        val savedMember = Member(id = memberId, email = null, passwordHash = null, role = "ROLE_USER")
+        profileClient.profile = profile(email = "existing@example.com", name = "네이버회원")
+
+        `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.NAVER, "naver-sub"))
+            .thenReturn(null)
+        `when`(memberRepository.existsByEmail("existing@example.com")).thenReturn(true)
+        `when`(memberRepository.save(Mockito.any(Member::class.java))).thenReturn(savedMember)
+        `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
+            .thenAnswer { it.getArgument(0) }
+        `when`(tokenProvider.generateToken(memberId, "ROLE_USER"))
+            .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
+        `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
+
+        val result = service.login(AuthCommand.NaverLogin("access-token"))
+
+        val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
+        verify(memberRepository).save(memberCaptor.capture())
+        assertNull(memberCaptor.value.email)
+        assertEquals("네이버회원", memberCaptor.value.name)
+        assertEquals(memberId, result.member.id)
+        assertNull(result.member.email)
+        assertEquals("네이버회원", result.member.name)
+        verify(memberRepository, Mockito.never()).findByEmail(Mockito.anyString())
+    }
+
+    @Test
     fun `login reuses existing identity without requiring email`() {
         val member = Member(id = existingMemberId, email = "existing@example.com", passwordHash = null, role = "ROLE_USER")
         profileClient.profile = profile(email = null, name = "네이버회원")
