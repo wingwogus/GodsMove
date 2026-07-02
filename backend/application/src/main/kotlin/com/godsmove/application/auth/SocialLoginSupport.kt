@@ -30,20 +30,26 @@ class SocialLoginSupport(
         emailRequiredErrorCode: ErrorCode,
         name: String? = null,
         phone: String? = null,
-        birthDate: LocalDate? = null
+        birthDate: LocalDate? = null,
+        beforeSideEffects: () -> Unit = {}
     ): AuthResult.Login {
-        val member = externalIdentityRepository
+        val existingIdentity = externalIdentityRepository
             .findByProviderAndProviderSubject(provider, providerSubject)
-            ?.member
-            ?: linkOrCreateMember(
+        val member = if (existingIdentity != null) {
+            beforeSideEffects()
+            existingIdentity.member
+        } else {
+            linkOrCreateMember(
                 provider = provider,
                 providerSubject = providerSubject,
                 email = email,
                 emailRequiredErrorCode = emailRequiredErrorCode,
                 name = name,
                 phone = phone,
-                birthDate = birthDate
+                birthDate = birthDate,
+                beforeSideEffects = beforeSideEffects
             )
+        }
 
         member.prefillProfile(name, phone, birthDate)
         return issueAndStoreLogin(member)
@@ -56,13 +62,17 @@ class SocialLoginSupport(
         emailRequiredErrorCode: ErrorCode,
         name: String?,
         phone: String?,
-        birthDate: LocalDate?
+        birthDate: LocalDate?,
+        beforeSideEffects: () -> Unit
     ): Member {
         val requiredEmail = email
             ?.takeIf { it.isNotBlank() }
             ?: throw BusinessException(emailRequiredErrorCode)
 
-        val member = memberRepository.findByEmail(requiredEmail)
+        val existingMember = memberRepository.findByEmail(requiredEmail)
+        beforeSideEffects()
+
+        val member = existingMember
             ?: memberRepository.save(
                 Member(
                     email = requiredEmail,

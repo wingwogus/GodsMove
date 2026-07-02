@@ -26,13 +26,13 @@ class AppleLoginService(
     fun login(command: AuthCommand.AppleLogin): AuthResult.Login {
         val claims = appleOidcTokenVerifier.verify(command.identityToken, command.nonce)
         validateUserIdentifier(command.userIdentifier, claims.subject)
-        reserveNonce(claims)
 
         return socialLoginSupport.login(
             provider = AuthProvider.APPLE,
             providerSubject = claims.subject,
             email = claims.email?.takeIf { claims.emailVerified },
-            emailRequiredErrorCode = ErrorCode.APPLE_VERIFIED_EMAIL_REQUIRED
+            emailRequiredErrorCode = ErrorCode.APPLE_VERIFIED_EMAIL_REQUIRED,
+            beforeSideEffects = { reserveNonce(claims) }
         )
     }
 

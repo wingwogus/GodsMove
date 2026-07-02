@@ -13,6 +13,7 @@ import com.godsmove.domain.member.ExternalIdentityRepository
 import com.godsmove.domain.member.Member
 import com.godsmove.domain.member.MemberRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.BeforeEach
@@ -117,6 +118,8 @@ class AppleLoginServiceTest {
         }
 
         assertEquals(ErrorCode.INVALID_APPLE_TOKEN, exception.errorCode)
+        assertNull(nonceRepository.lastNonceHash)
+        assertNull(nonceRepository.lastTtl)
     }
 
     @Test
@@ -131,6 +134,8 @@ class AppleLoginServiceTest {
         }
 
         assertEquals(ErrorCode.APPLE_VERIFIED_EMAIL_REQUIRED, exception.errorCode)
+        assertNull(nonceRepository.lastNonceHash)
+        assertNull(nonceRepository.lastTtl)
     }
 
     @Test
