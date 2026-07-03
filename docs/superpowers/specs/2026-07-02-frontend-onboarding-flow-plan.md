@@ -12,7 +12,7 @@ The rest of the app defaults to offline-first local storage (see [Frontend Archi
 
 ## Screen / State Sequence
 
-Driven by an `OnboardingViewModel` (`@Observable`) holding in-memory draft form state — not SwiftData, since this is a one-shot flow outside the sync pipeline. Losing progress on a full app kill mid-flow is an accepted MVP simplification (normal backgrounding does not lose state; only process termination does).
+Driven by an `OnboardingViewModel` (`@Observable`) holding draft form state — not SwiftData, since this is a one-shot flow outside the sync pipeline. The flow is resumable across app kill and network loss: `OnboardingDraftStore` persists a `{ step, draft }` snapshot as JSON in `UserDefaults` (the profile photo itself is written to a file under Application Support, with only its filename in the snapshot, to keep the `UserDefaults` payload small). The snapshot is saved on every step transition and on the `scenePhase → .background` lifecycle event — the reliable hook for imminent process termination, the same reasoning used for the voice-session reconciliation sweep. On relaunch, `OnboardingViewModel` restores `currentStep`/`draft` from the snapshot if present, so the flow reopens exactly where it left off rather than restarting at Landing. The snapshot is cleared once the step 6→7 atomic submission succeeds (not yet implemented).
 
 1. **Landing** — 소셜로그인 버튼 (카카오 / 네이버 / 애플). No custom UI beyond a loading state; provider SDKs own their own login UI.
 2. **Social login exchange** — generate a nonce → provider SDK login requesting OIDC → send `idToken` + `nonce` to the backend → receive access/refresh tokens → store in Keychain.
