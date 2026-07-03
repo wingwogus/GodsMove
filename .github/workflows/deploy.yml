@@ -73,14 +73,17 @@ jobs:
           deploy_host="${DEPLOY_TARGET#*@}"
 
           install -m 700 -d ~/.ssh
-          printf '%s\n' "$DEPLOY_SSH_KEY" > ~/.ssh/chamchamcham_deploy_key
+          printf '%s\n' "$DEPLOY_SSH_KEY" | tr -d '\r' > ~/.ssh/chamchamcham_deploy_key
           chmod 600 ~/.ssh/chamchamcham_deploy_key
+          ssh-keygen -y -f ~/.ssh/chamchamcham_deploy_key >/dev/null
           ssh-keyscan -H "$deploy_host" >> ~/.ssh/known_hosts
 
-          ssh -i ~/.ssh/chamchamcham_deploy_key "$DEPLOY_TARGET" "mkdir -p '$DEPLOY_PATH'"
-          scp -i ~/.ssh/chamchamcham_deploy_key docker-compose.yml "$DEPLOY_TARGET:$DEPLOY_PATH/docker-compose.yml"
+          ssh_opts=(-i ~/.ssh/chamchamcham_deploy_key -o IdentitiesOnly=yes -o BatchMode=yes)
 
-          ssh -i ~/.ssh/chamchamcham_deploy_key "$DEPLOY_TARGET" \
+          ssh "${ssh_opts[@]}" "$DEPLOY_TARGET" "mkdir -p '$DEPLOY_PATH'"
+          scp "${ssh_opts[@]}" docker-compose.yml "$DEPLOY_TARGET:$DEPLOY_PATH/docker-compose.yml"
+
+          ssh "${ssh_opts[@]}" "$DEPLOY_TARGET" \
             "cd '$DEPLOY_PATH' && test -f .env || { echo '.env is missing in $DEPLOY_PATH'; exit 1; }"
-          ssh -i ~/.ssh/chamchamcham_deploy_key "$DEPLOY_TARGET" \
+          ssh "${ssh_opts[@]}" "$DEPLOY_TARGET" \
             "cd '$DEPLOY_PATH' && docker compose pull api && docker compose up -d api"
