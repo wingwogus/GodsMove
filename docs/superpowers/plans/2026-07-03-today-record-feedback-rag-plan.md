@@ -2613,7 +2613,7 @@ backend/api/src/main/kotlin/com/chamchamcham/api/farming/
 Run:
 
 ```bash
-rg -n "TodayDiary|today-diary|diary-feedback" backend/application/src/main/kotlin backend/application/src/test/kotlin backend/application/src/test/resources docs/superpowers
+rg -n "Today[D]iary|today[-]diary|diary[-]feedback" backend/application/src/main/kotlin backend/application/src/test/kotlin backend/application/src/test/resources docs/superpowers
 ```
 
 Expected: no matches.
