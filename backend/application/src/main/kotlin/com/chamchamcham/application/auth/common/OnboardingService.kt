@@ -22,6 +22,10 @@ class OnboardingService(
     private val onboardingStatusResolver: OnboardingStatusResolver
 ) {
     fun complete(command: AuthCommand.CompleteOnboarding): AuthResult.OnboardingComplete {
+        if (command.cropIds.isEmpty()) {
+            throw BusinessException(ErrorCode.INVALID_INPUT)
+        }
+
         val member = memberRepository.findById(command.memberId).orElseThrow {
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)
         }
