@@ -11,6 +11,7 @@ enum class ErrorCode(
     INTERNAL_ERROR("COMMON_999", "error.internal_error", 500),
     RESOURCE_NOT_FOUND("RESOURCE_001","error.resource_not_found", 404),
     MEMBER_NOT_FOUND("MEMBER_001", "error.member_not_found", 404),
+    CROP_NOT_FOUND("CROP_001", "error.crop_not_found", 404),
     USER_ALREADY_EXISTS("USER_002", "error.user_already_exists", 409),
     DUPLICATE_EMAIL("AUTH_003", "error.duplicate_email", 409),
     EMAIL_NOT_VERIFIED("AUTH_004", "error.email_not_verified", 400),
