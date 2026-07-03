@@ -7,5 +7,40 @@
 		<string>Pretendard-Medium.otf</string>
 		<string>Pretendard-Bold.otf</string>
 	</array>
+	<!--
+	  카카오 로그인 SDK 리다이렉트용 URL scheme. "REPLACE_ME"를 Secrets.kakaoNativeAppKey와
+	  동일한 실제 네이티브 앱 키로 바꿔야 한다 (예: kakaoNativeAppKey가 "abcd1234"면
+	  "kakaoabcd1234"). 값이 REPLACE_ME인 동안 카카오톡 앱으로의 로그인 콜백은 동작하지 않는다.
+	-->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>kakao-login</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>kakaoREPLACE_ME</string>
+			</array>
+		</dict>
+		<!--
+		  네이버 로그인 콜백용 커스텀 스킴. NaverLoginBridge.swift의 NidOAuth.initialize(urlScheme:)와
+		  동일한 값이어야 하고, 네이버 개발자센터에 등록한 콜백 URL과도 일치해야 한다.
+		-->
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>naver-login</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>chamchamcham</string>
+			</array>
+		</dict>
+	</array>
+	<key>LSApplicationQueriesSchemes</key>
+	<array>
+		<!-- kakao-ios-sdk's UserApi.isKakaoTalkLoginAvailable() checks exactly this scheme (Urls.swift: talkAuth) -->
+		<string>kakaokompassauth</string>
+		<!-- naveridlogin-sdk-ios-swift's isNaverAppInstalled() checks exactly this scheme (Constant.swift) -->
+		<string>naversearchthirdlogin</string>
+	</array>
 </dict>
 </plist>

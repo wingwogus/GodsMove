@@ -211,5 +211,5 @@ struct FarmLocationView: View {
 
 #Preview {
     FarmLocationView()
-        .environment(OnboardingViewModel())
+        .environment(OnboardingViewModel.preview())
 }
