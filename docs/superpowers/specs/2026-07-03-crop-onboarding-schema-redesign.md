@@ -146,11 +146,12 @@ var phone: String?
 var birthDate: LocalDate?
 var nickname: String?
 var experienceLevel: Int?
-var managementType: ManagementType
+var managementType: ManagementType?
 ```
 
-`managementType` must be mutable because onboarding sets it after social-login
-member creation.
+`managementType` must be nullable and mutable because social-login member
+creation happens before onboarding. Onboarding sets the value, and onboarding
+status treats a missing management type as incomplete.
 
 ### Farm
 
@@ -231,7 +232,7 @@ Request:
   "experienceLevel": 3,
   "managementType": "AGRICULTURAL_INDIVIDUAL",
   "farmName": "하늘들 약초농장",
-  "farmAddress": "강원특별자치도 평창군 진부면 ...",
+  "farmAddress": "강원특별자치도 평창군 진부면 하늘들길 12",
   "cropIds": [
     "00000000-0000-0000-0000-000000000001",
     "00000000-0000-0000-0000-000000000002"
@@ -266,7 +267,7 @@ Response:
   "farm": {
     "id": "00000000-0000-0000-0000-000000000000",
     "name": "하늘들 약초농장",
-    "address": "강원특별자치도 평창군 진부면 ..."
+    "address": "강원특별자치도 평창군 진부면 하늘들길 12"
   },
   "crops": [
     {
@@ -284,8 +285,9 @@ Response:
 }
 ```
 
-Existing login responses also remove `member.region` and return
-`experienceLevel` as a number.
+Existing login responses also remove `member.region`, return
+`experienceLevel` as a number, and return `managementType` as `null` until
+onboarding sets it.
 
 ## Application Flow
 
