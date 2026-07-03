@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "record-feedback-context.v1",
+  "feedbackRequestId": "feedback-20260703-harvest",
+  "mode": "RECORD_AUTO",
+  "member": {
+    "memberId": "member-1",
+    "experienceLevel": 1,
+    "managementType": "NON_REGISTERED_FARMER"
+  },
+  "farm": {
+    "farmId": "farm-1",
+    "name": "청년약초밭",
+    "address": "전라남도 구례군",
+    "locationSource": "FARM_ADDRESS"
+  },
+  "crop": {
+    "cropId": "crop-omija",
+    "name": "오미자",
+    "usePartCategory": "FRUIT"
+  },
+  "cropCycle": {
+    "cycleId": "cycle-4",
+    "startedRecordId": "record-planting-4",
+    "startedOn": "2025-03-15",
+    "daysAfterPlanting": 475,
+    "startBasis": "PLANTING_RECORD"
+  },
+  "targetRecord": {
+    "recordId": "record-harvest-1",
+    "recordedOn": "2026-07-03",
+    "workType": "HARVESTING",
+    "fields": {
+      "yieldAmount": 12,
+      "yieldUnit": "kg",
+      "medicinalUsePart": "열매",
+      "cultivatedOrCollected": "재배",
+      "harvestAgeValue": 16,
+      "harvestAgeUnit": "월"
+    },
+    "memo": "붉게 익은 열매 위주로 선별 수확함.",
+    "hasPhoto": true,
+    "photoCount": 3
+  },
+  "weather": {
+    "recordDay": {
+      "avgTemperatureC": 26.0,
+      "maxTemperatureC": 31.0,
+      "minTemperatureC": 22.0,
+      "rainfallMm": 0.0,
+      "humidityPct": 68.0
+    },
+    "recent7Days": {
+      "rainfallMm": 6.0,
+      "hotDaysCount": 3,
+      "dryDaysCount": 4
+    },
+    "source": "SERVER_WEATHER_SNAPSHOT"
+  },
+  "recentRecords": [
+    {
+      "recordId": "record-20260620-1",
+      "recordedOn": "2026-06-20",
+      "workType": "WATERING",
+      "memoSummary": "건조하여 관수"
+    }
+  ],
+  "workTypeStats": {
+    "cycleCounts": {
+      "PLANTING": 1,
+      "WATERING": 12,
+      "HARVESTING": 1
+    },
+    "lastWorkedOnByType": {
+      "HARVESTING": "2026-07-03"
+    },
+    "recent30DayCounts": {
+      "WATERING": 4,
+      "HARVESTING": 1
+    }
+  }
+}

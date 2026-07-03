@@ -1,0 +1,80 @@
+{
+  "schemaVersion": "record-feedback-context.v1",
+  "feedbackRequestId": "feedback-20260703-watering",
+  "mode": "RECORD_AUTO",
+  "member": {
+    "memberId": "member-1",
+    "experienceLevel": 1,
+    "managementType": "NON_REGISTERED_FARMER"
+  },
+  "farm": {
+    "farmId": "farm-1",
+    "name": "청년약초밭",
+    "address": "강원특별자치도 평창군 진부면",
+    "locationSource": "FARM_ADDRESS"
+  },
+  "crop": {
+    "cropId": "crop-angelica",
+    "name": "참당귀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  "cropCycle": {
+    "cycleId": "cycle-1",
+    "startedRecordId": "record-planting-1",
+    "startedOn": "2026-04-18",
+    "daysAfterPlanting": 76,
+    "startBasis": "PLANTING_RECORD"
+  },
+  "targetRecord": {
+    "recordId": "record-watering-1",
+    "recordedOn": "2026-07-03",
+    "workType": "WATERING",
+    "fields": {
+      "waterAmountScale": "보통",
+      "wateringMethod": "점적"
+    },
+    "memo": "오전 흙 표면이 말라 보여 점적 관수함.",
+    "hasPhoto": true,
+    "photoCount": 1
+  },
+  "weather": {
+    "recordDay": {
+      "avgTemperatureC": 24.8,
+      "maxTemperatureC": 30.1,
+      "minTemperatureC": 19.9,
+      "rainfallMm": 0.0,
+      "humidityPct": 71.0
+    },
+    "recent7Days": {
+      "rainfallMm": 4.5,
+      "hotDaysCount": 2,
+      "dryDaysCount": 5
+    },
+    "source": "SERVER_WEATHER_SNAPSHOT"
+  },
+  "recentRecords": [
+    {
+      "recordId": "record-20260629-1",
+      "recordedOn": "2026-06-29",
+      "workType": "WEEDING",
+      "memoSummary": "고랑 주변 손제초"
+    }
+  ],
+  "workTypeStats": {
+    "cycleCounts": {
+      "PLANTING": 1,
+      "WATERING": 8,
+      "FERTILIZING": 2,
+      "PEST_CONTROL": 1,
+      "WEEDING": 3
+    },
+    "lastWorkedOnByType": {
+      "WATERING": "2026-06-30",
+      "FERTILIZING": "2026-06-20"
+    },
+    "recent30DayCounts": {
+      "WATERING": 5,
+      "WEEDING": 2
+    }
+  }
+}

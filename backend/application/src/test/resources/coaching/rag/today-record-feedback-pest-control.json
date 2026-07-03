@@ -1,0 +1,81 @@
+{
+  "schemaVersion": "record-feedback-context.v1",
+  "feedbackRequestId": "feedback-20260703-pest-control",
+  "mode": "RECORD_AUTO",
+  "member": {
+    "memberId": "member-1",
+    "experienceLevel": 1,
+    "managementType": "NON_REGISTERED_FARMER"
+  },
+  "farm": {
+    "farmId": "farm-1",
+    "name": "청년약초밭",
+    "address": "경상북도 영주시 풍기읍",
+    "locationSource": "FARM_ADDRESS"
+  },
+  "crop": {
+    "cropId": "crop-ginseng",
+    "name": "인삼",
+    "usePartCategory": "ROOT_BARK"
+  },
+  "cropCycle": {
+    "cycleId": "cycle-3",
+    "startedRecordId": "record-planting-3",
+    "startedOn": "2026-03-20",
+    "daysAfterPlanting": 105,
+    "startBasis": "PLANTING_RECORD"
+  },
+  "targetRecord": {
+    "recordId": "record-pest-control-1",
+    "recordedOn": "2026-07-03",
+    "workType": "PEST_CONTROL",
+    "fields": {
+      "pesticideName": "등록약제A",
+      "pesticideAmount": "20",
+      "pesticideAmountUnit": "mL",
+      "sprayWaterAmountL": 20,
+      "targetPestOrDisease": "점무늬병"
+    },
+    "memo": "아랫잎에 반점이 보여 등록약제를 희석해 살포함.",
+    "hasPhoto": true,
+    "photoCount": 2
+  },
+  "weather": {
+    "recordDay": {
+      "avgTemperatureC": 25.1,
+      "maxTemperatureC": 29.2,
+      "minTemperatureC": 21.6,
+      "rainfallMm": 12.0,
+      "humidityPct": 88.0
+    },
+    "recent7Days": {
+      "rainfallMm": 41.0,
+      "hotDaysCount": 1,
+      "dryDaysCount": 0
+    },
+    "source": "SERVER_WEATHER_SNAPSHOT"
+  },
+  "recentRecords": [
+    {
+      "recordId": "record-20260628-1",
+      "recordedOn": "2026-06-28",
+      "workType": "WEEDING",
+      "memoSummary": "포장 가장자리 예초"
+    }
+  ],
+  "workTypeStats": {
+    "cycleCounts": {
+      "PLANTING": 1,
+      "WATERING": 5,
+      "PEST_CONTROL": 1,
+      "WEEDING": 2
+    },
+    "lastWorkedOnByType": {
+      "PEST_CONTROL": "2026-06-10"
+    },
+    "recent30DayCounts": {
+      "PEST_CONTROL": 1,
+      "WEEDING": 2
+    }
+  }
+}
