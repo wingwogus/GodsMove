@@ -2,7 +2,7 @@
 EmailRequest
 SignUpRequest
 DTO Template
-AuthTokenResponse
+TokenResponse
 UserProfileUpdateRequest
 UserProfileResponse
 FarmUpdateRequest
@@ -56,3 +56,6 @@ OnboardingResponse
 OnboardingCompleteResponse
 AppleLoginRequest
 MemberProfileResponse
+VerifyEmailCodeRequest
+ReissueRequest
+SendVerificationCodeRequest

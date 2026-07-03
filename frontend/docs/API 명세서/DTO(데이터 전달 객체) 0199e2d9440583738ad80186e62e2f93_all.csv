@@ -2,7 +2,7 @@
 DTO Template,API Response,[인증] 계정
 EmailRequest,API Response,[인증] 계정
 SignUpRequest,API Response,[인증] 계정
-AuthTokenResponse,API Response,[인증] 계정
+TokenResponse,API Response,[인증] 계정
 UserProfileUpdateRequest,API Request,[회원] 유저 정보
 UserProfileResponse,API Response,[회원] 유저 정보
 FarmUpdateRequest,API Request,[농장] 농지
@@ -56,3 +56,6 @@ OnboardingResponse,API Response,[인증] 계정
 OnboardingCompleteResponse,API Response,[회원] 유저 정보
 AppleLoginRequest,API Request,[인증] 계정
 MemberProfileResponse,API Response,[회원] 유저 정보
+VerifyEmailCodeRequest,API Request,[인증] 계정
+ReissueRequest,API Request,[인증] 계정
+SendVerificationCodeRequest,API Request,[인증] 계정
