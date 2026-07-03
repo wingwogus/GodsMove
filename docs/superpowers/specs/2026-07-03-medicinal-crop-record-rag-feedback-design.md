@@ -1,11 +1,11 @@
-# Medicinal Crop Diary RAG Feedback Design
+# Medicinal Crop Record RAG Feedback Design
 
 Date: 2026-07-03
 
 ## Purpose
 
 Extend the existing coaching RAG direction into a medicinal-crop specialist
-feedback flow for farming diary records.
+feedback flow for farming records.
 
 The product goal is not a generic chatbot. After a member writes a farming
 record, the system should use the current record, crop cycle, farm location,
@@ -22,7 +22,7 @@ feedback engine accepts that payload as its contract.
 - The DB team may finalize table shape separately.
 - The RAG feedback engine receives a structured context payload assembled by
   an application service, not raw DB access.
-- Feedback is generated after a diary record is saved.
+- Feedback is generated after a farming record is saved.
 - Save response does not need to include the generated feedback body.
 - Feedback can be queried separately by record id and status.
 - Manual regeneration is not part of the first record-focused pass, but the
@@ -61,7 +61,7 @@ document metadata so low-quality chunks are not over-trusted.
 
 ## Work-Type Assumption
 
-The record context should normalize the current diary into one of these
+The record context should normalize the current farming record into one of these
 work types:
 
 | Code | Label | MVP fields used by RAG |
@@ -81,7 +81,7 @@ generic field map with stable semantic keys.
 ## Context Contract
 
 Define a stable application-level payload, for example
-`TodayDiaryFeedbackContext`.
+`TodayRecordFeedbackContext`.
 
 The payload is the contract between the record/domain side and the RAG feedback
 engine. Tests can create this payload directly as JSON fixtures without
@@ -89,6 +89,7 @@ creating all DB rows first.
 
 ```json
 {
+  "schemaVersion": "record-feedback-context.v1",
   "feedbackRequestId": "feedback-20260703-001",
   "mode": "RECORD_AUTO",
   "member": {
@@ -189,13 +190,33 @@ For MVP, feedback quality depends most on:
 If `cropCycle` is unknown, the system should still generate conservative
 record-quality feedback and ask for the missing planting/start information.
 
+## Record Boundary
+
+The first RAG feedback implementation should not modify the farming-record
+write model or work-type field storage.
+
+Instead, split the responsibility:
+
+- Record domain/application service owns saving records, weather snapshots,
+  crop-cycle inference, and work-type statistics.
+- A context assembler later maps those records into
+  `TodayRecordFeedbackContext`.
+- The RAG feedback engine owns only context validation, retrieval query
+  planning, prompt construction, model invocation, output validation, and
+  feedback persistence.
+
+This lets the RAG implementation move before the final record schema is
+settled, while keeping the integration point explicit. The context payload must
+include `schemaVersion` so future record-field changes can be handled by
+versioned assemblers instead of breaking prompt or retrieval tests.
+
 ## Feedback Flow
 
 ```text
 Farming record saved
 -> Record feedback job created with status PENDING
 -> Context assembler loads member/farm/crop/record/weather/recent stats
--> RAG feedback engine receives TodayDiaryFeedbackContext
+-> RAG feedback engine receives TodayRecordFeedbackContext
 -> Query planner creates retrieval queries from crop + work type + weather risk
 -> Official document retriever returns cited chunks
 -> LLM generates structured feedback
@@ -298,7 +319,7 @@ The output should be practical and conservative:
 - Prefer "check", "record", "compare with recent trend", and "verify label"
   wording for uncertain cases.
 - Always distinguish document-supported advice from inference based on the
-  diary/weather context.
+  record/weather context.
 
 ## Persistence Model
 
@@ -337,11 +358,32 @@ The main RAG feedback tests should use payload fixtures directly.
 
 This keeps tests stable while the DB shape is still owned by another team:
 
-- `today-diary-feedback-watering.json`
-- `today-diary-feedback-fertilizing.json`
-- `today-diary-feedback-pest-control.json`
-- `today-diary-feedback-harvest.json`
-- `today-diary-feedback-no-cycle.json`
+- `today-record-feedback-watering.json`
+- `today-record-feedback-fertilizing.json`
+- `today-record-feedback-pest-control.json`
+- `today-record-feedback-harvest.json`
+- `today-record-feedback-no-cycle.json`
+
+These fixture tests are trusted for RAG behavior, not for record persistence.
+They prove:
+
+- the payload contract can be parsed and validated;
+- work-type-specific retrieval queries are generated correctly;
+- prompt context includes crop, weather, target record, recent records, and
+  statistics;
+- output JSON, citation IDs, confidence, and risk levels are validated;
+- insufficient-context cases produce conservative feedback.
+
+They do not prove:
+
+- actual DB records are converted into the payload correctly;
+- weather snapshots are attached to the right farm and date;
+- crop-cycle inference from planting records is correct;
+- work-type statistics are calculated correctly;
+- record-save transactions create feedback jobs correctly.
+
+Those guarantees should be covered later by assembler/integration tests after
+the farming-record schema stabilizes.
 
 Test layers:
 
@@ -360,7 +402,7 @@ ability to assemble the payload, not on every RAG behavior.
 ## MVP Acceptance Criteria
 
 - A saved farming record can create a `PENDING` feedback job.
-- The feedback engine can run from a `TodayDiaryFeedbackContext` fixture
+- The feedback engine can run from a `TodayRecordFeedbackContext` fixture
   without DB setup.
 - The context includes target record, crop, farm, weather, crop-cycle estimate,
   recent records, and work-type stats.
