@@ -40,15 +40,12 @@ class Member(
     @Column(length = 64)
     var nickname: String? = null,
 
-    @Column(length = 128)
-    var region: String? = null,
-
-    @Column(name = "experience_level", length = 32)
-    var experienceLevel: String? = null,
+    @Column(name = "experience_level")
+    var experienceLevel: Int? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "management_type", nullable = false, length = 32)
-    val managementType: ManagementType = ManagementType.UNREGISTERED,
+    @Column(name = "management_type", length = 64)
+    var managementType: ManagementType? = null,
 
     @Column(nullable = true)
     val passwordHash: String?,
@@ -64,15 +61,15 @@ class Member(
         phone: String,
         birthDate: LocalDate,
         nickname: String,
-        region: String,
-        experienceLevel: String
+        experienceLevel: Int,
+        managementType: ManagementType
     ) {
         this.name = name
         this.phone = phone
         this.birthDate = birthDate
         this.nickname = nickname
-        this.region = region
         this.experienceLevel = experienceLevel
+        this.managementType = managementType
     }
 
     fun prefillProfile(
