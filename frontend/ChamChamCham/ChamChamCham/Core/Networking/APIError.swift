@@ -13,4 +13,5 @@ enum APIError: Error {
     case validation(message: String)
     case server(statusCode: Int)
     case decoding(Error)
+    case apiError(code: String, message: String)
 }

@@ -8,8 +8,61 @@
 import Foundation
 
 actor AuthTokenStore {
-    func accessToken() -> String? { nil }
-    func refreshToken() -> String? { nil }
-    func save(accessToken: String, refreshToken: String) {}
-    func clear() {}
+    private static let accessTokenAccount = "accessToken"
+    private static let refreshTokenAccount = "refreshToken"
+
+    private let storage: KeychainTokenStorage
+    private var cachedAccessToken: String?
+    private var cachedRefreshToken: String?
+    private var isLoaded = false
+    private var sessionExpiredContinuations: [AsyncStream<Void>.Continuation] = []
+
+    init(storage: KeychainTokenStorage = KeychainTokenStorage()) {
+        self.storage = storage
+    }
+
+    func accessToken() -> String? {
+        loadIfNeeded()
+        return cachedAccessToken
+    }
+
+    func refreshToken() -> String? {
+        loadIfNeeded()
+        return cachedRefreshToken
+    }
+
+    func save(accessToken: String, refreshToken: String) {
+        storage.save(accessToken, account: Self.accessTokenAccount)
+        storage.save(refreshToken, account: Self.refreshTokenAccount)
+        cachedAccessToken = accessToken
+        cachedRefreshToken = refreshToken
+        isLoaded = true
+    }
+
+    /// Ends the local session (explicit logout or a failed silent refresh) and notifies `sessionExpiredEvents` subscribers.
+    func clear() {
+        storage.delete(account: Self.accessTokenAccount)
+        storage.delete(account: Self.refreshTokenAccount)
+        cachedAccessToken = nil
+        cachedRefreshToken = nil
+        isLoaded = true
+        for continuation in sessionExpiredContinuations {
+            continuation.yield(())
+        }
+    }
+
+    /// The single coupling point between the networking layer and app-level auth state — `RootView` subscribes to
+    /// this to fall back to the logged-out flow whenever `clear()` runs, without `Core/Networking` importing `AppState`.
+    func sessionExpiredEvents() -> AsyncStream<Void> {
+        AsyncStream { continuation in
+            sessionExpiredContinuations.append(continuation)
+        }
+    }
+
+    private func loadIfNeeded() {
+        guard !isLoaded else { return }
+        cachedAccessToken = storage.read(account: Self.accessTokenAccount)
+        cachedRefreshToken = storage.read(account: Self.refreshTokenAccount)
+        isLoaded = true
+    }
 }

@@ -7,14 +7,19 @@
 
 import Foundation
 
-protocol Endpoint {
+protocol Endpoint: Sendable {
     var path: String { get }
     var method: HTTPMethod { get }
-    var body: Encodable? { get }
+    var body: (any Encodable & Sendable)? { get }
     var requiresAuth: Bool { get }
+    var headers: [String: String] { get }
 }
 
-enum HTTPMethod: String {
+extension Endpoint {
+    var headers: [String: String] { [:] }
+}
+
+enum HTTPMethod: String, Sendable {
     case get = "GET"
     case post = "POST"
     case put = "PUT"
