@@ -10,8 +10,9 @@ import Foundation
 struct OnboardingDraft: Codable {
     var name: String = ""
     var nickname: String = ""
-    var contact: String = ""
+    var phone: String = ""
     var birthDate: Date?
+    var experienceYears: Int?
     var managementType: ManagementType?
     var profileImageFileName: String?
     var cropIDs: [UUID] = []

@@ -17,8 +17,30 @@ struct BasicProfileView: View {
 
     private var isValid: Bool {
         !viewModel.draft.name.trimmingCharacters(in: .whitespaces).isEmpty
-            && !viewModel.draft.contact.trimmingCharacters(in: .whitespaces).isEmpty
+            && !viewModel.draft.phone.trimmingCharacters(in: .whitespaces).isEmpty
+            && viewModel.draft.birthDate != nil
+            && viewModel.draft.experienceYears != nil
             && viewModel.draft.managementType != nil
+    }
+
+    private var birthDateBinding: Binding<Date> {
+        Binding(
+            get: { viewModel.draft.birthDate ?? Calendar.current.date(byAdding: .year, value: -30, to: Date())! },
+            set: { viewModel.draft.birthDate = $0 }
+        )
+    }
+
+    private var experienceYearsText: Binding<String> {
+        Binding(
+            get: {
+                guard let years = viewModel.draft.experienceYears else { return "" }
+                return String(years)
+            },
+            set: { newValue in
+                let digitsOnly = newValue.filter(\.isNumber)
+                viewModel.draft.experienceYears = digitsOnly.isEmpty ? nil : Int(digitsOnly)
+            }
+        )
     }
 
     var body: some View {
@@ -58,8 +80,20 @@ struct BasicProfileView: View {
 
                         AppTextField(label: "*이름", placeholder: "이름(실명)을 입력하세요", text: $viewModel.draft.name)
                         AppTextField(label: "닉네임", placeholder: "예) 이랑이", text: $viewModel.draft.nickname)
-                        AppTextField(label: "*연락처", placeholder: "010-0000-0000", text: $viewModel.draft.contact, keyboardType: .phonePad)
-                        
+                        AppTextField(label: "*연락처", placeholder: "010-0000-0000", text: $viewModel.draft.phone, keyboardType: .phonePad)
+
+                        VStack(alignment: .leading, spacing: Spacing.sm) {
+                            Text("*생년월일")
+                                .font(.appCaption)
+                                .foregroundStyle(Color.appTextSecondary)
+
+                            DatePicker("생년월일", selection: birthDateBinding, displayedComponents: .date)
+                                .datePickerStyle(.compact)
+                                .labelsHidden()
+                        }
+
+                        AppTextField(label: "*영농 경력(년차)", placeholder: "숫자만 입력하세요 (예: 5)", text: experienceYearsText, keyboardType: .numberPad)
+
                         VStack(alignment: .leading, spacing: Spacing.sm) {
                             Text("*자격")
                                 .font(.appCaption)
