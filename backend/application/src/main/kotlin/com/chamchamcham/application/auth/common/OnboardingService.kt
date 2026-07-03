@@ -7,6 +7,8 @@ import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.MemberCrop
 import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
+import com.chamchamcham.domain.farm.FarmBoundaryCoordinate
+import com.chamchamcham.domain.farm.FarmDataSource
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.member.MemberRepository
 import org.springframework.stereotype.Service
@@ -49,8 +51,24 @@ class OnboardingService(
         val farm = farmRepository.save(
             Farm(
                 owner = member,
-                name = command.farmName,
-                address = command.farmAddress
+                name = command.farm.name,
+                roadAddress = command.farm.roadAddress,
+                jibunAddress = command.farm.jibunAddress,
+                latitude = command.farm.latitude,
+                longitude = command.farm.longitude,
+                pnu = command.farm.pnu,
+                landCategory = command.farm.landCategory,
+                areaSqm = command.farm.areaSqm,
+                areaIsManualEntry = command.farm.areaIsManualEntry,
+                boundaryCoordinates = command.farm.boundaryCoordinates.map {
+                    FarmBoundaryCoordinate(latitude = it.latitude, longitude = it.longitude)
+                }.toMutableList(),
+                dataSource = FarmDataSource(
+                    address = command.farm.dataSource.address,
+                    coordinate = command.farm.dataSource.coordinate,
+                    parcel = command.farm.dataSource.parcel,
+                    landCharacteristic = command.farm.dataSource.landCharacteristic
+                )
             )
         )
         memberCropRepository.saveAll(

@@ -4,6 +4,7 @@ import com.chamchamcham.api.exception.GlobalExceptionHandler
 import com.chamchamcham.application.crop.CropCatalogService
 import com.chamchamcham.application.crop.CropResult
 import com.chamchamcham.application.security.TokenProvider
+import com.chamchamcham.domain.crop.CropUsePartCategory
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
@@ -73,5 +74,29 @@ class CropControllerTest(
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data[0].code", equalTo("FRUIT")))
             .andExpect(jsonPath("$.data[0].label", equalTo("열매")))
+    }
+
+    @Test
+    fun `list crops by category returns filtered crop catalog`() {
+        val cropId = UUID.fromString("00000000-0000-0000-0000-000000000102")
+        `when`(cropCatalogService.listCropsByCategory(CropUsePartCategory.ROOT_BARK))
+            .thenReturn(
+                listOf(
+                    CropResult.CropSummary(
+                        id = cropId,
+                        externalNo = 422,
+                        name = "참당귀",
+                        usePartCategory = "ROOT_BARK",
+                        usePartCategoryLabel = "뿌리·껍질"
+                    )
+                )
+            )
+
+        mockMvc.perform(get("/api/v1/crops/categories/ROOT_BARK/crops"))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success").value(true))
+            .andExpect(jsonPath("$.data[0].id", equalTo(cropId.toString())))
+            .andExpect(jsonPath("$.data[0].usePartCategory", equalTo("ROOT_BARK")))
+            .andExpect(jsonPath("$.data[0].usePartCategoryLabel", equalTo("뿌리·껍질")))
     }
 }

@@ -15,6 +15,11 @@ class CropCatalogService(
             .map(CropResult.CropSummary::from)
     }
 
+    fun listCropsByCategory(category: CropUsePartCategory): List<CropResult.CropSummary> {
+        return cropRepository.findAllByUsePartCategoryOrderByNameAscExternalNoAsc(category)
+            .map(CropResult.CropSummary::from)
+    }
+
     fun listCategories(): List<CropResult.CategorySummary> {
         return CropUsePartCategory.entries.map(CropResult.CategorySummary::from)
     }

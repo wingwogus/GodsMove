@@ -26,6 +26,7 @@ import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.Optional
 import java.util.UUID
@@ -73,7 +74,7 @@ class OnboardingServiceTest {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(cropRepository.findAllById(listOf(cropId))).thenReturn(listOf(crop))
         `when`(farmRepository.save(any(Farm::class.java))).thenReturn(
-            Farm(id = farmId, owner = member, name = command.farmName, address = command.farmAddress)
+            savedFarm(member, command.farm)
         )
 
         val result = service.complete(command)
@@ -87,7 +88,9 @@ class OnboardingServiceTest {
         assertEquals(ManagementType.AGRICULTURAL_INDIVIDUAL, member.managementType)
         assertEquals(farmId, result.farm.id)
         assertEquals("서울 약초농장", result.farm.name)
-        assertEquals("서울특별시 강남구 테헤란로 1", result.farm.address)
+        assertEquals("서울특별시 강남구 테헤란로 1", result.farm.roadAddress)
+        assertEquals("서울특별시 강남구 역삼동 1", result.farm.jibunAddress)
+        assertEquals("4511310200101230004", result.farm.pnu)
         assertThat(result.crops.map { it.id }).containsExactly(cropId)
         assertEquals(AuthResult.OnboardingStatus.COMPLETE, result.onboarding.status)
     }
@@ -102,7 +105,7 @@ class OnboardingServiceTest {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(cropRepository.findAllById(listOf(cropId, secondCropId))).thenReturn(listOf(secondCrop, firstCrop))
         `when`(farmRepository.save(any(Farm::class.java))).thenReturn(
-            Farm(id = farmId, owner = member, name = command.farmName, address = command.farmAddress)
+            savedFarm(member, command.farm)
         )
 
         val result = service.complete(command)
@@ -187,9 +190,48 @@ class OnboardingServiceTest {
             nickname = "길동",
             experienceLevel = 72,
             managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
-            farmName = "서울 약초농장",
-            farmAddress = "서울특별시 강남구 테헤란로 1",
+            farm = farmCommand(),
             cropIds = cropIds
+        )
+    }
+
+    private fun farmCommand(): AuthCommand.Farm {
+        return AuthCommand.Farm(
+            name = "서울 약초농장",
+            roadAddress = "서울특별시 강남구 테헤란로 1",
+            jibunAddress = "서울특별시 강남구 역삼동 1",
+            latitude = 35.8465,
+            longitude = 127.1292,
+            pnu = "4511310200101230004",
+            landCategory = "전",
+            areaSqm = BigDecimal("1200.5"),
+            areaIsManualEntry = false,
+            boundaryCoordinates = listOf(
+                AuthCommand.FarmBoundaryCoordinate(latitude = 35.8461, longitude = 127.1289),
+                AuthCommand.FarmBoundaryCoordinate(latitude = 35.8463, longitude = 127.1295)
+            ),
+            dataSource = AuthCommand.FarmDataSource(
+                address = "JUSO",
+                coordinate = "V_WORLD_ADDRESS",
+                parcel = "V_WORLD_CADASTRAL",
+                landCharacteristic = "V_WORLD_LAND_CHARACTERISTIC"
+            )
+        )
+    }
+
+    private fun savedFarm(member: Member, farm: AuthCommand.Farm): Farm {
+        return Farm(
+            id = farmId,
+            owner = member,
+            name = farm.name,
+            roadAddress = farm.roadAddress,
+            jibunAddress = farm.jibunAddress,
+            latitude = farm.latitude,
+            longitude = farm.longitude,
+            pnu = farm.pnu,
+            landCategory = farm.landCategory,
+            areaSqm = farm.areaSqm,
+            areaIsManualEntry = farm.areaIsManualEntry
         )
     }
 

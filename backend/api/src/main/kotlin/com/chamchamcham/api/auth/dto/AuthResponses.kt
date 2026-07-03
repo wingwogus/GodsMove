@@ -2,6 +2,7 @@ package com.chamchamcham.api.auth.dto
 
 import com.chamchamcham.application.auth.common.AuthResult
 import com.chamchamcham.application.crop.CropResult
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 
@@ -85,14 +86,64 @@ object AuthResponses {
     data class FarmResponse(
         val id: UUID,
         val name: String,
-        val address: String
+        val roadAddress: String,
+        val jibunAddress: String?,
+        val latitude: Double?,
+        val longitude: Double?,
+        val pnu: String?,
+        val landCategory: String?,
+        val areaSqm: BigDecimal?,
+        val areaIsManualEntry: Boolean,
+        val boundaryCoordinates: List<FarmBoundaryCoordinateResponse>,
+        val dataSource: FarmDataSourceResponse
     ) {
         companion object {
             fun from(result: AuthResult.FarmSummary): FarmResponse {
                 return FarmResponse(
                     id = result.id,
                     name = result.name,
-                    address = result.address
+                    roadAddress = result.roadAddress,
+                    jibunAddress = result.jibunAddress,
+                    latitude = result.latitude,
+                    longitude = result.longitude,
+                    pnu = result.pnu,
+                    landCategory = result.landCategory,
+                    areaSqm = result.areaSqm,
+                    areaIsManualEntry = result.areaIsManualEntry,
+                    boundaryCoordinates = result.boundaryCoordinates.map(FarmBoundaryCoordinateResponse::from),
+                    dataSource = FarmDataSourceResponse.from(result.dataSource)
+                )
+            }
+        }
+    }
+
+    data class FarmBoundaryCoordinateResponse(
+        val latitude: Double,
+        val longitude: Double
+    ) {
+        companion object {
+            fun from(result: AuthResult.FarmBoundaryCoordinateSummary): FarmBoundaryCoordinateResponse {
+                return FarmBoundaryCoordinateResponse(
+                    latitude = result.latitude,
+                    longitude = result.longitude
+                )
+            }
+        }
+    }
+
+    data class FarmDataSourceResponse(
+        val address: String?,
+        val coordinate: String?,
+        val parcel: String?,
+        val landCharacteristic: String?
+    ) {
+        companion object {
+            fun from(result: AuthResult.FarmDataSourceSummary): FarmDataSourceResponse {
+                return FarmDataSourceResponse(
+                    address = result.address,
+                    coordinate = result.coordinate,
+                    parcel = result.parcel,
+                    landCharacteristic = result.landCharacteristic
                 )
             }
         }

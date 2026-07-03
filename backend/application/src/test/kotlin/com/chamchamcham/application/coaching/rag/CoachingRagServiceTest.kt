@@ -376,7 +376,7 @@ class CoachingRagServiceTest {
             id = id,
             owner = member,
             name = "테스트 농장",
-            address = "경기 수원 테스트로 1"
+            roadAddress = "경기 수원 테스트로 1"
         )
     }
 

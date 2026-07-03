@@ -61,4 +61,31 @@ class CropCatalogServiceTest {
             }
         )
     }
+
+    @Test
+    fun `listCropsByCategory returns crop summaries for requested use part category`() {
+        val cropId = UUID.fromString("20000000-0000-0000-0000-000000000002")
+        `when`(cropRepository.findAllByUsePartCategoryOrderByNameAscExternalNoAsc(CropUsePartCategory.RHIZOME)).thenReturn(
+            listOf(
+                Crop(
+                    id = cropId,
+                    externalNo = 107,
+                    name = "작약",
+                    usePartCategory = CropUsePartCategory.RHIZOME
+                )
+            )
+        )
+
+        val result = service.listCropsByCategory(CropUsePartCategory.RHIZOME)
+
+        assertThat(result).containsExactly(
+            CropResult.CropSummary(
+                id = cropId,
+                externalNo = 107,
+                name = "작약",
+                usePartCategory = "RHIZOME",
+                usePartCategoryLabel = "뿌리줄기"
+            )
+        )
+    }
 }

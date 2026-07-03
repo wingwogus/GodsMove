@@ -124,8 +124,7 @@ class AuthController(
                 nickname = request.nickname,
                 experienceLevel = requireNotNull(request.experienceLevel),
                 managementType = requireNotNull(request.managementType),
-                farmName = request.farmName,
-                farmAddress = request.farmAddress,
+                farm = request.farm.toCommand(),
                 cropIds = request.cropIds
             )
         )
@@ -176,6 +175,33 @@ class AuthController(
         } catch (e: IllegalArgumentException) {
             throw BusinessException(ErrorCode.UNAUTHORIZED)
         }
+    }
+
+    private fun AuthRequests.FarmRequest?.toCommand(): AuthCommand.Farm {
+        val farm = requireNotNull(this)
+        return AuthCommand.Farm(
+            name = farm.name,
+            roadAddress = farm.roadAddress,
+            jibunAddress = farm.jibunAddress,
+            latitude = farm.latitude,
+            longitude = farm.longitude,
+            pnu = farm.pnu,
+            landCategory = farm.landCategory,
+            areaSqm = farm.areaSqm,
+            areaIsManualEntry = farm.areaIsManualEntry,
+            boundaryCoordinates = farm.boundaryCoordinates.map {
+                AuthCommand.FarmBoundaryCoordinate(
+                    latitude = requireNotNull(it.latitude),
+                    longitude = requireNotNull(it.longitude)
+                )
+            },
+            dataSource = AuthCommand.FarmDataSource(
+                address = farm.dataSource.address,
+                coordinate = farm.dataSource.coordinate,
+                parcel = farm.dataSource.parcel,
+                landCharacteristic = farm.dataSource.landCharacteristic
+            )
+        )
     }
 
     private fun clearRefreshTokenCookie(): ResponseCookie {

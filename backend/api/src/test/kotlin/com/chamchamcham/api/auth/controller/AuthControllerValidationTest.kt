@@ -147,8 +147,12 @@ class AuthControllerValidationTest(
                       "nickname":"",
                       "experienceLevel":3,
                       "managementType":"AGRICULTURAL_INDIVIDUAL",
-                      "farmName":"길동농장",
-                      "farmAddress":"서울시 강남구",
+                      "farm": {
+                        "name":"길동농장",
+                        "roadAddress":"서울시 강남구 테헤란로 1",
+                        "latitude":35.8465,
+                        "longitude":127.1292
+                      },
                       "cropIds":["$cropId"]
                     }
                     """.trimIndent()
@@ -245,8 +249,26 @@ class AuthControllerValidationTest(
               "nickname":"길동",
               "experienceLevel":$experienceLevel,
               "managementType":"$managementType",
-              "farmName":"길동농장",
-              "farmAddress":"서울시 강남구",
+              "farm": {
+                "name":"길동농장",
+                "roadAddress":"서울시 강남구 테헤란로 1",
+                "jibunAddress":"서울시 강남구 역삼동 1",
+                "latitude":35.8465,
+                "longitude":127.1292,
+                "pnu":"4511310200101230004",
+                "landCategory":"전",
+                "areaSqm":1200.5,
+                "areaIsManualEntry":false,
+                "boundaryCoordinates":[
+                  {"latitude":35.8461,"longitude":127.1289}
+                ],
+                "dataSource":{
+                  "address":"JUSO",
+                  "coordinate":"V_WORLD_ADDRESS",
+                  "parcel":"V_WORLD_CADASTRAL",
+                  "landCharacteristic":"V_WORLD_LAND_CHARACTERISTIC"
+                }
+              },
               "cropIds":$cropIdsJson
             }
         """.trimIndent()

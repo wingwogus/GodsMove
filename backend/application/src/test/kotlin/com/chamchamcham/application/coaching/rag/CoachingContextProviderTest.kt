@@ -129,7 +129,7 @@ class CoachingContextProviderTest {
         id = farmId,
         owner = owner,
         name = "하늘들 약초농장",
-        address = "강원특별자치도 평창군 진부면 솔바람길 24"
+        roadAddress = "강원특별자치도 평창군 진부면 솔바람길 24"
     )
 
     private fun crop() = Crop(

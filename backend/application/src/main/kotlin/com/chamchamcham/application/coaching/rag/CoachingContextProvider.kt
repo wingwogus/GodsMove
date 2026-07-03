@@ -38,7 +38,7 @@ class CoachingContextProvider(
                 appendLine("사용자 재배 context:")
                 appendLine("- 영농 경력 점수: ${member.experienceLevel?.toString() ?: "미입력"}")
                 appendLine("- 경영 형태: ${member.managementType?.name ?: "미입력"}")
-                farm?.let { appendLine("- 농장: ${it.name} (${it.address})") }
+                farm?.let { appendLine("- 농장: ${it.name} (${it.roadAddress})") }
                 crop?.let { appendLine("- 작물: ${it.name} / ${it.usePartCategory.label}") }
                 record?.let { appendLine("- 기준 영농일지: ${it.workedAt} ${it.workType.name}") }
                 command.periodStart?.let { appendLine("- 기간 시작: $it") }

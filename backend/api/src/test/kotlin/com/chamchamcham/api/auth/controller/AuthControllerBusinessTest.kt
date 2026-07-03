@@ -35,6 +35,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 
@@ -249,8 +250,7 @@ class AuthControllerBusinessTest(
                     nickname = "길동",
                     experienceLevel = 3,
                     managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
-                    farmName = "길동농장",
-                    farmAddress = "서울시 강남구",
+                    farm = farmCommand(),
                     cropIds = listOf(cropId)
                 )
             )
@@ -269,7 +269,11 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.data.member.experienceLevel", equalTo(3)))
             .andExpect(jsonPath("$.data.member.managementType", equalTo("AGRICULTURAL_INDIVIDUAL")))
             .andExpect(jsonPath("$.data.farm.name", equalTo("길동농장")))
-            .andExpect(jsonPath("$.data.farm.address", equalTo("서울시 강남구")))
+            .andExpect(jsonPath("$.data.farm.roadAddress", equalTo("서울시 강남구 테헤란로 1")))
+            .andExpect(jsonPath("$.data.farm.jibunAddress", equalTo("서울시 강남구 역삼동 1")))
+            .andExpect(jsonPath("$.data.farm.pnu", equalTo("4511310200101230004")))
+            .andExpect(jsonPath("$.data.farm.boundaryCoordinates[0].latitude", equalTo(35.8461)))
+            .andExpect(jsonPath("$.data.farm.dataSource.address", equalTo("JUSO")))
             .andExpect(jsonPath("$.data.crops[0].id", equalTo(cropId.toString())))
             .andExpect(jsonPath("$.data.crops[0].externalNo", equalTo(1001)))
             .andExpect(jsonPath("$.data.crops[0].name", equalTo("토마토")))
@@ -333,7 +337,24 @@ class AuthControllerBusinessTest(
             farm = AuthResult.FarmSummary(
                 id = farmId,
                 name = "길동농장",
-                address = "서울시 강남구"
+                roadAddress = "서울시 강남구 테헤란로 1",
+                jibunAddress = "서울시 강남구 역삼동 1",
+                latitude = 35.8465,
+                longitude = 127.1292,
+                pnu = "4511310200101230004",
+                landCategory = "전",
+                areaSqm = BigDecimal("1200.5"),
+                areaIsManualEntry = false,
+                boundaryCoordinates = listOf(
+                    AuthResult.FarmBoundaryCoordinateSummary(latitude = 35.8461, longitude = 127.1289),
+                    AuthResult.FarmBoundaryCoordinateSummary(latitude = 35.8463, longitude = 127.1295)
+                ),
+                dataSource = AuthResult.FarmDataSourceSummary(
+                    address = "JUSO",
+                    coordinate = "V_WORLD_ADDRESS",
+                    parcel = "V_WORLD_CADASTRAL",
+                    landCharacteristic = "V_WORLD_LAND_CHARACTERISTIC"
+                )
             ),
             crops = listOf(
                 CropResult.CropSummary(
@@ -373,11 +394,54 @@ class AuthControllerBusinessTest(
               "nickname":"길동",
               "experienceLevel":3,
               "managementType":"AGRICULTURAL_INDIVIDUAL",
-              "farmName":"길동농장",
-              "farmAddress":"서울시 강남구",
+              "farm": {
+                "name":"길동농장",
+                "roadAddress":"서울시 강남구 테헤란로 1",
+                "jibunAddress":"서울시 강남구 역삼동 1",
+                "latitude":35.8465,
+                "longitude":127.1292,
+                "pnu":"4511310200101230004",
+                "landCategory":"전",
+                "areaSqm":1200.5,
+                "areaIsManualEntry":false,
+                "boundaryCoordinates":[
+                  {"latitude":35.8461,"longitude":127.1289},
+                  {"latitude":35.8463,"longitude":127.1295}
+                ],
+                "dataSource":{
+                  "address":"JUSO",
+                  "coordinate":"V_WORLD_ADDRESS",
+                  "parcel":"V_WORLD_CADASTRAL",
+                  "landCharacteristic":"V_WORLD_LAND_CHARACTERISTIC"
+                }
+              },
               "cropIds":["$cropId"]
             }
         """.trimIndent()
+    }
+
+    private fun farmCommand(): AuthCommand.Farm {
+        return AuthCommand.Farm(
+            name = "길동농장",
+            roadAddress = "서울시 강남구 테헤란로 1",
+            jibunAddress = "서울시 강남구 역삼동 1",
+            latitude = 35.8465,
+            longitude = 127.1292,
+            pnu = "4511310200101230004",
+            landCategory = "전",
+            areaSqm = BigDecimal("1200.5"),
+            areaIsManualEntry = false,
+            boundaryCoordinates = listOf(
+                AuthCommand.FarmBoundaryCoordinate(latitude = 35.8461, longitude = 127.1289),
+                AuthCommand.FarmBoundaryCoordinate(latitude = 35.8463, longitude = 127.1295)
+            ),
+            dataSource = AuthCommand.FarmDataSource(
+                address = "JUSO",
+                coordinate = "V_WORLD_ADDRESS",
+                parcel = "V_WORLD_CADASTRAL",
+                landCharacteristic = "V_WORLD_LAND_CHARACTERISTIC"
+            )
+        )
     }
 
     private fun authenticatedMember(memberId: String): RequestPostProcessor {

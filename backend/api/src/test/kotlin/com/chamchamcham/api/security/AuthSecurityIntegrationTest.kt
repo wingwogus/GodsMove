@@ -93,8 +93,12 @@ class AuthSecurityIntegrationTest(
                       "nickname":"길동",
                       "experienceLevel":3,
                       "managementType":"AGRICULTURAL_INDIVIDUAL",
-                      "farmName":"길동농장",
-                      "farmAddress":"서울시 강남구",
+                      "farm": {
+                        "name":"길동농장",
+                        "roadAddress":"서울시 강남구 테헤란로 1",
+                        "latitude":35.8465,
+                        "longitude":127.1292
+                      },
                       "cropIds":["00000000-0000-0000-0000-000000000101"]
                     }
                     """.trimIndent()
