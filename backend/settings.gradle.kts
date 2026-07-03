@@ -1,3 +1,3 @@
-rootProject.name = "godsmove-backend"
+rootProject.name = "chamchamcham-backend"
 
 include("api", "application", "domain", "batch")

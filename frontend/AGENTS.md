@@ -1,6 +1,8 @@
-# GodsMove Frontend Agent Guide
+# ChamChamCham Frontend Agent Guide
 
 GodsMove frontend is a native iOS app (`ChamChamCham`) written in SwiftUI.
+
+Follow YAGNI: do not add code, dependencies, or abstractions before a concrete need exists.
 
 Common project rules still come from the root [AGENTS.md](../AGENTS.md).
 

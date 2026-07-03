@@ -1,4 +1,4 @@
-# GodsMove Agent Guide
+# ChamChamCham Agent Guide
 
 This root guide contains repository-wide instructions only. Keep stack-specific
 details in each workspace folder.
@@ -6,7 +6,7 @@ details in each workspace folder.
 ## Repository Map
 
 ```text
-GodsMove
+ChamChamCham
 ├── backend   # Spring Boot Kotlin backend
 ├── frontend  # frontend workspace, not scaffolded yet
 └── docs      # planning and project notes
@@ -24,6 +24,7 @@ Folder-specific instructions:
 - Keep secrets, tokens, private keys, and raw credentials out of committed
   files and logs.
 - Do not revert user changes unless the user explicitly asks.
+- Follow YAGNI: do not add code, dependencies, or abstractions before a concrete need exists.
 - Prefer small, reviewable commits with focused scope.
 - Run the relevant test/build command before claiming implementation work is
   complete.

@@ -6,7 +6,7 @@ plugins {
     kotlin("plugin.spring")
 }
 
-group = "com.godsmove"
+group = "com.chamchamcham"
 version = "0.0.1-SNAPSHOT"
 
 repositories {

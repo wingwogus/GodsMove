@@ -5,7 +5,7 @@ plugins {
     id("java-library")
 }
 
-group = "com.godsmove"
+group = "com.chamchamcham"
 version = "0.0.1-SNAPSHOT"
 
 repositories {
@@ -19,6 +19,7 @@ dependencies {
     implementation(platform("org.springframework.boot:spring-boot-dependencies:3.5.4"))
     testImplementation("org.junit.jupiter:junit-jupiter-api:5.8.1")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:5.8.1")
+    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.test {

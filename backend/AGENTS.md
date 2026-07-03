@@ -1,8 +1,8 @@
-# GodsMove Backend Agent Guide
+# ChamChamCham Backend Agent Guide
 
-GodsMove backend is a Spring Boot 3.x + Kotlin multi-module service.
+ChamChamCham backend is a Spring Boot 3.x + Kotlin multi-module service.
 It provides the API layer, application use cases, domain model, and batch
-entry points for the GodsMove service.
+entry points for the ChamChamCham service.
 
 ## Modules
 
@@ -31,16 +31,17 @@ batch -> application -> domain
 
 Do not make `domain` depend on `application` or `api`.
 Do not make `application` depend on `api`.
+Follow YAGNI: do not add code, dependencies, or abstractions before a concrete need exists.
 
 ## Package
 
-All project modules use the base package `com.godsmove`.
+All project modules use the base package `com.chamchamcham`.
 
 Feature packages are grouped by feature first, then technical role:
 
 ```text
 api
-└── com.godsmove.api
+└── com.chamchamcham.api
     ├── auth
     │   ├── controller
     │   └── dto
@@ -103,7 +104,7 @@ available.
 Swagger/OpenAPI metadata is configured in:
 
 ```text
-api/src/main/kotlin/com/godsmove/config/SwaggerConfig.kt
+api/src/main/kotlin/com/chamchamcham/config/SwaggerConfig.kt
 ```
 
 ## Kakao SDK OIDC App Login
