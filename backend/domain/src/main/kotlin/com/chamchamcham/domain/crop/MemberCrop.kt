@@ -3,6 +3,7 @@ package com.chamchamcham.domain.crop
 import com.chamchamcham.domain.common.BaseTimeEntity
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.member.Member
+import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
@@ -18,6 +19,7 @@ import java.util.UUID
 class MemberCrop(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false, columnDefinition = "uuid")
     val id: UUID? = null,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)

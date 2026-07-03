@@ -22,7 +22,7 @@ class Farm(
     val id: UUID? = null,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "member_id", nullable = false)
+    @JoinColumn(name = "owner_member_id", nullable = false)
     val owner: Member,
 
     @Column(nullable = false, length = 128)
