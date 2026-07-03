@@ -2,8 +2,12 @@
 .env
 .env.*
 !.env.example
+test-ios/
 build/
 .gradle/
 .idea/
 out/
 *.iml
+
+# Local RAG corpora: keep large downloaded sources out of Git.
+data/rag/**/raw/
