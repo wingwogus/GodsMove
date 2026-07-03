@@ -132,6 +132,18 @@ class OnboardingServiceTest {
     }
 
     @Test
+    fun `complete rejects empty crop ids before lookups or saves`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            service.complete(completeOnboardingCommand(cropIds = emptyList()))
+        }
+
+        assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
+        verifyNoInteractions(memberRepository, cropRepository)
+        verify(farmRepository, never()).save(any(Farm::class.java))
+        verifyNoInteractions(memberCropRepository)
+    }
+
+    @Test
     fun `complete rejects missing member`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.empty())
 
