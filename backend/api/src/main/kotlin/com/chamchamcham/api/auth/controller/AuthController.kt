@@ -122,8 +122,11 @@ class AuthController(
                 phone = request.phone,
                 birthDate = requireNotNull(request.birthDate),
                 nickname = request.nickname,
-                region = request.region,
-                experienceLevel = request.experienceLevel
+                experienceLevel = requireNotNull(request.experienceLevel),
+                managementType = requireNotNull(request.managementType),
+                farmName = request.farmName,
+                farmAddress = request.farmAddress,
+                cropIds = request.cropIds
             )
         )
 

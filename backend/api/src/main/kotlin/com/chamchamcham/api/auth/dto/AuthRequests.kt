@@ -1,10 +1,15 @@
 package com.chamchamcham.api.auth.dto
 
+import com.chamchamcham.domain.member.ManagementType
 import jakarta.validation.constraints.Email
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
+import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import java.time.LocalDate
+import java.util.UUID
 
 object AuthRequests {
     data class SendVerificationCodeRequest(
@@ -70,10 +75,18 @@ object AuthRequests {
         val birthDate: LocalDate?,
         @field:NotBlank(message = "닉네임을 입력해주세요")
         val nickname: String,
-        @field:NotBlank(message = "지역을 입력해주세요")
-        val region: String,
-        @field:NotBlank(message = "경험 수준을 입력해주세요")
-        val experienceLevel: String
+        @field:NotNull(message = "경험 수준을 입력해주세요")
+        @field:Min(value = 0, message = "경험 수준은 0 이상이어야 합니다")
+        @field:Max(value = 100, message = "경험 수준은 100 이하여야 합니다")
+        val experienceLevel: Int?,
+        @field:NotNull(message = "경영 형태를 입력해주세요")
+        val managementType: ManagementType?,
+        @field:NotBlank(message = "농장 이름을 입력해주세요")
+        val farmName: String,
+        @field:NotBlank(message = "농장 주소를 입력해주세요")
+        val farmAddress: String,
+        @field:NotEmpty(message = "작물을 하나 이상 선택해주세요")
+        val cropIds: List<UUID>
     )
 
     data class ReissueRequest(
