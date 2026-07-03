@@ -1,6 +1,8 @@
 package com.chamchamcham.api.auth.dto
 
 import com.chamchamcham.application.auth.common.AuthResult
+import com.chamchamcham.application.crop.CropResult
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 
@@ -39,12 +41,16 @@ object AuthResponses {
 
     data class OnboardingCompleteResponse(
         val member: MemberProfileResponse,
+        val farm: FarmResponse,
+        val crops: List<CropResponse>,
         val onboarding: OnboardingResponse
     ) {
         companion object {
             fun from(result: AuthResult.OnboardingComplete): OnboardingCompleteResponse {
                 return OnboardingCompleteResponse(
                     member = MemberProfileResponse.from(result.member),
+                    farm = FarmResponse.from(result.farm),
+                    crops = result.crops.map(CropResponse::from),
                     onboarding = OnboardingResponse.from(result.onboarding)
                 )
             }
@@ -58,9 +64,8 @@ object AuthResponses {
         val phone: String?,
         val birthDate: LocalDate?,
         val nickname: String?,
-        val region: String?,
-        val experienceLevel: String?,
-        val managementType: String
+        val experienceLevel: Int?,
+        val managementType: String?
     ) {
         companion object {
             fun from(result: AuthResult.MemberProfile): MemberProfileResponse {
@@ -71,9 +76,94 @@ object AuthResponses {
                     phone = result.phone,
                     birthDate = result.birthDate,
                     nickname = result.nickname,
-                    region = result.region,
                     experienceLevel = result.experienceLevel,
                     managementType = result.managementType
+                )
+            }
+        }
+    }
+
+    data class FarmResponse(
+        val id: UUID,
+        val name: String,
+        val roadAddress: String,
+        val jibunAddress: String?,
+        val latitude: Double?,
+        val longitude: Double?,
+        val pnu: String?,
+        val landCategory: String?,
+        val areaSqm: BigDecimal?,
+        val areaIsManualEntry: Boolean,
+        val boundaryCoordinates: List<FarmBoundaryCoordinateResponse>,
+        val dataSource: FarmDataSourceResponse
+    ) {
+        companion object {
+            fun from(result: AuthResult.FarmSummary): FarmResponse {
+                return FarmResponse(
+                    id = result.id,
+                    name = result.name,
+                    roadAddress = result.roadAddress,
+                    jibunAddress = result.jibunAddress,
+                    latitude = result.latitude,
+                    longitude = result.longitude,
+                    pnu = result.pnu,
+                    landCategory = result.landCategory,
+                    areaSqm = result.areaSqm,
+                    areaIsManualEntry = result.areaIsManualEntry,
+                    boundaryCoordinates = result.boundaryCoordinates.map(FarmBoundaryCoordinateResponse::from),
+                    dataSource = FarmDataSourceResponse.from(result.dataSource)
+                )
+            }
+        }
+    }
+
+    data class FarmBoundaryCoordinateResponse(
+        val latitude: Double,
+        val longitude: Double
+    ) {
+        companion object {
+            fun from(result: AuthResult.FarmBoundaryCoordinateSummary): FarmBoundaryCoordinateResponse {
+                return FarmBoundaryCoordinateResponse(
+                    latitude = result.latitude,
+                    longitude = result.longitude
+                )
+            }
+        }
+    }
+
+    data class FarmDataSourceResponse(
+        val address: String?,
+        val coordinate: String?,
+        val parcel: String?,
+        val landCharacteristic: String?
+    ) {
+        companion object {
+            fun from(result: AuthResult.FarmDataSourceSummary): FarmDataSourceResponse {
+                return FarmDataSourceResponse(
+                    address = result.address,
+                    coordinate = result.coordinate,
+                    parcel = result.parcel,
+                    landCharacteristic = result.landCharacteristic
+                )
+            }
+        }
+    }
+
+    data class CropResponse(
+        val id: UUID,
+        val externalNo: Int,
+        val name: String,
+        val usePartCategory: String,
+        val usePartCategoryLabel: String
+    ) {
+        companion object {
+            fun from(result: CropResult.CropSummary): CropResponse {
+                return CropResponse(
+                    id = result.id,
+                    externalNo = result.externalNo,
+                    name = result.name,
+                    usePartCategory = result.usePartCategory,
+                    usePartCategoryLabel = result.usePartCategoryLabel
                 )
             }
         }

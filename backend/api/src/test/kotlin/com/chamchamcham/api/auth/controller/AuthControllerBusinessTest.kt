@@ -8,9 +8,12 @@ import com.chamchamcham.application.auth.local.AuthService
 import com.chamchamcham.application.auth.social.AppleLoginService
 import com.chamchamcham.application.auth.social.KakaoLoginService
 import com.chamchamcham.application.auth.social.NaverLoginService
+import com.chamchamcham.application.crop.CropResult
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.security.TokenProvider
+import com.chamchamcham.domain.member.ManagementType
+import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.doThrow
@@ -32,6 +35,7 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
+import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 
@@ -43,6 +47,8 @@ class AuthControllerBusinessTest(
     @Autowired private val mockMvc: MockMvc
 ) {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
+    private val farmId = UUID.fromString("00000000-0000-0000-0000-000000000011")
+    private val cropId = UUID.fromString("00000000-0000-0000-0000-000000000101")
 
     @MockBean
     private lateinit var authService: AuthService
@@ -128,14 +134,14 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.data.refreshToken", equalTo("refresh-token")))
             .andExpect(jsonPath("$.data.member.id", equalTo("00000000-0000-0000-0000-000000000001")))
             .andExpect(jsonPath("$.data.member.email", equalTo("social@example.com")))
-            .andExpect(jsonPath("$.data.member.managementType", equalTo("UNREGISTERED")))
+            .andExpect(jsonPath("$.data.member.managementType").doesNotExist())
             .andExpect(jsonPath("$.data.onboarding.status", equalTo("REQUIRED")))
             .andExpect(jsonPath("$.data.onboarding.missingFields[0]", equalTo("NAME")))
             .andExpect(jsonPath("$.data.onboarding.missingFields[1]", equalTo("PHONE")))
             .andExpect(jsonPath("$.data.onboarding.missingFields[2]", equalTo("BIRTH_DATE")))
             .andExpect(jsonPath("$.data.onboarding.missingFields[3]", equalTo("NICKNAME")))
-            .andExpect(jsonPath("$.data.onboarding.missingFields[4]", equalTo("REGION")))
-            .andExpect(jsonPath("$.data.onboarding.missingFields[5]", equalTo("EXPERIENCE_LEVEL")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields[4]", equalTo("EXPERIENCE_LEVEL")))
+            .andExpect(jsonPath("$.data.onboarding.missingFields[5]", equalTo("MANAGEMENT_TYPE")))
     }
 
     @Test
@@ -242,13 +248,15 @@ class AuthControllerBusinessTest(
                     phone = "010-1234-5678",
                     birthDate = LocalDate.parse("1990-01-01"),
                     nickname = "길동",
-                    region = "서울",
-                    experienceLevel = "BEGINNER"
+                    experienceLevel = 3,
+                    managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
+                    farm = farmCommand(),
+                    cropIds = listOf(cropId)
                 )
             )
         ).thenReturn(onboardingCompleteResult())
 
-        mockMvc.perform(
+        val result = mockMvc.perform(
             post("/api/v1/auth/onboarding/complete")
                 .with(authenticatedMember(memberId.toString()))
                 .contentType(MediaType.APPLICATION_JSON)
@@ -258,9 +266,24 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.success").value(true))
             .andExpect(jsonPath("$.data.member.id", equalTo(memberId.toString())))
             .andExpect(jsonPath("$.data.member.nickname", equalTo("길동")))
-            .andExpect(jsonPath("$.data.member.managementType", equalTo("REGISTERED")))
+            .andExpect(jsonPath("$.data.member.experienceLevel", equalTo(3)))
+            .andExpect(jsonPath("$.data.member.managementType", equalTo("AGRICULTURAL_INDIVIDUAL")))
+            .andExpect(jsonPath("$.data.farm.name", equalTo("길동농장")))
+            .andExpect(jsonPath("$.data.farm.roadAddress", equalTo("서울시 강남구 테헤란로 1")))
+            .andExpect(jsonPath("$.data.farm.jibunAddress", equalTo("서울시 강남구 역삼동 1")))
+            .andExpect(jsonPath("$.data.farm.pnu", equalTo("4511310200101230004")))
+            .andExpect(jsonPath("$.data.farm.boundaryCoordinates[0].latitude", equalTo(35.8461)))
+            .andExpect(jsonPath("$.data.farm.dataSource.address", equalTo("JUSO")))
+            .andExpect(jsonPath("$.data.crops[0].id", equalTo(cropId.toString())))
+            .andExpect(jsonPath("$.data.crops[0].externalNo", equalTo(1001)))
+            .andExpect(jsonPath("$.data.crops[0].name", equalTo("토마토")))
+            .andExpect(jsonPath("$.data.crops[0].usePartCategory", equalTo("FRUIT")))
+            .andExpect(jsonPath("$.data.crops[0].usePartCategoryLabel", equalTo("열매")))
             .andExpect(jsonPath("$.data.onboarding.status", equalTo("COMPLETE")))
             .andExpect(jsonPath("$.data.onboarding.missingFields").isEmpty())
+            .andReturn()
+
+        assertThat(result.response.contentAsString).doesNotContain("reg" + "ion")
     }
 
     @Test
@@ -288,8 +311,8 @@ class AuthControllerBusinessTest(
                     AuthResult.OnboardingField.PHONE,
                     AuthResult.OnboardingField.BIRTH_DATE,
                     AuthResult.OnboardingField.NICKNAME,
-                    AuthResult.OnboardingField.REGION,
-                    AuthResult.OnboardingField.EXPERIENCE_LEVEL
+                    AuthResult.OnboardingField.EXPERIENCE_LEVEL,
+                    AuthResult.OnboardingField.MANAGEMENT_TYPE
                 )
             )
         )
@@ -303,15 +326,45 @@ class AuthControllerBusinessTest(
             phone = null,
             birthDate = null,
             nickname = null,
-            region = null,
             experienceLevel = null,
-            managementType = "UNREGISTERED"
+            managementType = null
         )
     }
 
     private fun onboardingCompleteResult(): AuthResult.OnboardingComplete {
         return AuthResult.OnboardingComplete(
             member = completedMemberProfile(),
+            farm = AuthResult.FarmSummary(
+                id = farmId,
+                name = "길동농장",
+                roadAddress = "서울시 강남구 테헤란로 1",
+                jibunAddress = "서울시 강남구 역삼동 1",
+                latitude = 35.8465,
+                longitude = 127.1292,
+                pnu = "4511310200101230004",
+                landCategory = "전",
+                areaSqm = BigDecimal("1200.5"),
+                areaIsManualEntry = false,
+                boundaryCoordinates = listOf(
+                    AuthResult.FarmBoundaryCoordinateSummary(latitude = 35.8461, longitude = 127.1289),
+                    AuthResult.FarmBoundaryCoordinateSummary(latitude = 35.8463, longitude = 127.1295)
+                ),
+                dataSource = AuthResult.FarmDataSourceSummary(
+                    address = "JUSO",
+                    coordinate = "V_WORLD_ADDRESS",
+                    parcel = "V_WORLD_CADASTRAL",
+                    landCharacteristic = "V_WORLD_LAND_CHARACTERISTIC"
+                )
+            ),
+            crops = listOf(
+                CropResult.CropSummary(
+                    id = cropId,
+                    externalNo = 1001,
+                    name = "토마토",
+                    usePartCategory = "FRUIT",
+                    usePartCategoryLabel = "열매"
+                )
+            ),
             onboarding = AuthResult.Onboarding(
                 status = AuthResult.OnboardingStatus.COMPLETE,
                 missingFields = emptyList()
@@ -327,9 +380,8 @@ class AuthControllerBusinessTest(
             phone = "010-1234-5678",
             birthDate = LocalDate.parse("1990-01-01"),
             nickname = "길동",
-            region = "서울",
-            experienceLevel = "BEGINNER",
-            managementType = "REGISTERED"
+            experienceLevel = 3,
+            managementType = "AGRICULTURAL_INDIVIDUAL"
         )
     }
 
@@ -340,10 +392,56 @@ class AuthControllerBusinessTest(
               "phone":"010-1234-5678",
               "birthDate":"1990-01-01",
               "nickname":"길동",
-              "region":"서울",
-              "experienceLevel":"BEGINNER"
+              "experienceLevel":3,
+              "managementType":"AGRICULTURAL_INDIVIDUAL",
+              "farm": {
+                "name":"길동농장",
+                "roadAddress":"서울시 강남구 테헤란로 1",
+                "jibunAddress":"서울시 강남구 역삼동 1",
+                "latitude":35.8465,
+                "longitude":127.1292,
+                "pnu":"4511310200101230004",
+                "landCategory":"전",
+                "areaSqm":1200.5,
+                "areaIsManualEntry":false,
+                "boundaryCoordinates":[
+                  {"latitude":35.8461,"longitude":127.1289},
+                  {"latitude":35.8463,"longitude":127.1295}
+                ],
+                "dataSource":{
+                  "address":"JUSO",
+                  "coordinate":"V_WORLD_ADDRESS",
+                  "parcel":"V_WORLD_CADASTRAL",
+                  "landCharacteristic":"V_WORLD_LAND_CHARACTERISTIC"
+                }
+              },
+              "cropIds":["$cropId"]
             }
         """.trimIndent()
+    }
+
+    private fun farmCommand(): AuthCommand.Farm {
+        return AuthCommand.Farm(
+            name = "길동농장",
+            roadAddress = "서울시 강남구 테헤란로 1",
+            jibunAddress = "서울시 강남구 역삼동 1",
+            latitude = 35.8465,
+            longitude = 127.1292,
+            pnu = "4511310200101230004",
+            landCategory = "전",
+            areaSqm = BigDecimal("1200.5"),
+            areaIsManualEntry = false,
+            boundaryCoordinates = listOf(
+                AuthCommand.FarmBoundaryCoordinate(latitude = 35.8461, longitude = 127.1289),
+                AuthCommand.FarmBoundaryCoordinate(latitude = 35.8463, longitude = 127.1295)
+            ),
+            dataSource = AuthCommand.FarmDataSource(
+                address = "JUSO",
+                coordinate = "V_WORLD_ADDRESS",
+                parcel = "V_WORLD_CADASTRAL",
+                landCharacteristic = "V_WORLD_LAND_CHARACTERISTIC"
+            )
+        )
     }
 
     private fun authenticatedMember(memberId: String): RequestPostProcessor {

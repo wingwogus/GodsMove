@@ -1,0 +1,2672 @@
+[
+  {
+    "externalNo": 159,
+    "name": "가락지나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 467,
+    "name": "가래",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 24,
+    "name": "가래나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 406,
+    "name": "가막살나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 36,
+    "name": "가시나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 83,
+    "name": "가시연꽃",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 296,
+    "name": "가시오갈피",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 227,
+    "name": "가죽나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 383,
+    "name": "가지",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 477,
+    "name": "갈대",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 260,
+    "name": "갈매나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 215,
+    "name": "갈퀴나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 397,
+    "name": "갈퀴덩굴",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 325,
+    "name": "감나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 385,
+    "name": "감자",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 200,
+    "name": "감초",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 129,
+    "name": "갓",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 481,
+    "name": "강아지풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 310,
+    "name": "강활",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 234,
+    "name": "개감수",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 488,
+    "name": "개구리밥",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 102,
+    "name": "개구리자리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 330,
+    "name": "개나리",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 427,
+    "name": "개똥쑥",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 444,
+    "name": "개망초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 511,
+    "name": "개맥문동",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 262,
+    "name": "개머루",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 432,
+    "name": "개미취",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 78,
+    "name": "개별꽃",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 13,
+    "name": "개비자나무",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 31,
+    "name": "개암나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 394,
+    "name": "개오동",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 242,
+    "name": "개옻나무",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 52,
+    "name": "개족도리풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 311,
+    "name": "갯기름나물",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 204,
+    "name": "갯완두",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 49,
+    "name": "겨우살이",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 196,
+    "name": "결명자",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 401,
+    "name": "계요등",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 344,
+    "name": "고구마",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 440,
+    "name": "고들빼기",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 253,
+    "name": "고로쇠나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 62,
+    "name": "고마리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 303,
+    "name": "고본",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 5,
+    "name": "고비",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 7,
+    "name": "고사리",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 4,
+    "name": "고사리삼",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 211,
+    "name": "고삼",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 326,
+    "name": "고욤나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 376,
+    "name": "고추",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 251,
+    "name": "고추나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 193,
+    "name": "골담초",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 492,
+    "name": "골풀",
+    "usePartCategory": "STEM_BRANCH"
+  },
+  {
+    "externalNo": 454,
+    "name": "곰취",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 6,
+    "name": "관중",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 363,
+    "name": "광대나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 362,
+    "name": "광대수염",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 238,
+    "name": "광대싸리",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 141,
+    "name": "괭이눈",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 219,
+    "name": "괭이밥",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 404,
+    "name": "괴불나무",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 378,
+    "name": "구기자나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 305,
+    "name": "구릿대",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 441,
+    "name": "구절초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 231,
+    "name": "굴거리나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 26,
+    "name": "굴피나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 167,
+    "name": "귀룽나무",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 128,
+    "name": "금낭화",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 450,
+    "name": "금불초",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 384,
+    "name": "까마중",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 30,
+    "name": "까치박달",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 110,
+    "name": "깽깽이풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 318,
+    "name": "꼬리진달래",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 133,
+    "name": "꽃다지",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 350,
+    "name": "꽃마리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 361,
+    "name": "꽃향유",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 380,
+    "name": "꽈리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 42,
+    "name": "꾸지뽕나무",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 370,
+    "name": "꿀풀",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 103,
+    "name": "꿩의다리",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 90,
+    "name": "꿩의바람꽃",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 493,
+    "name": "꿩의밥",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 136,
+    "name": "꿩의비름",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 388,
+    "name": "나도송이풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 345,
+    "name": "나팔꽃",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 138,
+    "name": "낙지다리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 111,
+    "name": "남천",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 202,
+    "name": "낭아초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 131,
+    "name": "냉이",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 392,
+    "name": "냉초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 276,
+    "name": "노각나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 19,
+    "name": "노간주나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 257,
+    "name": "노랑물봉선",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 336,
+    "name": "노랑어리연꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 99,
+    "name": "노루귀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 140,
+    "name": "노루오줌",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 327,
+    "name": "노린재나무",
+    "usePartCategory": "STEM_BRANCH"
+  },
+  {
+    "externalNo": 245,
+    "name": "노박덩굴",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 120,
+    "name": "녹나무",
+    "usePartCategory": "STEM_BRANCH"
+  },
+  {
+    "externalNo": 354,
+    "name": "누리장나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 352,
+    "name": "누린내풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 39,
+    "name": "느릅나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 393,
+    "name": "능소화",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 273,
+    "name": "다래",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 207,
+    "name": "다릅나무",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 172,
+    "name": "다정큼나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 41,
+    "name": "닥나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 267,
+    "name": "닥풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 371,
+    "name": "단삼",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 528,
+    "name": "단풍마",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 496,
+    "name": "달래",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 292,
+    "name": "달맞이꽃",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 490,
+    "name": "닭의장풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 379,
+    "name": "담배",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 436,
+    "name": "담배풀",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 263,
+    "name": "담쟁이덩굴",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 108,
+    "name": "당매자나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 233,
+    "name": "대극",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 76,
+    "name": "대나물",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 261,
+    "name": "대추나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 66,
+    "name": "댑싸리",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 423,
+    "name": "더덕",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 434,
+    "name": "도깨비바늘",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 144,
+    "name": "도깨비부채",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 463,
+    "name": "도꼬마리",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 425,
+    "name": "도라지",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 377,
+    "name": "독말풀",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 293,
+    "name": "독활",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 146,
+    "name": "돈나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 139,
+    "name": "돌나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 199,
+    "name": "돌콩",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 274,
+    "name": "동백나무",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 216,
+    "name": "동부",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 92,
+    "name": "동의나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 77,
+    "name": "동자꽃",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 294,
+    "name": "두릅나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 149,
+    "name": "두충",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 513,
+    "name": "둥굴레",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 369,
+    "name": "들깨",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 217,
+    "name": "등",
+    "usePartCategory": "STEM_BRANCH"
+  },
+  {
+    "externalNo": 445,
+    "name": "등골나물",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 51,
+    "name": "등칡",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 160,
+    "name": "딱지꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 201,
+    "name": "땅비싸리",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 190,
+    "name": "땅콩",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 328,
+    "name": "때죽나무",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 34,
+    "name": "떡갈나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 409,
+    "name": "뚝갈",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 448,
+    "name": "뚱딴지",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 283,
+    "name": "뜰보리수",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 474,
+    "name": "띠",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 527,
+    "name": "마",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 185,
+    "name": "마가목",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 290,
+    "name": "마름",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 338,
+    "name": "마삭줄",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 408,
+    "name": "마타리",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 355,
+    "name": "마편초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 515,
+    "name": "만년청",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 317,
+    "name": "만병초",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 459,
+    "name": "만수국",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 135,
+    "name": "말냉이",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 405,
+    "name": "말오줌나무",
+    "usePartCategory": "STEM_BRANCH"
+  },
+  {
+    "externalNo": 250,
+    "name": "말오줌때",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 439,
+    "name": "망초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 91,
+    "name": "매발톱",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 107,
+    "name": "매발톱나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 166,
+    "name": "매실나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 510,
+    "name": "맥문동",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 68,
+    "name": "맨드라미",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 455,
+    "name": "머위",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 230,
+    "name": "멀구슬나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 106,
+    "name": "멀꿀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 179,
+    "name": "멍석딸기",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 342,
+    "name": "메꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 55,
+    "name": "메밀",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 61,
+    "name": "며느리밑씻개",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 60,
+    "name": "며느리배꼽",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 65,
+    "name": "명아주",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 256,
+    "name": "모감주나무",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 152,
+    "name": "모과나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 87,
+    "name": "모란",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 421,
+    "name": "모시대",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 48,
+    "name": "모시풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 115,
+    "name": "목련",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 266,
+    "name": "목화",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 134,
+    "name": "무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 269,
+    "name": "무궁화",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 516,
+    "name": "무릇",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 43,
+    "name": "무화과나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 523,
+    "name": "문주란",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 278,
+    "name": "물레나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 143,
+    "name": "물매화",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 259,
+    "name": "물봉선",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 161,
+    "name": "물양지꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 28,
+    "name": "물오리나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 491,
+    "name": "물옥잠",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 331,
+    "name": "물푸레나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 132,
+    "name": "미나리냉이",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 101,
+    "name": "미나리아재비",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 209,
+    "name": "미모사",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 249,
+    "name": "미역줄나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 381,
+    "name": "미치광이풀",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 461,
+    "name": "민들레",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 339,
+    "name": "민백미꽃",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 471,
+    "name": "밀",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 291,
+    "name": "바늘꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 472,
+    "name": "바랭이",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 137,
+    "name": "바위솔",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 145,
+    "name": "바위취",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 417,
+    "name": "박",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 341,
+    "name": "박주가리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 289,
+    "name": "박쥐나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 194,
+    "name": "박태기나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 367,
+    "name": "박하",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 348,
+    "name": "반디지치",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 486,
+    "name": "반하",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 32,
+    "name": "밤나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 285,
+    "name": "배롱나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 372,
+    "name": "배암차즈기",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 358,
+    "name": "배초향",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 382,
+    "name": "배풍등",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 407,
+    "name": "백당나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 320,
+    "name": "백량금",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 375,
+    "name": "백리향",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 113,
+    "name": "백목련",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 282,
+    "name": "백서향",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 221,
+    "name": "백선",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 399,
+    "name": "백운풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 402,
+    "name": "백정화",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 155,
+    "name": "뱀딸기",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 206,
+    "name": "벌노랑이",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 54,
+    "name": "범꼬리",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 529,
+    "name": "범부채",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 469,
+    "name": "벗풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 170,
+    "name": "벚나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 476,
+    "name": "벼",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 80,
+    "name": "벼룩나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 72,
+    "name": "벼룩이자리",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 272,
+    "name": "벽오동",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 82,
+    "name": "별꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 173,
+    "name": "병아리꽃나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 96,
+    "name": "병조희풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 473,
+    "name": "보리",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 284,
+    "name": "보리수나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 468,
+    "name": "보풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 177,
+    "name": "복분자딸기",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 168,
+    "name": "복사나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 88,
+    "name": "복수초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 322,
+    "name": "봄맞이",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 258,
+    "name": "봉선화",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 465,
+    "name": "부들",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 268,
+    "name": "부용",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 286,
+    "name": "부처꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 1,
+    "name": "부처손",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 498,
+    "name": "부추",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 241,
+    "name": "붉나무",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 213,
+    "name": "붉은토끼풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 531,
+    "name": "붓꽃",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 506,
+    "name": "비비추",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 205,
+    "name": "비수리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 40,
+    "name": "비술나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 14,
+    "name": "비자나무",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 156,
+    "name": "비파나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 456,
+    "name": "뻐꾹채",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 464,
+    "name": "뽀리뱅이",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 44,
+    "name": "뽕나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 457,
+    "name": "사데풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 489,
+    "name": "사마귀풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 312,
+    "name": "사상자",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 275,
+    "name": "사스레피나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 94,
+    "name": "사위질빵",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 248,
+    "name": "사철나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 429,
+    "name": "사철쑥",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 391,
+    "name": "산꼬리풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 178,
+    "name": "산딸기",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 315,
+    "name": "산딸나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 497,
+    "name": "산부추",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 45,
+    "name": "산뽕나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 154,
+    "name": "산사나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 316,
+    "name": "산수유",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 180,
+    "name": "산오이풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 521,
+    "name": "산자고",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 186,
+    "name": "산조팝나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 226,
+    "name": "산초나무",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 411,
+    "name": "산토끼꽃",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 321,
+    "name": "산호수",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 163,
+    "name": "살구나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 46,
+    "name": "삼",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 17,
+    "name": "삼나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 22,
+    "name": "삼백초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 109,
+    "name": "삼지구엽초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 433,
+    "name": "삽주",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 512,
+    "name": "삿갓나물",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 525,
+    "name": "상사화",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 222,
+    "name": "상산",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 33,
+    "name": "상수리나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 453,
+    "name": "상추",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 112,
+    "name": "새모래덩굴",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 343,
+    "name": "새삼",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 533,
+    "name": "새우난초",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 122,
+    "name": "생강나무",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 121,
+    "name": "생달나무",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 174,
+    "name": "생열귀나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 532,
+    "name": "석곡",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 288,
+    "name": "석류나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 524,
+    "name": "석산",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 10,
+    "name": "석위",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 374,
+    "name": "석잠풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 9,
+    "name": "세뿔석위",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 15,
+    "name": "소나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 64,
+    "name": "소리쟁이",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 368,
+    "name": "소엽",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 11,
+    "name": "소철",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 228,
+    "name": "소태나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 3,
+    "name": "속새",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 398,
+    "name": "솔나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 412,
+    "name": "솔체꽃",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 479,
+    "name": "솜대",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 462,
+    "name": "솜방망이",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 300,
+    "name": "송악",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 365,
+    "name": "송장풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 2,
+    "name": "쇠뜨기",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 67,
+    "name": "쇠무릎",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 81,
+    "name": "쇠별꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 70,
+    "name": "쇠비름",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 142,
+    "name": "수국",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 85,
+    "name": "수련",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 413,
+    "name": "수박",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 270,
+    "name": "수박풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 526,
+    "name": "수선화",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 418,
+    "name": "수세미오이",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 424,
+    "name": "수염가래꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 240,
+    "name": "수호초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 357,
+    "name": "순비기나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 75,
+    "name": "술패랭이꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 183,
+    "name": "쉬땅나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 366,
+    "name": "쉽싸리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 93,
+    "name": "승마",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 38,
+    "name": "시무나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 307,
+    "name": "시호",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 313,
+    "name": "식나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 35,
+    "name": "신갈나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 252,
+    "name": "신나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 192,
+    "name": "실거리나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 430,
+    "name": "쑥",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 335,
+    "name": "쓴풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 451,
+    "name": "씀바귀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 271,
+    "name": "아욱",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 487,
+    "name": "앉은부채",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 502,
+    "name": "애기나리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 235,
+    "name": "애기땅빈대",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 124,
+    "name": "애기똥풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 171,
+    "name": "앵도나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 324,
+    "name": "앵초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 153,
+    "name": "야광나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 21,
+    "name": "약모밀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 126,
+    "name": "양귀비",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 162,
+    "name": "양지꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 264,
+    "name": "어저귀",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 475,
+    "name": "억새",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 503,
+    "name": "얼레지",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 438,
+    "name": "엉겅퀴",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 58,
+    "name": "여뀌",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 419,
+    "name": "여주",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 84,
+    "name": "연꽃",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 520,
+    "name": "연영초",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 104,
+    "name": "연잎꿩의다리",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 332,
+    "name": "영춘화",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 236,
+    "name": "예덕나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 298,
+    "name": "오가나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 297,
+    "name": "오갈피나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 387,
+    "name": "오동나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 119,
+    "name": "오미자",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 415,
+    "name": "오이",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 181,
+    "name": "오이풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 164,
+    "name": "옥매",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 482,
+    "name": "옥수수",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 507,
+    "name": "옥잠화",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 243,
+    "name": "옻나무",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 452,
+    "name": "왕고들빼기",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 478,
+    "name": "왕대",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 505,
+    "name": "왕원추리",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 304,
+    "name": "왜당귀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 334,
+    "name": "용담",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 360,
+    "name": "용머리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 458,
+    "name": "우산나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 426,
+    "name": "우엉",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 495,
+    "name": "울릉산마늘",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 95,
+    "name": "위령선",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 280,
+    "name": "위성류",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 130,
+    "name": "유채",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 346,
+    "name": "유홍초",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 501,
+    "name": "윤판나물",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 470,
+    "name": "율무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 105,
+    "name": "으름덩굴",
+    "usePartCategory": "STEM_BRANCH"
+  },
+  {
+    "externalNo": 98,
+    "name": "으아리",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 500,
+    "name": "은방울꽃",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 12,
+    "name": "은행나무",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 301,
+    "name": "음나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 165,
+    "name": "이스라지",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 218,
+    "name": "이질풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 364,
+    "name": "익모초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 403,
+    "name": "인동덩굴",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 302,
+    "name": "인삼",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 117,
+    "name": "일본목련",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 437,
+    "name": "잇꽃",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 189,
+    "name": "자귀나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 188,
+    "name": "자귀풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 169,
+    "name": "자두나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 69,
+    "name": "자리공",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 116,
+    "name": "자목련",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 29,
+    "name": "자작나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 351,
+    "name": "작살나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 86,
+    "name": "작약",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 16,
+    "name": "잣나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 79,
+    "name": "장구채",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 208,
+    "name": "전동싸리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 442,
+    "name": "절굿대",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 73,
+    "name": "점나도나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 265,
+    "name": "접시꽃",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 359,
+    "name": "조개나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 480,
+    "name": "조릿대",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 435,
+    "name": "조뱅이",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 187,
+    "name": "조팝나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 53,
+    "name": "족도리풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 279,
+    "name": "졸방제비꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 356,
+    "name": "좀목형",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 386,
+    "name": "주름잎",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 198,
+    "name": "주엽나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 27,
+    "name": "중국굴피나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 333,
+    "name": "쥐똥나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 50,
+    "name": "쥐방울덩굴",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 410,
+    "name": "쥐오줌풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 522,
+    "name": "지모",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 347,
+    "name": "지치",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 449,
+    "name": "지칭개",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 389,
+    "name": "지황",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 319,
+    "name": "진달래",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 396,
+    "name": "질경이",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 150,
+    "name": "짚신나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 63,
+    "name": "쪽",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 329,
+    "name": "쪽동백나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 175,
+    "name": "찔레꽃",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 277,
+    "name": "차나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 195,
+    "name": "차풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 395,
+    "name": "참깨",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 508,
+    "name": "참나리",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 306,
+    "name": "참당귀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 247,
+    "name": "참빗살나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 414,
+    "name": "참외",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 229,
+    "name": "참죽나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 431,
+    "name": "참취",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 484,
+    "name": "창포",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 71,
+    "name": "채송화",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 308,
+    "name": "천궁",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 485,
+    "name": "천남성",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 534,
+    "name": "천마",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 499,
+    "name": "천문동",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 519,
+    "name": "청가시덩굴",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 518,
+    "name": "청미래덩굴",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 422,
+    "name": "초롱꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 225,
+    "name": "초피나무",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 20,
+    "name": "측백나무",
+    "usePartCategory": "STEM_BRANCH"
+  },
+  {
+    "externalNo": 353,
+    "name": "층꽃나무",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 314,
+    "name": "층층나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 514,
+    "name": "층층둥굴레",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 400,
+    "name": "치자나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 254,
+    "name": "칠엽수",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 210,
+    "name": "칡",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 349,
+    "name": "컴프리",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 8,
+    "name": "콩짜개덩굴",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 323,
+    "name": "큰까치수염",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 97,
+    "name": "큰꽃으아리",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 157,
+    "name": "큰뱀무",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 182,
+    "name": "큰오이풀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 340,
+    "name": "큰조롱",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 530,
+    "name": "타래붓꽃",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 114,
+    "name": "태산목",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 224,
+    "name": "탱자나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 446,
+    "name": "털머위",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 287,
+    "name": "털부처꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 59,
+    "name": "털여뀌",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 214,
+    "name": "토끼풀",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 494,
+    "name": "파",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 483,
+    "name": "파대가리",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 299,
+    "name": "팔손이",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 281,
+    "name": "팥꽃나무",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 184,
+    "name": "팥배나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 74,
+    "name": "패랭이꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 504,
+    "name": "패모",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 37,
+    "name": "팽나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 203,
+    "name": "편두",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 151,
+    "name": "풀명자",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 517,
+    "name": "풀솜대",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 148,
+    "name": "풍년화",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 255,
+    "name": "풍선덩굴",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 125,
+    "name": "피나물",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 237,
+    "name": "피마자",
+    "usePartCategory": "UNKNOWN"
+  },
+  {
+    "externalNo": 509,
+    "name": "하늘말나리",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 420,
+    "name": "하늘타리",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 57,
+    "name": "하수오",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 220,
+    "name": "한련",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 443,
+    "name": "한련초",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 100,
+    "name": "할미꽃",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 118,
+    "name": "함박꽃나무",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 176,
+    "name": "해당화",
+    "usePartCategory": "FLOWER"
+  },
+  {
+    "externalNo": 447,
+    "name": "해바라기",
+    "usePartCategory": "SEED"
+  },
+  {
+    "externalNo": 18,
+    "name": "향나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 390,
+    "name": "현삼",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 127,
+    "name": "현호색",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 337,
+    "name": "협죽도",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 25,
+    "name": "호두나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 244,
+    "name": "호랑가시나무",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 416,
+    "name": "호박",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 56,
+    "name": "호장근",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 23,
+    "name": "홀아비꽃대",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 89,
+    "name": "홀아비바람꽃",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 246,
+    "name": "화살나무",
+    "usePartCategory": "STEM_BRANCH"
+  },
+  {
+    "externalNo": 47,
+    "name": "환삼덩굴",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 197,
+    "name": "활나물",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 373,
+    "name": "황금",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 191,
+    "name": "황기",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 158,
+    "name": "황매화",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 223,
+    "name": "황벽나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 295,
+    "name": "황칠나무",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 428,
+    "name": "황해쑥",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 239,
+    "name": "회양목",
+    "usePartCategory": "LEAF"
+  },
+  {
+    "externalNo": 309,
+    "name": "회향",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 212,
+    "name": "회화나무",
+    "usePartCategory": "FRUIT"
+  },
+  {
+    "externalNo": 123,
+    "name": "후박나무",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 466,
+    "name": "흑삼릉",
+    "usePartCategory": "RHIZOME"
+  },
+  {
+    "externalNo": 232,
+    "name": "흰대극",
+    "usePartCategory": "ROOT_BARK"
+  },
+  {
+    "externalNo": 460,
+    "name": "흰민들레",
+    "usePartCategory": "WHOLE_HERB"
+  },
+  {
+    "externalNo": 147,
+    "name": "히어리",
+    "usePartCategory": "ROOT_BARK"
+  }
+]

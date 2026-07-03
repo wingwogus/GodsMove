@@ -14,6 +14,7 @@ repositories {
 
 dependencies {
     implementation(project(":application"))
+    implementation(project(":domain"))
     testRuntimeOnly("com.h2database:h2")
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-mail")

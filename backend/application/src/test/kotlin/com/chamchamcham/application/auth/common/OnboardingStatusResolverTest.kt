@@ -1,5 +1,6 @@
 package com.chamchamcham.application.auth.common
 
+import com.chamchamcham.domain.member.ManagementType
 import com.chamchamcham.domain.member.Member
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
@@ -17,8 +18,8 @@ class OnboardingStatusResolverTest {
             phone = null,
             birthDate = LocalDate.of(1998, 3, 12),
             nickname = null,
-            region = null,
             experienceLevel = null,
+            managementType = null,
             passwordHash = null
         )
 
@@ -29,8 +30,8 @@ class OnboardingStatusResolverTest {
             listOf(
                 AuthResult.OnboardingField.PHONE,
                 AuthResult.OnboardingField.NICKNAME,
-                AuthResult.OnboardingField.REGION,
-                AuthResult.OnboardingField.EXPERIENCE_LEVEL
+                AuthResult.OnboardingField.EXPERIENCE_LEVEL,
+                AuthResult.OnboardingField.MANAGEMENT_TYPE
             ),
             result.missingFields
         )
@@ -45,8 +46,8 @@ class OnboardingStatusResolverTest {
             phone = "010-1234-5678",
             birthDate = LocalDate.of(1998, 3, 12),
             nickname = "농부",
-            region = "전남",
-            experienceLevel = "BEGINNER",
+            experienceLevel = 72,
+            managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
             passwordHash = null
         )
 
@@ -54,5 +55,25 @@ class OnboardingStatusResolverTest {
 
         assertEquals(AuthResult.OnboardingStatus.COMPLETE, result.status)
         assertTrue(result.missingFields.isEmpty())
+    }
+
+    @Test
+    fun `resolve requires management type`() {
+        val member = Member(
+            id = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            email = null,
+            name = "홍길동",
+            phone = "010-1234-5678",
+            birthDate = LocalDate.of(1998, 3, 12),
+            nickname = "농부",
+            experienceLevel = 72,
+            managementType = null,
+            passwordHash = null
+        )
+
+        val result = OnboardingStatusResolver().resolve(member)
+
+        assertEquals(AuthResult.OnboardingStatus.REQUIRED, result.status)
+        assertEquals(listOf(AuthResult.OnboardingField.MANAGEMENT_TYPE), result.missingFields)
     }
 }

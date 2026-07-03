@@ -35,6 +35,7 @@ import java.util.UUID
 class AuthControllerValidationTest(
     @Autowired private val mockMvc: MockMvc
 ) {
+    private val cropId = UUID.fromString("00000000-0000-0000-0000-000000000101")
 
     @MockBean
     private lateinit var authService: AuthService
@@ -144,8 +145,15 @@ class AuthControllerValidationTest(
                       "phone":"010-1234-5678",
                       "birthDate":"1990-01-01",
                       "nickname":"",
-                      "region":"서울",
-                      "experienceLevel":"BEGINNER"
+                      "experienceLevel":3,
+                      "managementType":"AGRICULTURAL_INDIVIDUAL",
+                      "farm": {
+                        "name":"길동농장",
+                        "roadAddress":"서울시 강남구 테헤란로 1",
+                        "latitude":35.8465,
+                        "longitude":127.1292
+                      },
+                      "cropIds":["$cropId"]
                     }
                     """.trimIndent()
                 )
@@ -154,6 +162,57 @@ class AuthControllerValidationTest(
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
             .andExpect(jsonPath("$.error.detail.field", equalTo("nickname")))
+    }
+
+    @Test
+    fun `complete onboarding rejects experience level below zero`() {
+        mockMvc.perform(
+            post("/api/v1/auth/onboarding/complete")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validOnboardingRequestBody(experienceLevel = -1))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+            .andExpect(jsonPath("$.error.detail.field", equalTo("experienceLevel")))
+    }
+
+    @Test
+    fun `complete onboarding rejects experience level above one hundred`() {
+        mockMvc.perform(
+            post("/api/v1/auth/onboarding/complete")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validOnboardingRequestBody(experienceLevel = 101))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+            .andExpect(jsonPath("$.error.detail.field", equalTo("experienceLevel")))
+    }
+
+    @Test
+    fun `complete onboarding rejects empty crop ids`() {
+        mockMvc.perform(
+            post("/api/v1/auth/onboarding/complete")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validOnboardingRequestBody(cropIdsJson = "[]"))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+            .andExpect(jsonPath("$.error.detail.field", equalTo("cropIds")))
+    }
+
+    @Test
+    fun `complete onboarding rejects invalid management type`() {
+        mockMvc.perform(
+            post("/api/v1/auth/onboarding/complete")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validOnboardingRequestBody(managementType = "INVALID_TYPE"))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_002")))
     }
 
     private fun loginResult(): AuthResult.Login {
@@ -167,14 +226,51 @@ class AuthControllerValidationTest(
                 phone = null,
                 birthDate = null,
                 nickname = null,
-                region = null,
                 experienceLevel = null,
-                managementType = "UNREGISTERED"
+                managementType = null
             ),
             onboarding = AuthResult.Onboarding(
                 status = AuthResult.OnboardingStatus.REQUIRED,
                 missingFields = emptyList()
             )
         )
+    }
+
+    private fun validOnboardingRequestBody(
+        experienceLevel: Int = 3,
+        managementType: String = "AGRICULTURAL_INDIVIDUAL",
+        cropIdsJson: String = """["$cropId"]"""
+    ): String {
+        return """
+            {
+              "name":"홍길동",
+              "phone":"010-1234-5678",
+              "birthDate":"1990-01-01",
+              "nickname":"길동",
+              "experienceLevel":$experienceLevel,
+              "managementType":"$managementType",
+              "farm": {
+                "name":"길동농장",
+                "roadAddress":"서울시 강남구 테헤란로 1",
+                "jibunAddress":"서울시 강남구 역삼동 1",
+                "latitude":35.8465,
+                "longitude":127.1292,
+                "pnu":"4511310200101230004",
+                "landCategory":"전",
+                "areaSqm":1200.5,
+                "areaIsManualEntry":false,
+                "boundaryCoordinates":[
+                  {"latitude":35.8461,"longitude":127.1289}
+                ],
+                "dataSource":{
+                  "address":"JUSO",
+                  "coordinate":"V_WORLD_ADDRESS",
+                  "parcel":"V_WORLD_CADASTRAL",
+                  "landCharacteristic":"V_WORLD_LAND_CHARACTERISTIC"
+                }
+              },
+              "cropIds":$cropIdsJson
+            }
+        """.trimIndent()
     }
 }

@@ -30,11 +30,11 @@ class OnboardingStatusResolver {
             if (member.nickname.isNullOrBlank()) {
                 add(AuthResult.OnboardingField.NICKNAME)
             }
-            if (member.region.isNullOrBlank()) {
-                add(AuthResult.OnboardingField.REGION)
-            }
-            if (member.experienceLevel.isNullOrBlank()) {
+            if (member.experienceLevel == null) {
                 add(AuthResult.OnboardingField.EXPERIENCE_LEVEL)
+            }
+            if (member.managementType == null) {
+                add(AuthResult.OnboardingField.MANAGEMENT_TYPE)
             }
         }
     }

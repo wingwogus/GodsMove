@@ -12,7 +12,6 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
-import java.time.LocalDate
 import java.util.UUID
 
 @Entity
@@ -33,14 +32,5 @@ class MemberCrop(
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "crop_id", nullable = false)
-    val crop: Crop,
-
-    @Column(name = "planting_year", nullable = false)
-    val plantingYear: Int,
-
-    @Column(nullable = false, length = 32)
-    val status: String,
-
-    @Column(name = "started_on")
-    val startedOn: LocalDate? = null,
+    val crop: Crop
 ) : BaseTimeEntity()
