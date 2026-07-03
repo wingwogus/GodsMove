@@ -6,6 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		CE6491E02FF7FAC20092F2F1 /* KakaoSDK in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491DF2FF7FAC20092F2F1 /* KakaoSDK */; };
+		CE6491E22FF7FAC20092F2F1 /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491E12FF7FAC20092F2F1 /* KakaoSDKAuth */; };
+		CE6491E42FF7FAC20092F2F1 /* KakaoSDKCert in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491E32FF7FAC20092F2F1 /* KakaoSDKCert */; };
+		CE6491E62FF7FAC20092F2F1 /* KakaoSDKCertCore in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491E52FF7FAC20092F2F1 /* KakaoSDKCertCore */; };
+		CE6491E82FF7FAC20092F2F1 /* KakaoSDKCommon in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491E72FF7FAC20092F2F1 /* KakaoSDKCommon */; };
+		CE6491EB2FF7FB020092F2F1 /* NidThirdPartyLogin in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491EA2FF7FB020092F2F1 /* NidThirdPartyLogin */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
 		CE648D822FF61D6A0092F2F1 /* ChamChamCham.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChamChamCham.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
@@ -23,6 +32,12 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CE6491E62FF7FAC20092F2F1 /* KakaoSDKCertCore in Frameworks */,
+				CE6491E42FF7FAC20092F2F1 /* KakaoSDKCert in Frameworks */,
+				CE6491E02FF7FAC20092F2F1 /* KakaoSDK in Frameworks */,
+				CE6491E82FF7FAC20092F2F1 /* KakaoSDKCommon in Frameworks */,
+				CE6491E22FF7FAC20092F2F1 /* KakaoSDKAuth in Frameworks */,
+				CE6491EB2FF7FB020092F2F1 /* NidThirdPartyLogin in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -65,6 +80,12 @@
 			);
 			name = ChamChamCham;
 			packageProductDependencies = (
+				CE6491DF2FF7FAC20092F2F1 /* KakaoSDK */,
+				CE6491E12FF7FAC20092F2F1 /* KakaoSDKAuth */,
+				CE6491E32FF7FAC20092F2F1 /* KakaoSDKCert */,
+				CE6491E52FF7FAC20092F2F1 /* KakaoSDKCertCore */,
+				CE6491E72FF7FAC20092F2F1 /* KakaoSDKCommon */,
+				CE6491EA2FF7FB020092F2F1 /* NidThirdPartyLogin */,
 			);
 			productName = ChamChamCham;
 			productReference = CE648D822FF61D6A0092F2F1 /* ChamChamCham.app */;
@@ -94,6 +115,10 @@
 			);
 			mainGroup = CE648D792FF61D6A0092F2F1;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
+				CE6491E92FF7FB020092F2F1 /* XCRemoteSwiftPackageReference "naveridlogin-sdk-ios-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CE648D832FF61D6A0092F2F1 /* Products */;
 			projectDirPath = "";
@@ -336,6 +361,58 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/kakao/kakao-ios-sdk.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.28.0;
+			};
+		};
+		CE6491E92FF7FB020092F2F1 /* XCRemoteSwiftPackageReference "naveridlogin-sdk-ios-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/naver/naveridlogin-sdk-ios-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.1.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		CE6491DF2FF7FAC20092F2F1 /* KakaoSDK */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDK;
+		};
+		CE6491E12FF7FAC20092F2F1 /* KakaoSDKAuth */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKAuth;
+		};
+		CE6491E32FF7FAC20092F2F1 /* KakaoSDKCert */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKCert;
+		};
+		CE6491E52FF7FAC20092F2F1 /* KakaoSDKCertCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKCertCore;
+		};
+		CE6491E72FF7FAC20092F2F1 /* KakaoSDKCommon */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKCommon;
+		};
+		CE6491EA2FF7FB020092F2F1 /* NidThirdPartyLogin */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE6491E92FF7FB020092F2F1 /* XCRemoteSwiftPackageReference "naveridlogin-sdk-ios-swift" */;
+			productName = NidThirdPartyLogin;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = CE648D7A2FF61D6A0092F2F1 /* Project object */;
 }

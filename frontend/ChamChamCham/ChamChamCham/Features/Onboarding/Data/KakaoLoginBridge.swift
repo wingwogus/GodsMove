@@ -22,6 +22,7 @@ import KakaoSDKAuth
 import KakaoSDKCommon
 import KakaoSDKUser
 
+@MainActor
 enum KakaoSDKBootstrap {
     static func initialize() {
         KakaoSDK.initSDK(appKey: Secrets.kakaoNativeAppKey)
@@ -61,6 +62,7 @@ enum KakaoLoginBridge {
     }
 }
 #else
+@MainActor
 enum KakaoSDKBootstrap {
     static func initialize() {}
 
