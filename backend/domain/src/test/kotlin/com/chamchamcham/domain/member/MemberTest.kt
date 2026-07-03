@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
+import java.util.UUID
 
 class MemberTest {
     @Test
@@ -19,31 +20,28 @@ class MemberTest {
     }
 
     @Test
-    fun `completeOnboarding overwrites all onboarding profile fields`() {
-        val member = member(
-            name = "기존 이름",
-            phone = "010-0000-0000",
-            birthDate = LocalDate.of(1980, 1, 1),
-            nickname = "기존 닉네임",
-            region = "부산",
-            experienceLevel = "ADVANCED"
+    fun `complete onboarding stores profile without member region`() {
+        val member = Member(
+            id = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            email = "member@example.com",
+            passwordHash = null
         )
 
         member.completeOnboarding(
             name = "홍길동",
             phone = "010-1234-5678",
-            birthDate = LocalDate.of(1990, 5, 10),
+            birthDate = LocalDate.of(1990, 1, 1),
             nickname = "길동",
-            region = "서울",
-            experienceLevel = "BEGINNER"
+            experienceLevel = 72,
+            managementType = ManagementType.AGRICULTURAL_INDIVIDUAL
         )
 
         assertEquals("홍길동", member.name)
         assertEquals("010-1234-5678", member.phone)
-        assertEquals(LocalDate.of(1990, 5, 10), member.birthDate)
+        assertEquals(LocalDate.of(1990, 1, 1), member.birthDate)
         assertEquals("길동", member.nickname)
-        assertEquals("서울", member.region)
-        assertEquals("BEGINNER", member.experienceLevel)
+        assertEquals(72, member.experienceLevel)
+        assertEquals(ManagementType.AGRICULTURAL_INDIVIDUAL, member.managementType)
     }
 
     @Test
@@ -89,8 +87,7 @@ class MemberTest {
         phone: String? = null,
         birthDate: LocalDate? = null,
         nickname: String? = null,
-        region: String? = null,
-        experienceLevel: String? = null
+        experienceLevel: Int? = null
     ): Member {
         return Member(
             email = "member@example.com",
@@ -98,7 +95,6 @@ class MemberTest {
             phone = phone,
             birthDate = birthDate,
             nickname = nickname,
-            region = region,
             experienceLevel = experienceLevel,
             passwordHash = null
         )

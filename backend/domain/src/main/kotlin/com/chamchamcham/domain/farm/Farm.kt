@@ -22,18 +22,12 @@ class Farm(
     val id: UUID? = null,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "owner_member_id", nullable = false)
+    @JoinColumn(name = "member_id", nullable = false)
     val owner: Member,
 
     @Column(nullable = false, length = 128)
     val name: String,
 
-    @Column(nullable = false, length = 128)
-    val region: String,
-
-    @Column(nullable = false, length = 128)
-    val city: String,
-
     @Column(nullable = false, length = 255)
-    val street: String,
+    val address: String
 ) : BaseTimeEntity()
