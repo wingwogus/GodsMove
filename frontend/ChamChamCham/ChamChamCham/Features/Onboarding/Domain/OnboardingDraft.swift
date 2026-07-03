@@ -17,9 +17,14 @@ struct OnboardingDraft: Codable {
     var profileImageFileName: String?
     var cropIDs: [UUID] = []
     var farmName: String = ""
-    var farmAddress: String = ""
+    var farmRoadAddress: String = ""
+    var farmJibunAddress: String = ""
     var farmLatitude: Double?
     var farmLongitude: Double?
+    var farmPNU: String?
+    var farmLandCategory: String?
+    var farmAreaSqm: Double?
+    var farmAreaIsManualEntry: Bool = false
 }
 
 enum ManagementType: String, CaseIterable, Codable {
