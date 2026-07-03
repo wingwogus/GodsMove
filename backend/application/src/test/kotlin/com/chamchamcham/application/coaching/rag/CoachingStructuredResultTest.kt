@@ -14,4 +14,13 @@ class CoachingStructuredResultTest {
         assertThat(result.recommendations).isEmpty()
         assertThat(result.followUpQuestions).isNotEmpty()
     }
+
+    @Test
+    fun `structured result exposes default record quality and limitations for record feedback`() {
+        val result = CoachingStructuredResult.insufficientEvidence("근거 부족")
+
+        assertThat(result.recordQuality.score).isEqualTo(CoachingRecordQualityScore.UNKNOWN)
+        assertThat(result.recordQuality.missingOrWeakFields).isEmpty()
+        assertThat(result.limitations).contains("근거가 부족해 보수적으로 판단했습니다.")
+    }
 }

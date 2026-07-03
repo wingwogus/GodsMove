@@ -20,6 +20,13 @@ enum class CoachingActionDue {
     NEXT_CHECK
 }
 
+enum class CoachingRecordQualityScore {
+    HIGH,
+    MEDIUM,
+    LOW,
+    UNKNOWN
+}
+
 data class CoachingStructuredResult(
     val summary: String,
     val riskLevel: CoachingRiskLevel,
@@ -29,7 +36,9 @@ data class CoachingStructuredResult(
     val recommendations: List<CoachingRecommendation>,
     val nextActions: List<CoachingNextAction>,
     val followUpQuestions: List<String>,
-    val citations: List<CoachingCitationRef>
+    val citations: List<CoachingCitationRef>,
+    val recordQuality: CoachingRecordQuality = CoachingRecordQuality(),
+    val limitations: List<String> = emptyList()
 ) {
     companion object {
         fun insufficientEvidence(message: String): CoachingStructuredResult {
@@ -42,11 +51,23 @@ data class CoachingStructuredResult(
                 recommendations = emptyList(),
                 nextActions = emptyList(),
                 followUpQuestions = listOf("최근 영농일지나 작물 상태 정보를 추가로 입력해주세요."),
-                citations = emptyList()
+                citations = emptyList(),
+                recordQuality = CoachingRecordQuality(
+                    score = CoachingRecordQualityScore.UNKNOWN,
+                    missingOrWeakFields = emptyList(),
+                    comment = "현재 근거만으로 기록 품질을 평가하기 어렵습니다."
+                ),
+                limitations = listOf("근거가 부족해 보수적으로 판단했습니다.")
             )
         }
     }
 }
+
+data class CoachingRecordQuality(
+    val score: CoachingRecordQualityScore = CoachingRecordQualityScore.UNKNOWN,
+    val missingOrWeakFields: List<String> = emptyList(),
+    val comment: String = ""
+)
 
 data class CoachingObservation(
     val title: String,
