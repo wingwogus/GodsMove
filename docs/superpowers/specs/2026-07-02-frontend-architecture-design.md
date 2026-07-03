@@ -9,6 +9,7 @@ Establish the SwiftUI application architecture for `frontend/ChamChamCham` befor
 ## Confirmed Constraints
 
 - iOS 17+ minimum deployment target.
+- Swift 6 language mode (strict concurrency enforced at compile time). `SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor` and `SWIFT_APPROACHABLE_CONCURRENCY = YES` are set project-wide, so types are implicitly `@MainActor`-isolated unless declared otherwise (e.g. `actor`) — this is why `APIClient`, `TokenRefreshCoordinator`, and `SyncEngine` below are explicitly `actor`s rather than classes.
 - SwiftUI with the Observation framework (`@Observable`), not Combine/`ObservableObject`.
 - SwiftData for local persistence, not CoreData or Realm.
 - Native `URLSession` + async/await for networking, no Alamofire or other third-party networking library.
