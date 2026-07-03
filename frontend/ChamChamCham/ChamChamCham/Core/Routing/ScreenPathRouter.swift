@@ -9,6 +9,7 @@ import Observation
 import SwiftUI
 
 @Observable
+@MainActor
 final class ScreenPathRouter {
     var path = NavigationPath()
 

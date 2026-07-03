@@ -8,6 +8,7 @@
 import Observation
 
 @Observable
+@MainActor
 final class AppState {
     var isAuthenticated = false
     var isOnboarded = false

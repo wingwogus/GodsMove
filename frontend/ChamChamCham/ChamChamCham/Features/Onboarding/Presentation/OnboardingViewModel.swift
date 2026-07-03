@@ -8,6 +8,7 @@
 import Observation
 
 @Observable
+@MainActor
 final class OnboardingViewModel {
     enum Step: String, CaseIterable, Codable {
         case landing

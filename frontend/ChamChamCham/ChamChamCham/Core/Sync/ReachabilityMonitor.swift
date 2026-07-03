@@ -10,6 +10,7 @@ import Network
 import Observation
 
 @Observable
+@MainActor
 final class ReachabilityMonitor {
     private(set) var isConnected = true
     private let monitor = NWPathMonitor()

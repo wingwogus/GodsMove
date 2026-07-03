@@ -7,7 +7,7 @@
 
 import Foundation
 
-final class AuthTokenStore {
+actor AuthTokenStore {
     func accessToken() -> String? { nil }
     func refreshToken() -> String? { nil }
     func save(accessToken: String, refreshToken: String) {}
