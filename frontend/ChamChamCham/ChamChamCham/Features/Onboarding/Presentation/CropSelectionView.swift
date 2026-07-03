@@ -10,12 +10,12 @@ import SwiftUI
 struct CropSelectionView: View {
     @Environment(OnboardingViewModel.self) private var viewModel
     @State private var searchText = ""
-    @State private var selectedCategory = MockCropCatalog.categories[0]
+    @State private var selectedCategory = "인기"
 
     private var filteredCrops: [Crop] {
         let byCategory = selectedCategory == "인기"
-            ? MockCropCatalog.crops
-            : MockCropCatalog.crops.filter { $0.category == selectedCategory }
+            ? viewModel.availableCrops
+            : viewModel.availableCrops.filter { $0.category == selectedCategory }
         guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else { return byCategory }
         return byCategory.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
     }
@@ -60,14 +60,7 @@ struct CropSelectionView: View {
                 .font(.appCaption)
                 .foregroundStyle(Color.appTextSecondary)
 
-            ScrollView {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.sm), count: 4), spacing: Spacing.sm) {
-                    ForEach(filteredCrops) { crop in
-                        cropChip(crop)
-                    }
-                }
-                .padding(.vertical, Spacing.sm)
-            }
+            cropGrid
 
             PrimaryButton(title: selectedCount == 0 ? "작물을 선택하세요" : "다음") {
                 viewModel.goNext()
@@ -76,6 +69,38 @@ struct CropSelectionView: View {
             .opacity(selectedCount == 0 ? 0.5 : 1)
         }
         .padding(Spacing.lg)
+        .task {
+            await viewModel.loadCropsIfNeeded()
+        }
+    }
+
+    @ViewBuilder
+    private var cropGrid: some View {
+        if viewModel.isLoadingCrops {
+            ProgressView()
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, Spacing.lg)
+        } else if let cropLoadError = viewModel.cropLoadError {
+            VStack(spacing: Spacing.sm) {
+                Text(cropLoadError)
+                    .font(.appCaption)
+                    .foregroundStyle(Color.appTextSecondary)
+                Button("다시 시도") {
+                    Task { await viewModel.loadCropsIfNeeded() }
+                }
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, Spacing.lg)
+        } else {
+            ScrollView {
+                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.sm), count: 4), spacing: Spacing.sm) {
+                    ForEach(filteredCrops) { crop in
+                        cropChip(crop)
+                    }
+                }
+                .padding(.vertical, Spacing.sm)
+            }
+        }
     }
 
     private var searchField: some View {
@@ -92,7 +117,7 @@ struct CropSelectionView: View {
     private var categoryChips: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Spacing.sm) {
-                ForEach(MockCropCatalog.categories, id: \.self) { category in
+                ForEach(viewModel.cropCategoryLabels, id: \.self) { category in
                     categoryChip(category)
                 }
             }
@@ -158,5 +183,5 @@ struct CropSelectionView: View {
 
 #Preview {
     CropSelectionView()
-        .environment(OnboardingViewModel())
+        .environment(OnboardingViewModel.preview())
 }
