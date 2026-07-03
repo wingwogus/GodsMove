@@ -1,5 +1,6 @@
 package com.chamchamcham.application.auth.common
 
+import com.chamchamcham.domain.member.ManagementType
 import java.time.LocalDate
 import java.util.UUID
 
@@ -46,8 +47,11 @@ object AuthCommand {
         val phone: String,
         val birthDate: LocalDate,
         val nickname: String,
-        val region: String,
-        val experienceLevel: String
+        val experienceLevel: Int,
+        val managementType: ManagementType,
+        val farmName: String,
+        val farmAddress: String,
+        val cropIds: List<UUID>
     )
 
     data class Reissue(

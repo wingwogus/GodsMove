@@ -6,6 +6,7 @@ import com.chamchamcham.domain.coaching.CoachingFeedback
 import com.chamchamcham.domain.coaching.CoachingFeedbackRepository
 import com.chamchamcham.domain.coaching.CoachingMode
 import com.chamchamcham.domain.crop.Crop
+import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
@@ -375,19 +376,16 @@ class CoachingRagServiceTest {
             id = id,
             owner = member,
             name = "테스트 농장",
-            region = "경기",
-            city = "수원",
-            street = "테스트로 1"
+            address = "경기 수원 테스트로 1"
         )
     }
 
     private fun crop(id: UUID = UUID.fromString("00000000-0000-0000-0000-000000000103")): Crop {
         return Crop(
             id = id,
+            externalNo = 107,
             name = "상추",
-            category = "채소",
-            lifecycleType = "ANNUAL",
-            defaultUnit = "kg"
+            usePartCategory = CropUsePartCategory.LEAF
         )
     }
 

@@ -13,7 +13,7 @@ data class IndexedFarmingRecord(
     val cropId: UUID,
     val workTypeId: UUID,
     val memberName: String?,
-    val memberRegion: String?,
+    val farmAddress: String?,
     val farmName: String,
     val cropName: String,
     val workTypeName: String,
@@ -28,7 +28,7 @@ class FarmingRecordDocumentFactory {
         val workedOn = record.workedAt.toLocalDate()
         val content = buildString {
             appendLine("농업인: ${record.memberName ?: "미입력"}")
-            appendLine("지역: ${record.memberRegion ?: "미입력"}")
+            appendLine("농장 주소: ${record.farmAddress ?: "미입력"}")
             appendLine("농장: ${record.farmName}")
             appendLine("작물: ${record.cropName}")
             appendLine("작업일시: ${record.workedAt}")

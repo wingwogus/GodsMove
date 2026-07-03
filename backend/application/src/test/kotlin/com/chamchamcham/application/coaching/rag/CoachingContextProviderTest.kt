@@ -4,11 +4,13 @@ import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
+import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.farming.FarmingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
+import com.chamchamcham.domain.member.ManagementType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
 import org.assertj.core.api.Assertions.assertThat
@@ -105,8 +107,10 @@ class CoachingContextProviderTest {
             )
         )
 
-        assertThat(context.text).contains("- 농장: 하늘들 약초농장 (강원특별자치도 평창군)")
-        assertThat(context.text).contains("- 작물: 참당귀 / 약초 / 기본 단위 kg")
+        assertThat(context.text).contains("- 영농 경력 점수: 72")
+        assertThat(context.text).contains("- 경영 형태: AGRICULTURAL_INDIVIDUAL")
+        assertThat(context.text).contains("- 농장: 하늘들 약초농장 (강원특별자치도 평창군 진부면 솔바람길 24)")
+        assertThat(context.text).contains("- 작물: 참당귀 / 뿌리·껍질")
         assertThat(context.text).contains("- 기준 영농일지: 2026-06-22T07:50 관수")
         verify(farmRepository).findByIdAndOwner_Id(farmId, memberId)
         verify(farmingRecordRepository).findByIdAndMember_Id(recordId, memberId)
@@ -116,8 +120,8 @@ class CoachingContextProviderTest {
         id = memberId,
         email = "farmer@example.com",
         name = "박민서",
-        region = "강원특별자치도 평창군 진부면",
-        experienceLevel = "5년",
+        experienceLevel = 72,
+        managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
         passwordHash = null
     )
 
@@ -125,17 +129,14 @@ class CoachingContextProviderTest {
         id = farmId,
         owner = owner,
         name = "하늘들 약초농장",
-        region = "강원특별자치도",
-        city = "평창군",
-        street = "진부면"
+        address = "강원특별자치도 평창군 진부면 솔바람길 24"
     )
 
     private fun crop() = Crop(
         id = cropId,
+        externalNo = 422,
         name = "참당귀",
-        category = "약초",
-        lifecycleType = "PERENNIAL",
-        defaultUnit = "kg"
+        usePartCategory = CropUsePartCategory.ROOT_BARK
     )
 
     private fun record(member: Member, farm: Farm, crop: Crop) = FarmingRecord(
