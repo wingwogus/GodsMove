@@ -91,8 +91,11 @@ class AuthSecurityIntegrationTest(
                       "phone":"010-1234-5678",
                       "birthDate":"1990-01-01",
                       "nickname":"길동",
-                      "region":"서울",
-                      "experienceLevel":"BEGINNER"
+                      "experienceLevel":3,
+                      "managementType":"AGRICULTURAL_INDIVIDUAL",
+                      "farmName":"길동농장",
+                      "farmAddress":"서울시 강남구",
+                      "cropIds":["00000000-0000-0000-0000-000000000101"]
                     }
                     """.trimIndent()
                 )
