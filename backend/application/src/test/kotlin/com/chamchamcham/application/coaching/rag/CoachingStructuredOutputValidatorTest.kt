@@ -72,4 +72,13 @@ class CoachingStructuredOutputValidatorTest {
             "next_action_without_citation:토양 상태 재점검"
         )
     }
+
+    @Test
+    fun `unknown risk with limitations and no citations can pass audit`() {
+        val result = CoachingStructuredResult.insufficientEvidence("근거 부족")
+
+        val audit = validator.validate(result, emptySet())
+
+        assertThat(audit.status).isEqualTo(RagAuditStatus.PASS)
+    }
 }
