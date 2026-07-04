@@ -3,6 +3,7 @@ package com.chamchamcham.application.coaching.rag.record
 import com.chamchamcham.application.coaching.rag.common.CoachingRiskLevel
 import com.chamchamcham.application.coaching.rag.common.CoachingStructuredOutputValidator
 import com.chamchamcham.application.coaching.rag.common.CoachingStructuredResult
+import com.chamchamcham.application.coaching.rag.common.CoachingStructuredResultSanitizer
 import com.chamchamcham.application.coaching.rag.common.RagAuditResult
 import com.chamchamcham.application.coaching.rag.common.RagAuditStatus
 import com.chamchamcham.application.coaching.rag.common.RagModelInfo
@@ -31,6 +32,7 @@ class TodayRecordFeedbackService(
     private val queryPlanner: RecordFeedbackRetrievalQueryPlanner,
     private val promptBuilder: RecordFeedbackPromptBuilder,
     private val outputValidator: CoachingStructuredOutputValidator,
+    private val sanitizer: CoachingStructuredResultSanitizer,
     private val ragProperties: RagProperties
 ) {
     fun generate(context: TodayRecordFeedbackContext, topK: Int? = null): TodayRecordFeedbackResult {
@@ -71,12 +73,33 @@ class TodayRecordFeedbackService(
 
         val allowedCitationIds = documents.map { it.id }.toSet() + context.recordCitationId()
         val audit = outputValidator.validate(result, allowedCitationIds)
+        val (finalResult, finalAudit) = resolveAuditedResult(result, audit, allowedCitationIds)
 
         return TodayRecordFeedbackResult(
-            result = result,
-            audit = audit,
+            result = finalResult,
+            audit = finalAudit,
             model = modelInfo(),
             contextWarnings = validation.warnings
+        )
+    }
+
+    private fun resolveAuditedResult(
+        result: CoachingStructuredResult,
+        audit: RagAuditResult,
+        allowedCitationIds: Set<String>
+    ): Pair<CoachingStructuredResult, RagAuditResult> {
+        if (audit.status != RagAuditStatus.FAIL) {
+            return result to audit
+        }
+        val sanitized = sanitizer.sanitize(result, allowedCitationIds)
+        if (sanitized === result) {
+            return result to audit
+        }
+        val reAudit = outputValidator.validate(sanitized, allowedCitationIds)
+        val status = if (reAudit.status == RagAuditStatus.PASS) RagAuditStatus.WARN else reAudit.status
+        return sanitized to reAudit.copy(
+            status = status,
+            warnings = reAudit.warnings + "sanitized_output"
         )
     }
 

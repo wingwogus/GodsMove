@@ -19,11 +19,11 @@ class CoachingStructuredOutputValidator {
         }
 
         result.recommendations
-            .filter { it.citationIds.isEmpty() && result.riskLevel != CoachingRiskLevel.UNKNOWN }
+            .filter { it.citationIds.isEmpty() }
             .forEach { warnings += "recommendation_without_citation:${it.action}" }
 
         result.nextActions
-            .filter { it.citationIds.isEmpty() && result.riskLevel != CoachingRiskLevel.UNKNOWN }
+            .filter { it.citationIds.isEmpty() }
             .forEach { warnings += "next_action_without_citation:${it.action}" }
 
         citationIds.distinct().forEach { citationId ->
