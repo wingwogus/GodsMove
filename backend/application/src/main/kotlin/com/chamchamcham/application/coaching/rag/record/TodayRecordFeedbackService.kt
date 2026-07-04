@@ -12,8 +12,6 @@ import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.document.Document
-import org.springframework.ai.rag.advisor.RetrievalAugmentationAdvisor
-import org.springframework.ai.rag.retrieval.search.DocumentRetriever
 import org.springframework.ai.vectorstore.SearchRequest
 import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.stereotype.Service
@@ -58,15 +56,11 @@ class TodayRecordFeedbackService(
 
         val evidence = documents.map { it.toRecordFeedbackEvidence() }
         val prompt = promptBuilder.build(context, queries, evidence)
-        val advisor = RetrievalAugmentationAdvisor.builder()
-            .documentRetriever(DocumentRetriever { documents })
-            .build()
 
         val result = try {
             chatClient.prompt()
                 .system(prompt.system)
                 .user(prompt.user)
-                .advisors(advisor)
                 .call()
                 .entity(CoachingStructuredResult::class.java)
         } catch (exception: BusinessException) {

@@ -44,6 +44,15 @@ class TodayRecordFeedbackServiceTest {
     private val objectMapper: ObjectMapper = Jackson2ObjectMapperBuilder.json().build()
 
     @Test
+    fun `generate does not attach retrieval advisor`() {
+        val chatClient = FakeChatClient(structuredResult("doc-1"))
+        service(vectorStore = FakeVectorStore(listOf(officialDocument("doc-1"))), chatClient = chatClient)
+            .generate(readFixture("today-record-feedback-watering.json"), topK = 2)
+
+        assertThat(chatClient.requestSpec.advisorUseCount).isZero()
+    }
+
+    @Test
     fun `generate rejects invalid schema before vector search`() {
         val vectorStore = FakeVectorStore(emptyList())
         val service = service(vectorStore = vectorStore)
@@ -223,11 +232,21 @@ class TodayRecordFeedbackServiceTest {
     ) : ChatClient.ChatClientRequestSpec {
         var systemText: String = ""
         var userText: String = ""
+        var advisorUseCount = 0
 
         override fun mutate(): ChatClient.Builder = error("mutate is not used")
-        override fun advisors(advisorSpecConsumer: Consumer<ChatClient.AdvisorSpec>): ChatClient.ChatClientRequestSpec = this
-        override fun advisors(vararg advisors: Advisor): ChatClient.ChatClientRequestSpec = this
-        override fun advisors(advisors: List<Advisor>): ChatClient.ChatClientRequestSpec = this
+        override fun advisors(advisorSpecConsumer: Consumer<ChatClient.AdvisorSpec>): ChatClient.ChatClientRequestSpec {
+            advisorUseCount += 1
+            return this
+        }
+        override fun advisors(vararg advisors: Advisor): ChatClient.ChatClientRequestSpec {
+            advisorUseCount += advisors.size
+            return this
+        }
+        override fun advisors(advisors: List<Advisor>): ChatClient.ChatClientRequestSpec {
+            advisorUseCount += advisors.size
+            return this
+        }
         override fun messages(vararg messages: Message): ChatClient.ChatClientRequestSpec = this
         override fun messages(messages: List<Message>): ChatClient.ChatClientRequestSpec = this
         override fun <T : ChatOptions> options(chatOptions: T): ChatClient.ChatClientRequestSpec = this
