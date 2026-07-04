@@ -33,11 +33,48 @@
 
 ## 범위
 
-- 대상: `application/coaching/rag/record/`, `rag/common/`, `rag/seed/`
+- 대상: `application/coaching/rag/record/`, `rag/common/`, 로컬 전용
+  시드 코드(`rag/seed/`, `api/dev/` — 아래 정책 참조)
 - 비범위 (중기 과제로 이월): 피드백 영속화·조회 API, 프로덕션 인덱싱
   경로, OCR 파이프라인, 서버 측 컨텍스트 어셈블러, 구 chat 파이프라인
   (`rag/chat/`) 수정, 외부 API(농사로/NCPMS/PSIS) 편입, 응답 계약(DTO)
   구조 변경
+
+## 로컬 전용 코드 정책
+
+seed·dev 코드는 커밋하지 않는다. 브랜치 이력에서도 제거되었고
+(2026-07-05 filter-branch, 백업: `backup/feat-rag-pgvector-service-20260705`),
+아래 경로는 `.gitignore`로 추적이 차단된다. 파일은 로컬에만 존재하며
+local 프로필에서만 동작한다.
+
+- `backend/api/src/main(·test)/kotlin/com/chamchamcham/api/dev/`
+- `backend/application/src/main(·test)/kotlin/com/chamchamcham/application/coaching/rag/seed/`
+- `/data/`, `/outputs/`, `backend/docs/db/crop-seed.sql`
+
+파급 규칙:
+
+- 커밋되는 코드·테스트는 위 경로의 클래스를 참조하지 않는다
+  (컴파일·CI가 로컬 전용 파일 없이 성공해야 한다).
+- `SecurityConfig`의 dev 경로 permitAll 목록은 이미
+  `environment.acceptsProfiles("local")` 런타임 게이트가 있으므로
+  추적 코드에 유지한다 (경로 문자열은 컴파일 의존성이 없다).
+- 본 설계의 시드 측 변경(5-a)은 로컬 전용 작업으로, 커밋 계획에서
+  제외된다. 커밋되는 본체는 시드가 만드는 **메타데이터 계약**에만
+  의존한다.
+
+### 벡터스토어 메타데이터 계약 (색인기 ↔ 검색기)
+
+색인기(로컬 시더든 향후 프로덕션 인덱서든)는 TECH_DOCUMENT 청크에
+다음 메타데이터 키를 기록해야 한다. 검색·인용 코드는 이 계약만 본다.
+
+| 키 | 타입 | 의미 |
+|---|---|---|
+| `sourceType` | String | `TECH_DOCUMENT` 고정 |
+| `documentTitle` | String | 사람이 읽는 문서 제목 |
+| `cropName` | String | 단일 작물 문서는 작물명, 다작물/일반은 `GENERAL` |
+| `page` | Int | 청크 시작 페이지 (1-base), 미상 시 생략 가능 |
+| `publisher` | String | 발행 기관 (예: 농촌진흥청) |
+| `year` | Int | 발행 연도 |
 
 ## 변경 설계
 
@@ -90,17 +127,23 @@
 
 ### 5. 색인 메타데이터 보강 + 작물 필터
 
+#### 5-a. 시드 측 (로컬 전용 — 커밋하지 않음)
+
+`DevRagSeedService`에서 위 메타데이터 계약을 채운다.
+
 manifest 연동:
 
-- `DevRagSeedService`가 seedRoot의 `manifest.csv`(존재 시)를 읽어
-  `id`(= 파일명에서 확장자 제거 = sourceId) 기준으로 행을 매칭한다.
+- seedRoot의 `manifest.csv`(존재 시)를 읽어 `id`(= 파일명에서 확장자
+  제거 = sourceId) 기준으로 행을 매칭한다.
 - manifest에 `crop_names` 열을 추가한다. 단일 작물 전용 문서만 작물명
   기입, 다작물/일반 문서는 빈 값 → 메타데이터 `cropName=GENERAL`.
-- 청크 메타데이터 추가 필드: `cropName`(작물명 또는 `GENERAL`),
-  `publisher`, `year`, `page`. `documentTitle`은 manifest의 `title`이
-  있으면 그것을 사용(현재 파일명 유래 문자열 대체).
+- 청크 메타데이터에 `cropName`, `publisher`, `year`, `page` 기록.
+  `documentTitle`은 manifest의 `title`이 있으면 그것을 사용(현재
+  파일명 유래 문자열 대체).
 - manifest가 없거나 행이 매칭되지 않으면 기존 파일명 유래 값 +
   `cropName=GENERAL`로 동작(하위 호환).
+- manifest 파싱 실패(형식 오류)는 시드 요청 실패로 처리해 조용한
+  메타데이터 누락을 방지한다.
 
 page 추적:
 
@@ -111,7 +154,10 @@ page 추적:
   청크가 페이지 경계를 넘으면 시작 페이지를 기록한다.
 - `PdfTextExtractor` 인터페이스는 변경하지 않는다.
 
-검색 필터:
+이 작업의 테스트(`DevRagSeedServiceTest`)도 로컬 전용이며 CI에서
+실행되지 않는다. 로컬에서 `./gradlew test`로 검증한다.
+
+#### 5-b. 검색 측 (커밋 대상)
 
 - `TodayRecordFeedbackService.retrieveDocuments()`의 filterExpression을
   `sourceType == 'TECH_DOCUMENT' && cropName in ['{작물명}', 'GENERAL']`
@@ -121,8 +167,8 @@ page 추적:
 - 서비스의 evidence 매핑(`toRecordFeedbackEvidence`)은 이미
   `metadata["page"]`를 읽으므로 색인만 되면 인용 page가 채워진다.
 
-테스트: manifest 매칭/부재, crop_names 유/빈값, `\f` 페이지 분리와
-청크 page 기록, 필터 표현식 검증.
+테스트(커밋 대상): 필터 표현식 검증, cropName 메타데이터 유/무
+문서에 대한 evidence 매핑.
 
 ### 6. 프롬프트 누락 정보 + 소소한 수정
 
@@ -151,27 +197,28 @@ page 추적:
 
 - 재시도 후에도 실패 시 기존 `BusinessException(RAG_STRUCTURED_OUTPUT_INVALID)`
   유지 — 에러 메시지 리소스 정비는 응답 계약 작업(비범위)과 함께.
-- manifest 파싱 실패(형식 오류)는 시드 요청 실패
-  (`invalidSeedRequest`)로 처리해 조용한 메타데이터 누락을 방지한다.
 
 ## 테스트 전략
 
 - TDD로 진행. 컴포넌트 단위는 `application/src/test`의 기존 테스트
   파일에 추가·수정, 서비스 흐름(threshold 전달, sanitize, 재시도,
   필터 표현식)은 `TodayRecordFeedbackServiceTest`에.
-- 완료 기준: `backend`에서 `./gradlew test` 통과.
+- 완료 기준: `backend`에서 `./gradlew test` 통과 (로컬 전용 테스트
+  포함 상태에서). CI 관점 검증은 로컬 전용 파일을 제외한 컴파일
+  성공 여부로 갈음한다.
 - 실 VectorStore smoke(`TodayRecordFeedbackVectorStoreSmokeTest`)는
   cropName 필터 추가에 맞춰 시드 재적재 후 수동 확인(문서화만).
 
 ## 커밋 계획
 
-항목별 focused commit (Conventional Commits):
+항목별 focused commit (Conventional Commits). 5-a(시드 측)는 로컬
+전용이라 커밋 없음.
 
 1. `fix(rag): 검색 유사도 임계값 적용`
 2. `refactor(rag): 근거 이중 주입 제거`
 3. `feat(rag): 메모 기반 검색 쿼리 추가`
 4. `fix(rag): 무인용 권고 검증 및 감사 실패 정화 추가`
-5. `feat(rag): 시드 메타데이터 보강 및 작물 필터 적용`
+5. `feat(rag): 작물 필터 및 근거 메타데이터 계약 적용`
 6. `fix(rag): 프롬프트 누락 컨텍스트 반영 및 출력 재시도`
 
 ## 리스크
