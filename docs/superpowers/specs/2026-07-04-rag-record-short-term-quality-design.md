@@ -99,7 +99,9 @@ local 프로필에서만 동작한다.
 - `RecordFeedbackRetrievalQueryPlanner.plan()`에서 memo가 공백이 아니면
   `"{작물명} {memo 앞 120자}"` 쿼리를 crop_work_type 쿼리 바로 다음
   (2순위)에 삽입. reason: `memo_text`.
-- `take(5)` 상한은 유지 — 2순위 삽입으로 컷에서 살아남는다.
+- 쿼리 상한은 `take(6)`으로 올린다 — 메모 쿼리 추가로 기존 날씨·예보
+  쿼리가 밀려나지 않게 하기 위함이며, 유사도 임계값(1번)이 추가
+  쿼리의 저관련 결과를 걸러준다.
 - memo가 blank면 추가하지 않는다.
 - 테스트: 메모 유/무, 120자 초과 절단, 쿼리 순서 검증.
 
@@ -189,8 +191,9 @@ page 추적:
   `RAG_STRUCTURED_OUTPUT_INVALID`.
 - `CoachingStructuredResult.insufficientEvidence` 호출부의 사용자
   노출 문구를 농민 톤으로 교체: summary/diagnosis "아직 이 작물에
-  대한 참고 자료가 부족해 오늘 기록만으로는 조언을 드리기 어려워요.
-  기록은 정상적으로 저장됐어요.", limitations는 내부 톤 유지.
+  대한 참고 자료가 부족해 오늘 기록만으로는 판단하기 어려워요."
+  (기록 저장 여부는 application 계층이 보장할 수 없어 언급하지
+  않는다.) limitations는 내부 톤 유지.
 - 테스트: 프롬프트 출력 스냅샷 갱신, 분기 경계값, 재시도 1회 검증.
 
 ## 오류 처리
