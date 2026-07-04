@@ -9,6 +9,7 @@ import com.chamchamcham.application.coaching.rag.common.CoachingRecommendation
 import com.chamchamcham.application.coaching.rag.common.CoachingRiskLevel
 import com.chamchamcham.application.coaching.rag.common.CoachingStructuredOutputValidator
 import com.chamchamcham.application.coaching.rag.common.CoachingStructuredResult
+import com.chamchamcham.application.coaching.rag.common.CoachingStructuredResultSanitizer
 import com.chamchamcham.application.coaching.rag.common.RagAuditStatus
 import com.chamchamcham.application.coaching.rag.common.RagProperties
 import com.chamchamcham.application.coaching.rag.common.RagSourceType
@@ -110,6 +111,29 @@ class TodayRecordFeedbackServiceTest {
         assertThat(chatClient.requestSpec.userText).contains("$recordCitationId : 당일 영농기록 context")
     }
 
+    private fun structuredResultWithUncitedRecommendation(citationId: String): CoachingStructuredResult {
+        return structuredResult(citationId).copy(
+            recommendations = listOf(
+                CoachingRecommendation(CoachingPriority.MEDIUM, "다음 관수 전 토양 수분 확인", "건조 조건", null, listOf(citationId)),
+                CoachingRecommendation(CoachingPriority.LOW, "무근거 조언", "이유 없음", null, emptyList())
+            )
+        )
+    }
+
+    @Test
+    fun `generate strips uncited recommendations and downgrades audit to warn`() {
+        val chatClient = FakeChatClient(structuredResultWithUncitedRecommendation("doc-1"))
+        val result = service(vectorStore = FakeVectorStore(listOf(officialDocument("doc-1"))), chatClient = chatClient)
+            .generate(readFixture("today-record-feedback-watering.json"), topK = 2)
+
+        assertThat(result.result.recommendations.map { it.action })
+            .containsExactly("다음 관수 전 토양 수분 확인")
+        assertThat(result.audit.status).isEqualTo(RagAuditStatus.WARN)
+        assertThat(result.audit.warnings).contains("sanitized_output")
+        assertThat(result.result.limitations)
+            .contains(CoachingStructuredResultSanitizer.SANITIZED_LIMITATION)
+    }
+
     private fun service(
         vectorStore: FakeVectorStore,
         chatClient: ChatClient = FakeChatClient(structuredResult("doc-1"))
@@ -121,6 +145,7 @@ class TodayRecordFeedbackServiceTest {
             queryPlanner = RecordFeedbackRetrievalQueryPlanner(),
             promptBuilder = RecordFeedbackPromptBuilder(),
             outputValidator = CoachingStructuredOutputValidator(),
+            sanitizer = CoachingStructuredResultSanitizer(),
             ragProperties = RagProperties(
                 chat = RagProperties.Chat(model = "test-chat"),
                 embedding = RagProperties.Embedding(model = "test-embedding")

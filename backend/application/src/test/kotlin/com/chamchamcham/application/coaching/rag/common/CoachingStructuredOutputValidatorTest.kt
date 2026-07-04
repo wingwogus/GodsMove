@@ -81,4 +81,26 @@ class CoachingStructuredOutputValidatorTest {
 
         assertThat(audit.status).isEqualTo(RagAuditStatus.PASS)
     }
+
+    @Test
+    fun `recommendation without citation fails audit even for unknown risk`() {
+        val result = CoachingStructuredResult(
+            summary = "요약",
+            riskLevel = CoachingRiskLevel.UNKNOWN,
+            confidence = 0.2,
+            observations = emptyList(),
+            diagnosis = "진단",
+            recommendations = listOf(
+                CoachingRecommendation(CoachingPriority.LOW, "무근거 조언", "이유 없음", null, emptyList())
+            ),
+            nextActions = emptyList(),
+            followUpQuestions = emptyList(),
+            citations = emptyList()
+        )
+
+        val audit = validator.validate(result, emptySet())
+
+        assertThat(audit.status).isEqualTo(RagAuditStatus.FAIL)
+        assertThat(audit.warnings).contains("recommendation_without_citation:무근거 조언")
+    }
 }
