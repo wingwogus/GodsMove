@@ -81,6 +81,10 @@ class RecordFeedbackPromptBuilder {
             appendLine("- schemaVersion: ${context.schemaVersion}")
             appendLine("- feedbackRequestId: ${context.feedbackRequestId}")
             appendLine("- 농장: ${context.farm.name} (${context.farm.address})")
+            appendLine(
+                "- 회원: 영농 경력: ${context.member.experienceLevel ?: "미상"}, " +
+                    "경영 형태: ${context.member.managementType ?: "미상"}"
+            )
             appendLine("- 작물: ${context.crop.name} / 약용부위분류: ${context.crop.usePartCategory.recordFeedbackLabel()}")
             appendLine("- 작물주기: ${cycle?.daysAfterPlanting?.let { "${it}일차" } ?: "미상"}")
             appendLine("- 기록일: ${target.recordedOn}")
@@ -91,6 +95,7 @@ class RecordFeedbackPromptBuilder {
             appendLine(
                 "- 당일 날씨: 평균 ${recordDay.avgTemperatureC ?: "미상"}C, " +
                     "최고 ${recordDay.maxTemperatureC ?: "미상"}C, " +
+                    "최저 ${recordDay.minTemperatureC ?: "미상"}C, " +
                     "강수 ${recordDay.rainfallMm ?: "미상"}mm, " +
                     "습도 ${recordDay.humidityPct ?: "미상"}%"
             )
@@ -102,6 +107,7 @@ class RecordFeedbackPromptBuilder {
             appendLine("- 예보: ${formatForecast(context.weather.forecast7Days)}")
             appendLine("- 최근 기록: ${formatRecentRecords(context.recentRecords)}")
             appendLine("- 주기별 작업 횟수: ${formatMap(context.workTypeStats.cycleCounts)}")
+            appendLine("- 유형별 마지막 작업일: ${formatMap(context.workTypeStats.lastWorkedOnByType)}")
             appendLine("- 최근 30일 작업 횟수: ${formatMap(context.workTypeStats.recent30DayCounts)}")
         }.trim()
     }
@@ -114,6 +120,7 @@ class RecordFeedbackPromptBuilder {
             "${it.date} 강수 ${it.rainfallMm ?: "미상"}mm, " +
                 "강수확률 ${it.rainProbabilityPct ?: "미상"}%, " +
                 "최고 ${it.maxTemperatureC ?: "미상"}C, " +
+                "최저 ${it.minTemperatureC ?: "미상"}C, " +
                 "습도 ${it.humidityPct ?: "미상"}%, " +
                 "풍속 ${it.windSpeedMs ?: "미상"}m/s, " +
                 "riskFlags=${it.riskFlags.joinToString(",").ifBlank { "없음" }}"

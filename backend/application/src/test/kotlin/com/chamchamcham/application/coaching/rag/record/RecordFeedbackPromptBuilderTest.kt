@@ -48,6 +48,12 @@ class RecordFeedbackPromptBuilderTest {
         assertThat(prompt.user).contains("허용 citationIds:")
         assertThat(prompt.user).contains("record:feedback-20260703-watering : 당일 영농기록 context")
         assertThat(prompt.user).contains("[doc-1] 농업기술길잡이 007 약용작물 p.123")
+        assertThat(prompt.user).contains("영농 경력: 1")
+        assertThat(prompt.user).contains("경영 형태: NON_REGISTERED_FARMER")
+        assertThat(prompt.user).contains("최저 19.9C")
+        assertThat(prompt.user).contains("최저 21.4C")
+        assertThat(prompt.user).contains("유형별 마지막 작업일:")
+        assertThat(prompt.user).contains("WATERING=2026-06-30")
     }
 
     private fun readFixture(name: String): TodayRecordFeedbackContext {
