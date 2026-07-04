@@ -74,6 +74,35 @@ class TodayRecordFeedbackServiceTest {
         assertThat(result.audit.warnings).contains("no_retrieved_documents")
         assertThat(result.result.riskLevel).isEqualTo(CoachingRiskLevel.UNKNOWN)
         assertThat(result.result.limitations).contains("검색된 공식문서 근거가 없습니다.")
+        assertThat(result.result.summary)
+            .isEqualTo("아직 이 작물에 대한 참고 자료가 부족해 오늘 기록만으로는 판단하기 어려워요.")
+    }
+
+    @Test
+    fun `generate retries structured output once on runtime failure`() {
+        val flakySpec = FlakyCallResponseSpec(structuredResult("doc-1"), remainingFailures = 1)
+        val result = service(
+            vectorStore = FakeVectorStore(listOf(officialDocument("doc-1"))),
+            chatClient = FakeChatClient(flakySpec)
+        ).generate(readFixture("today-record-feedback-watering.json"), topK = 2)
+
+        assertThat(flakySpec.attempts).isEqualTo(2)
+        assertThat(result.audit.citations).contains("doc-1")
+    }
+
+    @Test
+    fun `generate fails when structured output fails twice`() {
+        val flakySpec = FlakyCallResponseSpec(structuredResult("doc-1"), remainingFailures = 2)
+
+        assertThatThrownBy {
+            service(
+                vectorStore = FakeVectorStore(listOf(officialDocument("doc-1"))),
+                chatClient = FakeChatClient(flakySpec)
+            ).generate(readFixture("today-record-feedback-watering.json"), topK = 2)
+        }.isInstanceOfSatisfying(BusinessException::class.java) {
+            assertThat(it.errorCode).isEqualTo(ErrorCode.RAG_STRUCTURED_OUTPUT_INVALID)
+        }
+        assertThat(flakySpec.attempts).isEqualTo(2)
     }
 
     @Test
@@ -242,9 +271,11 @@ class TodayRecordFeedbackServiceTest {
     }
 
     private class FakeChatClient(
-        private val result: CoachingStructuredResult
+        callResponseSpec: ChatClient.CallResponseSpec
     ) : ChatClient {
-        val requestSpec = FakeRequestSpec(FakeCallResponseSpec(result))
+        constructor(result: CoachingStructuredResult) : this(FakeCallResponseSpec(result))
+
+        val requestSpec = FakeRequestSpec(callResponseSpec)
 
         override fun prompt(): ChatClient.ChatClientRequestSpec = requestSpec
 
@@ -253,6 +284,31 @@ class TodayRecordFeedbackServiceTest {
         override fun prompt(prompt: Prompt): ChatClient.ChatClientRequestSpec = requestSpec
 
         override fun mutate(): ChatClient.Builder = error("mutate is not used")
+    }
+
+    private class FlakyCallResponseSpec(
+        private val result: CoachingStructuredResult,
+        private var remainingFailures: Int
+    ) : ChatClient.CallResponseSpec {
+        var attempts = 0
+
+        override fun <T : Any> entity(type: Class<T>): T {
+            attempts += 1
+            if (remainingFailures > 0) {
+                remainingFailures -= 1
+                throw IllegalStateException("structured output parse failed")
+            }
+            return type.cast(result)
+        }
+
+        override fun <T : Any> entity(type: ParameterizedTypeReference<T>): T = error("not used")
+        override fun <T : Any> entity(structuredOutputConverter: StructuredOutputConverter<T>): T = error("not used")
+        override fun chatClientResponse(): ChatClientResponse = error("not used")
+        override fun chatResponse(): ChatResponse = error("not used")
+        override fun content(): String = error("not used")
+        override fun <T : Any> responseEntity(type: Class<T>): ResponseEntity<ChatResponse, T> = error("not used")
+        override fun <T : Any> responseEntity(type: ParameterizedTypeReference<T>): ResponseEntity<ChatResponse, T> = error("not used")
+        override fun <T : Any> responseEntity(structuredOutputConverter: StructuredOutputConverter<T>): ResponseEntity<ChatResponse, T> = error("not used")
     }
 
     private class FakeRequestSpec(

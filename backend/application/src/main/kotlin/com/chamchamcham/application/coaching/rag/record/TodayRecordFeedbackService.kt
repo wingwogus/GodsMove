@@ -43,7 +43,7 @@ class TodayRecordFeedbackService(
 
         if (documents.isEmpty()) {
             val result = CoachingStructuredResult.insufficientEvidence(
-                "현재 공식문서 근거만으로는 기록을 판단할 수 없습니다."
+                "아직 이 작물에 대한 참고 자료가 부족해 오늘 기록만으로는 판단하기 어려워요."
             ).copy(
                 riskLevel = CoachingRiskLevel.UNKNOWN,
                 limitations = listOf("검색된 공식문서 근거가 없습니다.")
@@ -59,17 +59,7 @@ class TodayRecordFeedbackService(
         val evidence = documents.map { it.toRecordFeedbackEvidence() }
         val prompt = promptBuilder.build(context, queries, evidence)
 
-        val result = try {
-            chatClient.prompt()
-                .system(prompt.system)
-                .user(prompt.user)
-                .call()
-                .entity(CoachingStructuredResult::class.java)
-        } catch (exception: BusinessException) {
-            throw exception
-        } catch (_: RuntimeException) {
-            throw BusinessException(ErrorCode.RAG_STRUCTURED_OUTPUT_INVALID)
-        }
+        val result = callForStructuredResult(prompt)
 
         val allowedCitationIds = documents.map { it.id }.toSet() + context.recordCitationId()
         val audit = outputValidator.validate(result, allowedCitationIds)
@@ -81,6 +71,33 @@ class TodayRecordFeedbackService(
             model = modelInfo(),
             contextWarnings = validation.warnings
         )
+    }
+
+    private fun callForStructuredResult(prompt: RecordFeedbackPrompt): CoachingStructuredResult {
+        repeat(MAX_STRUCTURED_OUTPUT_ATTEMPTS - 1) {
+            try {
+                return requestStructuredResult(prompt)
+            } catch (exception: BusinessException) {
+                throw exception
+            } catch (_: RuntimeException) {
+                // 1회 재시도
+            }
+        }
+        return try {
+            requestStructuredResult(prompt)
+        } catch (exception: BusinessException) {
+            throw exception
+        } catch (_: RuntimeException) {
+            throw BusinessException(ErrorCode.RAG_STRUCTURED_OUTPUT_INVALID)
+        }
+    }
+
+    private fun requestStructuredResult(prompt: RecordFeedbackPrompt): CoachingStructuredResult {
+        return chatClient.prompt()
+            .system(prompt.system)
+            .user(prompt.user)
+            .call()
+            .entity(CoachingStructuredResult::class.java)
     }
 
     private fun resolveAuditedResult(
@@ -154,5 +171,6 @@ class TodayRecordFeedbackService(
 
     companion object {
         const val GENERAL_CROP_NAME = "GENERAL"
+        const val MAX_STRUCTURED_OUTPUT_ATTEMPTS = 2
     }
 }
