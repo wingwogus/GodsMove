@@ -90,6 +90,9 @@ class TodayRecordFeedbackServiceTest {
             assertThat(it.filterExpression?.toString().orEmpty())
                 .contains("sourceType")
                 .contains("TECH_DOCUMENT")
+                .contains("cropName")
+                .contains("참당귀")
+                .contains("GENERAL")
             assertThat(it.similarityThreshold).isEqualTo(0.55)
         }
         assertThat(chatClient.requestSpec.systemText).contains("약용작물 영농기록 피드백")
