@@ -39,7 +39,7 @@ class TodayRecordFeedbackService(
         val validation = contextValidator.requireValid(context)
         val perQueryTopK = normalizeTopK(topK)
         val queries = queryPlanner.plan(context)
-        val documents = retrieveDocuments(queries, perQueryTopK)
+        val documents = retrieveDocuments(queries, perQueryTopK, context.crop.name.trim())
 
         if (documents.isEmpty()) {
             val result = CoachingStructuredResult.insufficientEvidence(
@@ -113,8 +113,10 @@ class TodayRecordFeedbackService(
 
     private fun retrieveDocuments(
         queries: List<RecordFeedbackRetrievalQuery>,
-        perQueryTopK: Int
+        perQueryTopK: Int,
+        cropName: String
     ): List<Document> {
+        val safeCropName = cropName.replace("'", "")
         return queries
             .flatMap { query ->
                 vectorStore.similaritySearch(
@@ -122,7 +124,10 @@ class TodayRecordFeedbackService(
                         .query(query.query)
                         .topK(perQueryTopK)
                         .similarityThreshold(ragProperties.retrieval.lowSimilarityThreshold)
-                        .filterExpression("sourceType == '${RagSourceType.TECH_DOCUMENT.name}'")
+                        .filterExpression(
+                            "sourceType == '${RagSourceType.TECH_DOCUMENT.name}' && " +
+                                "cropName in ['$safeCropName', '$GENERAL_CROP_NAME']"
+                        )
                         .build()
                 )
             }
@@ -145,5 +150,9 @@ class TodayRecordFeedbackService(
             embedding = ragProperties.embedding.model,
             chat = ragProperties.chat.model
         )
+    }
+
+    companion object {
+        const val GENERAL_CROP_NAME = "GENERAL"
     }
 }
