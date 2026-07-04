@@ -58,23 +58,22 @@ class RecordFeedbackRetrievalQueryPlanner {
         val hotDays = recent.hotDaysCount ?: 0
         val maxTemp = recordDay.maxTemperatureC ?: 0.0
 
-        return when {
-            (rainfall != null && rainfall <= 5.0) || dryDays >= 4 || hotDays >= 2 || maxTemp >= 30.0 -> {
-                RecordFeedbackRetrievalQuery(
-                    query = "$cropName 고온 건조 관수 병해충",
-                    reason = "dry_hot_weather"
-                )
-            }
-
-            rainfall != null && rainfall >= 30.0 -> {
-                RecordFeedbackRetrievalQuery(
-                    query = "$cropName 강우 과습 배수 병해충",
-                    reason = "rain_wet_weather"
-                )
-            }
-
-            else -> null
+        if (rainfall != null && rainfall >= 30.0) {
+            return RecordFeedbackRetrievalQuery(
+                query = "$cropName 강우 과습 배수 병해충",
+                reason = "rain_wet_weather"
+            )
         }
+
+        val lowRecentRainfall = recent.rainfallMm != null && recent.rainfallMm <= 5.0
+        if (lowRecentRainfall || dryDays >= 4 || hotDays >= 2 || maxTemp >= 30.0) {
+            return RecordFeedbackRetrievalQuery(
+                query = "$cropName 고온 건조 관수 병해충",
+                reason = "dry_hot_weather"
+            )
+        }
+
+        return null
     }
 
     private fun forecastWeatherRiskQuery(context: TodayRecordFeedbackContext): RecordFeedbackRetrievalQuery? {

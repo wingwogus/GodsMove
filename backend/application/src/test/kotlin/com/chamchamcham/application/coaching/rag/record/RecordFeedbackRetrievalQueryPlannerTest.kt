@@ -75,6 +75,51 @@ class RecordFeedbackRetrievalQueryPlannerTest {
         assertThat(memoQuery.query).isEqualTo("참당귀 " + "가".repeat(120))
     }
 
+    @Test
+    fun `wet week takes priority over hot days`() {
+        val base = readFixture("today-record-feedback-watering.json")
+        val context = base.copy(
+            weather = base.weather.copy(
+                recent7Days = RecordFeedbackRecentWeatherSummary(
+                    rainfallMm = 40.0,
+                    hotDaysCount = 2,
+                    dryDaysCount = 0
+                )
+            )
+        )
+
+        val reasons = planner.plan(context).map { it.reason }
+
+        assertThat(reasons).contains("rain_wet_weather")
+        assertThat(reasons).doesNotContain("dry_hot_weather")
+    }
+
+    @Test
+    fun `ordinary day without recent rainfall data does not trigger dry query`() {
+        val base = readFixture("today-record-feedback-watering.json")
+        val context = base.copy(
+            weather = base.weather.copy(
+                recordDay = RecordFeedbackRecordDayWeather(
+                    avgTemperatureC = 22.0,
+                    maxTemperatureC = 26.0,
+                    minTemperatureC = 17.0,
+                    rainfallMm = 0.0,
+                    humidityPct = 65.0
+                ),
+                recent7Days = RecordFeedbackRecentWeatherSummary(
+                    rainfallMm = null,
+                    hotDaysCount = 0,
+                    dryDaysCount = 0
+                )
+            )
+        )
+
+        val reasons = planner.plan(context).map { it.reason }
+
+        assertThat(reasons).doesNotContain("dry_hot_weather")
+        assertThat(reasons).doesNotContain("rain_wet_weather")
+    }
+
     private fun readFixture(name: String): TodayRecordFeedbackContext {
         val resource = javaClass.classLoader.getResource("coaching/rag/$name")
             ?: error("Missing fixture: $name")
