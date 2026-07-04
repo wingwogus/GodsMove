@@ -104,6 +104,7 @@ class TodayRecordFeedbackService(
                     SearchRequest.builder()
                         .query(query.query)
                         .topK(perQueryTopK)
+                        .similarityThreshold(ragProperties.retrieval.lowSimilarityThreshold)
                         .filterExpression("sourceType == '${RagSourceType.TECH_DOCUMENT.name}'")
                         .build()
                 )

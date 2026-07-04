@@ -80,6 +80,7 @@ class TodayRecordFeedbackServiceTest {
             assertThat(it.filterExpression?.toString().orEmpty())
                 .contains("sourceType")
                 .contains("TECH_DOCUMENT")
+            assertThat(it.similarityThreshold).isEqualTo(0.55)
         }
         assertThat(chatClient.requestSpec.systemText).contains("약용작물 영농기록 피드백")
         assertThat(chatClient.requestSpec.userText).contains("오전 흙 표면이 말라 보여 점적 관수함.")
