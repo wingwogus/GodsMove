@@ -19,6 +19,8 @@ class RecordFeedbackRetrievalQueryPlanner {
             reason = "crop_work_type"
         )
 
+        memoQuery(context)?.let { queries += it }
+
         context.cropCycle?.let { cycle ->
             queries += RecordFeedbackRetrievalQuery(
                 query = "$cropName ${cycle.daysAfterPlanting}일차 생육 관리",
@@ -33,7 +35,18 @@ class RecordFeedbackRetrievalQueryPlanner {
 
         return queries
             .distinctBy { it.query }
-            .take(5)
+            .take(6)
+    }
+
+    private fun memoQuery(context: TodayRecordFeedbackContext): RecordFeedbackRetrievalQuery? {
+        val memo = context.targetRecord.memo.trim()
+        if (memo.isBlank()) {
+            return null
+        }
+        return RecordFeedbackRetrievalQuery(
+            query = "${context.crop.name.trim()} ${memo.take(120)}",
+            reason = "memo_text"
+        )
     }
 
     private fun weatherRiskQuery(context: TodayRecordFeedbackContext): RecordFeedbackRetrievalQuery? {

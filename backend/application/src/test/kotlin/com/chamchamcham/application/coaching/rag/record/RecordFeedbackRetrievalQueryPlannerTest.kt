@@ -49,6 +49,32 @@ class RecordFeedbackRetrievalQueryPlannerTest {
         assertThat(queries).noneMatch { it.contains("일차 생육 관리") }
     }
 
+    @Test
+    fun `memo text creates second priority query and keeps forecast query`() {
+        val queries = planner.plan(readFixture("today-record-feedback-watering.json"))
+
+        assertThat(queries[1].reason).isEqualTo("memo_text")
+        assertThat(queries[1].query).isEqualTo("참당귀 오전 흙 표면이 말라 보여 점적 관수함.")
+        assertThat(queries.map { it.query }).contains("참당귀 강우 예보 배수 과습 병해충")
+    }
+
+    @Test
+    fun `blank memo does not create memo query`() {
+        val base = readFixture("today-record-feedback-watering.json")
+        val context = base.copy(targetRecord = base.targetRecord.copy(memo = "  "))
+
+        assertThat(planner.plan(context).map { it.reason }).doesNotContain("memo_text")
+    }
+
+    @Test
+    fun `long memo is truncated to 120 chars`() {
+        val base = readFixture("today-record-feedback-watering.json")
+        val context = base.copy(targetRecord = base.targetRecord.copy(memo = "가".repeat(200)))
+
+        val memoQuery = planner.plan(context).first { it.reason == "memo_text" }
+        assertThat(memoQuery.query).isEqualTo("참당귀 " + "가".repeat(120))
+    }
+
     private fun readFixture(name: String): TodayRecordFeedbackContext {
         val resource = javaClass.classLoader.getResource("coaching/rag/$name")
             ?: error("Missing fixture: $name")
