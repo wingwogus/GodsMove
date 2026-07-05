@@ -1096,8 +1096,14 @@ Co-Authored-By: Claude Fable 5 <noreply@anthropic.com>"
 @Test
 fun `pdf chunks carry page and manifest metadata`() {
     // 임시 seed 디렉토리 구성 (기존 테스트의 seed 디렉토리 헬퍼 방식을 따른다)
-    val page1 = "참당귀는 서늘한 기후를 좋아하는 약용작물로 배수가 잘 되는 토양에서 잘 자란다. 재배 전 토양 검정을 권장한다."
-    val page2 = "관수는 토양 표면이 마르면 실시하고 과습하지 않게 배수로를 정비한다. 장마철에는 배수 관리가 특히 중요하다."
+    // 주의: chunkPages는 페이지 경계에서 청크를 강제 분리하지 않는다 (스펙: 페이지를
+    // 넘는 청크는 시작 페이지 기록). 2청크가 결정론적으로 나오려면 page1이 빈 줄 없는
+    // "하나의 긴 단락"으로 maxChunkChars(1,200자)를 넘어야 한다 — page2 첫 단락 추가
+    // 시점에 flush되어 청크1(page=1)/청크2(page=2)로 갈린다.
+    val page1 = (1..20).joinToString(" ") {
+        "참당귀는 서늘한 기후를 좋아하는 약용작물로 배수가 잘 되는 토양에서 잘 자라며 재배 전 토양 검정을 권장한다."
+    } // 단락 1개, 약 1,300자
+    val page2 = "관수는 토양 표면이 마르면 실시하고 과습하지 않게 배수로를 정비한다. 장마철에는 배수 관리가 특히 중요하며 침수 후에는 뿌리 상태를 확인한다."
     val pdfText = page1 + "\u000C" + page2
     // seedRoot/manifest.csv 내용:
     // "id","title","publisher","year","source_url","download_url","local_path","status","pages","bytes","sha256","notes","crop_names"
