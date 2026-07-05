@@ -166,6 +166,19 @@ class TodayRecordFeedbackServiceTest {
             .contains(CoachingStructuredResultSanitizer.SANITIZED_LIMITATION)
     }
 
+    @Test
+    fun `generate keeps fail status when invalid confidence cannot be sanitized`() {
+        val invalidConfidenceResult = structuredResult("doc-1").copy(confidence = 1.4)
+        val chatClient = FakeChatClient(invalidConfidenceResult)
+        val result = service(vectorStore = FakeVectorStore(listOf(officialDocument("doc-1"))), chatClient = chatClient)
+            .generate(readFixture("today-record-feedback-watering.json"), topK = 2)
+
+        assertThat(result.audit.status).isEqualTo(RagAuditStatus.FAIL)
+        assertThat(result.audit.warnings).contains("invalid_confidence")
+        assertThat(result.audit.warnings).doesNotContain("sanitized_output")
+        assertThat(result.result.recommendations).hasSameSizeAs(invalidConfidenceResult.recommendations)
+    }
+
     private fun service(
         vectorStore: FakeVectorStore,
         chatClient: ChatClient = FakeChatClient(structuredResult("doc-1"))

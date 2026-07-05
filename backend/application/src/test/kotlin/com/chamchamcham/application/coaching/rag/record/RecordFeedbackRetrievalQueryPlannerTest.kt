@@ -95,6 +95,32 @@ class RecordFeedbackRetrievalQueryPlannerTest {
     }
 
     @Test
+    fun `record day rainfall fallback triggers wet weather query when recent rainfall data is missing`() {
+        val base = readFixture("today-record-feedback-watering.json")
+        val context = base.copy(
+            weather = base.weather.copy(
+                recordDay = RecordFeedbackRecordDayWeather(
+                    avgTemperatureC = 22.0,
+                    maxTemperatureC = 26.0,
+                    minTemperatureC = 17.0,
+                    rainfallMm = 35.0,
+                    humidityPct = 80.0
+                ),
+                recent7Days = RecordFeedbackRecentWeatherSummary(
+                    rainfallMm = null,
+                    hotDaysCount = 0,
+                    dryDaysCount = 0
+                )
+            )
+        )
+
+        val reasons = planner.plan(context).map { it.reason }
+
+        assertThat(reasons).contains("rain_wet_weather")
+        assertThat(reasons).doesNotContain("dry_hot_weather")
+    }
+
+    @Test
     fun `ordinary day without recent rainfall data does not trigger dry query`() {
         val base = readFixture("today-record-feedback-watering.json")
         val context = base.copy(

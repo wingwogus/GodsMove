@@ -1,9 +1,11 @@
 package com.chamchamcham.api.coaching
 
 import com.chamchamcham.ApiApplication
+import com.chamchamcham.application.coaching.rag.common.RagProperties
 import com.chamchamcham.application.coaching.rag.common.RagSourceType
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackRetrievalQueryPlanner
 import com.chamchamcham.application.coaching.rag.record.TodayRecordFeedbackContext
+import com.chamchamcham.application.coaching.rag.record.TodayRecordFeedbackService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Tag
@@ -23,7 +25,8 @@ import java.nio.file.Path
 @SpringBootTest(classes = [ApiApplication::class])
 @EnabledIfEnvironmentVariable(named = "RUN_LOCAL_RAG_SMOKE", matches = "true")
 class TodayRecordFeedbackVectorStoreSmokeTest @Autowired constructor(
-    private val vectorStore: VectorStore
+    private val vectorStore: VectorStore,
+    private val ragProperties: RagProperties
 ) {
     private val objectMapper: ObjectMapper = Jackson2ObjectMapperBuilder.json().build()
     private val planner = RecordFeedbackRetrievalQueryPlanner()
@@ -32,13 +35,18 @@ class TodayRecordFeedbackVectorStoreSmokeTest @Autowired constructor(
     fun `fake watering payload retrieves real tech document chunks from vector store`() {
         val context = readFixture("today-record-feedback-watering.json")
         val queries = planner.plan(context)
+        val cropName = context.crop.name.trim()
 
         val retrieved = queries.flatMap { query ->
             vectorStore.similaritySearch(
                 SearchRequest.builder()
                     .query(query.query)
                     .topK(3)
-                    .filterExpression("sourceType == '${RagSourceType.TECH_DOCUMENT.name}'")
+                    .similarityThreshold(ragProperties.retrieval.lowSimilarityThreshold)
+                    .filterExpression(
+                        "sourceType == '${RagSourceType.TECH_DOCUMENT.name}' && " +
+                            "cropName in ['$cropName', '${TodayRecordFeedbackService.GENERAL_CROP_NAME}']"
+                    )
                     .build()
             )
         }.distinctBy { it.id }
