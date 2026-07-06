@@ -11,11 +11,17 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import java.util.UUID
 
 @Entity
-@Table(name = "community_comment")
-class CommunityComment(
+@Table(
+    name = "community_post_like",
+    uniqueConstraints = [
+        UniqueConstraint(name = "uk_community_post_like_post_member", columnNames = ["post_id", "member_id"])
+    ]
+)
+class CommunityPostLike(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(nullable = false, updatable = false, columnDefinition = "uuid")
@@ -25,21 +31,7 @@ class CommunityComment(
     @JoinColumn(name = "post_id", nullable = false)
     val post: CommunityPost,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "parent_comment_id")
-    val parentComment: CommunityComment? = null,
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "author_member_id", nullable = false)
-    val author: Member,
-
-    @Column(nullable = false, columnDefinition = "text")
-    val body: String,
-
-    @Column(name = "is_deleted", nullable = false)
-    var isDeleted: Boolean = false,
-) : BaseTimeEntity() {
-    fun softDelete() {
-        isDeleted = true
-    }
-}
+    @JoinColumn(name = "member_id", nullable = false)
+    val member: Member
+) : BaseTimeEntity()

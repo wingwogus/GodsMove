@@ -29,24 +29,42 @@ class CommunityPost(
     @JoinColumn(name = "author_member_id", nullable = false)
     val author: Member,
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "crop_id", nullable = false)
+    var crop: Crop,
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "farming_record_id")
-    val farmingRecord: FarmingRecord? = null,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "crop_id")
-    val crop: Crop? = null,
-
-    @Column(name = "post_type", nullable = false, length = 32)
-    val postType: String,
-
-    @Column(nullable = false, length = 255)
-    val title: String,
-
-    @Column(nullable = false, columnDefinition = "text")
-    val body: String,
+    var farmingRecord: FarmingRecord? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(nullable = false, length = 32)
-    val status: CommunityPostStatus = CommunityPostStatus.ACTIVE,
-) : BaseTimeEntity()
+    @Column(name = "post_type", nullable = false, length = 32)
+    var postType: CommunityPostType,
+
+    @Column(nullable = false, length = 255)
+    var title: String,
+
+    @Column(nullable = false, columnDefinition = "text")
+    var body: String,
+
+    @Column(name = "is_deleted", nullable = false)
+    var isDeleted: Boolean = false,
+) : BaseTimeEntity() {
+    fun update(
+        crop: Crop,
+        farmingRecord: FarmingRecord?,
+        postType: CommunityPostType,
+        title: String,
+        body: String
+    ) {
+        this.crop = crop
+        this.farmingRecord = farmingRecord
+        this.postType = postType
+        this.title = title
+        this.body = body
+    }
+
+    fun softDelete() {
+        isDeleted = true
+    }
+}
