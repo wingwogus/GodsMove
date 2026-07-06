@@ -8,6 +8,7 @@ enum class ErrorCode(
 
     INVALID_INPUT("COMMON_001", "error.invalid_input", 400),
     INVALID_JSON("COMMON_002", "error.invalid_json", 400),
+    INVALID_CURSOR("COMMON_003", "error.invalid_cursor", 400),
     INTERNAL_ERROR("COMMON_999", "error.internal_error", 500),
     RESOURCE_NOT_FOUND("RESOURCE_001","error.resource_not_found", 404),
     MEMBER_NOT_FOUND("MEMBER_001", "error.member_not_found", 404),
