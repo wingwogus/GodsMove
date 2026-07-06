@@ -64,3 +64,7 @@ struct AddressSearchSheet: View {
         }
     }
 }
+
+#Preview {
+    AddressSearchSheet(viewModel: FarmLocationViewModel()) { _ in }
+}
