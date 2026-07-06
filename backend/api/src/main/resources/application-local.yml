@@ -101,7 +101,9 @@ rag:
   retrieval:
     top-k-default: ${RAG_TOP_K_DEFAULT:6}
     top-k-max: ${RAG_TOP_K_MAX:20}
-    low-similarity-threshold: ${RAG_LOW_SIMILARITY_THRESHOLD:0.55}
+    # bge-m3는 짧은 한국어 쿼리 vs 긴 문서에서 코사인 유사도가 낮게 형성됨.
+    # 로컬 코퍼스 실측(참당귀 물주기 쿼리) 최고값이 0.5499라 0.55는 전량 과차단됨 → 0.5로 하향.
+    low-similarity-threshold: ${RAG_LOW_SIMILARITY_THRESHOLD:0.5}
   timeout-millis: ${RAG_TIMEOUT_MILLIS:30000}
 
 openclaw:
