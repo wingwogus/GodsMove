@@ -8,13 +8,3 @@ spring:
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [traceId=%X{traceId}] [eventId=%X{eventId}] [memberId=%X{memberId}] [ip=%X{clientIp}] %-5level %logger{36} - %msg%n"
-
-cloudinary:
-  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
-  api-key: ${CLOUDINARY_API_KEY:}
-  api-secret: ${CLOUDINARY_API_SECRET:}
-  secure: true
-
-app:
-  media:
-    max-image-bytes: 10485760
