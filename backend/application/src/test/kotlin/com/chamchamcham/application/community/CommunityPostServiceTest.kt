@@ -309,6 +309,49 @@ class CommunityPostServiceTest {
         assertThat(page.items).hasSize(1)
         assertEquals(postId, page.items.single().id)
         assertThat(page.nextCursor).isNotBlank()
+        val nextCursor = cursorCodec.decode(page.nextCursor!!, CommunityPostCursorPayload::class.java)
+        assertEquals(CommunityPostSort.LATEST, nextCursor.sort)
+        assertEquals(null, nextCursor.score)
+        assertEquals(postCreatedAt, nextCursor.createdAt)
+        assertEquals(postId, nextCursor.id)
+    }
+
+    @Test
+    fun `search decodes valid incoming cursor for query repository`() {
+        val cursor = cursorCodec.encode(
+            CommunityPostCursorPayload(
+                sort = CommunityPostSort.LIKE,
+                score = 8,
+                createdAt = postCreatedAt,
+                id = postId
+            )
+        )
+        val decodedCursor = CommunityPostQueryRepository.Cursor(
+            sort = CommunityPostSort.LIKE,
+            score = 8,
+            createdAt = postCreatedAt,
+            id = postId
+        )
+        `when`(
+            communityPostQueryRepository.search(
+                CommunityPostQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropId = cropId,
+                    postType = CommunityPostType.QUESTION,
+                    keyword = "발아",
+                    likedOnly = false,
+                    mineOnly = false,
+                    sort = CommunityPostSort.LIKE,
+                    cursor = decodedCursor,
+                    size = 21
+                )
+            )
+        ).thenReturn(CommunityPostQueryRepository.SearchResult(rows = emptyList()))
+
+        val page = service.search(searchCondition(sort = CommunityPostSort.LIKE, cursor = cursor))
+
+        assertThat(page.items).isEmpty()
+        assertEquals(null, page.nextCursor)
     }
 
     @Test
@@ -331,13 +374,31 @@ class CommunityPostServiceTest {
     }
 
     @Test
+    fun `search rejects count based sort cursor with null score`() {
+        val cursor = cursorCodec.encode(
+            CommunityPostCursorPayload(
+                sort = CommunityPostSort.LIKE,
+                score = null,
+                createdAt = postCreatedAt,
+                id = postId
+            )
+        )
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.search(searchCondition(sort = CommunityPostSort.LIKE, cursor = cursor))
+        }
+
+        assertEquals(ErrorCode.INVALID_CURSOR, exception.errorCode)
+        verifyNoInteractions(communityPostQueryRepository)
+    }
+
+    @Test
     fun `search rejects malformed cursor`() {
         val exception = assertThrows(BusinessException::class.java) {
             service.search(searchCondition(cursor = "not-a-valid-cursor"))
         }
 
         assertEquals(ErrorCode.INVALID_CURSOR, exception.errorCode)
-        verifyNoInteractions(communityPostQueryRepository)
     }
 
     private fun member(id: UUID): Member =
