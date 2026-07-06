@@ -31,7 +31,7 @@ enum NaverSDKBootstrap {
             appName: "참참참",
             clientId: Secrets.naverClientID,
             clientSecret: Secrets.naverClientSecret,
-            urlScheme: "chamchamcham"
+            urlScheme: "chamchamchamauth"
         )
     }
 
