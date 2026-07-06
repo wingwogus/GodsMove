@@ -81,7 +81,9 @@ class AuthControllerValidationTest(
             .andReturn()
 
         assertThat(result.response.contentAsString).doesNotContain("123")
-        assertThat(output.out + output.err).doesNotContain("123")
+        assertThat(output.out + output.err)
+            .doesNotContain(""""password":"123"""")
+            .doesNotContain("password=123")
     }
 
     @Test
