@@ -28,6 +28,8 @@ class RecordFeedbackPromptBuilderTest {
         assertThat(prompt.system).contains("예보는 확정된 날씨처럼 단정하지 않는다")
         assertThat(prompt.system).contains("forecast7Days에 강우, 고온, 고습, 건조, 강풍 신호가 있으면 nextActions에 예보 기반 점검 행동을 포함한다")
         assertThat(prompt.system).contains("summary, diagnosis, observations, recommendations, nextActions에는 chunkId나 UUID를 직접 쓰지 않는다")
+        assertThat(prompt.system).contains("summary는 상황 요약이 아니라 농부에게 건네는 코칭 한마디다")
+        assertThat(prompt.system).contains("summary에서는 가장 중요한 한 가지만 짚어")
     }
 
     @Test
