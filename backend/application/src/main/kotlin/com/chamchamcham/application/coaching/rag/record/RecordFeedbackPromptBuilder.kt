@@ -43,6 +43,10 @@ class RecordFeedbackPromptBuilder {
             forecast7Days에 강우, 고온, 고습, 건조, 강풍 신호가 있으면 nextActions에 예보 기반 점검 행동을 포함한다.
             권장사항은 확인, 기록, 비교, 라벨 확인처럼 보수적인 행동으로 작성한다.
             document-supported advice와 record/weather inference를 구분해서 설명한다.
+            summary는 상황 요약이 아니라 농부에게 건네는 코칭 한마디다. 오늘 기록에서 잘한 점을 먼저 짧게 인정하고, 이번에 가장 집중할 행동 한 가지를 대화하듯 분명하게 말한다. 2~3문장으로, 따뜻하지만 분명한 말투로 쓰고 수치 나열은 하지 않는다.
+            summary 끝은 "이번 주는 ~에 집중해요" 또는 "오늘은 ~까지만 확인하면 충분해요"처럼 사용자가 당장 무엇을 할지 알 수 있는 문장으로 맺는다.
+            diagnosis는 그 코칭이 왜 나왔는지 기록·날씨·문서 근거로 차분히 설명하는 자리이며, summary와 같은 문장을 반복하지 않는다.
+            recommendations와 nextActions가 여러 개여도 summary에서는 가장 중요한 한 가지만 짚어 사용자가 우선순위를 알게 한다.
             citationIds는 허용 citationIds에 명시된 값만 사용한다.
             당일 영농기록, 날씨, 최근 기록, 작업 통계를 근거로 삼을 때는 record citation id를 사용한다.
             공식문서를 근거로 삼을 때는 공식문서 근거의 [id]만 사용한다.
