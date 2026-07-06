@@ -9,9 +9,9 @@
 ## 0. 30초 요약
 
 - **토대 완성**: 컬러 토큰 + 타입스케일이 Figma export와 1:1로 일치 (`Core/DesignSystem/Foundation/`).
-- **컴포넌트 15개 완성**: 아래 [2. 완료 목록](#2-완료된-컴포넌트) 참고. 전부 `xcodebuild` 빌드 검증됨.
+- **컴포넌트 배치 완성**: 아래 [2. 완료 목록](#2-완료된-컴포넌트) 참고. 전부 `xcodebuild` 빌드 검증됨.
 - **작업 방식**: Figma Dev Mode MCP로 노드별 스펙을 뽑아 → 기존 토큰에 매핑 → SwiftUI로 **수작업 변환**(React/Tailwind 코드는 참고용, 복붙 금지) → **모든 상태를 담은 `#Preview` 필수** → 빌드 검증.
-- **남은 일**: [5. 남은 Figma 링크](#5-남은-figma-mcp-링크-작업-대상)의 컴포넌트들. 링크는 프로젝트 소유자가 추가.
+- **남은 일**: 현재 문서 기준 남은 링크 없음. 링크는 프로젝트 소유자가 [5장](#5-남은-figma-mcp-링크-작업-대상)에 추가.
 
 ---
 
@@ -53,7 +53,14 @@
 | 368-5492 / 368-5502 | segmented-control | `Components/AppSegmentedControl.swift` |
 | 290-6914 | top-app-bar | `Components/AppTopAppBar.swift` |
 | 290-6974 | nav-bar (하단 탭) | `Components/AppNavBar.swift` |
+| 341-1160 | image-upload / 이미지 슬롯 | `Components/AppImageUploadSlot.swift` |
+| 341-1161 | avatar | `Components/AppAvatar.swift` |
+| 341-1970 | toast / message | `Components/AppToast.swift` |
+| 341-2611 | card variants | `Components/AppContentCards.swift` |
+| 341-2440 | list / info row | `Components/AppListItem.swift` |
+| 341-4561 / 341-4551 | comment row | `Components/AppCommentRow.swift` |
 | (공용) | 입력 필드 공통 chrome | `Components/AppFieldContainer.swift` |
+| (공용) | 이미지 체크보드 placeholder | `Components/AppImagePlaceholder.swift` |
 
 - `PrimaryButton.swift`는 `AppButton`의 얇은 래퍼로 재구현됨 (온보딩/랜딩 기존 호출부 7곳 호환 유지).
 - **입력 계열(text-input / date-input / text-area / select)은 `AppFieldContainer`를 공유** — 라벨(`레이블 *`) + 테두리 박스 + 헬퍼/에러 라인을 한 곳에서 관리. 새 입력형 컴포넌트도 이걸 재사용할 것.
@@ -173,32 +180,8 @@ STEP 1의 `xcodebuild` 명령 실행. `** BUILD SUCCEEDED **` 확인. SourceKit 
 
 ## 5. 남은 Figma MCP 링크 (작업 대상)
 
-아래 노드들을 위 워크플로우로 구현하면 됨. **프로젝트 소유자가 필요 시 링크를 계속 추가**.
+현재 문서에 남아 있던 노드들은 2026-07-06 `feat/design-system-handoff` 배치에서 구현 완료. **프로젝트 소유자가 필요 시 링크를 계속 추가**.
 
-```
-Implement this design from Figma.
-@https://www.figma.com/design/44I8cu41vwv7JViVr8McUs/-%EC%8B%A0%ED%95%9C-%ED%95%B4%EC%BB%A4%ED%86%A4--%EB%94%94%EC%9E%90%EC%9D%B8?node-id=341-1160&m=dev
-
-Implement this design from Figma.
-@https://www.figma.com/design/44I8cu41vwv7JViVr8McUs/-%EC%8B%A0%ED%95%9C-%ED%95%B4%EC%BB%A4%ED%86%A4--%EB%94%94%EC%9E%90%EC%9D%B8?node-id=341-1161&m=dev
-
-Implement this design from Figma.
-@https://www.figma.com/design/44I8cu41vwv7JViVr8McUs/-%EC%8B%A0%ED%95%9C-%ED%95%B4%EC%BB%A4%ED%86%A4--%EB%94%94%EC%9E%90%EC%9D%B8?node-id=341-1970&m=dev
-
-Implement this design from Figma.
-@https://www.figma.com/design/44I8cu41vwv7JViVr8McUs/-%EC%8B%A0%ED%95%9C-%ED%95%B4%EC%BB%A4%ED%86%A4--%EB%94%94%EC%9E%90%EC%9D%B8?node-id=341-2611&m=dev
-
-Implement this design from Figma.
-@https://www.figma.com/design/44I8cu41vwv7JViVr8McUs/-%EC%8B%A0%ED%95%9C-%ED%95%B4%EC%BB%A4%ED%86%A4--%EB%94%94%EC%9E%90%EC%9D%B8?node-id=341-2440&m=dev
-
-Implement this design from Figma.
-@https://www.figma.com/design/44I8cu41vwv7JViVr8McUs/-%EC%8B%A0%ED%95%9C-%ED%95%B4%EC%BB%A4%ED%86%A4--%EB%94%94%EC%9E%90%EC%9D%B8?node-id=341-4561&m=dev
-
-Implement this design from Figma.
-@https://www.figma.com/design/44I8cu41vwv7JViVr8McUs/-%EC%8B%A0%ED%95%9C-%ED%95%B4%EC%BB%A4%ED%86%A4--%EB%94%94%EC%9E%90%EC%9D%B8?node-id=341-4551&m=dev
-```
-
-> 참고: 이전 배치에서 **실제 `list` 컴포넌트**(이미지+타이틀+배지 행)는 아직 미구현. 소유자가 링크를 주면 함께 처리 대상.
 > 링크의 node-id는 `341-1160` = nodeId `341:1160` 식으로 변환해서 MCP 호출.
 
 ---
