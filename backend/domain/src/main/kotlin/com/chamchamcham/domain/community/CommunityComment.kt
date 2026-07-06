@@ -1,6 +1,7 @@
 package com.chamchamcham.domain.community
 
 import com.chamchamcham.domain.common.BaseTimeEntity
+import com.chamchamcham.domain.media.UploadedMedia
 import com.chamchamcham.domain.member.Member
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
@@ -35,6 +36,10 @@ class CommunityComment(
 
     @Column(nullable = false, columnDefinition = "text")
     val body: String,
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "media_id")
+    val media: UploadedMedia? = null,
 
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,
