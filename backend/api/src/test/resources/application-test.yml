@@ -46,6 +46,14 @@ app:
     refresh-cookie-secure: false
   mail:
     from-name: ChamChamCham
+  media:
+    max-image-bytes: 10485760
+
+cloudinary:
+  cloud-name: test-cloud
+  api-key: test-key
+  api-secret: test-secret
+  secure: true
 
 auth:
   kakao:
