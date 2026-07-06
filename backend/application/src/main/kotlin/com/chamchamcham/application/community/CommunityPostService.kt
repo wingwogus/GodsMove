@@ -290,7 +290,7 @@ class CommunityPostService(
         val score = if (sort == CommunityPostSort.LATEST) {
             null
         } else {
-            requireNotNull(row.score) { "Cursor score is required for $sort sort" }
+            checkNotNull(row.score) { "Cursor score is required for $sort sort" }
         }
         return cursorCodec.encode(
             CommunityPostCursorPayload(
