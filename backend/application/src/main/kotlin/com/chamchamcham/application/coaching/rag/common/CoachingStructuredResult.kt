@@ -92,5 +92,9 @@ data class CoachingNextAction(
 data class CoachingCitationRef(
     val chunkId: String,
     val label: String,
-    val sourceType: RagSourceType
+    val sourceType: RagSourceType,
+    // 아래는 서버가 벡터스토어 메타데이터에서 직접 채우는 authoritative 값 (LLM 생성 아님).
+    val documentTitle: String? = null,
+    val page: Int? = null,
+    val source: String? = null
 )

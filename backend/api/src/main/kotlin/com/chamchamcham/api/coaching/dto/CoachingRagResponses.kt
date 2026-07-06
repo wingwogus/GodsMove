@@ -88,7 +88,10 @@ object CoachingRagResponses {
                             chunkId = citation.chunkId,
                             label = citation.label,
                             sourceType = citation.sourceType,
-                            displayLabel = displayLabel(index)
+                            displayLabel = displayLabel(index),
+                            documentTitle = citation.documentTitle,
+                            page = citation.page,
+                            source = citation.source
                         )
                     },
                     recordQuality = RecordQualityResponse.from(result.recordQuality),
@@ -133,7 +136,10 @@ object CoachingRagResponses {
         val chunkId: String,
         val label: String,
         val sourceType: RagSourceType,
-        val displayLabel: String
+        val displayLabel: String,
+        val documentTitle: String?,
+        val page: Int?,
+        val source: String?
     )
 
     data class RecordQualityResponse(

@@ -63,7 +63,8 @@ class TodayRecordFeedbackService(
 
         val allowedCitationIds = documents.map { it.id }.toSet() + context.recordCitationId()
         val audit = outputValidator.validate(result, allowedCitationIds)
-        val (finalResult, finalAudit) = resolveAuditedResult(result, audit, allowedCitationIds)
+        val (auditedResult, finalAudit) = resolveAuditedResult(result, audit, allowedCitationIds)
+        val finalResult = enrichCitations(auditedResult, documents, context)
 
         return TodayRecordFeedbackResult(
             result = finalResult,
@@ -71,6 +72,46 @@ class TodayRecordFeedbackService(
             model = modelInfo(),
             contextWarnings = validation.warnings
         )
+    }
+
+    private fun enrichCitations(
+        result: CoachingStructuredResult,
+        documents: List<Document>,
+        context: TodayRecordFeedbackContext
+    ): CoachingStructuredResult {
+        if (result.citations.isEmpty()) {
+            return result
+        }
+        val documentsById = documents.associateBy { it.id }
+        val recordCitationId = context.recordCitationId()
+
+        val enriched = result.citations.map { citation ->
+            when (citation.chunkId) {
+                recordCitationId -> citation.copy(
+                    documentTitle = citation.documentTitle ?: "당일 영농기록",
+                    source = citation.source ?: "영농일지"
+                )
+
+                else -> documentsById[citation.chunkId]?.let { document ->
+                    citation.copy(
+                        documentTitle = document.documentTitle(),
+                        page = document.metadata["page"]?.toString()?.toIntOrNull(),
+                        source = document.sourceFileName()
+                    )
+                } ?: citation
+            }
+        }
+        return result.copy(citations = enriched)
+    }
+
+    private fun Document.documentTitle(): String? {
+        return metadata["documentTitle"]?.toString()
+            ?: metadata["label"]?.toString()
+    }
+
+    private fun Document.sourceFileName(): String? {
+        val path = metadata["pdfPath"]?.toString() ?: return null
+        return path.substringAfterLast('/').substringAfterLast('\\').ifBlank { null }
     }
 
     private fun callForStructuredResult(prompt: RecordFeedbackPrompt): CoachingStructuredResult {

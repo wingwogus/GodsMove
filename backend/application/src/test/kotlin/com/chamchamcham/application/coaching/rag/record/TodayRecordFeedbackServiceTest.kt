@@ -179,6 +179,23 @@ class TodayRecordFeedbackServiceTest {
         assertThat(result.result.recommendations).hasSameSizeAs(invalidConfidenceResult.recommendations)
     }
 
+    @Test
+    fun `generate enriches citations with server document metadata`() {
+        val context = readFixture("today-record-feedback-watering.json")
+        val recordCitationId = context.recordCitationId()
+        val chatClient = FakeChatClient(structuredResultWithRecordCitation("doc-1", recordCitationId))
+        val result = service(vectorStore = FakeVectorStore(listOf(officialDocument("doc-1"))), chatClient = chatClient)
+            .generate(context, topK = 2)
+
+        val docCitation = result.result.citations.first { it.chunkId == "doc-1" }
+        assertThat(docCitation.documentTitle).isEqualTo("농업기술길잡이 007 약용작물")
+        assertThat(docCitation.page).isEqualTo(123)
+        assertThat(docCitation.source).isEqualTo("guide.pdf")
+
+        val recordCitation = result.result.citations.first { it.chunkId == recordCitationId }
+        assertThat(recordCitation.documentTitle).isEqualTo("당일 영농기록")
+    }
+
     private fun service(
         vectorStore: FakeVectorStore,
         chatClient: ChatClient = FakeChatClient(structuredResult("doc-1"))
@@ -213,6 +230,7 @@ class TodayRecordFeedbackServiceTest {
             .metadata("sourceType", RagSourceType.TECH_DOCUMENT.name)
             .metadata("documentTitle", "농업기술길잡이 007 약용작물")
             .metadata("page", 123)
+            .metadata("pdfPath", "/data/rag/medicinal-plants/raw/pdfs/guide.pdf")
             .build()
     }
 
