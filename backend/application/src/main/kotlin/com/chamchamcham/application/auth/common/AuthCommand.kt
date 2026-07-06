@@ -51,7 +51,8 @@ object AuthCommand {
         val experienceLevel: Int,
         val managementType: ManagementType,
         val farm: Farm,
-        val cropIds: List<UUID>
+        val cropIds: List<UUID>,
+        val profileMediaId: UUID?
     )
 
     data class Farm(

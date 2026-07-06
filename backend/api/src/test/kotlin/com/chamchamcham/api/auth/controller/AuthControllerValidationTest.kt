@@ -227,7 +227,8 @@ class AuthControllerValidationTest(
                 birthDate = null,
                 nickname = null,
                 experienceLevel = null,
-                managementType = null
+                managementType = null,
+                profileImageUrl = null
             ),
             onboarding = AuthResult.Onboarding(
                 status = AuthResult.OnboardingStatus.REQUIRED,
