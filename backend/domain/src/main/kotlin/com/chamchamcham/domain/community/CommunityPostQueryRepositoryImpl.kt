@@ -9,34 +9,49 @@ class CommunityPostQueryRepositoryImpl(
     private val entityManager: EntityManager
 ) : CommunityPostQueryRepository {
     override fun search(condition: CommunityPostQueryRepository.SearchCondition): CommunityPostQueryRepository.SearchResult {
-        val posts = findPosts(condition)
-        if (posts.isEmpty()) {
+        val selectedPosts = findPosts(condition)
+        if (selectedPosts.isEmpty()) {
             return CommunityPostQueryRepository.SearchResult(emptyList())
         }
 
-        val postIds = posts.map { requireNotNull(it.id) { "Persisted post id is required" } }
+        val postIds = selectedPosts.map { requireNotNull(it.post.id) { "Persisted post id is required" } }
         val thumbnails = findThumbnails(postIds)
-        val commentCounts = countComments(postIds)
-        val likeCounts = countLikes(postIds)
         val likedPostIds = findLikedPostIds(postIds, condition.memberId)
 
         return CommunityPostQueryRepository.SearchResult(
-            rows = posts.map { post ->
-                val postId = requireNotNull(post.id) { "Persisted post id is required" }
+            rows = selectedPosts.map { selectedPost ->
+                val postId = requireNotNull(selectedPost.post.id) { "Persisted post id is required" }
                 CommunityPostQueryRepository.Row(
-                    post = post,
+                    post = selectedPost.post,
                     thumbnailUrl = thumbnails[postId],
-                    commentCount = commentCounts[postId] ?: 0L,
-                    likeCount = likeCounts[postId] ?: 0L,
-                    likedByMe = likedPostIds.contains(postId)
+                    commentCount = selectedPost.commentCount,
+                    likeCount = selectedPost.likeCount,
+                    likedByMe = likedPostIds.contains(postId),
+                    score = selectedPost.score
                 )
             }
         )
     }
 
-    private fun findPosts(condition: CommunityPostQueryRepository.SearchCondition): List<CommunityPost> {
+    private fun findPosts(condition: CommunityPostQueryRepository.SearchCondition): List<SelectedPost> {
         val where = mutableListOf("p.isDeleted = false")
         val params = mutableMapOf<String, Any>()
+        val commentCountExpression = "(select count(c) from CommunityComment c where c.post = p and c.isDeleted = false)"
+        val likeCountExpression = "(select count(l) from CommunityPostLike l where l.post = p)"
+        val scoreExpression = when (condition.sort) {
+            CommunityPostSort.LATEST -> "0"
+            CommunityPostSort.LIKE -> likeCountExpression
+            CommunityPostSort.COMMENT -> commentCountExpression
+            CommunityPostSort.POPULAR -> "($likeCountExpression + $commentCountExpression)"
+        }
+        val score = when (condition.sort) {
+            CommunityPostSort.LATEST -> null
+            else -> scoreExpression
+        }
+        val orderBy = when (condition.sort) {
+            CommunityPostSort.LATEST -> "p.createdAt desc, p.id desc"
+            else -> "$scoreExpression desc, p.createdAt desc, p.id desc"
+        }
 
         condition.cropId?.let {
             where += "p.crop.id = :cropId"
@@ -58,24 +73,42 @@ class CommunityPostQueryRepositoryImpl(
             where += "exists (select 1 from CommunityPostLike l where l.post = p and l.member.id = :memberId)"
             params["memberId"] = condition.memberId
         }
-        if (condition.cursorCreatedAt != null && condition.cursorId != null) {
-            where += "(p.createdAt < :cursorCreatedAt or (p.createdAt = :cursorCreatedAt and p.id < :cursorId))"
-            params["cursorCreatedAt"] = condition.cursorCreatedAt
-            params["cursorId"] = condition.cursorId
+        condition.cursor?.let { cursor ->
+            when (condition.sort) {
+                CommunityPostSort.LATEST -> {
+                    where += "(p.createdAt < :cursorCreatedAt or (p.createdAt = :cursorCreatedAt and p.id < :cursorId))"
+                }
+                else -> {
+                    where += "($scoreExpression < :cursorScore or ($scoreExpression = :cursorScore and p.createdAt < :cursorCreatedAt) or ($scoreExpression = :cursorScore and p.createdAt = :cursorCreatedAt and p.id < :cursorId))"
+                    params["cursorScore"] = requireNotNull(cursor.score) {
+                        "Cursor score is required for ${condition.sort} sort"
+                    }
+                }
+            }
+            params["cursorCreatedAt"] = cursor.createdAt
+            params["cursorId"] = cursor.id
         }
 
+        val scoreSelect = score ?: "null"
         val query = entityManager.createQuery(
             """
-            select p
+            select p, $commentCountExpression, $likeCountExpression, $scoreSelect
             from CommunityPost p
             where ${where.joinToString(" and ")}
-            order by p.createdAt desc, p.id desc
+            order by $orderBy
             """.trimIndent(),
-            CommunityPost::class.java
+            Array<Any>::class.java
         )
         params.forEach(query::setParameter)
         query.maxResults = condition.size
-        return query.resultList
+        return query.resultList.map { row ->
+            SelectedPost(
+                post = row[0] as CommunityPost,
+                commentCount = row[1] as Long,
+                likeCount = row[2] as Long,
+                score = row[3] as Long?
+            )
+        }
     }
 
     private fun findThumbnails(postIds: List<UUID>): Map<UUID, String> {
@@ -96,36 +129,6 @@ class CommunityPostQueryRepositoryImpl(
             .mapValues { (_, rows) -> rows.first().uploadedMedia.fileUrl }
     }
 
-    private fun countComments(postIds: List<UUID>): Map<UUID, Long> =
-        aggregateCount(
-            """
-            select c.post.id, count(c)
-            from CommunityComment c
-            where c.post.id in :postIds and c.isDeleted = false
-            group by c.post.id
-            """.trimIndent(),
-            postIds
-        )
-
-    private fun countLikes(postIds: List<UUID>): Map<UUID, Long> =
-        aggregateCount(
-            """
-            select l.post.id, count(l)
-            from CommunityPostLike l
-            where l.post.id in :postIds
-            group by l.post.id
-            """.trimIndent(),
-            postIds
-        )
-
-    private fun aggregateCount(queryString: String, postIds: List<UUID>): Map<UUID, Long> {
-        @Suppress("UNCHECKED_CAST")
-        val rows = entityManager.createQuery(queryString)
-            .setParameter("postIds", postIds)
-            .resultList as List<Array<Any>>
-        return rows.associate { row -> row[0] as UUID to row[1] as Long }
-    }
-
     private fun findLikedPostIds(postIds: List<UUID>, memberId: UUID): Set<UUID> {
         return entityManager.createQuery(
             """
@@ -140,4 +143,11 @@ class CommunityPostQueryRepositoryImpl(
             .resultList
             .toSet()
     }
+
+    private data class SelectedPost(
+        val post: CommunityPost,
+        val commentCount: Long,
+        val likeCount: Long,
+        val score: Long?
+    )
 }

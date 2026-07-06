@@ -115,6 +115,106 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
     }
 
     @Test
+    fun `search sorts by like count then latest`() {
+        persistPost(title = "좋아요 둘 오래된 글", createdAt = LocalDateTime.of(2026, 6, 12, 8, 0), likeCount = 2)
+        persistPost(title = "좋아요 하나 글", createdAt = LocalDateTime.of(2026, 6, 12, 10, 0), likeCount = 1)
+        persistPost(title = "좋아요 둘 최신 글", createdAt = LocalDateTime.of(2026, 6, 12, 9, 0), likeCount = 2)
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(sort = CommunityPostSort.LIKE))
+
+        assertThat(result.rows.map { it.post.title }).containsExactly("좋아요 둘 최신 글", "좋아요 둘 오래된 글", "좋아요 하나 글")
+        assertThat(result.rows.map { it.score }).containsExactly(2L, 2L, 1L)
+        assertThat(result.rows.map { it.likeCount }).containsExactly(2L, 2L, 1L)
+    }
+
+    @Test
+    fun `search sorts by non-deleted comment count then latest`() {
+        persistPost(
+            title = "댓글 둘 오래된 글",
+            createdAt = LocalDateTime.of(2026, 6, 12, 8, 0),
+            commentCount = 2
+        )
+        persistPost(
+            title = "댓글 하나와 삭제 댓글 많은 글",
+            createdAt = LocalDateTime.of(2026, 6, 12, 10, 0),
+            commentCount = 1,
+            deletedCommentCount = 3
+        )
+        persistPost(
+            title = "댓글 둘 최신 글",
+            createdAt = LocalDateTime.of(2026, 6, 12, 9, 0),
+            commentCount = 2
+        )
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(sort = CommunityPostSort.COMMENT))
+
+        assertThat(result.rows.map { it.post.title }).containsExactly("댓글 둘 최신 글", "댓글 둘 오래된 글", "댓글 하나와 삭제 댓글 많은 글")
+        assertThat(result.rows.map { it.score }).containsExactly(2L, 2L, 1L)
+        assertThat(result.rows.map { it.commentCount }).containsExactly(2L, 2L, 1L)
+    }
+
+    @Test
+    fun `search sorts by popular score then latest`() {
+        persistPost(
+            title = "인기 셋 오래된 글",
+            createdAt = LocalDateTime.of(2026, 6, 12, 8, 0),
+            likeCount = 1,
+            commentCount = 2
+        )
+        persistPost(
+            title = "인기 둘 글",
+            createdAt = LocalDateTime.of(2026, 6, 12, 10, 0),
+            likeCount = 1,
+            commentCount = 1
+        )
+        persistPost(
+            title = "인기 셋 최신 글",
+            createdAt = LocalDateTime.of(2026, 6, 12, 9, 0),
+            likeCount = 3
+        )
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(sort = CommunityPostSort.POPULAR))
+
+        assertThat(result.rows.map { it.post.title }).containsExactly("인기 셋 최신 글", "인기 셋 오래된 글", "인기 둘 글")
+        assertThat(result.rows.map { it.score }).containsExactly(3L, 3L, 2L)
+        assertThat(result.rows.map { it.likeCount + it.commentCount }).containsExactly(3L, 3L, 2L)
+    }
+
+    @Test
+    fun `search uses count based cursor pagination`() {
+        persistPost(title = "좋아요 다섯 글", createdAt = LocalDateTime.of(2026, 6, 12, 11, 0), likeCount = 5)
+        persistPost(title = "좋아요 넷 최신 글", createdAt = LocalDateTime.of(2026, 6, 12, 10, 0), likeCount = 4)
+        persistPost(title = "좋아요 넷 오래된 글", createdAt = LocalDateTime.of(2026, 6, 12, 9, 0), likeCount = 4)
+        persistPost(title = "좋아요 셋 글", createdAt = LocalDateTime.of(2026, 6, 12, 8, 0), likeCount = 3)
+        entityManager.flush()
+        entityManager.clear()
+
+        val firstPage = queryRepository.search(condition(sort = CommunityPostSort.LIKE, size = 2))
+        val cursorRow = firstPage.rows.last()
+        val secondPage = queryRepository.search(
+            condition(
+                sort = CommunityPostSort.LIKE,
+                size = 2,
+                cursor = CommunityPostQueryRepository.Cursor(
+                    sort = CommunityPostSort.LIKE,
+                    score = cursorRow.score,
+                    createdAt = cursorRow.post.createdAt,
+                    id = requireNotNull(cursorRow.post.id)
+                )
+            )
+        )
+
+        assertThat(firstPage.rows.map { it.post.title }).containsExactly("좋아요 다섯 글", "좋아요 넷 최신 글")
+        assertThat(secondPage.rows.map { it.post.title }).containsExactly("좋아요 넷 오래된 글", "좋아요 셋 글")
+    }
+
+    @Test
     fun `search condition supports sort and structured cursor`() {
         val cursor = CommunityPostQueryRepository.Cursor(
             sort = CommunityPostSort.LIKE,
@@ -136,7 +236,10 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
         crop: Crop = hwanggiCrop,
         postType: CommunityPostType = CommunityPostType.GENERAL,
         createdAt: LocalDateTime = LocalDateTime.of(2026, 6, 12, 9, 0),
-        isDeleted: Boolean = false
+        isDeleted: Boolean = false,
+        commentCount: Int = 0,
+        deletedCommentCount: Int = 0,
+        likeCount: Int = 0
     ): CommunityPost {
         val post = persist(
             CommunityPost(
@@ -149,25 +252,34 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
             ),
             createdAt
         )
-        persistComment(post)
-        persistLike(post)
+        repeat(commentCount) { persistComment(post) }
+        repeat(deletedCommentCount) { persistComment(post, isDeleted = true) }
+        repeat(likeCount) { persistLike(post, member = persistLikeMember()) }
         persistThumbnail(post)
         return post
     }
 
-    private fun persistComment(post: CommunityPost) {
+    private fun persistComment(post: CommunityPost, isDeleted: Boolean = false) {
         persist(
             CommunityComment(
                 post = post,
                 author = member,
-                body = "댓글"
+                body = "댓글",
+                isDeleted = isDeleted
             ),
             LocalDateTime.of(2026, 6, 12, 9, 30)
         )
     }
 
-    private fun persistLike(post: CommunityPost) {
-        persist(CommunityPostLike(post = post, member = otherMember), LocalDateTime.of(2026, 6, 12, 9, 40))
+    private fun persistLike(post: CommunityPost, member: Member = otherMember) {
+        persist(CommunityPostLike(post = post, member = member), LocalDateTime.of(2026, 6, 12, 9, 40))
+    }
+
+    private fun persistLikeMember(): Member {
+        return persist(
+            Member(email = "like-${UUID.randomUUID()}@example.com", passwordHash = null),
+            now
+        )
     }
 
     private fun persistThumbnail(post: CommunityPost) {
