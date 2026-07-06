@@ -5,14 +5,12 @@
 //  Created by iyungui on 7/3/26.
 //
 
-import SwiftData
 import SwiftUI
 
 struct LandingView: View {
     @Environment(OnboardingViewModel.self) private var viewModel
     @Environment(AuthViewModel.self) private var authViewModel
     @Environment(AppState.self) private var appState
-    @Environment(\.modelContext) private var modelContext
 
     private var isLoggingIn: Bool { authViewModel.loginState == .loggingIn }
 
@@ -40,8 +38,8 @@ struct LandingView: View {
         .padding(Spacing.lg)
     }
 
-    private func login(with method: (AppState, ModelContext) async -> Void) async {
-        await method(appState, modelContext)
+    private func login(with method: (AppState) async -> Void) async {
+        await method(appState)
         guard appState.isAuthenticated else { return }
         if !appState.isOnboarded {
             viewModel.jump(to: .basicProfile)
@@ -54,6 +52,6 @@ struct LandingView: View {
 #Preview {
     LandingView()
         .environment(OnboardingViewModel.preview())
-        .environment(AuthViewModel(authRepository: PreviewAuthRepository()))
+        .environment(AuthViewModel(authRepository: PreviewAuthRepository(), memberProfileCache: PreviewMemberProfileCache()))
         .environment(AppState())
 }

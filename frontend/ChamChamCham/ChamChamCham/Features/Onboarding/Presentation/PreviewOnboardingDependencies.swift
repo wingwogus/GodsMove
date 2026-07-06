@@ -51,11 +51,31 @@ struct PreviewCropCatalogService: CropCatalogService {
     }
 }
 
+@MainActor
+struct PreviewMemberProfileCache: MemberProfileCache {
+    func save(member: MemberProfileResponseDTO, onboarding: OnboardingResponseDTO) -> CachedMemberProfile {
+        CachedMemberProfile(
+            id: member.id,
+            email: member.email,
+            name: member.name,
+            nickname: member.nickname,
+            phone: member.phone,
+            birthDateRaw: member.birthDate,
+            experienceLevel: member.experienceLevel,
+            managementTypeRaw: member.managementType,
+            onboardingStatusRaw: onboarding.status.rawValue,
+            missingFieldsRaw: onboarding.missingFields,
+            updatedAt: Date()
+        )
+    }
+}
+
 extension OnboardingViewModel {
     static func preview() -> OnboardingViewModel {
         OnboardingViewModel(
             onboardingRepository: PreviewOnboardingRepository(),
-            cropCatalogService: PreviewCropCatalogService()
+            cropCatalogService: PreviewCropCatalogService(),
+            memberProfileCache: PreviewMemberProfileCache()
         )
     }
 }

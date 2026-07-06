@@ -13,7 +13,6 @@ import SwiftUI
 struct OnboardingCompleteView: View {
     @Environment(OnboardingViewModel.self) private var viewModel
     @Environment(AppState.self) private var appState
-    @Environment(\.modelContext) private var modelContext
 
     var body: some View {
         VStack(spacing: Spacing.md) {
@@ -28,14 +27,14 @@ struct OnboardingCompleteView: View {
                     .font(.appBody)
                     .foregroundStyle(Color.appTextSecondary)
                 PrimaryButton(title: "다시 시도") {
-                    Task { await viewModel.submit(appState: appState, modelContext: modelContext) }
+                    Task { await viewModel.submit(appState: appState) }
                 }
             }
         }
         .padding(Spacing.lg)
         .task {
             guard viewModel.submissionState == .idle else { return }
-            await viewModel.submit(appState: appState, modelContext: modelContext)
+            await viewModel.submit(appState: appState)
         }
     }
 }

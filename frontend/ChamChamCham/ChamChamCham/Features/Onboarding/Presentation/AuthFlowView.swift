@@ -19,10 +19,16 @@ struct AuthFlowView: View {
         _viewModel = State(
             initialValue: OnboardingViewModel(
                 onboardingRepository: container.makeOnboardingRepository(),
-                cropCatalogService: container.makeCropCatalogService()
+                cropCatalogService: container.makeCropCatalogService(),
+                memberProfileCache: container.memberProfileCache
             )
         )
-        _authViewModel = State(initialValue: AuthViewModel(authRepository: container.makeAuthRepository()))
+        _authViewModel = State(
+            initialValue: AuthViewModel(
+                authRepository: container.makeAuthRepository(),
+                memberProfileCache: container.memberProfileCache
+            )
+        )
     }
 
     var body: some View {

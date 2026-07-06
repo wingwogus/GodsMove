@@ -6,7 +6,6 @@
 //
 
 import Observation
-import SwiftData
 
 @Observable
 @MainActor
@@ -38,15 +37,18 @@ final class OnboardingViewModel {
     private let store: OnboardingDraftStore
     private let onboardingRepository: OnboardingRepository
     private let cropCatalogService: CropCatalogService
+    private let memberProfileCache: MemberProfileCache
 
     init(
         store: OnboardingDraftStore = OnboardingDraftStore(),
         onboardingRepository: OnboardingRepository,
-        cropCatalogService: CropCatalogService
+        cropCatalogService: CropCatalogService,
+        memberProfileCache: MemberProfileCache
     ) {
         self.store = store
         self.onboardingRepository = onboardingRepository
         self.cropCatalogService = cropCatalogService
+        self.memberProfileCache = memberProfileCache
         if let snapshot = store.load() {
             self.currentStep = snapshot.step
             self.draft = snapshot.draft
@@ -96,12 +98,12 @@ final class OnboardingViewModel {
         }
     }
 
-    func submit(appState: AppState, modelContext: ModelContext) async {
+    func submit(appState: AppState) async {
         guard submissionState != .submitting else { return }
         submissionState = .submitting
         do {
             let response = try await onboardingRepository.completeOnboarding(draft)
-            CachedMemberProfile.upsert(member: response.member, onboarding: response.onboarding, in: modelContext)
+            memberProfileCache.save(member: response.member, onboarding: response.onboarding)
             store.clear()
             appState.isOnboarded = true
             submissionState = .idle

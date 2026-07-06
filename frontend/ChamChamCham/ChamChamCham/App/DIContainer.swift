@@ -13,7 +13,7 @@ final class DIContainer {
     let authTokenStore: AuthTokenStore
     let tokenRefreshCoordinator: TokenRefreshCoordinator
     let apiClient: APIClient
-    let syncEngine: SyncEngine
+    let memberProfileCache: MemberProfileCache
 
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
@@ -25,7 +25,7 @@ final class DIContainer {
             authTokenStore: authTokenStore,
             tokenRefreshCoordinator: tokenRefreshCoordinator
         )
-        self.syncEngine = SyncEngine()
+        self.memberProfileCache = SwiftDataMemberProfileCache(modelContext: modelContainer.mainContext)
     }
 }
 

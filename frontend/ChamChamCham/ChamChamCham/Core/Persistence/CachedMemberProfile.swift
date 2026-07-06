@@ -9,10 +9,10 @@ import Foundation
 import SwiftData
 
 /// A read-through cache of the last known server-side member/onboarding state, written only after a successful
-/// network response (login or onboarding-complete) — never something with a "pending" state to reconcile, so it
-/// deliberately does NOT conform to `Syncable`. Lets `RootView` route optimistically on cold launch before the
-/// network round-trip completes (offline-first), at the cost of the cache going stale until the next full login —
-/// there is currently no `GET /api/v1/users/me` to refresh it any other way.
+/// network response (login or onboarding-complete) — never something with a "pending" state to reconcile.
+/// Lets `RootView` route optimistically on cold launch before the network round-trip completes (offline-first),
+/// at the cost of the cache going stale until the next full login — there is currently no `GET /api/v1/users/me`
+/// to refresh it any other way.
 @Model
 final class CachedMemberProfile {
     @Attribute(.unique) var id: UUID

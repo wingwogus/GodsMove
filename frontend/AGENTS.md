@@ -47,7 +47,7 @@ Do not duplicate product behavior into this file. Read from:
 
 - [Business Rule.md](docs/Business%20Rule.md) — when/under-what-conditions behavior (`BR-*` rule IDs).
 - [ERD 초안.md](docs/ERD%20초안.md) — data shape and requirements.
-- [와이어프레임 초안](docs/와이어프레임%20초안/) — screen flow references.
+- [와이어프레임](docs/와이어프레임/) — screen flow references.
 - [docs/superpowers/specs/](../docs/superpowers/specs/) and [docs/superpowers/plans/](../docs/superpowers/plans/) — architecture and feature design docs, including the [Onboarding Flow Plan](../docs/superpowers/specs/2026-07-02-frontend-onboarding-flow-plan.md).
 
 Reference `BR-*` rule IDs in commits/PRs when a change implements or affects a specific business rule, matching backend convention.
@@ -70,7 +70,7 @@ Use the IDE run button / Simulator for interactive development.
 
 ## Backend Integration
 
-The backend is Spring Boot Kotlin with a `member`-centric domain (UUID ids). See [backend/AGENTS.md](../backend/AGENTS.md). An API spec with field-level DTO shapes exists at `docs/API 명세서/` (endpoint index + per-DTO field docs, re-exported 2026-07-03; the older `docs/API명세서(260702)/` CSV-only export is gone) covering auth (Kakao/Naver/Apple), crops, farms, farming records, voice sessions, community, and onboarding completion. Auth/onboarding endpoints are now confirmed at the field level — see the [Onboarding Flow Plan](../docs/superpowers/specs/2026-07-02-frontend-onboarding-flow-plan.md) for the confirmed shapes. Onboarding is confirmed (2026-07-03) to create a member, a farm, and `user_crops` together (`Business Rule.md` BR-USER-002 is authoritative); the currently-documented `온보딩 완료` endpoint contract doesn't yet cover farm/crop/managementType creation and needs to be raised with backend — see "Onboarding Data Creation Scope" in that doc. Other domains (crops, farms, farming records, community) still need the same per-feature confirmation pass before scaffolding networking code against them.
+The backend is Spring Boot Kotlin with a `member`-centric domain (UUID ids). See [backend/AGENTS.md](../backend/AGENTS.md). Only three controllers are implemented so far: `AuthController` (Kakao/Naver/Apple login + onboarding completion), `CropController`, and `TestController` — Farm, Community, Voice, Report, and Policy domains have no backend endpoints yet, so don't scaffold networking code against them. An API spec with field-level DTO shapes exists at `docs/API 명세서/` (endpoint index + per-DTO field docs, re-exported 2026-07-03; the older `docs/API명세서(260702)/` CSV-only export is gone), but treat the actual `*Controller`/`*Request`/`*Response` Kotlin source under `backend/api` and `backend/domain` as authoritative when it disagrees with the doc — the doc lags behind confirmed backend changes (e.g. its 온보딩 완료 page still says onboarding doesn't create a farm; it does). Onboarding completion (`AuthController` → `CompleteOnboardingRequest`) creates a `member`, a `farm`, and `member_crop` rows together in one call (`Business Rule.md` BR-USER-002 is authoritative) — see the [Onboarding Flow Plan](../docs/superpowers/specs/2026-07-02-frontend-onboarding-flow-plan.md) for the confirmed field shapes.
 
 Production base URL is confirmed: `https://chamchamcham.jaehyuns.com` (see `Core/Networking/APIEnvironment.swift`).
 

@@ -7,7 +7,6 @@
 
 import AuthenticationServices
 import Observation
-import SwiftData
 
 @Observable
 @MainActor
@@ -21,13 +20,15 @@ final class AuthViewModel {
     var loginState: LoginState = .idle
 
     private let authRepository: AuthRepository
+    private let memberProfileCache: MemberProfileCache
     private let appleSignInCoordinator = AppleSignInCoordinator()
 
-    init(authRepository: AuthRepository) {
+    init(authRepository: AuthRepository, memberProfileCache: MemberProfileCache) {
         self.authRepository = authRepository
+        self.memberProfileCache = memberProfileCache
     }
 
-    func loginWithApple(appState: AppState, modelContext: ModelContext) async {
+    func loginWithApple(appState: AppState) async {
         guard loginState != .loggingIn else { return }
         loginState = .loggingIn
         do {
@@ -49,7 +50,7 @@ final class AuthViewModel {
                 authorizationCode: authorizationCode,
                 userIdentifier: credential.user
             )
-            handleLoginSuccess(response, appState: appState, modelContext: modelContext)
+            handleLoginSuccess(response, appState: appState)
         } catch let authError as ASAuthorizationError where authError.code == .canceled {
             loginState = .idle
         } catch {
@@ -57,7 +58,7 @@ final class AuthViewModel {
         }
     }
 
-    func loginWithKakao(appState: AppState, modelContext: ModelContext) async {
+    func loginWithKakao(appState: AppState) async {
         guard loginState != .loggingIn else { return }
         loginState = .loggingIn
         do {
@@ -68,7 +69,7 @@ final class AuthViewModel {
                 nonce: rawNonce,
                 kakaoAccessToken: kakaoAccessToken
             )
-            handleLoginSuccess(response, appState: appState, modelContext: modelContext)
+            handleLoginSuccess(response, appState: appState)
         } catch is CancellationError {
             loginState = .idle
         } catch {
@@ -76,13 +77,13 @@ final class AuthViewModel {
         }
     }
 
-    func loginWithNaver(appState: AppState, modelContext: ModelContext) async {
+    func loginWithNaver(appState: AppState) async {
         guard loginState != .loggingIn else { return }
         loginState = .loggingIn
         do {
             let accessToken = try await NaverLoginBridge.login()
             let response = try await authRepository.loginWithNaver(accessToken: accessToken)
-            handleLoginSuccess(response, appState: appState, modelContext: modelContext)
+            handleLoginSuccess(response, appState: appState)
         } catch NaverLoginError.canceledByUser {
             loginState = .idle
         } catch {
@@ -90,8 +91,8 @@ final class AuthViewModel {
         }
     }
 
-    private func handleLoginSuccess(_ response: LoginResponseDTO, appState: AppState, modelContext: ModelContext) {
-        CachedMemberProfile.upsert(member: response.member, onboarding: response.onboarding, in: modelContext)
+    private func handleLoginSuccess(_ response: LoginResponseDTO, appState: AppState) {
+        memberProfileCache.save(member: response.member, onboarding: response.onboarding)
         appState.isAuthenticated = true
         appState.isOnboarded = response.onboarding.status == .complete
         loginState = .idle
