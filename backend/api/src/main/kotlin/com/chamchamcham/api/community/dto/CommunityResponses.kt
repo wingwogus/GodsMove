@@ -50,15 +50,13 @@ object CommunityResponses {
 
     data class PostPageResponse(
         val items: List<PostSummaryResponse>,
-        val nextCursorCreatedAt: LocalDateTime?,
-        val nextCursorId: UUID?
+        val nextCursor: String?
     ) {
         companion object {
             fun from(result: CommunityPostResult.Page): PostPageResponse =
                 PostPageResponse(
                     items = result.items.map(PostSummaryResponse::from),
-                    nextCursorCreatedAt = result.nextCursorCreatedAt,
-                    nextCursorId = result.nextCursorId
+                    nextCursor = result.nextCursor
                 )
         }
     }

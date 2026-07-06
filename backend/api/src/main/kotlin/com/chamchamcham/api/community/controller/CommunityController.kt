@@ -10,9 +10,9 @@ import com.chamchamcham.application.community.CommunityPostSearchCondition
 import com.chamchamcham.application.community.CommunityPostService
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.domain.community.CommunityPostSort
 import com.chamchamcham.domain.community.CommunityPostType
 import jakarta.validation.Valid
-import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -24,7 +24,6 @@ import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
-import java.time.LocalDateTime
 import java.util.UUID
 
 @RestController
@@ -49,8 +48,8 @@ class CommunityController(
         @RequestParam(required = false) keyword: String?,
         @RequestParam(defaultValue = "false") likedOnly: Boolean,
         @RequestParam(defaultValue = "false") mineOnly: Boolean,
-        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME) cursorCreatedAt: LocalDateTime?,
-        @RequestParam(required = false) cursorId: UUID?,
+        @RequestParam(defaultValue = "LATEST") sort: CommunityPostSort,
+        @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<CommunityResponses.PostPageResponse>> {
         val page = communityPostService.search(
@@ -61,8 +60,8 @@ class CommunityController(
                 keyword = keyword,
                 likedOnly = likedOnly,
                 mineOnly = mineOnly,
-                cursorCreatedAt = cursorCreatedAt,
-                cursorId = cursorId,
+                sort = sort,
+                cursor = cursor,
                 size = size
             )
         )

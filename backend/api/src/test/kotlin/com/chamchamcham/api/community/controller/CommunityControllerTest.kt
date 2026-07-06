@@ -9,6 +9,7 @@ import com.chamchamcham.application.community.CommunityPostResult
 import com.chamchamcham.application.community.CommunityPostSearchCondition
 import com.chamchamcham.application.community.CommunityPostService
 import com.chamchamcham.application.security.TokenProvider
+import com.chamchamcham.domain.community.CommunityPostSort
 import com.chamchamcham.domain.community.CommunityPostType
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
@@ -77,6 +78,40 @@ class CommunityControllerTest(
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.items[0].id", equalTo(postId.toString())))
             .andExpect(jsonPath("$.data.items[0].likedByMe", equalTo(true)))
+            .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-1")))
+    }
+
+    @Test
+    fun `list posts maps sort and cursor parameters`() {
+        `when`(
+            communityPostService.search(
+                CommunityPostSearchCondition(
+                    memberId = memberId,
+                    cropId = cropId,
+                    postType = CommunityPostType.QUESTION,
+                    keyword = "황기",
+                    likedOnly = true,
+                    mineOnly = false,
+                    sort = CommunityPostSort.POPULAR,
+                    cursor = "cursor-1",
+                    size = 10
+                )
+            )
+        ).thenReturn(postPageResult())
+
+        mockMvc.perform(
+            get("/api/v1/community/posts")
+                .with(authenticatedMember(memberId.toString()))
+                .param("cropId", cropId.toString())
+                .param("postType", "QUESTION")
+                .param("keyword", "황기")
+                .param("likedOnly", "true")
+                .param("sort", "POPULAR")
+                .param("cursor", "cursor-1")
+                .param("size", "10")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-1")))
     }
 
     @Test
@@ -215,8 +250,7 @@ class CommunityControllerTest(
     private fun postPageResult(): CommunityPostResult.Page =
         CommunityPostResult.Page(
             items = listOf(postSummaryResult()),
-            nextCursorCreatedAt = createdAt,
-            nextCursorId = postId
+            nextCursor = "cursor-1"
         )
 
     private fun postDetailResult(): CommunityPostResult.PostDetail =
@@ -277,8 +311,8 @@ class CommunityControllerTest(
             keyword = null,
             likedOnly = false,
             mineOnly = false,
-            cursorCreatedAt = null,
-            cursorId = null,
+            sort = CommunityPostSort.LATEST,
+            cursor = null,
             size = 20
         )
 }
