@@ -399,6 +399,7 @@ class CommunityPostServiceTest {
         }
 
         assertEquals(ErrorCode.INVALID_CURSOR, exception.errorCode)
+        verifyNoInteractions(communityPostQueryRepository)
     }
 
     private fun member(id: UUID): Member =
