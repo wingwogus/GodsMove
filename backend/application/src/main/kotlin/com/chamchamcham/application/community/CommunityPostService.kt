@@ -1,5 +1,6 @@
 package com.chamchamcham.application.community
 
+import com.chamchamcham.application.common.OpaqueCursorCodec
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.community.CommunityCommentRepository
@@ -10,6 +11,7 @@ import com.chamchamcham.domain.community.CommunityPostMedia
 import com.chamchamcham.domain.community.CommunityPostMediaRepository
 import com.chamchamcham.domain.community.CommunityPostQueryRepository
 import com.chamchamcham.domain.community.CommunityPostRepository
+import com.chamchamcham.domain.community.CommunityPostSort
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.MemberCropRepository
@@ -36,7 +38,8 @@ class CommunityPostService(
     private val communityCommentRepository: CommunityCommentRepository,
     private val communityPostLikeRepository: CommunityPostLikeRepository,
     private val memberCropRepository: MemberCropRepository,
-    private val communityPostQueryRepository: CommunityPostQueryRepository
+    private val communityPostQueryRepository: CommunityPostQueryRepository,
+    private val cursorCodec: OpaqueCursorCodec
 ) {
     @Transactional(readOnly = true)
     fun listBoards(memberId: UUID): List<CommunityPostResult.Board> {
@@ -54,6 +57,7 @@ class CommunityPostService(
 
     @Transactional(readOnly = true)
     fun search(condition: CommunityPostSearchCondition): CommunityPostResult.Page {
+        val cursor = decodeCursor(condition.sort, condition.cursor)
         val result = communityPostQueryRepository.search(
             CommunityPostQueryRepository.SearchCondition(
                 memberId = condition.memberId,
@@ -62,17 +66,20 @@ class CommunityPostService(
                 keyword = condition.keyword,
                 likedOnly = condition.likedOnly,
                 mineOnly = condition.mineOnly,
-                cursorCreatedAt = condition.cursorCreatedAt,
-                cursorId = condition.cursorId,
-                size = condition.size
+                sort = condition.sort,
+                cursor = cursor,
+                size = condition.size + 1
             )
         )
-        val items = result.rows.map(::toSummary)
-        val last = items.lastOrNull()
+        val visibleRows = result.rows.take(condition.size)
+        val nextCursor = if (result.rows.size > condition.size) {
+            visibleRows.lastOrNull()?.let { row -> encodeCursor(condition.sort, row) }
+        } else {
+            null
+        }
         return CommunityPostResult.Page(
-            items = items,
-            nextCursorCreatedAt = last?.createdAt,
-            nextCursorId = last?.id
+            items = visibleRows.map(::toSummary),
+            nextCursor = nextCursor
         )
     }
 
@@ -243,6 +250,45 @@ class CommunityPostService(
         cropRepository.findById(cropId).orElseThrow {
             BusinessException(ErrorCode.CROP_NOT_FOUND)
         }
+
+    private fun decodeCursor(
+        sort: CommunityPostSort,
+        cursor: String?
+    ): CommunityPostQueryRepository.Cursor? {
+        if (cursor.isNullOrBlank()) {
+            return null
+        }
+
+        val payload = cursorCodec.decode(cursor, CommunityPostCursorPayload::class.java)
+        if (payload.sort != sort) {
+            throw BusinessException(ErrorCode.INVALID_CURSOR)
+        }
+        if (sort != CommunityPostSort.LATEST && payload.score == null) {
+            throw BusinessException(ErrorCode.INVALID_CURSOR)
+        }
+
+        return CommunityPostQueryRepository.Cursor(
+            sort = payload.sort,
+            score = payload.score,
+            createdAt = payload.createdAt,
+            id = payload.id
+        )
+    }
+
+    private fun encodeCursor(
+        sort: CommunityPostSort,
+        row: CommunityPostQueryRepository.Row
+    ): String {
+        val post = row.post
+        return cursorCodec.encode(
+            CommunityPostCursorPayload(
+                sort = sort,
+                score = if (sort == CommunityPostSort.LATEST) null else row.score,
+                createdAt = post.createdAt,
+                id = requireNotNull(post.id) { "Persisted post id is required" }
+            )
+        )
+    }
 
     private fun toSummary(row: CommunityPostQueryRepository.Row): CommunityPostResult.PostSummary {
         val post = row.post

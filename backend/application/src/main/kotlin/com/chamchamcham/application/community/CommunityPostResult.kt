@@ -52,8 +52,7 @@ object CommunityPostResult {
 
     data class Page(
         val items: List<PostSummary>,
-        val nextCursorCreatedAt: LocalDateTime?,
-        val nextCursorId: UUID?
+        val nextCursor: String?
     )
 
     data class Board(

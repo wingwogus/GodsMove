@@ -1,5 +1,6 @@
 package com.chamchamcham.application.community
 
+import com.chamchamcham.application.common.OpaqueCursorCodec
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.common.BaseTimeEntity
@@ -11,6 +12,7 @@ import com.chamchamcham.domain.community.CommunityPostMedia
 import com.chamchamcham.domain.community.CommunityPostMediaRepository
 import com.chamchamcham.domain.community.CommunityPostQueryRepository
 import com.chamchamcham.domain.community.CommunityPostRepository
+import com.chamchamcham.domain.community.CommunityPostSort
 import com.chamchamcham.domain.community.CommunityPostType
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
@@ -53,6 +55,7 @@ class CommunityPostServiceTest {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val otherMemberId = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val postId = UUID.fromString("00000000-0000-0000-0000-000000000101")
+    private val secondPostId = UUID.fromString("00000000-0000-0000-0000-000000000102")
     private val cropId = UUID.fromString("00000000-0000-0000-0000-000000000201")
     private val secondCropId = UUID.fromString("00000000-0000-0000-0000-000000000202")
     private val recordId = UUID.fromString("00000000-0000-0000-0000-000000000301")
@@ -60,6 +63,7 @@ class CommunityPostServiceTest {
     private val mediaId2 = UUID.fromString("00000000-0000-0000-0000-000000000402")
     private val replacementMediaId = UUID.fromString("00000000-0000-0000-0000-000000000403")
     private val postCreatedAt = LocalDateTime.of(2026, 6, 12, 9, 0)
+    private val cursorCodec = OpaqueCursorCodec()
 
     @Mock private lateinit var memberRepository: MemberRepository
     @Mock private lateinit var cropRepository: CropRepository
@@ -107,7 +111,8 @@ class CommunityPostServiceTest {
             communityCommentRepository = communityCommentRepository,
             communityPostLikeRepository = communityPostLikeRepository,
             memberCropRepository = memberCropRepository,
-            communityPostQueryRepository = communityPostQueryRepository
+            communityPostQueryRepository = communityPostQueryRepository,
+            cursorCodec = cursorCodec
         )
     }
 
@@ -259,6 +264,10 @@ class CommunityPostServiceTest {
 
     @Test
     fun `search maps application condition to query repository and next cursor`() {
+        val requestedSize = 1
+        val overflowPost = existingPost(member, crop, secondPostId).also {
+            setCreatedAt(it, postCreatedAt.minusMinutes(1))
+        }
         setCreatedAt(existingPost, postCreatedAt)
         `when`(
             communityPostQueryRepository.search(
@@ -269,14 +278,17 @@ class CommunityPostServiceTest {
                     keyword = "발아",
                     likedOnly = false,
                     mineOnly = false,
-                    cursorCreatedAt = null,
-                    cursorId = null,
-                    size = 20
+                    sort = CommunityPostSort.LATEST,
+                    cursor = null,
+                    size = requestedSize + 1
                 )
             )
         ).thenReturn(
             CommunityPostQueryRepository.SearchResult(
-                rows = listOf(queryRow(existingPost, thumbnailUrl = "https://example.test/1.jpg"))
+                rows = listOf(
+                    queryRow(existingPost, thumbnailUrl = "https://example.test/1.jpg"),
+                    queryRow(overflowPost, thumbnailUrl = "https://example.test/2.jpg")
+                )
             )
         )
 
@@ -288,15 +300,44 @@ class CommunityPostServiceTest {
                 keyword = "발아",
                 likedOnly = false,
                 mineOnly = false,
-                cursorCreatedAt = null,
-                cursorId = null,
-                size = 20
+                sort = CommunityPostSort.LATEST,
+                cursor = null,
+                size = requestedSize
             )
         )
 
+        assertThat(page.items).hasSize(1)
         assertEquals(postId, page.items.single().id)
-        assertEquals(postCreatedAt, page.nextCursorCreatedAt)
-        assertEquals(postId, page.nextCursorId)
+        assertThat(page.nextCursor).isNotBlank()
+    }
+
+    @Test
+    fun `search rejects cursor when embedded sort differs from request sort`() {
+        val cursor = cursorCodec.encode(
+            CommunityPostCursorPayload(
+                sort = CommunityPostSort.LIKE,
+                score = 8,
+                createdAt = postCreatedAt,
+                id = postId
+            )
+        )
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.search(searchCondition(sort = CommunityPostSort.LATEST, cursor = cursor))
+        }
+
+        assertEquals(ErrorCode.INVALID_CURSOR, exception.errorCode)
+        verifyNoInteractions(communityPostQueryRepository)
+    }
+
+    @Test
+    fun `search rejects malformed cursor`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            service.search(searchCondition(cursor = "not-a-valid-cursor"))
+        }
+
+        assertEquals(ErrorCode.INVALID_CURSOR, exception.errorCode)
+        verifyNoInteractions(communityPostQueryRepository)
     }
 
     private fun member(id: UUID): Member =
@@ -337,15 +378,32 @@ class CommunityPostServiceTest {
         )
     }
 
-    private fun existingPost(author: Member, crop: Crop): CommunityPost =
+    private fun existingPost(author: Member, crop: Crop, id: UUID = postId): CommunityPost =
         CommunityPost(
-            id = postId,
+            id = id,
             author = author,
             crop = crop,
             farmingRecord = record,
             postType = CommunityPostType.QUESTION,
             title = "황기 발아율이 낮아요",
             body = "싹이 거의 올라오지 않아요."
+        )
+
+    private fun searchCondition(
+        sort: CommunityPostSort = CommunityPostSort.LATEST,
+        cursor: String? = null,
+        size: Int = 20
+    ): CommunityPostSearchCondition =
+        CommunityPostSearchCondition(
+            memberId = memberId,
+            cropId = cropId,
+            postType = CommunityPostType.QUESTION,
+            keyword = "발아",
+            likedOnly = false,
+            mineOnly = false,
+            sort = sort,
+            cursor = cursor,
+            size = size
         )
 
     private fun createCommand(
@@ -382,14 +440,16 @@ class CommunityPostServiceTest {
         thumbnailUrl: String? = null,
         commentCount: Long = 3,
         likeCount: Long = 8,
-        likedByMe: Boolean = true
+        likedByMe: Boolean = true,
+        score: Long? = null
     ): CommunityPostQueryRepository.Row =
         CommunityPostQueryRepository.Row(
             post = post,
             thumbnailUrl = thumbnailUrl,
             commentCount = commentCount,
             likeCount = likeCount,
-            likedByMe = likedByMe
+            likedByMe = likedByMe,
+            score = score
         )
 
     private fun capturedPost(): CommunityPost {
