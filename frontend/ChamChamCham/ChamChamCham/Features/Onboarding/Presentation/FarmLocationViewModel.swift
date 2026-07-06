@@ -76,15 +76,6 @@ final class FarmLocationViewModel {
         await fetchParcel(at: coordinate)
     }
 
-    func retry() async {
-        lookupState = .idle
-        if let selectedAddress, resolvedCoordinate == nil {
-            await resolveCoordinate(for: selectedAddress)
-        } else if let coordinate = resolvedCoordinate, selectedParcel == nil {
-            await fetchParcel(at: coordinate.clLocationCoordinate)
-        }
-    }
-
     private func resolveCoordinate(for address: JusoAddress) async {
         lookupState = .resolvingCoordinate
         do {

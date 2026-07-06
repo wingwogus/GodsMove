@@ -4,49 +4,54 @@
 
 아래 Mermaid 코드는 ERD 시각화를 위한 원본이다. Notion에서 Mermaid 렌더링이 제한되는 환경이라면, 바로 아래의 `ERD 관계 요약` 표를 사용하면 된다.
 
+**구현 현황(2026-07-06 기준):** `member`/`farms`/`crops`/`member_crop`은 실제 배포된 백엔드 스키마(`backend/domain`)와 대조해 최신화했다. 그 외 테이블(`policy_programs`, `farming_records`, `voice_record_sessions`, `coaching_feedback`, `community_posts` 등)은 아직 백엔드에 대응 컨트롤러/엔티티가 없는 설계 단계 초안이므로 실제 구현 시 필드가 달라질 수 있다.
+
 ```mermaid
 erDiagram
-    users {
-        uuid id PK "사용자 고유 ID"
-        string email "로그인 이메일"
+    member {
+        uuid id PK "회원 고유 ID"
+        string email "로그인 이메일 (소셜 로그인 시 없을 수 있음)"
         string phone "연락처"
-        enum status "계정 상태 (탈퇴 여부)"
-        string name "사용자 실명"
-        string nickname "(선택) 서비스 표시 이름"
-        string region "사용자 거주 또는 활동 지역"
-        string experience_level "영농 경험 수준"
-        enum management_type "농업경영체인지 아닌지"
+        enum status "계정 상태 (ACTIVE, WITHDRAWN)"
+        string name "실명"
+        date birth_date "생년월일"
+        string nickname "서비스 표시 이름"
+        integer experience_level "영농 경력(년차)"
+        enum management_type "농업경영체 유형 (AGRICULTURAL_INDIVIDUAL, AGRICULTURAL_CORPORATION, NON_REGISTERED_FARMER)"
+        datetime withdrawn_at "회원탈퇴 시각"
         datetime created_at "가입 시각"
         datetime updated_at "정보 수정 시각"
-        datetime withdrawn_at "회원탈퇴 시각"
     }
 
     farms {
         uuid id PK "농지 또는 필지 ID"
-        uuid owner_user_id FK "소유 사용자 ID"
+        uuid owner_member_id FK "소유 회원 ID"
         string name "농지 이름"
-        string region "시도 또는 광역 지역"
-        string city "시군구"
-        string street "상세 주소"
+        string road_address "도로명 주소"
+        string jibun_address "(선택) 지번 주소"
+        double latitude "(선택) 위도"
+        double longitude "(선택) 경도"
+        string pnu "(선택) 필지고유번호"
+        string land_category "(선택) 지목"
+        decimal area_sqm "(선택) 면적(㎡)"
+        boolean area_is_manual_entry "면적 수동 입력 여부"
+        json boundary_coordinates "(선택) 필지 경계 좌표 목록"
         datetime created_at "농지 등록 시각"
+        datetime updated_at "수정 시각"
     }
 
     crops {
         uuid id PK "작물 ID"
+        integer external_no "작물 카탈로그 원본 번호"
         string name "작물명"
-        string category "작물 분류"
-        string lifecycle_type "일반 또는 다년생 구분"
-        string default_unit "기본 수량 단위"
+        enum use_part_category "이용부위 분류"
     }
 
-    user_crops {
-        uuid id PK "사용자 재배 작물 ID"
-        uuid user_id FK "사용자 ID"
+    member_crop {
+        uuid id PK "회원 재배 작물 ID"
+        uuid member_id FK "회원 ID"
         uuid farm_id FK "재배 농지 ID"
         uuid crop_id FK "작물 ID"
-        integer planting_year "정식 또는 재배 시작 연도"
-        string status "재배 상태"
-        date started_on "재배 시작일"
     }
 
     policy_programs {
@@ -62,7 +67,7 @@ erDiagram
 
     policy_recommendations {
         uuid id PK "정책 추천 ID"
-        uuid user_id FK "추천 대상 사용자 ID"
+        uuid member_id FK "추천 대상 사용자 ID"
         uuid policy_program_id FK "추천 정책 ID"
         decimal score "추천 점수"
         string reason "추천 사유"
@@ -71,7 +76,7 @@ erDiagram
 
     farming_records {
         uuid id PK "영농일지 ID"
-        uuid user_id FK "작성자 ID"
+        uuid member_id FK "작성자 ID"
         uuid farm_id FK "작업 농지 ID"
         uuid crop_id FK "작업 작물 ID"
         uuid work_type_id FK "농작업 종류 ID"
@@ -81,6 +86,7 @@ erDiagram
         string entry_mode "입력 방식"
         datetime created_at "생성 시각"
         datetime updated_at "수정 시각"
+        datetime deleted_at "(선택) 삭제 시각 (Soft Delete, BR-RECORD-007)"
     }
 
     work_types {
@@ -123,7 +129,7 @@ erDiagram
 
     voice_record_sessions {
         uuid id PK "음성 기록 세션 ID"
-        uuid user_id FK "사용자 ID"
+        uuid member_id FK "사용자 ID"
         uuid draft_record_id FK "임시 영농일지 ID"
         string status "세션 상태"
         string transcript "전체 음성 전사문"
@@ -143,13 +149,14 @@ erDiagram
     
     coaching_feedback {
         uuid id PK "피드백 ID"
-        uuid user_id FK "피드백 대상 사용자 ID"
+        uuid member_id FK "피드백 대상 사용자 ID"
         **uuid record_id FK "(선택) 단일 영농일지 ID"**
         enum feedback_type "단일 영농일지 피드백인지/전체 통계 기반 피드백인지"
         date period_starts_on "분석 시작일"
         date period_ends_on "분석 종료일"
         uuid crop_id FK "(선택) 작물 필터"
         text summary "피드백 요약"
+        text risk_signals "위험 신호 (BR-COACH-003)"
         text next_actions "다음 행동 제안"
         json input_summary "AI에 보낸 요약 데이터"
         json source_refs "근거 기록 참조"
@@ -159,7 +166,7 @@ erDiagram
 
     community_posts {
         uuid id PK "게시글 ID"
-        uuid author_user_id FK "작성자 ID"
+        uuid author_member_id FK "작성자 ID"
         uuid farming_record_id FK "(선택) 공유 영농일지 ID"
         string post_type "게시글 성격(자유, Q&A)"
         string title "게시글 제목"
@@ -172,7 +179,7 @@ erDiagram
         uuid id PK "댓글 ID"
         uuid post_id FK "게시글 ID"
         **uuid parent_comment_id FK "(선택)상위 댓글 ID"**
-        uuid author_user_id FK "작성자 ID"
+        uuid author_member_id FK "작성자 ID"
         text body "댓글 본문"
         **boolean accepted_answer "채택 답변 여부(default false)"**
         datetime created_at "작성 시각"
@@ -181,7 +188,7 @@ erDiagram
 
     notification_preferences { // 알람은 구현 과정에서 결정됨.
         uuid id PK "알림 설정 ID"
-        uuid user_id FK "사용자 ID"
+        uuid member_id FK "사용자 ID"
         string channel "알림 채널"
         string topic "알림 주제"
         boolean enabled "수신 여부"
@@ -197,22 +204,22 @@ erDiagram
         datetime published_at "게시 시각"
     }
 
-    user_consents {
+    member_consents {
         uuid id PK "사용자 동의 ID"
-        uuid user_id FK "사용자 ID"
+        uuid member_id FK "사용자 ID"
         uuid legal_document_id FK "동의 문서 ID"
         boolean agreed "동의 여부"
         datetime agreed_at "동의 시각"
     }
 
-    users ||--o{ farms : owns
-    users ||--o{ user_crops : grows
-    farms ||--o{ user_crops : hosts
-    crops ||--o{ user_crops : selected_as
+    member ||--o{ farms : owns
+    member ||--o{ member_crop : grows
+    farms ||--o{ member_crop : hosts
+    crops ||--o{ member_crop : selected_as
     farms ||--o{ weather_snapshots : receives
-    users ||--o{ policy_recommendations : receives
+    member ||--o{ policy_recommendations : receives
     policy_programs ||--o{ policy_recommendations : recommended_as
-    users ||--o{ farming_records : writes
+    member ||--o{ farming_records : writes
     farms ||--o{ farming_records : stores
     crops ||--o{ farming_records : records
     work_types ||--o{ farming_records : classifies
@@ -222,30 +229,27 @@ erDiagram
     work_type_fields ||--o{ farming_record_field_values : stores
     farming_records ||--o{ record_media : has
     farming_records ||--o{ ai_parse_results : parsed_by
-    users ||--o{ voice_record_sessions : starts
+    member ||--o{ voice_record_sessions : starts
     farming_records ||--o{ voice_record_sessions : confirms
     voice_record_sessions ||--o{ voice_record_turns : contains
     farming_records ||--o{ coaching_feedback : receives
-    users ||--o{ coaching_feedback : sees
-    users ||--o{ report_snapshots : owns
-    farms ||--o{ report_snapshots : summarizes
-    crops ||--o{ report_snapshots : summarizes
+    member ||--o{ coaching_feedback : sees
     crops ||--o{ community_posts : categorizes
     farming_records ||--o{ community_posts : shared_as
-    users ||--o{ community_posts : writes
+    member ||--o{ community_posts : writes
     community_posts ||--o{ community_comments : has
     community_comments ||--o{ community_comments : replies
-    users ||--o{ community_comments : writes
-    users ||--o{ notification_preferences : configures
-    legal_documents ||--o{ user_consents : governs
-    users ||--o{ user_consents : grants
+    member ||--o{ community_comments : writes
+    member ||--o{ notification_preferences : configures
+    legal_documents ||--o{ member_consents : governs
+    member ||--o{ member_consents : grants
 ```
 
 ```mermaid
 erDiagram
     farming_records {
         uuid id PK "영농일지 ID"
-        uuid user_id FK "작성자 ID"
+        uuid member_id FK "작성자 ID"
         uuid farm_id FK "작업 농지 ID"
         uuid crop_id FK "작업 작물 ID"
         uuid work_type_id FK "농작업 종류 ID"
@@ -255,6 +259,7 @@ erDiagram
         string entry_mode "입력 방식"
         datetime created_at "생성 시각"
         datetime updated_at "수정 시각"
+        datetime deleted_at "(선택) 삭제 시각 (Soft Delete, BR-RECORD-007)"
     }
 
     work_types {
