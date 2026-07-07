@@ -16,7 +16,7 @@ struct RootView: View {
     var body: some View {
         Group {
             if appState.isAuthenticated && appState.isOnboarded {
-                MainTabView()
+                MainTabView(container: container)
             } else {
                 AuthFlowView(container: container)
             }

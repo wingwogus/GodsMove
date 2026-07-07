@@ -49,9 +49,10 @@ struct CommunityPostSummary: Identifiable, Hashable, Sendable {
     let bodyPreview: String
     let thumbnailUrl: String?
     let author: CommunityAuthor
-    let commentCount: Int
-    let likeCount: Int
-    let likedByMe: Bool
+    var commentCount: Int
+    // `var` so a like toggle can update the row in place (optimistic UI) without rebuilding the whole page.
+    var likeCount: Int
+    var likedByMe: Bool
     let createdAt: Date
 }
 
@@ -66,9 +67,9 @@ struct CommunityPostDetail: Identifiable, Hashable, Sendable {
     let imageUrls: [String]
     let farmingRecordId: UUID?
     let author: CommunityAuthor
-    let commentCount: Int
-    let likeCount: Int
-    let likedByMe: Bool
+    var commentCount: Int
+    var likeCount: Int
+    var likedByMe: Bool
     let createdAt: Date
 }
 
