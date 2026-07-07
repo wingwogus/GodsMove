@@ -21,7 +21,7 @@ class FarmingRecordDetailValidatorTest {
 
     private val validator: FarmingRecordDetailValidator = DefaultFarmingRecordDetailValidator()
 
-    private fun baseCommand(
+    private fun payloads(
         workType: WorkType,
         planting: FarmingRecordCommand.PlantingDetail? = null,
         watering: FarmingRecordCommand.WateringDetail? = null,
@@ -29,97 +29,115 @@ class FarmingRecordDetailValidatorTest {
         pestControl: FarmingRecordCommand.PestControlDetail? = null,
         weeding: FarmingRecordCommand.WeedingDetail? = null,
         harvest: FarmingRecordCommand.HarvestDetail? = null,
-    ) = FarmingRecordCommand.Create(
-        memberId = UUID.randomUUID(),
-        farmId = UUID.randomUUID(),
-        cropId = UUID.randomUUID(),
-        workType = workType,
-        workedAt = LocalDateTime.of(2026, 6, 1, 9, 0),
-        memo = "memo",
-        planting = planting,
-        watering = watering,
-        fertilizing = fertilizing,
-        pestControl = pestControl,
-        weeding = weeding,
-        harvest = harvest,
-    )
+    ): List<FarmingRecordDetailPayload> {
+        val memberId = UUID.randomUUID()
+        val farmId = UUID.randomUUID()
+        val cropId = UUID.randomUUID()
+        val workedAt = LocalDateTime.of(2026, 6, 1, 9, 0)
+
+        val create = FarmingRecordCommand.Create(
+            memberId = memberId,
+            farmId = farmId,
+            cropId = cropId,
+            workType = workType,
+            workedAt = workedAt,
+            weatherCondition = "맑음",
+            weatherTemperature = 20,
+            memo = "memo",
+            planting = planting,
+            watering = watering,
+            fertilizing = fertilizing,
+            pestControl = pestControl,
+            weeding = weeding,
+            harvest = harvest,
+        )
+        val update = FarmingRecordCommand.Update(
+            memberId = memberId,
+            recordId = UUID.randomUUID(),
+            farmId = farmId,
+            cropId = cropId,
+            workType = workType,
+            workedAt = workedAt,
+            weatherCondition = "맑음",
+            weatherTemperature = 20,
+            memo = "memo",
+            planting = planting,
+            watering = watering,
+            fertilizing = fertilizing,
+            pestControl = pestControl,
+            weeding = weeding,
+            harvest = harvest,
+        )
+        return listOf(create, update)
+    }
 
     @Test
     fun `planting rejects purchased seed without purchase place`() {
-        val command = baseCommand(
+        payloads(
             workType = WorkType.PLANTING,
             planting = FarmingRecordCommand.PlantingDetail(
                 seedSource = SeedSource.PURCHASED,
                 seedPurchasePlace = null,
             ),
-        )
-
-        val exception = assertThrows(BusinessException::class.java) { validator.validate(command) }
-
-        assertEquals(ErrorCode.FARMING_RECORD_INVALID_DETAIL, exception.errorCode)
+        ).forEach { payload ->
+            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
+            assertEquals(ErrorCode.FARMING_RECORD_INVALID_DETAIL, exception.errorCode)
+        }
     }
 
     @Test
     fun `planting accepts purchased seed with purchase place`() {
-        val command = baseCommand(
+        payloads(
             workType = WorkType.PLANTING,
             planting = FarmingRecordCommand.PlantingDetail(
                 seedSource = SeedSource.PURCHASED,
                 seedPurchasePlace = "종묘상",
             ),
-        )
-
-        assertDoesNotThrow { validator.validate(command) }
+        ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
 
     @Test
     fun `planting accepts self collected seed without purchase place`() {
-        val command = baseCommand(
+        payloads(
             workType = WorkType.PLANTING,
             planting = FarmingRecordCommand.PlantingDetail(
                 seedSource = SeedSource.SELF_COLLECTED,
                 seedPurchasePlace = null,
             ),
-        )
-
-        assertDoesNotThrow { validator.validate(command) }
+        ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
 
     @Test
     fun `fertilizing requires detail`() {
-        val command = baseCommand(workType = WorkType.FERTILIZING, fertilizing = null)
-
-        val exception = assertThrows(BusinessException::class.java) { validator.validate(command) }
-
-        assertEquals(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED, exception.errorCode)
+        payloads(workType = WorkType.FERTILIZING, fertilizing = null).forEach { payload ->
+            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
+            assertEquals(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED, exception.errorCode)
+        }
     }
 
     @Test
     fun `fertilizing accepts detail`() {
-        val command = baseCommand(
+        payloads(
             workType = WorkType.FERTILIZING,
             fertilizing = FarmingRecordCommand.FertilizingDetail(
                 materialName = "요소비료",
                 amount = BigDecimal.TEN,
                 amountUnit = FertilizerAmountUnit.KG,
             ),
-        )
-
-        assertDoesNotThrow { validator.validate(command) }
+        ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
 
     @Test
     fun `pest control requires detail`() {
-        val command = baseCommand(workType = WorkType.PEST_CONTROL, pestControl = null)
-
-        val exception = assertThrows(BusinessException::class.java) { validator.validate(command) }
-
-        assertEquals(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED, exception.errorCode)
+        payloads(workType = WorkType.PEST_CONTROL, pestControl = null).forEach { payload ->
+            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
+            assertEquals(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED, exception.errorCode)
+        }
     }
 
     @Test
     fun `pest control accepts detail`() {
-        val command = baseCommand(
+        payloads(
             workType = WorkType.PEST_CONTROL,
             pestControl = FarmingRecordCommand.PestControlDetail(
                 pesticideName = "약제",
@@ -128,23 +146,20 @@ class FarmingRecordDetailValidatorTest {
                 totalSprayAmount = BigDecimal.TEN,
                 totalSprayAmountUnit = SprayAmountUnit.L,
             ),
-        )
-
-        assertDoesNotThrow { validator.validate(command) }
+        ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
 
     @Test
     fun `harvest requires detail`() {
-        val command = baseCommand(workType = WorkType.HARVEST, harvest = null)
-
-        val exception = assertThrows(BusinessException::class.java) { validator.validate(command) }
-
-        assertEquals(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED, exception.errorCode)
+        payloads(workType = WorkType.HARVEST, harvest = null).forEach { payload ->
+            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
+            assertEquals(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED, exception.errorCode)
+        }
     }
 
     @Test
     fun `harvest accepts detail`() {
-        val command = baseCommand(
+        payloads(
             workType = WorkType.HARVEST,
             harvest = FarmingRecordCommand.HarvestDetail(
                 harvestAmount = BigDecimal.TEN,
@@ -152,15 +167,13 @@ class FarmingRecordDetailValidatorTest {
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
             ),
-        )
-
-        assertDoesNotThrow { validator.validate(command) }
+        ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
 
     @Test
     fun `watering weeding and pruning have no required detail`() {
-        assertDoesNotThrow { validator.validate(baseCommand(workType = WorkType.WATERING)) }
-        assertDoesNotThrow { validator.validate(baseCommand(workType = WorkType.WEEDING)) }
-        assertDoesNotThrow { validator.validate(baseCommand(workType = WorkType.PRUNING)) }
+        payloads(workType = WorkType.WATERING).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
+        payloads(workType = WorkType.WEEDING).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
+        payloads(workType = WorkType.PRUNING).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
 }

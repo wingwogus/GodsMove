@@ -29,6 +29,8 @@ enum class ErrorCode(
     FARMING_RECORD_NOT_FOUND("FARMING_001", "error.farming_record_not_found", 404),
     FARMING_RECORD_DETAIL_REQUIRED("FARMING_002", "error.farming_record_detail_required", 400),
     FARMING_RECORD_INVALID_DETAIL("FARMING_003", "error.farming_record_invalid_detail", 400),
+    FARMING_RECORD_FORBIDDEN("FARMING_004", "error.farming_record_forbidden", 403),
+    FARMING_RECORD_TOO_MANY_IMAGES("FARMING_005", "error.farming_record_too_many_images", 400),
     USER_ALREADY_EXISTS("USER_002", "error.user_already_exists", 409),
     DUPLICATE_EMAIL("AUTH_003", "error.duplicate_email", 409),
     EMAIL_NOT_VERIFIED("AUTH_004", "error.email_not_verified", 400),

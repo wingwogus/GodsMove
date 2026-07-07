@@ -524,6 +524,8 @@ class CommunityPostServiceTest {
             crop = crop,
             workType = WorkType.PLANTING,
             workedAt = LocalDateTime.of(2026, 6, 1, 9, 0),
+            weatherCondition = "맑음",
+            weatherTemperature = 20,
             entryMode = "MANUAL"
         )
 
