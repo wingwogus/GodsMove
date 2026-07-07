@@ -62,5 +62,5 @@ interface CommunityCommentRepository : JpaRepository<CommunityComment, UUID> {
     )
     fun findRepliesByParentIds(@Param("parentIds") parentIds: Collection<UUID>): List<CommunityComment>
 
-    fun countByPost_IdAndIsDeletedFalse(postId: UUID): Long
+    fun countByPostIdAndIsDeletedFalse(postId: UUID): Long
 }

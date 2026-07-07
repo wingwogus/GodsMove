@@ -5,8 +5,8 @@ import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
 interface CommunityPostLikeRepository : JpaRepository<CommunityPostLike, UUID> {
-    fun findByPost_IdAndMember_Id(postId: UUID, memberId: UUID): CommunityPostLike?
-    fun existsByPost_IdAndMember_Id(postId: UUID, memberId: UUID): Boolean
-    fun countByPost_Id(postId: UUID): Long
+    fun findByPostIdAndMemberId(postId: UUID, memberId: UUID): CommunityPostLike?
+    fun existsByPostIdAndMemberId(postId: UUID, memberId: UUID): Boolean
+    fun countByPostId(postId: UUID): Long
     fun deleteByPostAndMember(post: CommunityPost, member: Member)
 }

@@ -6,6 +6,8 @@ import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.member.Member
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -36,8 +38,8 @@ class FarmingRecord(
     @JoinColumn(name = "crop_id", nullable = false)
     val crop: Crop,
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "work_type_id", nullable = false)
+    @Enumerated(EnumType.STRING)
+    @Column(name = "work_type", nullable = false, length = 32)
     val workType: WorkType,
 
     @Column(name = "worked_at", nullable = false)
