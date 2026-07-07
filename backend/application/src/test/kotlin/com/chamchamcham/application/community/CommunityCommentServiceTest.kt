@@ -237,6 +237,7 @@ class CommunityCommentServiceTest {
             media = media,
             isDeleted = true
         )
+        setCreatedAt(deleted, LocalDateTime.of(2026, 6, 12, 11, 0))
         `when`(communityCommentRepository.findRootFirstPage(postId, PageRequest.of(0, 21)))
             .thenReturn(listOf(deleted))
         `when`(communityCommentRepository.findRepliesByParentIds(listOf(rootCommentId)))
