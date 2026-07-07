@@ -17,22 +17,26 @@ struct AppSearchBar: View {
     @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
-        HStack(spacing: 4) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 20))
-                .foregroundStyle(Color.Icon.subtle)
-                .frame(width: 24, height: 24)
+        HStack(spacing: 12) {
+            // Figma: search icon ↔ text group uses gap 8; the trailing clear button sits at gap 12.
+            HStack(spacing: Spacing.sm) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.Icon.subtle)
+                    .frame(width: 24, height: 24)
 
-            ZStack(alignment: .leading) {
-                if text.isEmpty {
-                    Text(placeholder)
-                        .foregroundStyle(Color.Text.muted)
+                ZStack(alignment: .leading) {
+                    if text.isEmpty {
+                        Text(placeholder)
+                            .foregroundStyle(Color.Text.muted)
+                    }
+                    TextField("", text: $text)
+                        .foregroundStyle(Color.Text.default)
+                        .focused($isFocused)
                 }
-                TextField("", text: $text)
-                    .foregroundStyle(Color.Text.default)
-                    .focused($isFocused)
+                .appTypography(.bodyLarge)
             }
-            .appTypography(.bodyLarge)
+            .frame(maxWidth: .infinity)
 
             if !text.isEmpty && isEnabled {
                 Button {
