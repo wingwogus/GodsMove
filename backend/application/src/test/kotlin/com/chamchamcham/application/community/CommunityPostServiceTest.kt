@@ -120,7 +120,7 @@ class CommunityPostServiceTest {
     fun `create stores post with crop farming record and attached images`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
-        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(record)
+        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(record)
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1, mediaId2))).thenReturn(listOf(media1, media2))
         `when`(communityPostRepository.save(any(CommunityPost::class.java))).thenAnswer { invocation ->
             val post = invocation.arguments[0] as CommunityPost
@@ -154,7 +154,7 @@ class CommunityPostServiceTest {
     fun `create rejects farming record with different crop`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
-        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId))
+        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId))
             .thenReturn(farmingRecord(member, secondCrop))
 
         val exception = assertThrows(BusinessException::class.java) {
@@ -181,10 +181,10 @@ class CommunityPostServiceTest {
         val secondRecord = farmingRecord(member, secondCrop)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
-        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
-        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
+        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(secondRecord)
+        `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
         `when`(uploadedMediaRepository.findAllById(listOf(replacementMediaId))).thenReturn(listOf(replacementMedia))
-        `when`(communityPostMediaRepository.findByUploadedMedia_IdIn(listOf(replacementMediaId))).thenReturn(emptyList())
+        `when`(communityPostMediaRepository.findByUploadedMediaIdIn(listOf(replacementMediaId))).thenReturn(emptyList())
 
         val result = service.update(updateCommand())
 
@@ -205,12 +205,12 @@ class CommunityPostServiceTest {
         val existingPostMedia = CommunityPostMedia(post = existingPost, uploadedMedia = existingMedia, displayOrder = 0)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
-        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
-        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(listOf(existingPostMedia))
+        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(secondRecord)
+        `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(listOf(existingPostMedia))
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1, replacementMediaId))).thenReturn(
             listOf(existingMedia, newMedia)
         )
-        `when`(communityPostMediaRepository.findByUploadedMedia_IdIn(listOf(mediaId1, replacementMediaId))).thenReturn(
+        `when`(communityPostMediaRepository.findByUploadedMediaIdIn(listOf(mediaId1, replacementMediaId))).thenReturn(
             listOf(existingPostMedia)
         )
 
@@ -232,12 +232,12 @@ class CommunityPostServiceTest {
         val removedPostMedia = CommunityPostMedia(post = existingPost, uploadedMedia = removedMedia, displayOrder = 1)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
-        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
-        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(
+        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(secondRecord)
+        `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(
             listOf(keptPostMedia, removedPostMedia)
         )
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(keptMedia))
-        `when`(communityPostMediaRepository.findByUploadedMedia_IdIn(listOf(mediaId1))).thenReturn(listOf(keptPostMedia))
+        `when`(communityPostMediaRepository.findByUploadedMediaIdIn(listOf(mediaId1))).thenReturn(listOf(keptPostMedia))
 
         service.update(updateCommand(mediaIds = listOf(mediaId1)))
 
@@ -254,10 +254,10 @@ class CommunityPostServiceTest {
         val otherPostMediaRow = CommunityPostMedia(post = otherPost, uploadedMedia = otherPostMedia, displayOrder = 0)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
-        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
-        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
+        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(secondRecord)
+        `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(otherPostMedia))
-        `when`(communityPostMediaRepository.findByUploadedMedia_IdIn(listOf(mediaId1))).thenReturn(listOf(otherPostMediaRow))
+        `when`(communityPostMediaRepository.findByUploadedMediaIdIn(listOf(mediaId1))).thenReturn(listOf(otherPostMediaRow))
 
         val exception = assertThrows(BusinessException::class.java) {
             service.update(updateCommand(mediaIds = listOf(mediaId1)))
@@ -273,10 +273,10 @@ class CommunityPostServiceTest {
         val otherMemberMedia = uploadedMedia(otherMember, mediaId1)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
-        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
-        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
+        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(secondRecord)
+        `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(otherMemberMedia))
-        `when`(communityPostMediaRepository.findByUploadedMedia_IdIn(listOf(mediaId1))).thenReturn(emptyList())
+        `when`(communityPostMediaRepository.findByUploadedMediaIdIn(listOf(mediaId1))).thenReturn(emptyList())
 
         val exception = assertThrows(BusinessException::class.java) {
             service.update(updateCommand(mediaIds = listOf(mediaId1)))
@@ -301,11 +301,11 @@ class CommunityPostServiceTest {
     @Test
     fun `toggle like creates then removes like row`() {
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
-        `when`(communityPostLikeRepository.findByPost_IdAndMember_Id(postId, memberId))
+        `when`(communityPostLikeRepository.findByPostIdAndMemberId(postId, memberId))
             .thenReturn(null)
             .thenReturn(existingLike)
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        `when`(communityPostLikeRepository.countByPost_Id(postId)).thenReturn(1L).thenReturn(0L)
+        `when`(communityPostLikeRepository.countByPostId(postId)).thenReturn(1L).thenReturn(0L)
 
         val first = service.toggleLike(CommunityPostCommand.ToggleLike(memberId = memberId, postId = postId))
         val second = service.toggleLike(CommunityPostCommand.ToggleLike(memberId = memberId, postId = postId))
@@ -320,7 +320,7 @@ class CommunityPostServiceTest {
 
     @Test
     fun `list boards de duplicates member crops by crop id preserving first encounter order`() {
-        `when`(memberCropRepository.findByMember_Id(memberId)).thenReturn(
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(
             listOf(memberCrop(member, crop), memberCrop(member, crop), memberCrop(member, secondCrop))
         )
 
@@ -334,15 +334,15 @@ class CommunityPostServiceTest {
     fun `get detail returns ordered images counts and liked by me`() {
         setCreatedAt(existingPost, postCreatedAt)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
-        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(
+        `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(
             listOf(
                 CommunityPostMedia(post = existingPost, uploadedMedia = media1, displayOrder = 0),
                 CommunityPostMedia(post = existingPost, uploadedMedia = media2, displayOrder = 1)
             )
         )
-        `when`(communityCommentRepository.countByPost_IdAndIsDeletedFalse(postId)).thenReturn(3L)
-        `when`(communityPostLikeRepository.countByPost_Id(postId)).thenReturn(8L)
-        `when`(communityPostLikeRepository.existsByPost_IdAndMember_Id(postId, memberId)).thenReturn(true)
+        `when`(communityCommentRepository.countByPostIdAndIsDeletedFalse(postId)).thenReturn(3L)
+        `when`(communityPostLikeRepository.countByPostId(postId)).thenReturn(8L)
+        `when`(communityPostLikeRepository.existsByPostIdAndMemberId(postId, memberId)).thenReturn(true)
 
         val detail = service.getDetail(memberId = memberId, postId = postId)
 

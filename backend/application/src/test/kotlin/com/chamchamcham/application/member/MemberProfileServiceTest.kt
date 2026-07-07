@@ -78,7 +78,7 @@ class MemberProfileServiceTest {
     fun `get my profile returns private member fields farms and crops`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))
-        `when`(memberCropRepository.findByMember_Id(memberId)).thenReturn(
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(
             listOf(memberCrop(farm, crop), memberCrop(farm, crop), memberCrop(farm, secondCrop))
         )
 
@@ -102,7 +102,7 @@ class MemberProfileServiceTest {
     fun `get public profile excludes private fields and returns region and crops`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))
-        `when`(memberCropRepository.findByMember_Id(memberId)).thenReturn(listOf(memberCrop(farm, crop)))
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(listOf(memberCrop(farm, crop)))
 
         val profile = service.getPublicProfile(memberId)
 
@@ -124,7 +124,7 @@ class MemberProfileServiceTest {
         )
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(blankRoadFarm))
-        `when`(memberCropRepository.findByMember_Id(memberId)).thenReturn(emptyList())
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(emptyList())
 
         val profile = service.getPublicProfile(memberId)
 
@@ -154,7 +154,7 @@ class MemberProfileServiceTest {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findById(farmId)).thenReturn(Optional.of(farm))
         `when`(cropRepository.findAllById(listOf(cropId, secondCropId))).thenReturn(listOf(crop, secondCrop))
-        `when`(memberCropRepository.findByMember_Id(memberId)).thenReturn(
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(
             listOf(memberCrop(farm, crop), memberCrop(farm, secondCrop))
         )
         `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))
@@ -170,7 +170,7 @@ class MemberProfileServiceTest {
         assertEquals(UploadedMediaStatus.ATTACHED, currentProfileMedia.status)
         assertEquals("수정 농장", farm.name)
         assertEquals("강원특별자치도 평창군 새로 2", farm.roadAddress)
-        verify(memberCropRepository).deleteByMember_IdAndFarm_Id(memberId, farmId)
+        verify(memberCropRepository).deleteByMemberIdAndFarmId(memberId, farmId)
         assertThat(capturedMemberCrops().map { it.crop.id }).containsExactly(cropId, secondCropId)
         assertEquals(memberId, profile.memberId)
     }
@@ -184,7 +184,7 @@ class MemberProfileServiceTest {
         `when`(uploadedMediaRepository.findById(newMediaId)).thenReturn(Optional.of(newMedia))
         `when`(farmRepository.findById(farmId)).thenReturn(Optional.of(farm))
         `when`(cropRepository.findAllById(listOf(cropId))).thenReturn(listOf(crop))
-        `when`(memberCropRepository.findByMember_Id(memberId)).thenReturn(listOf(memberCrop(farm, crop)))
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(listOf(memberCrop(farm, crop)))
         `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))
 
         service.updateMyProfile(updateCommand(profileMediaId = newMediaId, farms = listOf(updateFarmCommand(farmId))))
@@ -200,7 +200,7 @@ class MemberProfileServiceTest {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findById(farmId)).thenReturn(Optional.of(farm))
         `when`(cropRepository.findAllById(listOf(cropId))).thenReturn(listOf(crop))
-        `when`(memberCropRepository.findByMember_Id(memberId)).thenReturn(listOf(memberCrop(farm, crop)))
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(listOf(memberCrop(farm, crop)))
         `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))
 
         service.updateMyProfile(updateCommand(profileMediaId = null, farms = listOf(updateFarmCommand(farmId))))
@@ -216,7 +216,7 @@ class MemberProfileServiceTest {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.save(any(Farm::class.java))).thenReturn(savedFarm)
         `when`(cropRepository.findAllById(listOf(secondCropId))).thenReturn(listOf(secondCrop))
-        `when`(memberCropRepository.findByMember_Id(memberId)).thenReturn(listOf(memberCrop(savedFarm, secondCrop)))
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(listOf(memberCrop(savedFarm, secondCrop)))
         `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm, savedFarm))
 
         service.updateMyProfile(
@@ -227,7 +227,7 @@ class MemberProfileServiceTest {
         )
 
         verify(farmRepository, never()).delete(any(Farm::class.java))
-        verify(memberCropRepository).deleteByMember_IdAndFarm_Id(memberId, newFarmId)
+        verify(memberCropRepository).deleteByMemberIdAndFarmId(memberId, newFarmId)
         assertThat(capturedMemberCrops().map { it.crop.id }).containsExactly(secondCropId)
     }
 

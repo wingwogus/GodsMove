@@ -4,7 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
 interface CommunityPostMediaRepository : JpaRepository<CommunityPostMedia, UUID> {
-    fun findByPost_IdOrderByDisplayOrderAsc(postId: UUID): List<CommunityPostMedia>
-    fun findByUploadedMedia_IdIn(mediaIds: Collection<UUID>): List<CommunityPostMedia>
+    fun findByPostIdOrderByDisplayOrderAsc(postId: UUID): List<CommunityPostMedia>
+    fun findByUploadedMediaIdIn(mediaIds: Collection<UUID>): List<CommunityPostMedia>
     fun deleteByPost(post: CommunityPost)
 }

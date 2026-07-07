@@ -45,7 +45,7 @@ class CommunityPostService(
     @Transactional(readOnly = true)
     fun listBoards(memberId: UUID): List<CommunityPostResult.Board> {
         val seen = linkedSetOf<UUID>()
-        return memberCropRepository.findByMember_Id(memberId)
+        return memberCropRepository.findByMemberId(memberId)
             .map { it.crop }
             .filter { crop -> seen.add(requireNotNull(crop.id) { "Persisted crop id is required" }) }
             .map { crop ->
@@ -94,7 +94,7 @@ class CommunityPostService(
     @Transactional(readOnly = true)
     fun getDetail(memberId: UUID, postId: UUID): CommunityPostResult.PostDetail {
         val post = findPost(postId)
-        val imageUrls = communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)
+        val imageUrls = communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)
             .map { it.uploadedMedia.fileUrl }
         return CommunityPostResult.PostDetail(
             id = requireNotNull(post.id) { "Persisted post id is required" },
@@ -106,9 +106,9 @@ class CommunityPostService(
             imageUrls = imageUrls,
             farmingRecordId = post.farmingRecord?.id,
             author = authorOf(post.author),
-            commentCount = communityCommentRepository.countByPost_IdAndIsDeletedFalse(postId),
-            likeCount = communityPostLikeRepository.countByPost_Id(postId),
-            likedByMe = communityPostLikeRepository.existsByPost_IdAndMember_Id(postId, memberId),
+            commentCount = communityCommentRepository.countByPostIdAndIsDeletedFalse(postId),
+            likeCount = communityPostLikeRepository.countByPostId(postId),
+            likedByMe = communityPostLikeRepository.existsByPostIdAndMemberId(postId, memberId),
             createdAt = post.createdAt
         )
     }
@@ -141,7 +141,7 @@ class CommunityPostService(
         assertAuthor(post, command.memberId)
         val crop = findCrop(command.cropId)
         val farmingRecord = resolveFarmingRecord(command.memberId, command.cropId, command.farmingRecordId)
-        val existingPostMedia = communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(command.postId)
+        val existingPostMedia = communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(command.postId)
         val media = validateUpdatedMedia(post, command.memberId, command.mediaIds)
 
         post.update(
@@ -164,7 +164,7 @@ class CommunityPostService(
 
     fun toggleLike(command: CommunityPostCommand.ToggleLike): CommunityPostResult.LikeToggle {
         val post = findPost(command.postId)
-        val existing = communityPostLikeRepository.findByPost_IdAndMember_Id(command.postId, command.memberId)
+        val existing = communityPostLikeRepository.findByPostIdAndMemberId(command.postId, command.memberId)
         val liked = if (existing == null) {
             val member = findMember(command.memberId)
             communityPostLikeRepository.save(CommunityPostLike(post = post, member = member))
@@ -176,7 +176,7 @@ class CommunityPostService(
 
         return CommunityPostResult.LikeToggle(
             liked = liked,
-            likeCount = communityPostLikeRepository.countByPost_Id(command.postId)
+            likeCount = communityPostLikeRepository.countByPostId(command.postId)
         )
     }
 
@@ -214,7 +214,7 @@ class CommunityPostService(
         }
 
         val mediaById = findMediaById(mediaIds)
-        val postMediaByMediaId = communityPostMediaRepository.findByUploadedMedia_IdIn(mediaIds)
+        val postMediaByMediaId = communityPostMediaRepository.findByUploadedMediaIdIn(mediaIds)
             .associateBy { requireNotNull(it.uploadedMedia.id) { "Persisted media id is required" } }
         val postId = requireNotNull(post.id) { "Persisted post id is required" }
 
@@ -261,7 +261,7 @@ class CommunityPostService(
         farmingRecordId: UUID?
     ): FarmingRecord? {
         return farmingRecordId?.let { recordId ->
-            val record = farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)
+            val record = farmingRecordRepository.findByIdAndMemberId(recordId, memberId)
                 ?: throw BusinessException(ErrorCode.FARMING_RECORD_NOT_FOUND)
             if (record.crop.id != cropId) {
                 throw BusinessException(ErrorCode.COMMUNITY_FARMING_RECORD_CROP_MISMATCH)

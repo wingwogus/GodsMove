@@ -32,7 +32,7 @@ class MemberProfileService(
     fun getMyProfile(memberId: UUID): MemberProfileResult.MyProfile {
         val member = findMember(memberId)
         val farms = farmRepository.findByOwnerId(memberId)
-        val crops = memberCropRepository.findByMember_Id(memberId)
+        val crops = memberCropRepository.findByMemberId(memberId)
 
         return MemberProfileResult.MyProfile(
             memberId = requireNotNull(member.id) { "Persisted member id is required" },
@@ -53,7 +53,7 @@ class MemberProfileService(
     fun getPublicProfile(memberId: UUID): MemberProfileResult.PublicProfile {
         val member = findMember(memberId)
         val farms = farmRepository.findByOwnerId(memberId)
-        val crops = memberCropRepository.findByMember_Id(memberId)
+        val crops = memberCropRepository.findByMemberId(memberId)
 
         return MemberProfileResult.PublicProfile(
             memberId = requireNotNull(member.id) { "Persisted member id is required" },
@@ -209,7 +209,7 @@ class MemberProfileService(
         val farmId = requireNotNull(farm.id) { "Persisted farm id is required" }
         val memberId = requireNotNull(member.id) { "Persisted member id is required" }
 
-        memberCropRepository.deleteByMember_IdAndFarm_Id(memberId, farmId)
+        memberCropRepository.deleteByMemberIdAndFarmId(memberId, farmId)
         memberCropRepository.saveAll(
             crops.map { crop ->
                 MemberCrop(
