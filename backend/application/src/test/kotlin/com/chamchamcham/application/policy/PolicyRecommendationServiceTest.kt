@@ -228,6 +228,66 @@ class PolicyRecommendationServiceTest {
     }
 
     @Test
+    fun `list recommendations rejects malformed cursor as invalid input`() {
+        `when`(
+            policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
+                PolicySource.NONGUP_EZ,
+                PolicySyncJobStatus.SUCCEEDED
+            )
+        ).thenReturn(latestJob)
+        `when`(policyProgramRepository.findRecommendableCandidates(latestJobId, "2026", LocalDate.of(2026, 4, 1)))
+            .thenReturn(listOf(recommendableProgram()))
+        `when`(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndSourceSyncJobId(
+                memberId,
+                latestJobId
+            )
+        ).thenReturn(listOf(policyProgramId))
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.listRecommendations(memberId, cursor = "not-a-valid-cursor", size = 20)
+        }
+
+        assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+        verify(policyRecommendationQueryRepository, never()).findPage(any())
+    }
+
+    @Test
+    fun `list recommendations surfaces malformed stored tag json`() {
+        val program = recommendableProgram(cropTagsJson = "{not-json")
+        `when`(
+            policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
+                PolicySource.NONGUP_EZ,
+                PolicySyncJobStatus.SUCCEEDED
+            )
+        ).thenReturn(latestJob)
+        `when`(policyProgramRepository.findRecommendableCandidates(latestJobId, "2026", LocalDate.of(2026, 4, 1)))
+            .thenReturn(listOf(program))
+        `when`(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndSourceSyncJobId(
+                memberId,
+                latestJobId
+            )
+        ).thenReturn(emptyList())
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(memberProfileReader.read(memberId)).thenReturn(
+            PolicyMemberProfile(
+                birthDate = member.birthDate,
+                experienceLevel = member.experienceLevel,
+                managementType = member.managementType,
+                cropNames = setOf("참당귀"),
+                cropUsePartCategories = setOf("ROOT_BARK"),
+                farmRegionTokens = setOf("충청북도")
+            )
+        )
+
+        assertThrows(IllegalArgumentException::class.java) {
+            service.listRecommendations(memberId, cursor = null, size = 20)
+        }
+        verify(policyRecommendationQueryRepository, never()).findPage(any())
+    }
+
+    @Test
     fun `get program detail returns synced recommendable detail with contacts and attachments from raw payload`() {
         val program = recommendableProgram(
             rawPayload = """

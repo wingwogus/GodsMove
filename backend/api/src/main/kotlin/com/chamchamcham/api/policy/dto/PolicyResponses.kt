@@ -51,7 +51,7 @@ object PolicyResponses {
     }
 
     data class PolicyDetailResponse(
-        val policyProgramId: UUID,
+        val id: UUID,
         val programTitle: String,
         val sourceYear: String,
         val agencyName: String,
@@ -62,8 +62,8 @@ object PolicyResponses {
         val applicationUrl: String?,
         val purpose: String?,
         val summary: String?,
-        val eligibilitySummary: String?,
-        val benefitSummary: String?,
+        val eligibility: String?,
+        val benefit: String?,
         val applicationMethod: String?,
         val requiredDocuments: String?,
         val selectionCriteria: String?,
@@ -73,7 +73,7 @@ object PolicyResponses {
         companion object {
             fun from(result: PolicyRecommendationResult.Detail): PolicyDetailResponse =
                 PolicyDetailResponse(
-                    policyProgramId = result.id,
+                    id = result.id,
                     programTitle = result.programTitle,
                     sourceYear = result.sourceYear,
                     agencyName = result.agencyName,
@@ -84,8 +84,8 @@ object PolicyResponses {
                     applicationUrl = result.applicationUrl,
                     purpose = result.purpose,
                     summary = result.summary,
-                    eligibilitySummary = result.eligibility,
-                    benefitSummary = result.benefit,
+                    eligibility = result.eligibility,
+                    benefit = result.benefit,
                     applicationMethod = result.applicationMethod,
                     requiredDocuments = result.requiredDocuments,
                     selectionCriteria = result.selectionCriteria,

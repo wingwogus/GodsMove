@@ -23,6 +23,10 @@ import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.transaction.support.AbstractPlatformTransactionManager
+import org.springframework.transaction.support.DefaultTransactionStatus
+import org.springframework.transaction.support.TransactionSynchronizationManager
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDate
 import java.util.Optional
 import java.util.UUID
@@ -47,16 +51,26 @@ class PolicySyncServiceTest {
             policySyncJobRepository = policySyncJobRepository,
             cardTextGenerator = PolicyCardTextGenerator(),
             tagExtractor = NongupEzPolicyTagExtractor(),
-            textListJsonCodec = TextListJsonCodec()
+            textListJsonCodec = TextListJsonCodec(),
+            transactionTemplate = TransactionTemplate(TestTransactionManager())
         )
     }
 
     @Test
     fun `runSync upserts list and detail success into recommendable policy`() {
         val listItem = listItem()
-        `when`(sourceClient.detectLatestYear()).thenReturn("2026")
-        `when`(sourceClient.fetchPrograms("2026")).thenReturn(listOf(listItem))
-        `when`(sourceClient.fetchDetail("AB000009", "2026")).thenReturn(detail())
+        `when`(sourceClient.detectLatestYear()).thenAnswer {
+            assertFalse(TransactionSynchronizationManager.isActualTransactionActive())
+            "2026"
+        }
+        `when`(sourceClient.fetchPrograms("2026")).thenAnswer {
+            assertFalse(TransactionSynchronizationManager.isActualTransactionActive())
+            listOf(listItem)
+        }
+        `when`(sourceClient.fetchDetail("AB000009", "2026")).thenAnswer {
+            assertFalse(TransactionSynchronizationManager.isActualTransactionActive())
+            detail()
+        }
         `when`(
             policyProgramRepository.findBySourceAndExternalIdAndSourceYear(
                 PolicySource.NONGUP_EZ,
@@ -192,4 +206,14 @@ class PolicySyncServiceTest {
             attachments = emptyList(),
             rawJson = """{"afbzCd":"AB000009","bizYr":"2026"}"""
         )
+
+    private class TestTransactionManager : AbstractPlatformTransactionManager() {
+        override fun doGetTransaction(): Any = Any()
+
+        override fun doBegin(transaction: Any, definition: org.springframework.transaction.TransactionDefinition) = Unit
+
+        override fun doCommit(status: DefaultTransactionStatus) = Unit
+
+        override fun doRollback(status: DefaultTransactionStatus) = Unit
+    }
 }

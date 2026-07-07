@@ -40,13 +40,13 @@
 
 ### Domain
 
-- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/policy/PolicyProgram.kt`  
+- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/policy/PolicyProgram.kt`
   Add NongupEZ source identity, display fields, card summaries, detail sections, JSON tag/raw payload fields, sync flags, source job relation, and nullable `targetManagementType`.
-- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/policy/PolicyRecommendation.kt`  
+- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/policy/PolicyRecommendation.kt`
   Add `sourceSyncJob` relation.
-- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/policy/PolicyProgramRepository.kt`  
+- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/policy/PolicyProgramRepository.kt`
   Add source identity lookup and recommendable candidate query.
-- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/policy/PolicyRecommendationRepository.kt`  
+- Modify: `backend/domain/src/main/kotlin/com/chamchamcham/domain/policy/PolicyRecommendationRepository.kt`
   Add member/sync-job stale detection and deletion methods.
 - Create: `backend/domain/src/main/kotlin/com/chamchamcham/domain/policy/PolicySource.kt`
 - Create: `backend/domain/src/main/kotlin/com/chamchamcham/domain/policy/PolicySyncJob.kt`

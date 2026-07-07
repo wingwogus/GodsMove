@@ -16,6 +16,8 @@ class TextListJsonCodec {
         if (json.isNullOrBlank()) {
             return emptySet()
         }
-        return runCatching { objectMapper.readValue<List<String>>(json).toSet() }.getOrDefault(emptySet())
+        return runCatching { objectMapper.readValue<List<String>>(json).toSet() }.getOrElse { exception ->
+            throw IllegalArgumentException("Malformed text list JSON", exception)
+        }
     }
 }

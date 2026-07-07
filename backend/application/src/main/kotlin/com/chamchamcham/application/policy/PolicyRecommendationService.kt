@@ -157,7 +157,14 @@ class PolicyRecommendationService(
         if (cursor.isNullOrBlank()) {
             return null
         }
-        val payload = cursorCodec.decode(cursor, PolicyRecommendationCursorPayload::class.java)
+        val payload = try {
+            cursorCodec.decode(cursor, PolicyRecommendationCursorPayload::class.java)
+        } catch (exception: BusinessException) {
+            if (exception.errorCode == ErrorCode.INVALID_CURSOR) {
+                throw BusinessException(ErrorCode.INVALID_INPUT)
+            }
+            throw exception
+        }
         if (payload.sourceSyncJobId != latestJobId) {
             throw BusinessException(ErrorCode.INVALID_INPUT)
         }
