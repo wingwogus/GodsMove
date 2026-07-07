@@ -26,6 +26,8 @@ enum class ErrorCode(
     COMMUNITY_TOO_MANY_IMAGES("COMMUNITY_005", "error.community_too_many_images", 400),
     COMMUNITY_FARMING_RECORD_CROP_MISMATCH("COMMUNITY_006", "error.community_farming_record_crop_mismatch", 400),
     FARMING_RECORD_NOT_FOUND("FARMING_001", "error.farming_record_not_found", 404),
+    POLICY_PROGRAM_NOT_FOUND("POLICY_001", "error.policy_program_not_found", 404),
+    POLICY_SYNC_JOB_NOT_FOUND("POLICY_002", "error.policy_sync_job_not_found", 404),
     USER_ALREADY_EXISTS("USER_002", "error.user_already_exists", 409),
     DUPLICATE_EMAIL("AUTH_003", "error.duplicate_email", 409),
     EMAIL_NOT_VERIFIED("AUTH_004", "error.email_not_verified", 400),
