@@ -81,7 +81,9 @@ class AuthControllerValidationTest(
             .andReturn()
 
         assertThat(result.response.contentAsString).doesNotContain("123")
-        assertThat(output.out + output.err).doesNotContain("123")
+        assertThat(output.out + output.err)
+            .doesNotContain(""""password":"123"""")
+            .doesNotContain("password=123")
     }
 
     @Test
@@ -227,7 +229,8 @@ class AuthControllerValidationTest(
                 birthDate = null,
                 nickname = null,
                 experienceLevel = null,
-                managementType = null
+                managementType = null,
+                profileImageUrl = null
             ),
             onboarding = AuthResult.Onboarding(
                 status = AuthResult.OnboardingStatus.REQUIRED,

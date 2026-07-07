@@ -50,6 +50,14 @@ app:
     refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
   mail:
     from-name: ${MAIL_FROM_NAME:Example}
+  media:
+    max-image-bytes: 10485760
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:}
+  api-key: ${CLOUDINARY_API_KEY:}
+  api-secret: ${CLOUDINARY_API_SECRET:}
+  secure: true
 
 auth:
   kakao:
