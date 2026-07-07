@@ -55,7 +55,14 @@ class PolicyProgramTest {
             targetTagsJson = "[\"REGISTERED_FARMER\"]",
             cropTagsJson = "[\"ECO_FRIENDLY\"]",
             regionTagsJson = "[\"전국\"]",
-            rawPayload = "{\"afbzCd\":\"AB000009\"}",
+            rawPayload = """
+                {
+                  "afbzCd":"AB000009",
+                  "contacts":[{"department":"친환경농업과","phone":"044-000-0000"}],
+                  "attachments":[{"name":"신청서.hwp"}],
+                  "sourceTags":["친환경","직불"]
+                }
+            """.trimIndent(),
             recommendable = true,
             lastSyncedJob = job
         )
@@ -65,6 +72,7 @@ class PolicyProgramTest {
         assertThat(program.isOpenOn(LocalDate.of(2026, 6, 1))).isTrue()
         assertThat(program.isOpenOn(LocalDate.of(2026, 7, 1))).isFalse()
         assertThat(program.targetManagementType).isEqualTo(ManagementType.AGRICULTURAL_INDIVIDUAL)
+        assertThat(program.rawPayload).contains("contacts", "attachments", "sourceTags")
     }
 
     @Test

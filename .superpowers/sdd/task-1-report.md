@@ -66,3 +66,47 @@ Implemented the NongupEZ policy domain persistence model, sync-job model, reposi
 
 - Full `./gradlew test` remains blocked by unrelated pre-existing RAG/dev test compile failures outside Task 1 scope.
 - Flyway is not present, so the SQL file is a review/schema contract artifact and must be applied separately in dev/prod environments.
+
+---
+
+## Reviewer Fix Report: Policy Schema Contract
+
+Status: DONE
+
+### Fixes
+
+- Reworked `docs/database/2026-07-07-policy-recommendation-schema.sql` into a staged migration contract for existing data:
+  - Adds `policy_program.source`, `external_id`, and `source_year` as nullable first.
+  - Drops unsafe shared defaults and temporary not-null assumptions.
+  - Backfills existing policy rows with unique identities using `source = 'NONGUP_EZ'`, `external_id = id::text`, and `source_year = '0000'`.
+  - Sets the three identity columns `NOT NULL` only after backfill, then creates `uk_policy_program_source_external_year`.
+- Aligned the SQL contract with non-null JPA `PolicyRecommendation.sourceSyncJob`:
+  - Adds `source_sync_job_id` first.
+  - Inserts a deterministic legacy `policy_sync_job` only when existing recommendations need a backfill.
+  - Backfills null recommendation `source_sync_job_id` values to that legacy job.
+  - Sets `policy_recommendation.source_sync_job_id` `NOT NULL` after backfill.
+- Made the MVP JSON preservation contract explicit:
+  - Added a `policy_program.raw_payload` SQL column comment documenting that contacts, attachments, and source tags stay in the original NongupEZ JSON payload for MVP.
+  - Adjusted `PolicyProgramTest` to verify `rawPayload` preserves contacts, attachments, and source tag keys instead of adding unused tables or columns.
+
+### Verification
+
+- Command: `cd backend && ./gradlew :domain:test`
+- Result: PASS
+
+Relevant output:
+
+```text
+> Task :domain:compileTestKotlin
+> Task :domain:test
+
+BUILD SUCCESSFUL in 4s
+4 actionable tasks: 3 executed, 1 up-to-date
+```
+
+- Command: `git diff --check`
+- Result: PASS
+
+### Concerns
+
+- The SQL remains a reviewed schema contract artifact because Flyway is not present in the backend. It has not been executed against a live PostgreSQL database in this fix pass.
