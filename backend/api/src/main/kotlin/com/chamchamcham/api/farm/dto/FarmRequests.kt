@@ -1,4 +1,4 @@
-package com.chamchamcham.api.common.dto
+package com.chamchamcham.api.farm.dto
 
 import jakarta.validation.constraints.NotNull
 

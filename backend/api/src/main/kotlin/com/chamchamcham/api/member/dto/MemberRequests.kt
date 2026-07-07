@@ -1,6 +1,6 @@
 package com.chamchamcham.api.member.dto
 
-import com.chamchamcham.api.common.dto.FarmRequests
+import com.chamchamcham.api.farm.dto.FarmRequests
 import com.chamchamcham.domain.member.ManagementType
 import jakarta.validation.Valid
 import jakarta.validation.constraints.DecimalMin
