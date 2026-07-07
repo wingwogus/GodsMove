@@ -88,7 +88,8 @@ object AuthRequests {
         @field:NotNull(message = "농장 정보를 입력해주세요")
         val farm: FarmRequest?,
         @field:NotEmpty(message = "작물을 하나 이상 선택해주세요")
-        val cropIds: List<UUID>
+        val cropIds: List<UUID>,
+        val profileMediaId: UUID? = null
     )
 
     data class FarmRequest(

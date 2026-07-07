@@ -125,7 +125,8 @@ class AuthController(
                 experienceLevel = requireNotNull(request.experienceLevel),
                 managementType = requireNotNull(request.managementType),
                 farm = request.farm.toCommand(),
-                cropIds = request.cropIds
+                cropIds = request.cropIds,
+                profileMediaId = request.profileMediaId
             )
         )
 

@@ -65,7 +65,8 @@ object AuthResponses {
         val birthDate: LocalDate?,
         val nickname: String?,
         val experienceLevel: Int?,
-        val managementType: String?
+        val managementType: String?,
+        val profileImageUrl: String?
     ) {
         companion object {
             fun from(result: AuthResult.MemberProfile): MemberProfileResponse {
@@ -77,7 +78,8 @@ object AuthResponses {
                     birthDate = result.birthDate,
                     nickname = result.nickname,
                     experienceLevel = result.experienceLevel,
-                    managementType = result.managementType
+                    managementType = result.managementType,
+                    profileImageUrl = result.profileImageUrl
                 )
             }
         }
