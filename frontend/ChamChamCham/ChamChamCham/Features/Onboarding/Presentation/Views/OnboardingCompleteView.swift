@@ -22,6 +22,11 @@ struct OnboardingCompleteView: View {
                 Text("등록 중이에요...")
                     .font(.appBody)
                     .foregroundStyle(Color.appTextSecondary)
+            case .uploadingPhoto:
+                ProgressView()
+                Text("프로필 사진을 올리는 중이에요...")
+                    .font(.appBody)
+                    .foregroundStyle(Color.appTextSecondary)
             case .failed(let message):
                 Text(message)
                     .font(.appBody)
@@ -29,6 +34,19 @@ struct OnboardingCompleteView: View {
                 PrimaryButton(title: "다시 시도") {
                     Task { await viewModel.submit(appState: appState) }
                 }
+            case .photoUploadFailed(let message):
+                Text(message)
+                    .font(.appBody)
+                    .foregroundStyle(Color.appTextSecondary)
+                    .multilineTextAlignment(.center)
+                PrimaryButton(title: "다시 시도") {
+                    Task { await viewModel.submit(appState: appState) }
+                }
+                Button("사진 없이 계속하기") {
+                    Task { await viewModel.submitWithoutPhoto(appState: appState) }
+                }
+                .font(.appBody)
+                .foregroundStyle(Color.appTextSecondary)
             }
         }
         .padding(Spacing.lg)

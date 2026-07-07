@@ -37,6 +37,16 @@ struct PreviewAuthRepository: AuthRepository {
     func logout() async throws {}
 }
 
+struct PreviewMediaUploadRepository: MediaUploadRepository {
+    func uploadProfileImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO {
+        throw OnboardingSubmissionError.missingRequiredField("preview")
+    }
+
+    func uploadCommunityImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO {
+        throw OnboardingSubmissionError.missingRequiredField("preview")
+    }
+}
+
 struct PreviewCropCatalogService: CropCatalogService {
     func fetchCrops() async throws -> [Crop] {
         [
@@ -63,6 +73,7 @@ struct PreviewMemberProfileCache: MemberProfileCache {
             birthDateRaw: member.birthDate,
             experienceLevel: member.experienceLevel,
             managementTypeRaw: member.managementType,
+            profileImageUrl: member.profileImageUrl,
             onboardingStatusRaw: onboarding.status.rawValue,
             missingFieldsRaw: onboarding.missingFields,
             updatedAt: Date()
@@ -74,6 +85,7 @@ extension OnboardingViewModel {
     static func preview() -> OnboardingViewModel {
         OnboardingViewModel(
             onboardingRepository: PreviewOnboardingRepository(),
+            mediaUploadRepository: PreviewMediaUploadRepository(),
             cropCatalogService: PreviewCropCatalogService(),
             memberProfileCache: PreviewMemberProfileCache()
         )

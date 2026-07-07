@@ -20,8 +20,12 @@ final class OnboardingViewModel {
 
     enum SubmissionState: Equatable {
         case idle
+        case uploadingPhoto
         case submitting
+        /// Onboarding completion failed — only a retry makes sense.
         case failed(String)
+        /// The profile photo (a "선택" field) failed to upload. The user can retry or proceed without it.
+        case photoUploadFailed(String)
     }
 
     var currentStep: Step
@@ -36,17 +40,20 @@ final class OnboardingViewModel {
 
     private let store: OnboardingDraftStore
     private let onboardingRepository: OnboardingRepository
+    private let mediaUploadRepository: MediaUploadRepository
     private let cropCatalogService: CropCatalogService
     private let memberProfileCache: MemberProfileCache
 
     init(
         store: OnboardingDraftStore = OnboardingDraftStore(),
         onboardingRepository: OnboardingRepository,
+        mediaUploadRepository: MediaUploadRepository,
         cropCatalogService: CropCatalogService,
         memberProfileCache: MemberProfileCache
     ) {
         self.store = store
         self.onboardingRepository = onboardingRepository
+        self.mediaUploadRepository = mediaUploadRepository
         self.cropCatalogService = cropCatalogService
         self.memberProfileCache = memberProfileCache
         if let snapshot = store.load() {
@@ -98,8 +105,48 @@ final class OnboardingViewModel {
         }
     }
 
+    /// Runs the two-phase submission: upload the profile photo (if any, and not already uploaded), then complete
+    /// onboarding. Splitting the phases lets a photo-upload failure — which is recoverable, since the photo is
+    /// optional — surface differently from a completion failure, and lets a completion retry skip a re-upload.
     func submit(appState: AppState) async {
-        guard submissionState != .submitting else { return }
+        guard submissionState != .submitting, submissionState != .uploadingPhoto else { return }
+
+        if let failure = await uploadProfilePhotoIfNeeded() {
+            submissionState = .photoUploadFailed(failure)
+            return
+        }
+
+        await complete(appState: appState)
+    }
+
+    /// Drops the pending photo and submits without it. Used when the photo upload failed and the user chose to
+    /// continue — the photo is a "선택" field, so onboarding must not be blocked on it.
+    func submitWithoutPhoto(appState: AppState) async {
+        draft.profileImageFileName = nil
+        draft.profileMediaId = nil
+        persist()
+        await complete(appState: appState)
+    }
+
+    /// Returns a user-facing error string on failure, or `nil` when there's nothing to upload or the upload succeeded
+    /// (with `draft.profileMediaId` now set and persisted).
+    private func uploadProfilePhotoIfNeeded() async -> String? {
+        guard draft.profileMediaId == nil, let fileName = draft.profileImageFileName else { return nil }
+        // The snapshot's filename outlived its file (e.g. cache cleared) — nothing to upload, proceed without a photo.
+        guard let imageData = store.loadProfileImage(fileName: fileName) else { return nil }
+
+        submissionState = .uploadingPhoto
+        do {
+            let uploaded = try await mediaUploadRepository.uploadProfileImage(imageData, originalFilename: fileName)
+            draft.profileMediaId = uploaded.mediaId
+            persist()
+            return nil
+        } catch {
+            return "프로필 사진을 올리지 못했어요. 사진 없이 계속하거나 다시 시도할 수 있어요."
+        }
+    }
+
+    private func complete(appState: AppState) async {
         submissionState = .submitting
         do {
             let response = try await onboardingRepository.completeOnboarding(draft)

@@ -13,15 +13,18 @@ protocol Endpoint: Sendable {
     var body: (any Encodable & Sendable)? { get }
     var requiresAuth: Bool { get }
     var headers: [String: String] { get }
+    var queryItems: [URLQueryItem] { get }
 }
 
 extension Endpoint {
     var headers: [String: String] { [:] }
+    var queryItems: [URLQueryItem] { [] }
 }
 
 enum HTTPMethod: String, Sendable {
     case get = "GET"
     case post = "POST"
     case put = "PUT"
+    case patch = "PATCH"
     case delete = "DELETE"
 }

@@ -19,6 +19,7 @@ struct AuthFlowView: View {
         _viewModel = State(
             initialValue: OnboardingViewModel(
                 onboardingRepository: container.makeOnboardingRepository(),
+                mediaUploadRepository: container.makeMediaUploadRepository(),
                 cropCatalogService: container.makeCropCatalogService(),
                 memberProfileCache: container.memberProfileCache
             )

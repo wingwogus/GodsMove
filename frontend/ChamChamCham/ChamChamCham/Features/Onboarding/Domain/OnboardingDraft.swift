@@ -15,6 +15,9 @@ struct OnboardingDraft: Codable {
     var experienceYears: Int?
     var managementType: ManagementType?
     var profileImageFileName: String?
+    /// Set once the local profile photo has been uploaded to the media service. Persisted in the draft snapshot so
+    /// a failed onboarding-complete followed by "다시 시도" reuses the already-uploaded media instead of re-uploading.
+    var profileMediaId: UUID?
     var cropIDs: [UUID] = []
     var farmName: String = ""
     var farmRoadAddress: String = ""

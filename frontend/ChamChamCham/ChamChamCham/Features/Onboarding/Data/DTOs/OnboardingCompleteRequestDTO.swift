@@ -22,6 +22,9 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
     let managementType: String
     let farm: FarmRequestDTO
     let cropIds: [UUID]
+    // Optional server-side (`profileMediaId: UUID? = null`) — the profile photo is a "선택" field, so onboarding
+    // completes with or without it. Nil when the user skipped the photo or its upload failed and they chose to proceed.
+    let profileMediaId: UUID?
 
     init(draft: OnboardingDraft) throws {
         guard !draft.name.trimmingCharacters(in: .whitespaces).isEmpty else {
@@ -51,6 +54,7 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
         self.managementType = managementType.rawValue
         self.farm = try FarmRequestDTO(draft: draft)
         self.cropIds = draft.cropIDs
+        self.profileMediaId = draft.profileMediaId
     }
 
     private static let wireDateFormatter: DateFormatter = {

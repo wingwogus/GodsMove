@@ -74,7 +74,15 @@ actor APIClient {
     }
 
     private func makeRequest(for endpoint: Endpoint) throws -> URLRequest {
-        var request = URLRequest(url: APIEnvironment.baseURL.appendingPathComponent(endpoint.path))
+        let base = APIEnvironment.baseURL.appendingPathComponent(endpoint.path)
+        var components = URLComponents(url: base, resolvingAgainstBaseURL: false)
+        if !endpoint.queryItems.isEmpty {
+            components?.queryItems = endpoint.queryItems
+        }
+        guard let url = components?.url else {
+            throw APIError.network(URLError(.badURL))
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         for (field, value) in endpoint.headers {

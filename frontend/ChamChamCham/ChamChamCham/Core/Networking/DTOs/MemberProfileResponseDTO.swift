@@ -16,4 +16,5 @@ struct MemberProfileResponseDTO: Decodable, Sendable {
     let nickname: String?
     let experienceLevel: Int?
     let managementType: String?
+    let profileImageUrl: String?
 }

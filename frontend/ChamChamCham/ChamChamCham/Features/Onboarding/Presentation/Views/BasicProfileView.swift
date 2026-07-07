@@ -120,6 +120,9 @@ struct BasicProfileView: View {
                   let data = try? await pickerItem.loadTransferable(type: Data.self) else { return }
             let fileName = store.saveProfileImage(data)
             viewModel.draft.profileImageFileName = fileName
+            // A freshly picked photo invalidates any media already uploaded for a previous pick, so the submit
+            // flow re-uploads this one instead of attaching the stale `profileMediaId`.
+            viewModel.draft.profileMediaId = nil
             if let uiImage = UIImage(data: data) {
                 profileImage = Image(uiImage: uiImage)
             }
