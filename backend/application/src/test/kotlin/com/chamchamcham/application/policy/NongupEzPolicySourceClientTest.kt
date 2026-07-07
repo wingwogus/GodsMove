@@ -9,7 +9,9 @@ import java.nio.charset.StandardCharsets
 class NongupEzPolicySourceClientTest {
     @Test
     fun `detectLatestYear ignores all option and selects max numeric year`() {
-        val client = NongupEzPolicySourceClient(fakeTransport("conditions" to fixture("conditions.json")))
+        val client = NongupEzPolicySourceClient(
+            fakeTransport(CONDITIONS_PATH to fixture("conditions.json"))
+        )
 
         val latestYear = client.detectLatestYear()
 
@@ -18,7 +20,9 @@ class NongupEzPolicySourceClientTest {
 
     @Test
     fun `fetchPrograms parses list page into source list item`() {
-        val client = NongupEzPolicySourceClient(fakeTransport("retrieveListBizSrch" to fixture("list-page.json")))
+        val client = NongupEzPolicySourceClient(
+            fakeTransport(LIST_PATH to fixture("list-page.json"))
+        )
 
         val programs = client.fetchPrograms("2026")
 
@@ -30,7 +34,9 @@ class NongupEzPolicySourceClientTest {
 
     @Test
     fun `fetchDetail parses long text contacts and attachments`() {
-        val client = NongupEzPolicySourceClient(fakeTransport("findBizSrchDtl" to fixture("detail-success.json")))
+        val client = NongupEzPolicySourceClient(
+            fakeTransport(DETAIL_PATH to fixture("detail-success.json"))
+        )
 
         val detail = client.fetchDetail("AB000009", "2026")
 
@@ -42,7 +48,7 @@ class NongupEzPolicySourceClientTest {
     @Test
     fun `fetchDetail tolerates null optional fields`() {
         val client = NongupEzPolicySourceClient(
-            fakeTransport("findBizSrchDtl" to fixture("detail-missing-optional-fields.json"))
+            fakeTransport(DETAIL_PATH to fixture("detail-missing-optional-fields.json"))
         )
 
         val detail = client.fetchDetail("AB000010", "2026")
@@ -55,7 +61,7 @@ class NongupEzPolicySourceClientTest {
     private fun fakeTransport(vararg responses: Pair<String, String>): NongupEzHttpTransport {
         val responseMap = responses.toMap()
         return NongupEzHttpTransport { path, _ ->
-            responseMap.entries.firstOrNull { (key) -> path.contains(key) }?.value
+            responseMap[path]
                 ?: error("No fixture response for $path")
         }
     }
@@ -65,5 +71,11 @@ class NongupEzPolicySourceClientTest {
             .getResourceAsStream("policy/nongupez/$name")!!
             .readAllBytes()
             .toString(StandardCharsets.UTF_8)
+    }
+
+    private companion object {
+        private const val CONDITIONS_PATH = "/nsm/bizAply/wholeBiz/retrieveListBizSrchCnd"
+        private const val LIST_PATH = "/nsm/bizAply/wholeBiz/retrieveListBizSrch"
+        private const val DETAIL_PATH = "/nsm/bizAply/cstBiz/findBizSrchDtl"
     }
 }

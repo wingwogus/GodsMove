@@ -14,7 +14,7 @@ class NongupEzPolicySourceClient(
     private val basicDate = DateTimeFormatter.BASIC_ISO_DATE
 
     fun detectLatestYear(): String {
-        val json = transport.post("/nsm/bizAply/wholeBiz/retrieveListBizSrchCnd?conditions=year", emptyMap())
+        val json = transport.post("/nsm/bizAply/wholeBiz/retrieveListBizSrchCnd", emptyMap())
         val root = objectMapper.readTree(json)
         return root.path("result").path("SRCH_BIZ_YR")
             .mapNotNull { node -> node.path("cd").asText(null) }
