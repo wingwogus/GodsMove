@@ -183,7 +183,6 @@ struct CommunityComposeView: View {
                     ) {
                         addSlotLabel
                     }
-                    .disabled(viewModel.isUploadingImage)
                 }
                 ForEach(viewModel.attachments) { attachment in
                     AppImageUploadSlot(
@@ -198,13 +197,9 @@ struct CommunityComposeView: View {
 
     private var addSlotLabel: some View {
         VStack(spacing: 6) {
-            if viewModel.isUploadingImage {
-                ProgressView()
-            } else {
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 24))
-                    .foregroundStyle(Color.Icon.default)
-            }
+            Image(systemName: "camera.fill")
+                .font(.system(size: 24))
+                .foregroundStyle(Color.Icon.default)
             Text("\(viewModel.attachments.count)/\(CommunityComposeViewModel.maxImages)")
                 .appTypography(.labelMedium)
                 .foregroundStyle(Color.Text.subtle)
@@ -214,11 +209,19 @@ struct CommunityComposeView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
+    /// The picked image is shown immediately; while its upload is in flight a dimmed spinner overlays it.
     @ViewBuilder private func thumbnail(for attachment: CommunityComposeViewModel.Attachment) -> some View {
-        if let uiImage = UIImage(data: attachment.previewData) {
-            Image(uiImage: uiImage).resizable().scaledToFill()
-        } else {
-            Color.Object.muted
+        ZStack {
+            if let uiImage = UIImage(data: attachment.previewData) {
+                Image(uiImage: uiImage).resizable().scaledToFill()
+            } else {
+                Color.Object.muted
+            }
+            if attachment.isUploading {
+                Color.black.opacity(0.3)
+                ProgressView()
+                    .tint(Color.Icon.inverse)
+            }
         }
     }
 

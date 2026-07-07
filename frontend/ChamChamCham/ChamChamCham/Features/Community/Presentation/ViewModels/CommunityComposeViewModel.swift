@@ -12,11 +12,13 @@ import Foundation
 @MainActor
 @Observable
 final class CommunityComposeViewModel {
-    /// One attached image: `id` is the server `mediaId` (also used as `mediaIds` on submit); `previewData`
-    /// is the local JPEG for the thumbnail.
+    /// One attached image. `id` is a local temp id (stable while uploading); `mediaId` is filled once the
+    /// upload succeeds and is what gets sent on submit. `isUploading` drives the per-slot spinner.
     struct Attachment: Identifiable, Sendable {
         let id: UUID
         let previewData: Data
+        var mediaId: UUID?
+        var isUploading: Bool
     }
 
     static let titleLimit = 50
@@ -32,7 +34,6 @@ final class CommunityComposeViewModel {
     var isQuestion: Bool = false
 
     private(set) var attachments: [Attachment] = []
-    private(set) var isUploadingImage = false
     private(set) var isSubmitting = false
     private(set) var errorMessage: String?
 
@@ -50,14 +51,18 @@ final class CommunityComposeViewModel {
         self.mediaRepository = mediaRepository
     }
 
+    /// True while any attachment is still uploading — submit waits for these so no `mediaId` is missed.
+    var isUploadingImage: Bool { attachments.contains(where: \.isUploading) }
+
     var canSubmit: Bool {
         selectedCropId != nil
             && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !isSubmitting
+            && !isUploadingImage
     }
 
-    var canAddImage: Bool { attachments.count < Self.maxImages && !isUploadingImage }
+    var canAddImage: Bool { attachments.count < Self.maxImages }
 
     func loadBoards() async {
         guard boards.isEmpty else { return }
@@ -89,12 +94,16 @@ final class CommunityComposeViewModel {
 
     func addImage(_ data: Data) async {
         guard canAddImage else { return }
-        isUploadingImage = true
-        defer { isUploadingImage = false }
+        // Show the picked image immediately with a spinner, then fill in the mediaId once uploaded.
+        let tempId = UUID()
+        attachments.append(Attachment(id: tempId, previewData: data, mediaId: nil, isUploading: true))
         do {
             let uploaded = try await mediaRepository.uploadCommunityImage(data, originalFilename: nil)
-            attachments.append(Attachment(id: uploaded.mediaId, previewData: data))
+            guard let index = attachments.firstIndex(where: { $0.id == tempId }) else { return }
+            attachments[index].mediaId = uploaded.mediaId
+            attachments[index].isUploading = false
         } catch {
+            attachments.removeAll { $0.id == tempId }
             errorMessage = "사진을 올리지 못했어요. 다시 시도해주세요."
         }
     }
@@ -117,7 +126,7 @@ final class CommunityComposeViewModel {
                 title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                 body: body.trimmingCharacters(in: .whitespacesAndNewlines),
                 farmingRecordId: nil,
-                mediaIds: attachments.map(\.id)
+                mediaIds: attachments.compactMap(\.mediaId)
             )
         } catch {
             errorMessage = CommunityErrorMessage.text(for: error)

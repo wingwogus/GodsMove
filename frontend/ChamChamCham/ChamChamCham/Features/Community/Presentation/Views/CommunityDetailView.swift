@@ -5,6 +5,7 @@
 //  Created by iyungui on 7/7/26.
 //
 
+import SwiftData
 import SwiftUI
 
 /// Post detail with the comment tree and a bottom composer. Pushed from the feed's `navigationDestination`.
@@ -13,7 +14,10 @@ struct CommunityDetailView: View {
     private let container: DIContainer
 
     @State private var viewModel: CommunityDetailViewModel
+    /// The logged-in member, read from the local cache — used to show delete only on the user's own content.
+    @State private var currentMemberId: UUID?
     @FocusState private var commentFieldFocused: Bool
+    @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     init(postId: UUID, container: DIContainer) {
@@ -30,10 +34,17 @@ struct CommunityDetailView: View {
         }
         .navigationBarHidden(true)
         .safeAreaInset(edge: .bottom) { commentComposer }
-        .task { await viewModel.load() }
+        .task {
+            currentMemberId = CachedMemberProfile.fetchCached(in: modelContext)?.id
+            await viewModel.load()
+        }
         .onChange(of: viewModel.didDeletePost) { _, deleted in
             if deleted { dismiss() }
         }
+    }
+
+    private var isPostAuthor: Bool {
+        currentMemberId != nil && viewModel.detail?.author.memberId == currentMemberId
     }
 
     // MARK: - Header
@@ -52,10 +63,12 @@ struct CommunityDetailView: View {
                 .foregroundStyle(Color.Text.default)
             Spacer()
             Menu {
-                Button(role: .destructive) {
-                    Task { await viewModel.deletePost() }
-                } label: {
-                    Label("삭제", systemImage: "trash")
+                if isPostAuthor {
+                    Button(role: .destructive) {
+                        Task { await viewModel.deletePost() }
+                    } label: {
+                        Label("삭제", systemImage: "trash")
+                    }
                 }
                 Button {} label: { Label("신고하기", systemImage: "exclamationmark.bubble") }
                     .disabled(true) // 신고 백엔드 미구현
@@ -147,12 +160,18 @@ struct CommunityDetailView: View {
                     .padding(.vertical, Spacing.md)
             } else {
                 ForEach(viewModel.comments) { comment in
-                    CommentRow(comment: comment, depth: 0) { target in
-                        viewModel.startReply(to: target)
-                        commentFieldFocused = true
-                    } onDelete: { target in
-                        Task { await viewModel.deleteComment(target) }
-                    }
+                    CommentRow(
+                        comment: comment,
+                        replyTarget: comment,
+                        currentMemberId: currentMemberId,
+                        onReply: { target in
+                            viewModel.startReply(to: target)
+                            commentFieldFocused = true
+                        },
+                        onDelete: { target in
+                            Task { await viewModel.deleteComment(target) }
+                        }
+                    )
                     .task { await viewModel.loadMoreCommentsIfNeeded(currentItem: comment) }
                 }
                 if viewModel.isLoadingMoreComments {
@@ -210,13 +229,19 @@ struct CommunityDetailView: View {
     }
 }
 
-/// One comment and its nested replies. Replies indent once; deeper levels keep the same indent to stay
-/// readable on a phone. A soft-deleted comment shows placeholder text but still renders its replies.
+/// One comment and its replies. Replies always attach to the thread's root comment (`replyTarget`), so the
+/// tree stays a single indent level. A soft-deleted comment shows placeholder text but still renders replies.
 private struct CommentRow: View {
     let comment: CommunityComment
-    let depth: Int
+    /// The root comment of this thread — every "댓글 달기" in the subtree replies to it, never to a reply.
+    let replyTarget: CommunityComment
+    let currentMemberId: UUID?
     let onReply: (CommunityComment) -> Void
     let onDelete: (CommunityComment) -> Void
+
+    private var isMine: Bool {
+        currentMemberId != nil && comment.author.memberId == currentMemberId
+    }
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -241,25 +266,30 @@ private struct CommentRow: View {
                     }
 
                     if !comment.isDeleted {
-                        Button("댓글 달기") { onReply(comment) }
-                            .appTypography(.labelMedium)
-                            .foregroundStyle(Color.Text.muted)
+                        HStack(spacing: Spacing.md) {
+                            Button("댓글 달기") { onReply(replyTarget) }
+                                .appTypography(.labelMedium)
+                                .foregroundStyle(Color.Text.muted)
+                            if isMine {
+                                Button("삭제") { onDelete(comment) }
+                                    .appTypography(.labelMedium)
+                                    .foregroundStyle(Color.Text.red)
+                            }
+                        }
                     }
                 }
                 Spacer(minLength: 0)
             }
-            .contentShape(Rectangle())
-            .contextMenu {
-                if !comment.isDeleted {
-                    Button(role: .destructive) { onDelete(comment) } label: {
-                        Label("삭제", systemImage: "trash")
-                    }
-                }
-            }
 
             ForEach(comment.replies) { reply in
-                CommentRow(comment: reply, depth: depth + 1, onReply: onReply, onDelete: onDelete)
-                    .padding(.leading, Spacing.xl)
+                CommentRow(
+                    comment: reply,
+                    replyTarget: replyTarget,
+                    currentMemberId: currentMemberId,
+                    onReply: onReply,
+                    onDelete: onDelete
+                )
+                .padding(.leading, Spacing.xl)
             }
         }
     }
