@@ -5,5 +5,6 @@ import java.util.UUID
 
 interface CommunityPostMediaRepository : JpaRepository<CommunityPostMedia, UUID> {
     fun findByPost_IdOrderByDisplayOrderAsc(postId: UUID): List<CommunityPostMedia>
+    fun findByUploadedMedia_IdIn(mediaIds: Collection<UUID>): List<CommunityPostMedia>
     fun deleteByPost(post: CommunityPost)
 }

@@ -19,6 +19,7 @@ import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.farming.FarmingRecordRepository
 import com.chamchamcham.domain.media.UploadedMedia
 import com.chamchamcham.domain.media.UploadedMediaRepository
+import com.chamchamcham.domain.media.UploadedMediaStatus
 import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
@@ -117,7 +118,7 @@ class CommunityPostService(
         val member = findMember(command.memberId)
         val crop = findCrop(command.cropId)
         val farmingRecord = resolveFarmingRecord(command.memberId, command.cropId, command.farmingRecordId)
-        val media = validateMedia(command.memberId, command.mediaIds)
+        val media = validateNewMedia(command.memberId, command.mediaIds)
 
         val post = communityPostRepository.save(
             CommunityPost(
@@ -140,7 +141,8 @@ class CommunityPostService(
         assertAuthor(post, command.memberId)
         val crop = findCrop(command.cropId)
         val farmingRecord = resolveFarmingRecord(command.memberId, command.cropId, command.farmingRecordId)
-        val media = validateMedia(command.memberId, command.mediaIds)
+        val existingPostMedia = communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(command.postId)
+        val media = validateUpdatedMedia(post, command.memberId, command.mediaIds)
 
         post.update(
             crop = crop,
@@ -149,8 +151,7 @@ class CommunityPostService(
             title = command.title,
             body = command.body
         )
-        communityPostMediaRepository.deleteByPost(post)
-        attachMedia(post, media)
+        syncMedia(post, existingPostMedia, media)
 
         return CommunityPostResult.idOf(post)
     }
@@ -185,25 +186,72 @@ class CommunityPostService(
         }
     }
 
-    private fun validateMedia(memberId: UUID, mediaIds: List<UUID>): List<UploadedMedia> {
+    private fun validateNewMedia(memberId: UUID, mediaIds: List<UUID>): List<UploadedMedia> {
+        validateDistinctMediaIds(mediaIds)
         if (mediaIds.isEmpty()) {
             return emptyList()
         }
-        val mediaById = uploadedMediaRepository.findAllById(mediaIds)
-            .associateBy { requireNotNull(it.id) { "Persisted media id is required" } }
+        val mediaById = findMediaById(mediaIds)
 
         return mediaIds.map { mediaId ->
             val media = mediaById[mediaId] ?: throw BusinessException(ErrorCode.MEDIA_NOT_FOUND)
-            if (media.owner.id != memberId) {
-                throw BusinessException(ErrorCode.MEDIA_NOT_OWNED)
-            }
-            if (media.usageType != UploadedMediaUsageType.COMMUNITY_POST) {
-                throw BusinessException(ErrorCode.MEDIA_USAGE_MISMATCH)
-            }
+            validateMediaOwnerAndUsage(memberId, media)
             if (!media.isAttachable()) {
                 throw BusinessException(ErrorCode.MEDIA_NOT_ATTACHABLE)
             }
             media
+        }
+    }
+
+    private fun validateUpdatedMedia(
+        post: CommunityPost,
+        memberId: UUID,
+        mediaIds: List<UUID>
+    ): List<UploadedMedia> {
+        validateDistinctMediaIds(mediaIds)
+        if (mediaIds.isEmpty()) {
+            return emptyList()
+        }
+
+        val mediaById = findMediaById(mediaIds)
+        val postMediaByMediaId = communityPostMediaRepository.findByUploadedMedia_IdIn(mediaIds)
+            .associateBy { requireNotNull(it.uploadedMedia.id) { "Persisted media id is required" } }
+        val postId = requireNotNull(post.id) { "Persisted post id is required" }
+
+        return mediaIds.map { mediaId ->
+            val media = mediaById[mediaId] ?: throw BusinessException(ErrorCode.MEDIA_NOT_FOUND)
+            validateMediaOwnerAndUsage(memberId, media)
+
+            val postMedia = postMediaByMediaId[mediaId]
+            if (postMedia != null && postMedia.post.id != postId) {
+                throw BusinessException(ErrorCode.MEDIA_NOT_ATTACHABLE)
+            }
+            if (!media.isAttachable() && media.status != UploadedMediaStatus.ATTACHED) {
+                throw BusinessException(ErrorCode.MEDIA_NOT_ATTACHABLE)
+            }
+            if (media.status == UploadedMediaStatus.ATTACHED && postMedia?.post?.id != postId) {
+                throw BusinessException(ErrorCode.MEDIA_NOT_ATTACHABLE)
+            }
+            media
+        }
+    }
+
+    private fun validateDistinctMediaIds(mediaIds: List<UUID>) {
+        if (mediaIds.size != mediaIds.toSet().size) {
+            throw BusinessException(ErrorCode.INVALID_INPUT)
+        }
+    }
+
+    private fun findMediaById(mediaIds: List<UUID>): Map<UUID, UploadedMedia> =
+        uploadedMediaRepository.findAllById(mediaIds)
+            .associateBy { requireNotNull(it.id) { "Persisted media id is required" } }
+
+    private fun validateMediaOwnerAndUsage(memberId: UUID, media: UploadedMedia) {
+        if (media.owner.id != memberId) {
+            throw BusinessException(ErrorCode.MEDIA_NOT_OWNED)
+        }
+        if (media.usageType != UploadedMediaUsageType.COMMUNITY_POST) {
+            throw BusinessException(ErrorCode.MEDIA_USAGE_MISMATCH)
         }
     }
 
@@ -242,6 +290,23 @@ class CommunityPostService(
                 )
             }
         )
+    }
+
+    private fun syncMedia(
+        post: CommunityPost,
+        existingPostMedia: List<CommunityPostMedia>,
+        media: List<UploadedMedia>
+    ) {
+        val finalMediaIds = media.mapTo(mutableSetOf()) {
+            requireNotNull(it.id) { "Persisted media id is required" }
+        }
+        existingPostMedia
+            .filter { requireNotNull(it.uploadedMedia.id) { "Persisted media id is required" } !in finalMediaIds }
+            .forEach { it.uploadedMedia.markDeleted() }
+
+        communityPostMediaRepository.deleteByPost(post)
+        communityPostMediaRepository.flush()
+        attachMedia(post, media)
     }
 
     private fun findPost(postId: UUID): CommunityPost =

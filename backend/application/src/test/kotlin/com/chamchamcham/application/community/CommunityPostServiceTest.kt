@@ -182,7 +182,9 @@ class CommunityPostServiceTest {
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
         `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
+        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
         `when`(uploadedMediaRepository.findAllById(listOf(replacementMediaId))).thenReturn(listOf(replacementMedia))
+        `when`(communityPostMediaRepository.findByUploadedMedia_IdIn(listOf(replacementMediaId))).thenReturn(emptyList())
 
         val result = service.update(updateCommand())
 
@@ -193,6 +195,95 @@ class CommunityPostServiceTest {
         assertEquals("수정된 본문", existingPost.body)
         assertEquals(recordId, existingPost.farmingRecord?.id)
         assertEquals(UploadedMediaStatus.ATTACHED, replacementMedia.status)
+    }
+
+    @Test
+    fun `update keeps existing post image and attaches new image in requested order`() {
+        val secondRecord = farmingRecord(member, secondCrop)
+        val existingMedia = uploadedMedia(member, mediaId1, status = UploadedMediaStatus.ATTACHED)
+        val newMedia = uploadedMedia(member, replacementMediaId)
+        val existingPostMedia = CommunityPostMedia(post = existingPost, uploadedMedia = existingMedia, displayOrder = 0)
+        `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
+        `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
+        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(listOf(existingPostMedia))
+        `when`(uploadedMediaRepository.findAllById(listOf(mediaId1, replacementMediaId))).thenReturn(
+            listOf(existingMedia, newMedia)
+        )
+        `when`(communityPostMediaRepository.findByUploadedMedia_IdIn(listOf(mediaId1, replacementMediaId))).thenReturn(
+            listOf(existingPostMedia)
+        )
+
+        service.update(updateCommand(mediaIds = listOf(mediaId1, replacementMediaId)))
+
+        assertEquals(UploadedMediaStatus.ATTACHED, existingMedia.status)
+        assertEquals(UploadedMediaStatus.ATTACHED, newMedia.status)
+        val postMedia = capturedPostMedia()
+        assertThat(postMedia.map { it.uploadedMedia.id }).containsExactly(mediaId1, replacementMediaId)
+        assertThat(postMedia.map { it.displayOrder }).containsExactly(0, 1)
+    }
+
+    @Test
+    fun `update marks removed existing image as deleted`() {
+        val secondRecord = farmingRecord(member, secondCrop)
+        val keptMedia = uploadedMedia(member, mediaId1, status = UploadedMediaStatus.ATTACHED)
+        val removedMedia = uploadedMedia(member, mediaId2, status = UploadedMediaStatus.ATTACHED)
+        val keptPostMedia = CommunityPostMedia(post = existingPost, uploadedMedia = keptMedia, displayOrder = 0)
+        val removedPostMedia = CommunityPostMedia(post = existingPost, uploadedMedia = removedMedia, displayOrder = 1)
+        `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
+        `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
+        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(
+            listOf(keptPostMedia, removedPostMedia)
+        )
+        `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(keptMedia))
+        `when`(communityPostMediaRepository.findByUploadedMedia_IdIn(listOf(mediaId1))).thenReturn(listOf(keptPostMedia))
+
+        service.update(updateCommand(mediaIds = listOf(mediaId1)))
+
+        assertEquals(UploadedMediaStatus.ATTACHED, keptMedia.status)
+        assertEquals(UploadedMediaStatus.DELETED, removedMedia.status)
+        assertThat(capturedPostMedia().map { it.uploadedMedia.id }).containsExactly(mediaId1)
+    }
+
+    @Test
+    fun `update rejects image already attached to another post`() {
+        val secondRecord = farmingRecord(member, secondCrop)
+        val otherPost = existingPost(member, crop, secondPostId)
+        val otherPostMedia = uploadedMedia(member, mediaId1, status = UploadedMediaStatus.ATTACHED)
+        val otherPostMediaRow = CommunityPostMedia(post = otherPost, uploadedMedia = otherPostMedia, displayOrder = 0)
+        `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
+        `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
+        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
+        `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(otherPostMedia))
+        `when`(communityPostMediaRepository.findByUploadedMedia_IdIn(listOf(mediaId1))).thenReturn(listOf(otherPostMediaRow))
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.update(updateCommand(mediaIds = listOf(mediaId1)))
+        }
+
+        assertEquals(ErrorCode.MEDIA_NOT_ATTACHABLE, exception.errorCode)
+        verify(communityPostMediaRepository, never()).deleteByPost(existingPost)
+    }
+
+    @Test
+    fun `update rejects another member image`() {
+        val secondRecord = farmingRecord(member, secondCrop)
+        val otherMemberMedia = uploadedMedia(otherMember, mediaId1)
+        `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
+        `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
+        `when`(communityPostMediaRepository.findByPost_IdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
+        `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(otherMemberMedia))
+        `when`(communityPostMediaRepository.findByUploadedMedia_IdIn(listOf(mediaId1))).thenReturn(emptyList())
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.update(updateCommand(mediaIds = listOf(mediaId1)))
+        }
+
+        assertEquals(ErrorCode.MEDIA_NOT_OWNED, exception.errorCode)
+        verify(communityPostMediaRepository, never()).deleteByPost(existingPost)
     }
 
     @Test
