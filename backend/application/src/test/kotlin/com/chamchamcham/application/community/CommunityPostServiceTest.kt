@@ -522,7 +522,7 @@ class CommunityPostServiceTest {
             member = member,
             farm = farm(member),
             crop = crop,
-            workType = WorkType(name = "파종"),
+            workType = WorkType.PLANTING,
             workedAt = LocalDateTime.of(2026, 6, 1, 9, 0),
             entryMode = "MANUAL"
         )
