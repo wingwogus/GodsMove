@@ -1,0 +1,180 @@
+package com.chamchamcham.domain.policy
+
+import com.chamchamcham.domain.common.BaseTimeEntity
+import com.chamchamcham.domain.member.Member
+import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.BeforeEach
+import org.junit.jupiter.api.Test
+import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.SpringBootConfiguration
+import org.springframework.boot.autoconfigure.EnableAutoConfiguration
+import org.springframework.boot.autoconfigure.domain.EntityScan
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
+import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
+import org.springframework.context.annotation.Import
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories
+import org.springframework.test.context.ActiveProfiles
+import java.math.BigDecimal
+import java.time.LocalDate
+import java.time.LocalDateTime
+import java.util.UUID
+
+@DataJpaTest
+@ActiveProfiles("test")
+@Import(PolicyRecommendationQueryRepositoryImpl::class)
+class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
+    private val entityManager: TestEntityManager,
+    private val queryRepository: PolicyRecommendationQueryRepository
+) {
+    private lateinit var member: Member
+    private lateinit var otherMember: Member
+    private lateinit var syncJob: PolicySyncJob
+    private lateinit var otherSyncJob: PolicySyncJob
+
+    private val memberId: UUID
+        get() = requireNotNull(member.id) { "Persisted member id is required" }
+    private val syncJobId: UUID
+        get() = requireNotNull(syncJob.id) { "Persisted sync job id is required" }
+
+    @BeforeEach
+    fun setUp() {
+        val now = LocalDateTime.of(2026, 7, 7, 9, 0)
+        member = persist(Member(email = "policy-member@example.com", passwordHash = null), now)
+        otherMember = persist(Member(email = "other-policy-member@example.com", passwordHash = null), now)
+        syncJob = persist(syncJob("2026"), now)
+        otherSyncJob = persist(syncJob("2025"), now)
+    }
+
+    @Test
+    fun `find page returns member recommendations ordered by score deadline and id with cursor`() {
+        persistRecommendation("높은 점수", score = "0.9500", applyEndsOn = LocalDate.of(2026, 7, 20))
+        persistRecommendation("동점 빠른 마감", score = "0.9000", applyEndsOn = LocalDate.of(2026, 7, 10))
+        persistRecommendation("동점 늦은 마감", score = "0.9000", applyEndsOn = LocalDate.of(2026, 8, 1))
+        persistRecommendation("마감 없음", score = "0.8000", applyEndsOn = null)
+        persistRecommendation("다른 회원", member = otherMember, score = "0.9900", applyEndsOn = LocalDate.of(2026, 7, 1))
+        persistRecommendation("다른 동기화", sourceSyncJob = otherSyncJob, score = "0.9900", applyEndsOn = LocalDate.of(2026, 7, 1))
+        entityManager.flush()
+        entityManager.clear()
+
+        val firstPage = queryRepository.findPage(condition(size = 2))
+        val cursorRow = firstPage.rows.last()
+        val secondPage = queryRepository.findPage(
+            condition(
+                size = 10,
+                cursor = PolicyRecommendationQueryRepository.Cursor(
+                    score = cursorRow.score,
+                    applyEndsOn = cursorRow.policyProgram.applyEndsOn,
+                    id = requireNotNull(cursorRow.id)
+                )
+            )
+        )
+
+        assertThat(firstPage.rows.map { it.policyProgram.title }).containsExactly("높은 점수", "동점 빠른 마감")
+        assertThat(secondPage.rows.map { it.policyProgram.title }).containsExactly("동점 늦은 마감", "마감 없음")
+    }
+
+    private fun persistRecommendation(
+        title: String,
+        member: Member = this.member,
+        sourceSyncJob: PolicySyncJob = syncJob,
+        score: String,
+        applyEndsOn: LocalDate?
+    ): PolicyRecommendation {
+        val program = persist(
+            PolicyProgram(
+                title = title,
+                body = "정책 상세",
+                region = "전국",
+                targetManagementType = null,
+                applyEndsOn = applyEndsOn
+            ).apply {
+                applyListFields(
+                    source = PolicySource.NONGUP_EZ,
+                    externalId = "external-$title",
+                    sourceYear = sourceSyncJob.targetYear,
+                    title = title,
+                    summary = "$title 요약",
+                    region = "전국",
+                    sourceUrl = null,
+                    agencyName = "농림축산식품부",
+                    lastSyncedJob = sourceSyncJob
+                )
+                applyDetailFields(
+                    body = "정책 상세",
+                    purpose = null,
+                    eligibilityOriginal = null,
+                    eligibilitySummary = "자격 확인",
+                    benefitOriginal = null,
+                    benefitSummary = "지원 확인",
+                    applyStartsOn = null,
+                    applyEndsOn = applyEndsOn,
+                    applicationPeriodLabel = "접수기관문의",
+                    applicationPeriodNotice = null,
+                    applicationMethod = null,
+                    requiredDocuments = null,
+                    selectionCriteria = null,
+                    departmentName = null,
+                    onlineApplyAvailable = false,
+                    applicationUrl = null,
+                    targetTagsJson = "[]",
+                    cropTagsJson = "[]",
+                    regionTagsJson = "[]",
+                    rawPayload = "{}",
+                    recommendable = true,
+                    lastSyncedJob = sourceSyncJob
+                )
+            },
+            LocalDateTime.of(2026, 7, 7, 9, 10)
+        )
+        return persist(
+            PolicyRecommendation(
+                member = member,
+                policyProgram = program,
+                sourceSyncJob = sourceSyncJob,
+                score = BigDecimal(score),
+                reason = "추천 사유"
+            ),
+            LocalDateTime.of(2026, 7, 7, 9, 20)
+        )
+    }
+
+    private fun condition(
+        cursor: PolicyRecommendationQueryRepository.Cursor? = null,
+        size: Int = 20
+    ): PolicyRecommendationQueryRepository.SearchCondition =
+        PolicyRecommendationQueryRepository.SearchCondition(
+            memberId = memberId,
+            sourceSyncJobId = syncJobId,
+            cursor = cursor,
+            size = size
+        )
+
+    private fun syncJob(targetYear: String): PolicySyncJob =
+        PolicySyncJob(
+            source = PolicySource.NONGUP_EZ,
+            targetYear = targetYear,
+            triggerType = PolicySyncTriggerType.SCHEDULED
+        )
+
+    private fun <T : BaseTimeEntity> persist(entity: T, createdAt: LocalDateTime): T {
+        setTimestamps(entity, createdAt)
+        return entityManager.persistAndFlush(entity)
+    }
+
+    private fun setTimestamps(entity: BaseTimeEntity, createdAt: LocalDateTime) {
+        BaseTimeEntity::class.java.getDeclaredField("createdAt").apply {
+            isAccessible = true
+            set(entity, createdAt)
+        }
+        BaseTimeEntity::class.java.getDeclaredField("updatedAt").apply {
+            isAccessible = true
+            set(entity, createdAt)
+        }
+    }
+}
+
+@SpringBootConfiguration
+@EnableAutoConfiguration
+@EntityScan(basePackages = ["com.chamchamcham.domain"])
+@EnableJpaRepositories(basePackages = ["com.chamchamcham.domain"])
+private class PolicyRecommendationQueryRepositoryTestApplication
