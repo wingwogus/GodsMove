@@ -15,6 +15,9 @@ protocol MediaUploadRepository: Sendable {
     /// Uploads a community post/comment image and returns the media record. Callers collect the returned
     /// `mediaId`s and pass them as `mediaIds`/`mediaId` when saving the post or comment.
     func uploadCommunityImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO
+
+    /// Uploads a farming-record image and returns the media record.
+    func uploadFarmingRecordImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO
 }
 
 struct RemoteMediaUploadRepository: MediaUploadRepository {
@@ -26,6 +29,10 @@ struct RemoteMediaUploadRepository: MediaUploadRepository {
 
     func uploadCommunityImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO {
         try await upload(imageData, usage: .communityPost, originalFilename: originalFilename)
+    }
+
+    func uploadFarmingRecordImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO {
+        try await upload(imageData, usage: .farmingRecord, originalFilename: originalFilename)
     }
 
     private func upload(

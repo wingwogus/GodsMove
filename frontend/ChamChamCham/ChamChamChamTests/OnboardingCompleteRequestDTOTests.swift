@@ -39,6 +39,15 @@ struct OnboardingCompleteRequestDTOTests {
         #expect(farm["roadAddress"] as? String == "서울시 강남구 테헤란로 1")
         #expect(farm["latitude"] as? Double == 35.8465)
         #expect(farm["longitude"] as? Double == 127.1292)
+
+        let farmCropIds = try #require(farm["cropIds"] as? [String])
+        #expect(farmCropIds == cropIds)
+
+        let dataSource = try #require(farm["dataSource"] as? [String: String])
+        #expect(dataSource["address"] == "JUSO")
+        #expect(dataSource["coordinate"] == "V_WORLD_ADDRESS")
+        #expect(dataSource["parcel"] == "V_WORLD_CADASTRAL")
+        #expect(dataSource["landCharacteristic"] == "V_WORLD_LAND_CHARACTERISTIC")
     }
 
     @Test("includes profileMediaId when the draft has one")

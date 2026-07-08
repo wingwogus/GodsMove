@@ -45,6 +45,10 @@ struct PreviewMediaUploadRepository: MediaUploadRepository {
     func uploadCommunityImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO {
         throw OnboardingSubmissionError.missingRequiredField("preview")
     }
+
+    func uploadFarmingRecordImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO {
+        throw OnboardingSubmissionError.missingRequiredField("preview")
+    }
 }
 
 struct PreviewCropCatalogService: CropCatalogService {
@@ -54,6 +58,10 @@ struct PreviewCropCatalogService: CropCatalogService {
             Crop(id: UUID(), name: "당귀", category: "약초류"),
             Crop(id: UUID(), name: "작약", category: "약초류")
         ]
+    }
+
+    func fetchCrops(categoryCode: String) async throws -> [Crop] {
+        try await fetchCrops()
     }
 
     func fetchCategoryLabels() async throws -> [String] {

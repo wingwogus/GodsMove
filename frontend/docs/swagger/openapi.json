@@ -1,0 +1,2388 @@
+{
+  "components": {
+    "schemas": {
+      "ApiError": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "detail": {
+            "type": "object"
+          },
+          "message": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object"
+      },
+      "ApiResponseCommentIdResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommentIdResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseCommentPageResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CommentPageResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseLikeToggleResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LikeToggleResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseListBoardResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/BoardResponse"
+            },
+            "type": "array"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseListCategoryResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryResponse"
+            },
+            "type": "array"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseListCropResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/CropResponse"
+            },
+            "type": "array"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseLoginResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/LoginResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseMyProfileResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/MyProfileResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseOnboardingCompleteResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/OnboardingCompleteResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePostDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PostDetailResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePostIdResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PostIdResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePostPageResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PostPageResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePublicProfileResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PublicProfileResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseTokenResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TokenResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseUnit": {
+        "properties": {
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseUploadedImageResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/UploadedImageResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "AppleLoginRequest": {
+        "properties": {
+          "authorizationCode": {
+            "type": "string"
+          },
+          "identityToken": {
+            "type": "string"
+          },
+          "nonce": {
+            "type": "string"
+          },
+          "userIdentifier": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "identityToken",
+          "nonce"
+        ],
+        "type": "object"
+      },
+      "AuthorResponse": {
+        "properties": {
+          "memberId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "profileImageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "memberId"
+        ],
+        "type": "object"
+      },
+      "BoardResponse": {
+        "properties": {
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "cropName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cropId",
+          "cropName"
+        ],
+        "type": "object"
+      },
+      "BoundaryCoordinateRequest": {
+        "properties": {
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "type": "object"
+      },
+      "CategoryResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "type": "object"
+      },
+      "CommentIdResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "CommentPageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CommentResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "CommentResponse": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/AuthorResponse"
+          },
+          "body": {
+            "type": "string"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "deleted": {
+            "type": "boolean"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "imageUrl": {
+            "type": "string"
+          },
+          "parentCommentId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "author",
+          "body",
+          "createdAt",
+          "deleted",
+          "id"
+        ],
+        "type": "object"
+      },
+      "CompleteOnboardingRequest": {
+        "properties": {
+          "birthDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "cropIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "experienceLevel": {
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "farm": {
+            "$ref": "#/components/schemas/FarmRequest"
+          },
+          "managementType": {
+            "enum": [
+              "AGRICULTURAL_INDIVIDUAL",
+              "AGRICULTURAL_CORPORATION",
+              "NON_REGISTERED_FARMER"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "profileMediaId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "birthDate",
+          "cropIds",
+          "experienceLevel",
+          "farm",
+          "managementType",
+          "name",
+          "nickname",
+          "phone"
+        ],
+        "type": "object"
+      },
+      "CreateCommentRequest": {
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "mediaId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "parentCommentId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "body"
+        ],
+        "type": "object"
+      },
+      "CropProfileResponse": {
+        "properties": {
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "cropName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cropId",
+          "cropName"
+        ],
+        "type": "object"
+      },
+      "CropResponse": {
+        "properties": {
+          "externalNo": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "usePartCategory": {
+            "type": "string"
+          },
+          "usePartCategoryLabel": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "externalNo",
+          "id",
+          "name",
+          "usePartCategory",
+          "usePartCategoryLabel"
+        ],
+        "type": "object"
+      },
+      "DataSourceRequest": {
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "landCharacteristic": {
+            "type": "string"
+          },
+          "parcel": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "FarmBoundaryCoordinateResponse": {
+        "properties": {
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "type": "object"
+      },
+      "FarmDataSourceResponse": {
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "landCharacteristic": {
+            "type": "string"
+          },
+          "parcel": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "FarmRequest": {
+        "properties": {
+          "areaIsManualEntry": {
+            "type": "boolean"
+          },
+          "areaSqm": {
+            "minimum": 0.0,
+            "type": "number"
+          },
+          "boundaryCoordinates": {
+            "items": {
+              "$ref": "#/components/schemas/BoundaryCoordinateRequest"
+            },
+            "type": "array"
+          },
+          "cropIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "dataSource": {
+            "$ref": "#/components/schemas/DataSourceRequest"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "jibunAddress": {
+            "type": "string"
+          },
+          "landCategory": {
+            "type": "string"
+          },
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pnu": {
+            "type": "string"
+          },
+          "roadAddress": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "areaIsManualEntry",
+          "boundaryCoordinates",
+          "cropIds",
+          "dataSource",
+          "latitude",
+          "longitude",
+          "name",
+          "roadAddress"
+        ],
+        "type": "object"
+      },
+      "FarmResponse": {
+        "properties": {
+          "areaIsManualEntry": {
+            "type": "boolean"
+          },
+          "areaSqm": {
+            "type": "number"
+          },
+          "boundaryCoordinates": {
+            "items": {
+              "$ref": "#/components/schemas/FarmBoundaryCoordinateResponse"
+            },
+            "type": "array"
+          },
+          "dataSource": {
+            "$ref": "#/components/schemas/FarmDataSourceResponse"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "jibunAddress": {
+            "type": "string"
+          },
+          "landCategory": {
+            "type": "string"
+          },
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pnu": {
+            "type": "string"
+          },
+          "roadAddress": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "areaIsManualEntry",
+          "boundaryCoordinates",
+          "dataSource",
+          "id",
+          "name",
+          "roadAddress"
+        ],
+        "type": "object"
+      },
+      "KakaoLoginRequest": {
+        "properties": {
+          "idToken": {
+            "type": "string"
+          },
+          "kakaoAccessToken": {
+            "type": "string"
+          },
+          "nonce": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "idToken",
+          "nonce"
+        ],
+        "type": "object"
+      },
+      "LikeToggleResponse": {
+        "properties": {
+          "likeCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "liked": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "likeCount",
+          "liked"
+        ],
+        "type": "object"
+      },
+      "LoginRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object"
+      },
+      "LoginResponse": {
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "member": {
+            "$ref": "#/components/schemas/MemberProfileResponse"
+          },
+          "onboarding": {
+            "$ref": "#/components/schemas/OnboardingResponse"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken",
+          "member",
+          "onboarding",
+          "refreshToken"
+        ],
+        "type": "object"
+      },
+      "MemberProfileResponse": {
+        "properties": {
+          "birthDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          },
+          "experienceLevel": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "managementType": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "profileImageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "MyFarmResponse": {
+        "properties": {
+          "displayRegion": {
+            "type": "string"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "jibunAddress": {
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "roadAddress": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "farmId",
+          "name",
+          "roadAddress"
+        ],
+        "type": "object"
+      },
+      "MyProfileResponse": {
+        "properties": {
+          "birthDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "crops": {
+            "items": {
+              "$ref": "#/components/schemas/CropProfileResponse"
+            },
+            "type": "array"
+          },
+          "email": {
+            "type": "string"
+          },
+          "experienceLevel": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "farms": {
+            "items": {
+              "$ref": "#/components/schemas/MyFarmResponse"
+            },
+            "type": "array"
+          },
+          "managementType": {
+            "type": "string"
+          },
+          "memberId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "profileImageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "crops",
+          "farms",
+          "memberId"
+        ],
+        "type": "object"
+      },
+      "NaverLoginRequest": {
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken"
+        ],
+        "type": "object"
+      },
+      "OnboardingCompleteResponse": {
+        "properties": {
+          "crops": {
+            "items": {
+              "$ref": "#/components/schemas/CropResponse"
+            },
+            "type": "array"
+          },
+          "farm": {
+            "$ref": "#/components/schemas/FarmResponse"
+          },
+          "member": {
+            "$ref": "#/components/schemas/MemberProfileResponse"
+          },
+          "onboarding": {
+            "$ref": "#/components/schemas/OnboardingResponse"
+          }
+        },
+        "required": [
+          "crops",
+          "farm",
+          "member",
+          "onboarding"
+        ],
+        "type": "object"
+      },
+      "OnboardingResponse": {
+        "properties": {
+          "missingFields": {
+            "items": {
+              "enum": [
+                "NAME",
+                "PHONE",
+                "BIRTH_DATE",
+                "NICKNAME",
+                "EXPERIENCE_LEVEL",
+                "MANAGEMENT_TYPE"
+              ],
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "status": {
+            "enum": [
+              "REQUIRED",
+              "COMPLETE"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "missingFields",
+          "status"
+        ],
+        "type": "object"
+      },
+      "PostDetailResponse": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/AuthorResponse"
+          },
+          "body": {
+            "type": "string"
+          },
+          "commentCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "cropName": {
+            "type": "string"
+          },
+          "farmingRecordId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "imageUrls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "likeCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "likedByMe": {
+            "type": "boolean"
+          },
+          "postType": {
+            "enum": [
+              "GENERAL",
+              "QUESTION"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "author",
+          "body",
+          "commentCount",
+          "createdAt",
+          "cropId",
+          "cropName",
+          "id",
+          "imageUrls",
+          "likeCount",
+          "likedByMe",
+          "postType",
+          "title"
+        ],
+        "type": "object"
+      },
+      "PostIdResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "type": "object"
+      },
+      "PostPageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PostSummaryResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "PostSummaryResponse": {
+        "properties": {
+          "author": {
+            "$ref": "#/components/schemas/AuthorResponse"
+          },
+          "bodyPreview": {
+            "type": "string"
+          },
+          "commentCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "cropName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "likeCount": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "likedByMe": {
+            "type": "boolean"
+          },
+          "postType": {
+            "enum": [
+              "GENERAL",
+              "QUESTION"
+            ],
+            "type": "string"
+          },
+          "thumbnailUrl": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "author",
+          "bodyPreview",
+          "commentCount",
+          "createdAt",
+          "cropId",
+          "cropName",
+          "id",
+          "likeCount",
+          "likedByMe",
+          "postType",
+          "title"
+        ],
+        "type": "object"
+      },
+      "PublicFarmResponse": {
+        "properties": {
+          "displayRegion": {
+            "type": "string"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "farmId"
+        ],
+        "type": "object"
+      },
+      "PublicProfileResponse": {
+        "properties": {
+          "crops": {
+            "items": {
+              "$ref": "#/components/schemas/CropProfileResponse"
+            },
+            "type": "array"
+          },
+          "experienceLevel": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "farms": {
+            "items": {
+              "$ref": "#/components/schemas/PublicFarmResponse"
+            },
+            "type": "array"
+          },
+          "managementType": {
+            "type": "string"
+          },
+          "memberId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "profileImageUrl": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "crops",
+          "farms",
+          "memberId"
+        ],
+        "type": "object"
+      },
+      "ReissueRequest": {
+        "properties": {
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "SavePostRequest": {
+        "properties": {
+          "body": {
+            "type": "string"
+          },
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "farmingRecordId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "mediaIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 0,
+            "type": "array"
+          },
+          "postType": {
+            "enum": [
+              "GENERAL",
+              "QUESTION"
+            ],
+            "type": "string"
+          },
+          "title": {
+            "maxLength": 50,
+            "minLength": 0,
+            "type": "string"
+          }
+        },
+        "required": [
+          "body",
+          "cropId",
+          "mediaIds",
+          "postType",
+          "title"
+        ],
+        "type": "object"
+      },
+      "SendVerificationCodeRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "email"
+        ],
+        "type": "object"
+      },
+      "SignUpRequest": {
+        "properties": {
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "maxLength": 2147483647,
+            "minLength": 8,
+            "type": "string"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ],
+        "type": "object"
+      },
+      "TokenResponse": {
+        "properties": {
+          "accessToken": {
+            "type": "string"
+          },
+          "refreshToken": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "accessToken",
+          "refreshToken"
+        ],
+        "type": "object"
+      },
+      "UpdateMyProfileRequest": {
+        "properties": {
+          "birthDate": {
+            "format": "date",
+            "type": "string"
+          },
+          "experienceLevel": {
+            "format": "int32",
+            "maximum": 100,
+            "minimum": 0,
+            "type": "integer"
+          },
+          "farms": {
+            "items": {
+              "$ref": "#/components/schemas/FarmRequest"
+            },
+            "type": "array"
+          },
+          "managementType": {
+            "enum": [
+              "AGRICULTURAL_INDIVIDUAL",
+              "AGRICULTURAL_CORPORATION",
+              "NON_REGISTERED_FARMER"
+            ],
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          },
+          "nickname": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "profileMediaId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "birthDate",
+          "experienceLevel",
+          "farms",
+          "managementType",
+          "name",
+          "nickname",
+          "phone"
+        ],
+        "type": "object"
+      },
+      "UploadImageRequest": {
+        "properties": {
+          "base64Image": {
+            "type": "string"
+          },
+          "contentType": {
+            "type": "string"
+          },
+          "originalFilename": {
+            "type": "string"
+          },
+          "usageType": {
+            "enum": [
+              "PROFILE",
+              "COMMUNITY_POST",
+              "FARMING_RECORD"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "base64Image",
+          "usageType"
+        ],
+        "type": "object"
+      },
+      "UploadedImageResponse": {
+        "properties": {
+          "imageUrl": {
+            "type": "string"
+          },
+          "mediaId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "TEMP",
+              "ATTACHED",
+              "DELETED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "imageUrl",
+          "mediaId",
+          "status"
+        ],
+        "type": "object"
+      },
+      "VerifyEmailCodeRequest": {
+        "properties": {
+          "code": {
+            "maxLength": 6,
+            "minLength": 6,
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "email"
+        ],
+        "type": "object"
+      }
+    },
+    "securitySchemes": {
+      "access-token": {
+        "bearerFormat": "JWT",
+        "in": "header",
+        "name": "Authorization",
+        "scheme": "bearer",
+        "type": "http"
+      }
+    }
+  },
+  "info": {
+    "description": "ChamChamCham Backend API Documentation",
+    "title": "ChamChamCham API",
+    "version": "v1"
+  },
+  "openapi": "3.1.0",
+  "paths": {
+    "/api/v1/auth/apple/login": {
+      "post": {
+        "operationId": "appleLogin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AppleLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLoginResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/auth/email/send-code": {
+      "post": {
+        "operationId": "sendVerificationCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendVerificationCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/auth/email/verify-code": {
+      "post": {
+        "operationId": "verifyEmailCode",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/VerifyEmailCodeRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/auth/kakao/login": {
+      "post": {
+        "operationId": "kakaoLogin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/KakaoLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLoginResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/auth/login": {
+      "post": {
+        "operationId": "login",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTokenResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/auth/logout": {
+      "post": {
+        "operationId": "logout",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/auth/naver/login": {
+      "post": {
+        "operationId": "naverLogin",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NaverLoginRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLoginResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/auth/onboarding/complete": {
+      "post": {
+        "operationId": "completeOnboarding",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CompleteOnboardingRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseOnboardingCompleteResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/auth/reissue": {
+      "post": {
+        "operationId": "reissue",
+        "parameters": [
+          {
+            "in": "cookie",
+            "name": "refreshToken",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ReissueRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseTokenResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/auth/signup": {
+      "post": {
+        "operationId": "signUp",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SignUpRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/community/boards": {
+      "get": {
+        "operationId": "listBoards",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListBoardResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      }
+    },
+    "/api/v1/community/comments/{commentId}": {
+      "delete": {
+        "operationId": "deleteComment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "commentId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      }
+    },
+    "/api/v1/community/posts": {
+      "get": {
+        "operationId": "listPosts",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cropId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "postType",
+            "required": false,
+            "schema": {
+              "enum": [
+                "GENERAL",
+                "QUESTION"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "likedOnly",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "mineOnly",
+            "required": false,
+            "schema": {
+              "default": false,
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "LATEST",
+              "enum": [
+                "LATEST",
+                "LIKE",
+                "COMMENT",
+                "POPULAR"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePostPageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      },
+      "post": {
+        "operationId": "createPost",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePostIdResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      }
+    },
+    "/api/v1/community/posts/{postId}": {
+      "delete": {
+        "operationId": "deletePost",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      },
+      "get": {
+        "operationId": "getPost",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePostDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      },
+      "patch": {
+        "operationId": "updatePost",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SavePostRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePostIdResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      }
+    },
+    "/api/v1/community/posts/{postId}/comments": {
+      "get": {
+        "operationId": "listComments",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCommentPageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      },
+      "post": {
+        "operationId": "createComment",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateCommentRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCommentIdResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      }
+    },
+    "/api/v1/community/posts/{postId}/like-toggle": {
+      "post": {
+        "operationId": "toggleLike",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "postId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseLikeToggleResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      }
+    },
+    "/api/v1/crops": {
+      "get": {
+        "operationId": "listCrops",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListCropResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "crop-controller"
+        ]
+      }
+    },
+    "/api/v1/crops/categories": {
+      "get": {
+        "operationId": "listCategories",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListCategoryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "crop-controller"
+        ]
+      }
+    },
+    "/api/v1/crops/categories/{category}/crops": {
+      "get": {
+        "operationId": "listCropsByCategory",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "category",
+            "required": true,
+            "schema": {
+              "enum": [
+                "WHOLE_HERB",
+                "ROOT_BARK",
+                "RHIZOME",
+                "LEAF",
+                "FLOWER",
+                "FRUIT",
+                "SEED",
+                "STEM_BRANCH",
+                "UNKNOWN"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListCropResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "crop-controller"
+        ]
+      }
+    },
+    "/api/v1/media/images": {
+      "post": {
+        "operationId": "uploadImage",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadImageRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUploadedImageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "media-controller"
+        ]
+      }
+    },
+    "/api/v1/members/me": {
+      "get": {
+        "operationId": "getMyProfile",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMyProfileResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "member-controller"
+        ]
+      }
+    },
+    "/api/v1/members/me/profile": {
+      "put": {
+        "operationId": "updateMyProfile",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMyProfileRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseMyProfileResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "member-controller"
+        ]
+      }
+    },
+    "/api/v1/members/{memberId}/profile": {
+      "get": {
+        "operationId": "getPublicProfile",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "memberId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePublicProfileResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "member-controller"
+        ]
+      }
+    },
+    "/api/v1/test/me": {
+      "get": {
+        "operationId": "getMyInfo",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "test-controller"
+        ]
+      }
+    },
+    "/api/v1/test/ping": {
+      "get": {
+        "operationId": "ping",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "test-controller"
+        ]
+      }
+    }
+  },
+  "security": [
+    {
+      "access-token": []
+    }
+  ],
+  "servers": [
+    {
+      "url": "/"
+    }
+  ]
+}
