@@ -15,3 +15,6 @@ alter table farming_record
 
 create index if not exists idx_farming_record_member_worked_at
     on farming_record (member_id, is_deleted, worked_at desc, id desc);
+
+alter table farming_record
+    alter column memo set not null;
