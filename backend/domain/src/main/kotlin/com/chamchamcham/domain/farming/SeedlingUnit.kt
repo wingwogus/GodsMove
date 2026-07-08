@@ -1,6 +1,6 @@
 package com.chamchamcham.domain.farming
 
-enum class SeedlingUnit {
-    JU,
-    SANGJA,
+enum class SeedlingUnit(val label: String) {
+    JU("주"),
+    SANGJA("상자"),
 }
