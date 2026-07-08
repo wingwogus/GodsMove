@@ -1,0 +1,52 @@
+package com.chamchamcham.domain.farming
+
+import com.chamchamcham.domain.common.BaseTimeEntity
+import com.chamchamcham.domain.crop.CropUsePartCategory
+import jakarta.persistence.Column
+import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
+import jakarta.persistence.FetchType
+import jakarta.persistence.GeneratedValue
+import jakarta.persistence.GenerationType
+import jakarta.persistence.Id
+import jakarta.persistence.JoinColumn
+import jakarta.persistence.OneToOne
+import jakarta.persistence.Table
+import java.math.BigDecimal
+import java.util.UUID
+
+@Entity
+@Table(name = "harvest_record")
+class HarvestRecord(
+    @Id
+    @GeneratedValue(strategy = GenerationType.UUID)
+    @Column(nullable = false, updatable = false, columnDefinition = "uuid")
+    val id: UUID? = null,
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "record_id", nullable = false, unique = true)
+    val record: FarmingRecord,
+
+    @Column(name = "harvest_amount", nullable = false, precision = 18, scale = 4)
+    val harvestAmount: BigDecimal,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "harvest_amount_unit", nullable = false, length = 16)
+    val harvestAmountUnit: HarvestAmountUnit,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "medicinal_part", nullable = false, length = 32)
+    val medicinalPart: CropUsePartCategory,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "harvest_source", nullable = false, length = 16)
+    val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
+
+    @Column(name = "growth_period", nullable = false)
+    val growthPeriod: Int,
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "growth_period_unit", nullable = false, length = 16)
+    val growthPeriodUnit: GrowthPeriodUnit,
+) : BaseTimeEntity()

@@ -4,6 +4,7 @@ import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
 interface MemberCropRepository : JpaRepository<MemberCrop, UUID> {
-    fun countByMember_Id(memberId: UUID): Long
-    fun findByMember_Id(memberId: UUID): List<MemberCrop>
+    fun countByMemberId(memberId: UUID): Long
+    fun findByMemberId(memberId: UUID): List<MemberCrop>
+    fun deleteByMemberIdAndFarmId(memberId: UUID, farmId: UUID)
 }

@@ -5,4 +5,5 @@ import java.util.UUID
 
 interface FarmingRecordRepository : JpaRepository<FarmingRecord, UUID> {
     fun findByIdAndMember_Id(id: UUID, memberId: UUID): FarmingRecord?
+    fun findByIdAndIsDeletedFalse(id: UUID): FarmingRecord?
 }
