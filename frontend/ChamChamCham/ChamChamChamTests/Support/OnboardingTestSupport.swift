@@ -37,6 +37,13 @@ actor FakeMediaUploadRepository: MediaUploadRepository {
         if fails { throw FakeUploadError() }
         return OnboardingTestFactory.uploadedImage(mediaId: successMediaId)
     }
+
+    func uploadFarmingRecordImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO {
+        callCount += 1
+        lastImageData = imageData
+        if fails { throw FakeUploadError() }
+        return OnboardingTestFactory.uploadedImage(mediaId: successMediaId)
+    }
 }
 
 actor FakeOnboardingRepository: OnboardingRepository {
@@ -61,6 +68,7 @@ actor FakeOnboardingRepository: OnboardingRepository {
 @MainActor
 struct StubCropCatalogService: CropCatalogService {
     func fetchCrops() async throws -> [Crop] { [] }
+    func fetchCrops(categoryCode: String) async throws -> [Crop] { [] }
     func fetchCategoryLabels() async throws -> [String] { [] }
 }
 
@@ -135,7 +143,8 @@ enum OnboardingTestFactory {
                 landCategory: nil,
                 areaSqm: nil,
                 areaIsManualEntry: false,
-                boundaryCoordinates: []
+                boundaryCoordinates: [],
+                dataSource: .onboardingJusoVWorld
             ),
             crops: [],
             onboarding: OnboardingResponseDTO(status: .complete, missingFields: [])

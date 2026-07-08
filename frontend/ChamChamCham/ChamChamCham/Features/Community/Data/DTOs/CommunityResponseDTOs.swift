@@ -85,7 +85,20 @@ struct CommentResponseDTO: Decodable, Sendable {
     let imageUrl: String?
     let deleted: Bool
     let createdAt: String
-    let replies: [CommentResponseDTO]
+    private let decodedReplies: [CommentResponseDTO]?
+
+    var replies: [CommentResponseDTO] { decodedReplies ?? [] }
+
+    private enum CodingKeys: String, CodingKey {
+        case id
+        case parentCommentId
+        case author
+        case body
+        case imageUrl
+        case deleted
+        case createdAt
+        case decodedReplies = "replies"
+    }
 }
 
 // MARK: - Domain mapping

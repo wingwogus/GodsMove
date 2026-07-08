@@ -67,20 +67,7 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
     }()
 }
 
-struct FarmRequestDTO: Encodable, Sendable {
-    let name: String
-    let roadAddress: String
-    let jibunAddress: String?
-    let latitude: Double
-    let longitude: Double
-    let pnu: String?
-    let landCategory: String?
-    let areaSqm: Double?
-    let areaIsManualEntry: Bool
-    // Parcel polygon is intentionally not persisted in the draft (screen-local map state only), so this is always [].
-    let boundaryCoordinates: [FarmBoundaryCoordinateDTO]
-    // `dataSource` intentionally omitted — backend's FarmRequest field is optional with a Kotlin default.
-
+extension FarmRequestDTO {
     init(draft: OnboardingDraft) throws {
         guard !draft.farmName.trimmingCharacters(in: .whitespaces).isEmpty else {
             throw OnboardingSubmissionError.missingRequiredField("farmName")
@@ -92,6 +79,7 @@ struct FarmRequestDTO: Encodable, Sendable {
             throw OnboardingSubmissionError.missingRequiredField("farmCoordinate")
         }
 
+        self.farmId = nil
         self.name = draft.farmName
         self.roadAddress = draft.farmRoadAddress
         self.jibunAddress = draft.farmJibunAddress.isEmpty ? nil : draft.farmJibunAddress
@@ -102,10 +90,7 @@ struct FarmRequestDTO: Encodable, Sendable {
         self.areaSqm = draft.farmAreaSqm
         self.areaIsManualEntry = draft.farmAreaIsManualEntry
         self.boundaryCoordinates = []
+        self.dataSource = .onboardingJusoVWorld
+        self.cropIds = draft.cropIDs
     }
-}
-
-struct FarmBoundaryCoordinateDTO: Codable, Sendable {
-    let latitude: Double
-    let longitude: Double
 }

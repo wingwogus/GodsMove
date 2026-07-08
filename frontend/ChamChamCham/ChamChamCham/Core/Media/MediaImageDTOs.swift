@@ -8,10 +8,11 @@
 import Foundation
 
 /// Server-side `UploadedMediaUsageType`. `.profile` backs onboarding avatars; `.communityPost` backs post and
-/// comment image attachments (see `MediaUploadRepository.uploadCommunityImage`).
+/// comment image attachments; `.farmingRecord` backs farming-record images.
 enum MediaImageUsage: String, Sendable {
     case profile = "PROFILE"
     case communityPost = "COMMUNITY_POST"
+    case farmingRecord = "FARMING_RECORD"
 }
 
 /// Body for `POST /api/v1/media/images`. The backend takes a Base64 payload as JSON (not multipart), so this rides

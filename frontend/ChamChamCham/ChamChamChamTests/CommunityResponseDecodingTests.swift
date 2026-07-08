@@ -170,6 +170,38 @@ struct CommunityResponseDecodingTests {
         #expect(reply.imageUrl == "https://img/c.jpg")
     }
 
+    @Test("decodes Swagger comment page when replies key is absent")
+    func commentPageWithoutReplies() throws {
+        let json = """
+        {
+          "success": true,
+          "data": {
+            "items": [
+              {
+                "id": "aaaaaaaa-0000-0000-0000-000000000001",
+                "parentCommentId": null,
+                "author": {
+                  "memberId": "33333333-3333-3333-3333-333333333333",
+                  "nickname": "질문자",
+                  "profileImageUrl": null
+                },
+                "body": "댓글입니다",
+                "deleted": false,
+                "createdAt": "2026-07-07T09:00:00"
+              }
+            ],
+            "nextCursor": null
+          },
+          "error": null
+        }
+        """
+
+        let page = try decodeEnvelope(CommentPageResponseDTO.self, from: json).toDomain()
+
+        let comment = try #require(page.items.first)
+        #expect(comment.replies.isEmpty)
+    }
+
     @Test("decodes a like toggle result")
     func likeToggle() throws {
         let json = """

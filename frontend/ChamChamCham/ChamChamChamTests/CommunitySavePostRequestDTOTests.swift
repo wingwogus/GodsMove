@@ -71,4 +71,19 @@ struct CommunitySavePostRequestDTOTests {
         #expect((replyJSON["parentCommentId"] as? String).flatMap(UUID.init) == parentId)
         #expect((replyJSON["mediaId"] as? String).flatMap(UUID.init) == mediaId)
     }
+
+    @Test("farming record image usage matches Swagger enum")
+    func farmingRecordImageUsage() throws {
+        let dto = UploadImageRequestDTO(
+            usageType: MediaImageUsage.farmingRecord.rawValue,
+            base64Image: Data("image".utf8).base64EncodedString(),
+            originalFilename: "record.jpg",
+            contentType: "image/jpeg"
+        )
+
+        let json = try encodedJSON(dto)
+
+        #expect(json["usageType"] as? String == "FARMING_RECORD")
+        #expect(json["originalFilename"] as? String == "record.jpg")
+    }
 }

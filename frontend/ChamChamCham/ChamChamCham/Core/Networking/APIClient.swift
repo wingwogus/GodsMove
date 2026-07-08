@@ -50,6 +50,15 @@ actor APIClient {
         }
 
         if T.self == EmptyDTO.self, (200...299).contains(http.statusCode) {
+            guard let envelope = try? JSONDecoder().decode(APIEnvelope<EmptyDTO>.self, from: data) else {
+                throw APIError.server(statusCode: http.statusCode)
+            }
+            guard envelope.success else {
+                throw APIError.apiError(
+                    code: envelope.error?.code ?? "UNKNOWN",
+                    message: envelope.error?.message ?? ""
+                )
+            }
             return EmptyDTO() as! T // swiftlint:disable:this force_cast — guarded by the metatype check above
         }
 

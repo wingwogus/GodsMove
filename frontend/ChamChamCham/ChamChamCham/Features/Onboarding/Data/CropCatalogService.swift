@@ -9,6 +9,7 @@ import Foundation
 
 protocol CropCatalogService: Sendable {
     func fetchCrops() async throws -> [Crop]
+    func fetchCrops(categoryCode: String) async throws -> [Crop]
     func fetchCategoryLabels() async throws -> [String]
 }
 
@@ -17,6 +18,11 @@ struct RemoteCropCatalogService: CropCatalogService {
 
     func fetchCrops() async throws -> [Crop] {
         let dtos: [CropResponseDTO] = try await apiClient.send(CropEndpoint.list)
+        return dtos.map { Crop(id: $0.id, name: $0.name, category: $0.usePartCategoryLabel) }
+    }
+
+    func fetchCrops(categoryCode: String) async throws -> [Crop] {
+        let dtos: [CropResponseDTO] = try await apiClient.send(CropEndpoint.categoryCrops(categoryCode))
         return dtos.map { Crop(id: $0.id, name: $0.name, category: $0.usePartCategoryLabel) }
     }
 
