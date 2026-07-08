@@ -32,22 +32,53 @@ class FarmingRecord(
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "farm_id", nullable = false)
-    val farm: Farm,
+    var farm: Farm,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "crop_id", nullable = false)
-    val crop: Crop,
+    var crop: Crop,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "work_type", nullable = false, length = 32)
-    val workType: WorkType,
+    var workType: WorkType,
 
     @Column(name = "worked_at", nullable = false)
-    val workedAt: LocalDateTime,
+    var workedAt: LocalDateTime,
 
-    @Column(columnDefinition = "text")
-    val memo: String? = null,
+    @Column(name = "weather_condition", nullable = false, length = 64)
+    var weatherCondition: String,
+
+    @Column(name = "weather_temperature", nullable = false)
+    var weatherTemperature: Int,
+
+    @Column(columnDefinition = "text", nullable = false)
+    var memo: String,
 
     @Column(name = "entry_mode", nullable = false, length = 32)
     val entryMode: String,
-) : BaseTimeEntity()
+
+    @Column(name = "is_deleted", nullable = false)
+    var isDeleted: Boolean = false,
+) : BaseTimeEntity() {
+    fun update(
+        farm: Farm,
+        crop: Crop,
+        workType: WorkType,
+        workedAt: LocalDateTime,
+        weatherCondition: String,
+        weatherTemperature: Int,
+        memo: String,
+    ) {
+        this.farm = farm
+        this.crop = crop
+        this.workType = workType
+        this.workedAt = workedAt
+        this.weatherCondition = weatherCondition
+        this.weatherTemperature = weatherTemperature
+        this.memo = memo
+    }
+
+    fun softDelete() {
+        isDeleted = true
+    }
+}

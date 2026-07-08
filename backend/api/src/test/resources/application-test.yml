@@ -55,6 +55,13 @@ cloudinary:
   api-secret: test-secret
   secure: true
 
+weather:
+  kma:
+    base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
+    service-key: test-kma-service-key
+    connect-timeout-millis: 2000
+    read-timeout-millis: 2000
+
 auth:
   kakao:
     oidc:
