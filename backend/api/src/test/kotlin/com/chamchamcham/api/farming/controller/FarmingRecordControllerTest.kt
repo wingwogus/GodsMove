@@ -105,6 +105,58 @@ class FarmingRecordControllerTest(
     }
 
     @Test
+    fun `create record rejects non-positive harvest amount`() {
+        mockMvc.perform(
+            post("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(saveRecordJson(harvestAmount = "0"))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+    }
+
+    @Test
+    fun `create record rejects non-positive growth period`() {
+        mockMvc.perform(
+            post("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(saveRecordJson(growthPeriod = "0"))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+    }
+
+    @Test
+    fun `create record rejects blank fertilizing material name`() {
+        val json = """
+            {
+              "farmId":"$farmId",
+              "cropId":"$cropId",
+              "workType":"FERTILIZING",
+              "workedAt":"2026-06-01T09:00:00",
+              "weatherCondition":"맑음",
+              "weatherTemperature":28,
+              "fertilizing":{
+                "materialName":" ",
+                "amount":10,
+                "amountUnit":"KG"
+              }
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            post("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+    }
+
+    @Test
     fun `list records returns cursor page`() {
         `when`(farmingRecordService.search(anySearchCondition())).thenReturn(pageResult())
 
@@ -200,7 +252,9 @@ class FarmingRecordControllerTest(
 
     private fun saveRecordJson(
         weatherCondition: String = "맑음",
-        mediaIdsJson: String = "[\"$mediaId\"]"
+        mediaIdsJson: String = "[\"$mediaId\"]",
+        harvestAmount: String = "10",
+        growthPeriod: String = "2"
     ): String {
         return """
             {
@@ -212,10 +266,10 @@ class FarmingRecordControllerTest(
               "weatherTemperature":28,
               "memo":"수확 완료",
               "harvest":{
-                "harvestAmount":10,
+                "harvestAmount":$harvestAmount,
                 "harvestAmountUnit":"KG",
                 "harvestSource":"CULTIVATED",
-                "growthPeriod":2,
+                "growthPeriod":$growthPeriod,
                 "growthPeriodUnit":"YEAR"
               },
               "mediaIds":$mediaIdsJson
