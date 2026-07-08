@@ -41,6 +41,25 @@ Most features must default to local-first storage with background sync, not a th
 
 Feature-first folders inside a single app target (`ChamChamCham/App`, `ChamChamCham/Core`, `ChamChamCham/Features/<Feature>/{Data,Domain,Presentation}`). Full layout and rationale in the architecture design doc linked above. Do not introduce local SPM packages without revisiting that decision first.
 
+## Small Device Layout Rule
+
+Figma screens are designed around iPhone 13 size. Implementation must still
+preserve basic usability on iPhone SE 2/3 size for iOS 17+.
+
+SE support does not require pixel-perfect parity with the Figma frame, but must
+prevent:
+
+- clipped primary text, tab labels, or critical values
+- overlapping or incoherently stacked content
+- hidden primary actions
+- the keyboard covering the active input or submit button
+- fixed-height layouts that cannot scroll when content is taller than the screen
+
+Use scrolling, safe-area-aware bottom actions, shorter labels, adaptive spacing,
+and text fallbacks such as wrapping, `lineLimit`, or `minimumScaleFactor` where
+needed. Treat iPhone SE 2/3 as the minimum layout QA size, especially for bottom
+navigation, onboarding forms, compose screens, and comment input flows.
+
 ## Product Source of Truth
 
 Do not duplicate product behavior into this file. Read from:
