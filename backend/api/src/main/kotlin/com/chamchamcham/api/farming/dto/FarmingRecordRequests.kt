@@ -44,7 +44,8 @@ object FarmingRecordRequests {
         @field:NotNull(message = "기온을 입력해주세요")
         val weatherTemperature: Int?,
 
-        val memo: String? = null,
+        @field:NotBlank(message = "메모를 입력해주세요")
+        val memo: String,
 
         @field:Valid
         val planting: PlantingDetailRequest? = null,

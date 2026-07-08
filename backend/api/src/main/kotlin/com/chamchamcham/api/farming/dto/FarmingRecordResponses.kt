@@ -36,7 +36,7 @@ object FarmingRecordResponses {
         val workedAt: LocalDateTime,
         val weatherCondition: String,
         val weatherTemperature: Int,
-        val memoPreview: String?,
+        val memoPreview: String,
         val thumbnailUrl: String?,
     ) {
         companion object {
@@ -76,7 +76,7 @@ object FarmingRecordResponses {
         val workedAt: LocalDateTime,
         val weatherCondition: String,
         val weatherTemperature: Int,
-        val memo: String?,
+        val memo: String,
         val planting: PlantingDetailResponse?,
         val watering: WateringDetailResponse?,
         val fertilizing: FertilizingDetailResponse?,

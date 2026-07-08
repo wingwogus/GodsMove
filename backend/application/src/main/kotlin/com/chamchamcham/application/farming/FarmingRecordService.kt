@@ -343,7 +343,7 @@ class FarmingRecordService(
             workedAt = record.workedAt,
             weatherCondition = record.weatherCondition,
             weatherTemperature = record.weatherTemperature,
-            memoPreview = record.memo?.take(MEMO_PREVIEW_LENGTH),
+            memoPreview = record.memo.take(MEMO_PREVIEW_LENGTH),
             thumbnailUrl = row.thumbnailUrl,
         )
     }

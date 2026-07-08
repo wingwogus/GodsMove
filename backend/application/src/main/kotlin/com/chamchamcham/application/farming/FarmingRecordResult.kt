@@ -33,7 +33,7 @@ object FarmingRecordResult {
         val workedAt: LocalDateTime,
         val weatherCondition: String,
         val weatherTemperature: Int,
-        val memoPreview: String?,
+        val memoPreview: String,
         val thumbnailUrl: String?,
     )
 
@@ -52,7 +52,7 @@ object FarmingRecordResult {
         val workedAt: LocalDateTime,
         val weatherCondition: String,
         val weatherTemperature: Int,
-        val memo: String?,
+        val memo: String,
         val planting: PlantingDetail? = null,
         val watering: WateringDetail? = null,
         val fertilizing: FertilizingDetail? = null,

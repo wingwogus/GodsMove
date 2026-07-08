@@ -51,8 +51,8 @@ class FarmingRecord(
     @Column(name = "weather_temperature", nullable = false)
     var weatherTemperature: Int,
 
-    @Column(columnDefinition = "text")
-    var memo: String? = null,
+    @Column(columnDefinition = "text", nullable = false)
+    var memo: String,
 
     @Column(name = "entry_mode", nullable = false, length = 32)
     val entryMode: String,
@@ -67,7 +67,7 @@ class FarmingRecord(
         workedAt: LocalDateTime,
         weatherCondition: String,
         weatherTemperature: Int,
-        memo: String?,
+        memo: String,
     ) {
         this.farm = farm
         this.crop = crop

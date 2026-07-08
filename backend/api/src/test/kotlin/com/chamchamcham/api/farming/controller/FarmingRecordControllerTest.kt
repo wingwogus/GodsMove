@@ -92,6 +92,17 @@ class FarmingRecordControllerTest(
     }
 
     @Test
+    fun `create record rejects blank memo`() {
+        mockMvc.perform(
+            post("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(saveRecordJson(memo = ""))
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
     fun `create record rejects more than five media ids`() {
         val tooManyMediaIds = List(6) { UUID.randomUUID() }.joinToString(",") { "\"$it\"" }
 
@@ -138,6 +149,7 @@ class FarmingRecordControllerTest(
               "workedAt":"2026-06-01T09:00:00",
               "weatherCondition":"맑음",
               "weatherTemperature":28,
+              "memo":"메모",
               "fertilizing":{
                 "materialName":" ",
                 "amount":10,
@@ -254,7 +266,8 @@ class FarmingRecordControllerTest(
         weatherCondition: String = "맑음",
         mediaIdsJson: String = "[\"$mediaId\"]",
         harvestAmount: String = "10",
-        growthPeriod: String = "2"
+        growthPeriod: String = "2",
+        memo: String = "수확 완료"
     ): String {
         return """
             {
@@ -264,7 +277,7 @@ class FarmingRecordControllerTest(
               "workedAt":"2026-06-01T09:00:00",
               "weatherCondition":"$weatherCondition",
               "weatherTemperature":28,
-              "memo":"수확 완료",
+              "memo":"$memo",
               "harvest":{
                 "harvestAmount":$harvestAmount,
                 "harvestAmountUnit":"KG",
