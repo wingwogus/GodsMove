@@ -4,5 +4,6 @@ import org.springframework.data.jpa.repository.JpaRepository
 import java.util.UUID
 
 interface PlantingRecordRepository : JpaRepository<PlantingRecord, UUID> {
-    fun findByRecordId(recordId: UUID): PlantingRecord?
+    fun findByRecord_Id(recordId: UUID): PlantingRecord?
+    fun deleteByRecord(record: FarmingRecord)
 }

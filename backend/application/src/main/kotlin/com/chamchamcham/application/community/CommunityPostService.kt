@@ -261,7 +261,7 @@ class CommunityPostService(
         farmingRecordId: UUID?
     ): FarmingRecord? {
         return farmingRecordId?.let { recordId ->
-            val record = farmingRecordRepository.findByIdAndMemberId(recordId, memberId)
+            val record = farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)
                 ?: throw BusinessException(ErrorCode.FARMING_RECORD_NOT_FOUND)
             if (record.crop.id != cropId) {
                 throw BusinessException(ErrorCode.COMMUNITY_FARMING_RECORD_CROP_MISMATCH)

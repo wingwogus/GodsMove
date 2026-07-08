@@ -7,23 +7,28 @@ import com.chamchamcham.domain.farming.WorkType
 import org.springframework.stereotype.Component
 
 interface FarmingRecordDetailValidator {
-    fun validate(command: FarmingRecordCommand.Create)
+    fun validate(payload: FarmingRecordDetailPayload)
 }
 
 @Component
 class DefaultFarmingRecordDetailValidator : FarmingRecordDetailValidator {
-    override fun validate(command: FarmingRecordCommand.Create) {
-        when (command.workType) {
+    override fun validate(payload: FarmingRecordDetailPayload) {
+        when (payload.workType) {
             WorkType.PLANTING -> {
-                val detail = command.planting
+                val detail = payload.planting
                 if (detail?.seedSource == SeedSource.PURCHASED && detail.seedPurchasePlace.isNullOrBlank()) {
                     throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
                 }
             }
-            WorkType.FERTILIZING -> command.fertilizing ?: throw BusinessException(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
-            WorkType.PEST_CONTROL -> command.pestControl ?: throw BusinessException(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
-            WorkType.HARVEST -> command.harvest ?: throw BusinessException(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
+            WorkType.FERTILIZING -> requireDetail(payload.workType, payload.fertilizing)
+            WorkType.PEST_CONTROL -> requireDetail(payload.workType, payload.pestControl)
+            WorkType.HARVEST -> requireDetail(payload.workType, payload.harvest)
             WorkType.WATERING, WorkType.WEEDING, WorkType.PRUNING -> Unit
         }
+    }
+
+    private fun requireDetail(workType: WorkType, detail: Any?) {
+        check(workType.detailRequired) { "WorkType $workType is not marked as detailRequired" }
+        detail ?: throw BusinessException(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
     }
 }

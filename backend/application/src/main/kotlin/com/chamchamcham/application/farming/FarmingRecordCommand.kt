@@ -23,15 +23,42 @@ object FarmingRecordCommand {
         val memberId: UUID,
         val farmId: UUID,
         val cropId: UUID,
-        val workType: WorkType,
+        override val workType: WorkType,
         val workedAt: LocalDateTime,
-        val memo: String?,
-        val planting: PlantingDetail? = null,
-        val watering: WateringDetail? = null,
-        val fertilizing: FertilizingDetail? = null,
-        val pestControl: PestControlDetail? = null,
-        val weeding: WeedingDetail? = null,
-        val harvest: HarvestDetail? = null,
+        val weatherCondition: String,
+        val weatherTemperature: Int,
+        val memo: String,
+        override val planting: PlantingDetail? = null,
+        override val watering: WateringDetail? = null,
+        override val fertilizing: FertilizingDetail? = null,
+        override val pestControl: PestControlDetail? = null,
+        override val weeding: WeedingDetail? = null,
+        override val harvest: HarvestDetail? = null,
+        val mediaIds: List<UUID> = emptyList(),
+    ) : FarmingRecordDetailPayload
+
+    data class Update(
+        val memberId: UUID,
+        val recordId: UUID,
+        val farmId: UUID,
+        val cropId: UUID,
+        override val workType: WorkType,
+        val workedAt: LocalDateTime,
+        val weatherCondition: String,
+        val weatherTemperature: Int,
+        val memo: String,
+        override val planting: PlantingDetail? = null,
+        override val watering: WateringDetail? = null,
+        override val fertilizing: FertilizingDetail? = null,
+        override val pestControl: PestControlDetail? = null,
+        override val weeding: WeedingDetail? = null,
+        override val harvest: HarvestDetail? = null,
+        val mediaIds: List<UUID> = emptyList(),
+    ) : FarmingRecordDetailPayload
+
+    data class Delete(
+        val memberId: UUID,
+        val recordId: UUID,
     )
 
     data class PlantingDetail(

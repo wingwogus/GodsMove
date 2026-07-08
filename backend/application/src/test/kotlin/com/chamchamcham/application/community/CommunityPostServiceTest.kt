@@ -120,7 +120,7 @@ class CommunityPostServiceTest {
     fun `create stores post with crop farming record and attached images`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
-        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(record)
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(record)
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1, mediaId2))).thenReturn(listOf(media1, media2))
         `when`(communityPostRepository.save(any(CommunityPost::class.java))).thenAnswer { invocation ->
             val post = invocation.arguments[0] as CommunityPost
@@ -154,7 +154,7 @@ class CommunityPostServiceTest {
     fun `create rejects farming record with different crop`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
-        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId))
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId))
             .thenReturn(farmingRecord(member, secondCrop))
 
         val exception = assertThrows(BusinessException::class.java) {
@@ -181,7 +181,7 @@ class CommunityPostServiceTest {
         val secondRecord = farmingRecord(member, secondCrop)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
-        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(secondRecord)
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
         `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
         `when`(uploadedMediaRepository.findAllById(listOf(replacementMediaId))).thenReturn(listOf(replacementMedia))
         `when`(communityPostMediaRepository.findByUploadedMediaIdIn(listOf(replacementMediaId))).thenReturn(emptyList())
@@ -205,7 +205,7 @@ class CommunityPostServiceTest {
         val existingPostMedia = CommunityPostMedia(post = existingPost, uploadedMedia = existingMedia, displayOrder = 0)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
-        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(secondRecord)
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
         `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(listOf(existingPostMedia))
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1, replacementMediaId))).thenReturn(
             listOf(existingMedia, newMedia)
@@ -232,7 +232,7 @@ class CommunityPostServiceTest {
         val removedPostMedia = CommunityPostMedia(post = existingPost, uploadedMedia = removedMedia, displayOrder = 1)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
-        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(secondRecord)
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
         `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(
             listOf(keptPostMedia, removedPostMedia)
         )
@@ -254,7 +254,7 @@ class CommunityPostServiceTest {
         val otherPostMediaRow = CommunityPostMedia(post = otherPost, uploadedMedia = otherPostMedia, displayOrder = 0)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
-        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(secondRecord)
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
         `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(otherPostMedia))
         `when`(communityPostMediaRepository.findByUploadedMediaIdIn(listOf(mediaId1))).thenReturn(listOf(otherPostMediaRow))
@@ -273,7 +273,7 @@ class CommunityPostServiceTest {
         val otherMemberMedia = uploadedMedia(otherMember, mediaId1)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
         `when`(cropRepository.findById(secondCropId)).thenReturn(Optional.of(secondCrop))
-        `when`(farmingRecordRepository.findByIdAndMemberId(recordId, memberId)).thenReturn(secondRecord)
+        `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(secondRecord)
         `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(otherMemberMedia))
         `when`(communityPostMediaRepository.findByUploadedMediaIdIn(listOf(mediaId1))).thenReturn(emptyList())
@@ -615,6 +615,9 @@ class CommunityPostServiceTest {
             crop = crop,
             workType = WorkType.PLANTING,
             workedAt = LocalDateTime.of(2026, 6, 1, 9, 0),
+            weatherCondition = "맑음",
+            weatherTemperature = 20,
+            memo = "memo",
             entryMode = "MANUAL"
         )
 
