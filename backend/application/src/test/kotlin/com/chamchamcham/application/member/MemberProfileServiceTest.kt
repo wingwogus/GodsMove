@@ -92,7 +92,7 @@ class MemberProfileServiceTest {
         assertEquals("황기농부", profile.nickname)
         assertEquals(2, profile.experienceLevel)
         assertEquals("AGRICULTURAL_INDIVIDUAL", profile.managementType)
-        assertEquals("https://example.test/profile.jpg", profile.profileImageUrl)
+        assertEquals("https://example.test/$mediaId.jpg", profile.profileImageUrl)
         assertEquals("강원특별자치도 횡성군", profile.farms.single().displayRegion)
         assertEquals("강원특별자치도 횡성군 둔내면 샘물로 12", profile.farms.single().roadAddress)
         assertThat(profile.crops.map { it.cropId }).containsExactly(cropId, secondCropId)
@@ -110,7 +110,7 @@ class MemberProfileServiceTest {
         assertEquals("황기농부", profile.nickname)
         assertEquals(2, profile.experienceLevel)
         assertEquals("AGRICULTURAL_INDIVIDUAL", profile.managementType)
-        assertEquals("https://example.test/profile.jpg", profile.profileImageUrl)
+        assertEquals("https://example.test/$mediaId.jpg", profile.profileImageUrl)
         assertEquals("강원특별자치도 횡성군", profile.farms.single().displayRegion)
         assertThat(profile.crops.map { it.cropName }).containsExactly("황기")
     }
