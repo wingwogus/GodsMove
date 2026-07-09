@@ -64,6 +64,21 @@ app:
     refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:true}
   mail:
     from-name: ${PROD_MAIL_FROM_NAME:Example}
+  media:
+    max-image-bytes: 10485760
+
+cloudinary:
+  cloud-name: ${CLOUDINARY_CLOUD_NAME}
+  api-key: ${CLOUDINARY_API_KEY}
+  api-secret: ${CLOUDINARY_API_SECRET}
+  secure: true
+
+weather:
+  kma:
+    base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
+    service-key: ${KMA_SERVICE_KEY}
+    connect-timeout-millis: ${KMA_CONNECT_TIMEOUT_MILLIS:2000}
+    read-timeout-millis: ${KMA_READ_TIMEOUT_MILLIS:2000}
 
 auth:
   kakao:

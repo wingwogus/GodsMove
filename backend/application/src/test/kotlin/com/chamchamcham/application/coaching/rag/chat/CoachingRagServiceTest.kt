@@ -160,7 +160,7 @@ class CoachingRagServiceTest {
         val memberRepository = mock(MemberRepository::class.java)
         val farmRepository = mock(FarmRepository::class.java)
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member()))
-        `when`(farmRepository.findByIdAndOwner_Id(farmId, memberId)).thenReturn(null)
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(null)
         val service = service(
             vectorStore = FakeVectorStore(listOf(document("doc-1"))),
             chatClient = FakeChatClient(result = structuredResult(citationId = "doc-1")),
@@ -412,8 +412,10 @@ class CoachingRagServiceTest {
             member = member,
             farm = farm,
             crop = crop,
-            workType = WorkType(id = UUID.fromString("00000000-0000-0000-0000-000000000104"), name = "관수"),
+            workType = WorkType.WATERING,
             workedAt = LocalDateTime.parse("2026-07-01T09:00:00"),
+            weatherCondition = "맑음",
+            weatherTemperature = 24,
             memo = "배수 확인",
             entryMode = "MANUAL"
         )

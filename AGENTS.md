@@ -8,7 +8,7 @@ details in each workspace folder.
 ```text
 ChamChamCham
 ├── backend   # Spring Boot Kotlin backend
-├── frontend  # frontend workspace, not scaffolded yet
+├── frontend  # SwiftUI iOS app (ChamChamCham)
 └── docs      # planning and project notes
 ```
 

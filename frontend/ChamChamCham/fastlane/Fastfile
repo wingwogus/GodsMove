@@ -1,0 +1,117 @@
+default_platform(:ios)
+
+APP_IDENTIFIER = "me.GodsMove.ChamChamCham"
+XCODEPROJ      = "ChamChamCham.xcodeproj"
+SCHEME         = "ChamChamCham"
+TEAM_ID        = "285ZKW5MPR"
+# match가 설치하는 App Store 프로파일 이름 규칙: "match AppStore <bundle id>"
+PROFILE_NAME   = "match AppStore #{APP_IDENTIFIER}"
+
+platform :ios do
+  desc "빌드 → TestFlight 업로드. dev 브랜치 push 시 CI에서 실행된다."
+  lane :beta do
+    # CI 임시 keychain 생성 + match가 여기에 인증서를 설치하도록 설정
+    setup_ci
+
+    # App Store Connect API Key(.p8) — 업로드/프로파일 조회 인증. Apple ID/2FA 불필요.
+    api_key = app_store_connect_api_key(
+      key_id:                ENV.fetch("ASC_KEY_ID"),
+      issuer_id:             ENV.fetch("ASC_ISSUER_ID"),
+      key_content:           ENV.fetch("ASC_KEY_CONTENT"),
+      is_key_content_base64: true
+    )
+
+    # 커밋되지 않는 Secrets.swift를 CI 환경변수에서 재생성 (없으면 컴파일 실패)
+    generate_secrets
+
+    # 인증서/프로파일 내려받기 (CI는 readonly — 여기서 신규 발급하지 않음)
+    match(
+      type:          "appstore",
+      readonly:      true,
+      app_identifier: APP_IDENTIFIER,
+      api_key:       api_key
+    )
+
+    # 빌드 번호는 TestFlight의 마지막 빌드 + 1 로 고정 (중복 업로드 방지)
+    next_build = latest_testflight_build_number(
+      api_key:              api_key,
+      app_identifier:       APP_IDENTIFIER,
+      initial_build_number: 0
+    ) + 1
+    increment_build_number(xcodeproj: XCODEPROJ, build_number: next_build)
+
+    # 프로젝트는 Automatic 서명이므로, match 프로파일을 쓰도록 Manual로 전환한다.
+    update_code_signing_settings(
+      use_automatic_signing: false,
+      path:                  XCODEPROJ,
+      team_id:               TEAM_ID,
+      code_sign_identity:    "Apple Distribution",
+      bundle_identifier:     APP_IDENTIFIER,
+      profile_name:          PROFILE_NAME
+    )
+
+    build_app(
+      project:       XCODEPROJ,
+      scheme:        SCHEME,
+      configuration: "Release",
+      export_method: "app-store",
+      export_options: {
+        provisioningProfiles: { APP_IDENTIFIER => PROFILE_NAME }
+      }
+    )
+
+    # 프로세싱 완료까지 대기 후 배포. 수출 규정(약관 동의)은 Info-Additions.plist의
+    # ITSAppUsesNonExemptEncryption=false 로 자동 처리되어 별도 수동 단계가 없다.
+    #
+    # 외부 테스터(외부 링크) 그룹은 버전별 첫 빌드에 한해 Apple Beta App Review 승인이
+    # 필요하다. submit_beta_review로 매번 자동 제출하고, beta_app_review_info로
+    # 심사 연락처를 함께 전달해 App Store Connect에서 수동으로 채워둘 필요가 없게 한다.
+    upload_to_testflight(
+      api_key:                          api_key,
+      app_identifier:                   APP_IDENTIFIER,
+      skip_waiting_for_build_processing: false,
+      distribute_external:              true,
+      groups:                           ENV.fetch("TESTFLIGHT_GROUPS", "test").split(",").map(&:strip),
+      notify_external_testers:          true,
+      submit_beta_review:               true,
+      changelog:                        ENV.fetch("TESTFLIGHT_CHANGELOG", "버그 수정 및 성능 개선"),
+      beta_app_description:             ENV.fetch("TESTFLIGHT_BETA_APP_DESCRIPTION", "찬찬참 온보딩 및 핵심 기능 테스트"),
+      beta_app_feedback_email:          ENV.fetch("TESTFLIGHT_FEEDBACK_EMAIL"),
+      beta_app_review_info: {
+        contact_email:      ENV.fetch("BETA_REVIEW_CONTACT_EMAIL"),
+        contact_first_name: ENV.fetch("BETA_REVIEW_CONTACT_FIRST_NAME"),
+        contact_last_name:  ENV.fetch("BETA_REVIEW_CONTACT_LAST_NAME"),
+        contact_phone:      ENV.fetch("BETA_REVIEW_CONTACT_PHONE"),
+        demo_account_required: false
+      }
+    )
+  end
+
+  # ── helpers ──────────────────────────────────────────────────────────────
+
+  # Core/Config/Secrets.swift 를 환경변수로부터 생성한다.
+  # (원본은 .gitignore 대상이라 CI 체크아웃에는 존재하지 않는다)
+  private_lane :generate_secrets do
+    path = "../ChamChamCham/Core/Config/Secrets.swift"
+    contents = <<~SWIFT
+      //
+      //  Secrets.swift
+      //  ChamChamCham
+      //
+      //  CI에서 자동 생성됨 — 직접 수정하지 말 것.
+      //
+
+      import Foundation
+
+      enum Secrets {
+          static let jusoAPIKey = "#{ENV.fetch('JUSO_API_KEY', '')}"
+          static let vWorldAPIKey = "#{ENV.fetch('VWORLD_API_KEY', '')}"
+          static let kakaoNativeAppKey = "#{ENV.fetch('KAKAO_NATIVE_APP_KEY', '')}"
+          static let naverClientID = "#{ENV.fetch('NAVER_CLIENT_ID', '')}"
+          static let naverClientSecret = "#{ENV.fetch('NAVER_CLIENT_SECRET', '')}"
+      }
+    SWIFT
+    File.write(path, contents)
+    UI.message("Generated Secrets.swift from environment variables")
+  end
+end

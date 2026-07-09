@@ -10,6 +10,8 @@ import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmBoundaryCoordinate
 import com.chamchamcham.domain.farm.FarmDataSource
 import com.chamchamcham.domain.farm.FarmRepository
+import com.chamchamcham.domain.media.UploadedMediaRepository
+import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.MemberRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -21,6 +23,7 @@ class OnboardingService(
     private val farmRepository: FarmRepository,
     private val cropRepository: CropRepository,
     private val memberCropRepository: MemberCropRepository,
+    private val uploadedMediaRepository: UploadedMediaRepository,
     private val onboardingStatusResolver: OnboardingStatusResolver
 ) {
     fun complete(command: AuthCommand.CompleteOnboarding): AuthResult.OnboardingComplete {
@@ -30,6 +33,21 @@ class OnboardingService(
 
         val member = memberRepository.findById(command.memberId).orElseThrow {
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)
+        }
+        val profileMedia = command.profileMediaId?.let { mediaId ->
+            val media = uploadedMediaRepository.findById(mediaId).orElseThrow {
+                BusinessException(ErrorCode.MEDIA_NOT_FOUND)
+            }
+            if (media.owner.id != member.id) {
+                throw BusinessException(ErrorCode.MEDIA_NOT_OWNED)
+            }
+            if (media.usageType != UploadedMediaUsageType.PROFILE) {
+                throw BusinessException(ErrorCode.MEDIA_USAGE_MISMATCH)
+            }
+            if (!media.isAttachable()) {
+                throw BusinessException(ErrorCode.MEDIA_NOT_ATTACHABLE)
+            }
+            media
         }
         val requestedCropIds = command.cropIds.distinct()
         val cropsById = cropRepository.findAllById(requestedCropIds)
@@ -48,6 +66,10 @@ class OnboardingService(
             experienceLevel = command.experienceLevel,
             managementType = command.managementType
         )
+        profileMedia?.let {
+            member.updateProfileMedia(it)
+            it.markAttached()
+        }
         val farm = farmRepository.save(
             Farm(
                 owner = member,

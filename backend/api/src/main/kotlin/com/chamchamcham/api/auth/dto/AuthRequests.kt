@@ -1,5 +1,6 @@
 package com.chamchamcham.api.auth.dto
 
+import com.chamchamcham.api.farm.dto.FarmRequests
 import com.chamchamcham.domain.member.ManagementType
 import jakarta.validation.Valid
 import jakarta.validation.constraints.DecimalMin
@@ -88,7 +89,8 @@ object AuthRequests {
         @field:NotNull(message = "농장 정보를 입력해주세요")
         val farm: FarmRequest?,
         @field:NotEmpty(message = "작물을 하나 이상 선택해주세요")
-        val cropIds: List<UUID>
+        val cropIds: List<UUID>,
+        val profileMediaId: UUID? = null
     )
 
     data class FarmRequest(
@@ -107,23 +109,9 @@ object AuthRequests {
         val areaSqm: BigDecimal? = null,
         val areaIsManualEntry: Boolean = false,
         @field:Valid
-        val boundaryCoordinates: List<FarmBoundaryCoordinateRequest> = emptyList(),
+        val boundaryCoordinates: List<FarmRequests.BoundaryCoordinateRequest> = emptyList(),
         @field:Valid
-        val dataSource: FarmDataSourceRequest = FarmDataSourceRequest()
-    )
-
-    data class FarmBoundaryCoordinateRequest(
-        @field:NotNull(message = "경계 위도를 입력해주세요")
-        val latitude: Double?,
-        @field:NotNull(message = "경계 경도를 입력해주세요")
-        val longitude: Double?
-    )
-
-    data class FarmDataSourceRequest(
-        val address: String? = null,
-        val coordinate: String? = null,
-        val parcel: String? = null,
-        val landCharacteristic: String? = null
+        val dataSource: FarmRequests.DataSourceRequest = FarmRequests.DataSourceRequest()
     )
 
     data class ReissueRequest(

@@ -1,0 +1,6 @@
+app_identifier("me.GodsMove.ChamChamCham")
+team_id("285ZKW5MPR") # Apple Developer Portal Team ID
+itc_team_id(ENV["ASC_TEAM_ID"]) if ENV["ASC_TEAM_ID"] # App Store Connect Team ID (계정이 여러 팀에 속한 경우에만 필요)
+
+# Apple ID / app-specific password는 사용하지 않는다.
+# 인증은 App Store Connect API Key(.p8)로만 처리한다 — Fastfile 참고.

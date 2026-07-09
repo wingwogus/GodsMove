@@ -1,0 +1,18 @@
+# fastlane match — 배포용 인증서/프로비저닝 프로파일을 암호화해 별도 private git 저장소에 보관한다.
+#
+# 최초 1회(로컬)만 아래를 실행해 저장소를 채운다:
+#   cd frontend/ChamChamCham
+#   bundle exec fastlane match appstore
+#
+# 이후 CI는 readonly 모드로 내려받기만 한다(Fastfile의 beta 레인).
+
+git_url(ENV["MATCH_GIT_URL"]) # 인증서 전용 private repo URL (예: https://github.com/<org>/certificates.git)
+storage_mode("git")
+
+type("appstore") # TestFlight/App Store 배포용
+
+app_identifier(["me.GodsMove.ChamChamCham"])
+team_id("285ZKW5MPR")
+
+# MATCH_PASSWORD          : 저장소 암·복호화 비밀번호
+# MATCH_GIT_BASIC_AUTHORIZATION : base64("<user>:<PAT>") — CI에서 private repo 접근용

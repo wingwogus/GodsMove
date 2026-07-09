@@ -251,7 +251,8 @@ class AuthControllerBusinessTest(
                     experienceLevel = 3,
                     managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
                     farm = farmCommand(),
-                    cropIds = listOf(cropId)
+                    cropIds = listOf(cropId),
+                    profileMediaId = UUID.fromString("00000000-0000-0000-0000-000000000501")
                 )
             )
         ).thenReturn(onboardingCompleteResult())
@@ -268,6 +269,7 @@ class AuthControllerBusinessTest(
             .andExpect(jsonPath("$.data.member.nickname", equalTo("길동")))
             .andExpect(jsonPath("$.data.member.experienceLevel", equalTo(3)))
             .andExpect(jsonPath("$.data.member.managementType", equalTo("AGRICULTURAL_INDIVIDUAL")))
+            .andExpect(jsonPath("$.data.member.profileImageUrl", equalTo("https://example.test/profile.jpg")))
             .andExpect(jsonPath("$.data.farm.name", equalTo("길동농장")))
             .andExpect(jsonPath("$.data.farm.roadAddress", equalTo("서울시 강남구 테헤란로 1")))
             .andExpect(jsonPath("$.data.farm.jibunAddress", equalTo("서울시 강남구 역삼동 1")))
@@ -327,7 +329,8 @@ class AuthControllerBusinessTest(
             birthDate = null,
             nickname = null,
             experienceLevel = null,
-            managementType = null
+            managementType = null,
+            profileImageUrl = null
         )
     }
 
@@ -381,7 +384,8 @@ class AuthControllerBusinessTest(
             birthDate = LocalDate.parse("1990-01-01"),
             nickname = "길동",
             experienceLevel = 3,
-            managementType = "AGRICULTURAL_INDIVIDUAL"
+            managementType = "AGRICULTURAL_INDIVIDUAL",
+            profileImageUrl = "https://example.test/profile.jpg"
         )
     }
 
@@ -394,6 +398,7 @@ class AuthControllerBusinessTest(
               "nickname":"길동",
               "experienceLevel":3,
               "managementType":"AGRICULTURAL_INDIVIDUAL",
+              "profileMediaId":"00000000-0000-0000-0000-000000000501",
               "farm": {
                 "name":"길동농장",
                 "roadAddress":"서울시 강남구 테헤란로 1",

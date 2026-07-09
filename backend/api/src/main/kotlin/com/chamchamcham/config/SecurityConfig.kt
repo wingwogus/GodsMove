@@ -92,6 +92,8 @@ class SecurityConfig(
                 it
                     .requestMatchers(*publicEndpoints().toTypedArray())
                     .permitAll()
+                    .requestMatchers("/api/v1/admin/**")
+                    .hasAuthority("ROLE_ADMIN")
                     .anyRequest().authenticated()
             }
 
