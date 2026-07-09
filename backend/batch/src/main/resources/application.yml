@@ -1,0 +1,8 @@
+policy:
+  sync:
+    nongup-ez:
+      cron: "0 20 3 * * *"
+      zone: Asia/Seoul
+  nongup-ez:
+    base-url: https://www.nongupez.go.kr
+    timeout-millis: 10000
