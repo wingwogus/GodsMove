@@ -9,6 +9,11 @@ import com.chamchamcham.domain.crop.MemberCrop
 import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
+import com.chamchamcham.domain.media.UploadedMedia
+import com.chamchamcham.domain.media.UploadedMediaRepository
+import com.chamchamcham.domain.media.UploadedMediaStatus
+import com.chamchamcham.domain.media.UploadedMediaType
+import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.ManagementType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
@@ -50,6 +55,9 @@ class OnboardingServiceTest {
     @Mock
     private lateinit var memberCropRepository: MemberCropRepository
 
+    @Mock
+    private lateinit var uploadedMediaRepository: UploadedMediaRepository
+
     private lateinit var onboardingStatusResolver: OnboardingStatusResolver
     private lateinit var service: OnboardingService
 
@@ -61,6 +69,7 @@ class OnboardingServiceTest {
             farmRepository = farmRepository,
             cropRepository = cropRepository,
             memberCropRepository = memberCropRepository,
+            uploadedMediaRepository = uploadedMediaRepository,
             onboardingStatusResolver = onboardingStatusResolver
         )
     }
@@ -158,6 +167,53 @@ class OnboardingServiceTest {
         verifyNoInteractions(cropRepository, farmRepository, memberCropRepository)
     }
 
+    @Test
+    fun `complete attaches optional profile media`() {
+        val member = member()
+        val crop = crop(id = cropId, externalNo = 422, name = "참당귀")
+        val media = profileMedia(member)
+        val command = completeOnboardingCommand(cropIds = listOf(cropId), profileMediaId = requireNotNull(media.id))
+
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(uploadedMediaRepository.findById(requireNotNull(media.id))).thenReturn(Optional.of(media))
+        `when`(cropRepository.findAllById(listOf(cropId))).thenReturn(listOf(crop))
+        `when`(farmRepository.save(any(Farm::class.java))).thenReturn(savedFarm(member, command.farm))
+
+        val result = service.complete(command)
+
+        assertEquals(media, member.profileMedia)
+        assertEquals(UploadedMediaStatus.ATTACHED, media.status)
+        assertEquals("https://example.test/profile.jpg", result.member.profileImageUrl)
+    }
+
+    @Test
+    fun `complete rejects profile media owned by another member`() {
+        val member = member()
+        val otherMember = Member(
+            id = UUID.fromString("00000000-0000-0000-0000-000000000099"),
+            email = "other@example.com",
+            passwordHash = null
+        )
+        val media = UploadedMedia(
+            id = UUID.fromString("00000000-0000-0000-0000-000000000501"),
+            owner = otherMember,
+            mediaType = UploadedMediaType.IMAGE,
+            usageType = UploadedMediaUsageType.PROFILE,
+            fileUrl = "https://example.test/profile.jpg",
+            cloudinaryPublicId = "profiles/profile"
+        )
+
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(uploadedMediaRepository.findById(requireNotNull(media.id))).thenReturn(Optional.of(media))
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.complete(completeOnboardingCommand(profileMediaId = requireNotNull(media.id)))
+        }
+
+        assertEquals(ErrorCode.MEDIA_NOT_OWNED, exception.errorCode)
+        verifyNoInteractions(cropRepository, farmRepository, memberCropRepository)
+    }
+
     private fun member(): Member {
         return Member(
             id = memberId,
@@ -180,7 +236,8 @@ class OnboardingServiceTest {
     }
 
     private fun completeOnboardingCommand(
-        cropIds: List<UUID> = listOf(cropId)
+        cropIds: List<UUID> = listOf(cropId),
+        profileMediaId: UUID? = null
     ): AuthCommand.CompleteOnboarding {
         return AuthCommand.CompleteOnboarding(
             memberId = memberId,
@@ -191,7 +248,8 @@ class OnboardingServiceTest {
             experienceLevel = 72,
             managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
             farm = farmCommand(),
-            cropIds = cropIds
+            cropIds = cropIds,
+            profileMediaId = profileMediaId
         )
     }
 
@@ -240,5 +298,16 @@ class OnboardingServiceTest {
         val captor = ArgumentCaptor.forClass(Iterable::class.java) as ArgumentCaptor<Iterable<MemberCrop>>
         verify(memberCropRepository).saveAll(captor.capture())
         return captor.value.toList()
+    }
+
+    private fun profileMedia(member: Member): UploadedMedia {
+        return UploadedMedia(
+            id = UUID.fromString("00000000-0000-0000-0000-000000000501"),
+            owner = member,
+            mediaType = UploadedMediaType.IMAGE,
+            usageType = UploadedMediaUsageType.PROFILE,
+            fileUrl = "https://example.test/profile.jpg",
+            cloudinaryPublicId = "profiles/profile"
+        )
     }
 }

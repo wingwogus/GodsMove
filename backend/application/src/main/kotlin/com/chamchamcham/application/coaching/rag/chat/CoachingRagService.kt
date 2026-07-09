@@ -146,7 +146,7 @@ class CoachingRagService(
                 ?: throw BusinessException(ErrorCode.RAG_INVALID_REQUEST)
         }
         val farm = command.farmId?.let {
-            farmRepository.findByIdAndOwner_Id(it, command.memberId)
+            farmRepository.findByIdAndOwnerId(it, command.memberId)
                 ?: throw BusinessException(ErrorCode.RAG_INVALID_REQUEST)
         } ?: record?.farm
         val crop = command.cropId?.let { cropRepository.findById(it).orElse(null) } ?: record?.crop

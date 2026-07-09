@@ -12,6 +12,7 @@ import org.springframework.validation.BindException
 import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 import org.springframework.web.servlet.resource.NoResourceFoundException
 import java.util.*
 
@@ -88,9 +89,31 @@ class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
     }
 
+    /**
+     * 4) 쿼리 파라미터 / 경로 변수 타입 변환 실패
+     * ex: Enum에 없는 값, UUID 형식 오류, 숫자 타입 오류
+     */
+    @ExceptionHandler
+    fun handleMethodArgumentTypeMismatch(e: MethodArgumentTypeMismatchException):
+            ResponseEntity<ApiResponse<Unit>> {
+
+        LoggingUtil.logBusinessError(logger, e)
+
+        val body = ApiResponse.fail(
+            code = ErrorCode.INVALID_INPUT.code,
+            messageKey = ErrorCode.INVALID_INPUT.messageKey,
+            detail = mapOf(
+                "field" to e.name,
+                "reason" to (e.value?.let { "Invalid value: $it" } ?: "Invalid value")
+            )
+        )
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
+    }
+
 
     /**
-     * 4) JSON 파싱 예외
+     * 5) JSON 파싱 예외
      * JSON 문법 오류 / Enum 값 에러 / 숫자 타입 오류 등
      */
     @ExceptionHandler
@@ -112,7 +135,7 @@ class GlobalExceptionHandler {
     }
 
     /**
-     * 5) 404 (Spring MVC에서 발생)
+     * 6) 404 (Spring MVC에서 발생)
      */
     @ExceptionHandler
     fun handleNotFound(e: NoResourceFoundException): ResponseEntity<ApiResponse<Unit>> {

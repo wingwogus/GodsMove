@@ -24,7 +24,7 @@ class CoachingContextProvider(
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)
         }
         val farm = command.farmId?.let {
-            farmRepository.findByIdAndOwner_Id(it, command.memberId)
+            farmRepository.findByIdAndOwnerId(it, command.memberId)
                 ?: throw BusinessException(ErrorCode.RAG_INVALID_REQUEST)
         }
         val crop = command.cropId?.let { cropRepository.findById(it).orElse(null) }
@@ -40,7 +40,7 @@ class CoachingContextProvider(
                 appendLine("- 경영 형태: ${member.managementType?.name ?: "미입력"}")
                 farm?.let { appendLine("- 농장: ${it.name} (${it.roadAddress})") }
                 crop?.let { appendLine("- 작물: ${it.name} / ${it.usePartCategory.label}") }
-                record?.let { appendLine("- 기준 영농일지: ${it.workedAt} ${it.workType.name}") }
+                record?.let { appendLine("- 기준 영농일지: ${it.workedAt} ${it.workType.label}") }
                 command.periodStart?.let { appendLine("- 기간 시작: $it") }
                 command.periodEnd?.let { appendLine("- 기간 종료: $it") }
             }.trim()

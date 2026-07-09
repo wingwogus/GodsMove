@@ -32,31 +32,31 @@ class Farm(
     val owner: Member,
 
     @Column(nullable = false, length = 128)
-    val name: String,
+    var name: String,
 
     @Column(name = "road_address", nullable = false, length = 255)
-    val roadAddress: String,
+    var roadAddress: String,
 
     @Column(name = "jibun_address", length = 255)
-    val jibunAddress: String? = null,
+    var jibunAddress: String? = null,
 
     @Column
-    val latitude: Double? = null,
+    var latitude: Double? = null,
 
     @Column
-    val longitude: Double? = null,
+    var longitude: Double? = null,
 
     @Column(length = 32)
-    val pnu: String? = null,
+    var pnu: String? = null,
 
     @Column(name = "land_category", length = 64)
-    val landCategory: String? = null,
+    var landCategory: String? = null,
 
     @Column(name = "area_sqm", precision = 12, scale = 2)
-    val areaSqm: BigDecimal? = null,
+    var areaSqm: BigDecimal? = null,
 
     @Column(name = "area_is_manual_entry", nullable = false)
-    val areaIsManualEntry: Boolean = false,
+    var areaIsManualEntry: Boolean = false,
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "farm_boundary_coordinate", joinColumns = [JoinColumn(name = "farm_id")])
@@ -64,8 +64,35 @@ class Farm(
     val boundaryCoordinates: MutableList<FarmBoundaryCoordinate> = mutableListOf(),
 
     @Embedded
-    val dataSource: FarmDataSource = FarmDataSource()
-) : BaseTimeEntity()
+    var dataSource: FarmDataSource = FarmDataSource()
+) : BaseTimeEntity() {
+    fun updateProfile(
+        name: String,
+        roadAddress: String,
+        jibunAddress: String?,
+        latitude: Double?,
+        longitude: Double?,
+        pnu: String?,
+        landCategory: String?,
+        areaSqm: BigDecimal?,
+        areaIsManualEntry: Boolean,
+        boundaryCoordinates: List<FarmBoundaryCoordinate>,
+        dataSource: FarmDataSource
+    ) {
+        this.name = name
+        this.roadAddress = roadAddress
+        this.jibunAddress = jibunAddress
+        this.latitude = latitude
+        this.longitude = longitude
+        this.pnu = pnu
+        this.landCategory = landCategory
+        this.areaSqm = areaSqm
+        this.areaIsManualEntry = areaIsManualEntry
+        this.boundaryCoordinates.clear()
+        this.boundaryCoordinates.addAll(boundaryCoordinates)
+        this.dataSource = dataSource
+    }
+}
 
 @Embeddable
 class FarmBoundaryCoordinate(

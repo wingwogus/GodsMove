@@ -62,7 +62,7 @@ class CoachingContextProviderTest {
     @Test
     fun `build rejects farm id outside current member ownership`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member()))
-        `when`(farmRepository.findByIdAndOwner_Id(farmId, memberId)).thenReturn(null)
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(null)
 
         val exception = assertThrows(BusinessException::class.java) {
             provider.build(CoachingRagCommand(memberId = memberId, question = "농장 상태?", farmId = farmId))
@@ -91,7 +91,7 @@ class CoachingContextProviderTest {
         val record = record(member, farm, crop)
 
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        `when`(farmRepository.findByIdAndOwner_Id(farmId, memberId)).thenReturn(farm)
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
         `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
         `when`(farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(record)
 
@@ -112,7 +112,7 @@ class CoachingContextProviderTest {
         assertThat(context.text).contains("- 농장: 하늘들 약초농장 (강원특별자치도 평창군 진부면 솔바람길 24)")
         assertThat(context.text).contains("- 작물: 참당귀 / 뿌리·껍질")
         assertThat(context.text).contains("- 기준 영농일지: 2026-06-22T07:50 관수")
-        verify(farmRepository).findByIdAndOwner_Id(farmId, memberId)
+        verify(farmRepository).findByIdAndOwnerId(farmId, memberId)
         verify(farmingRecordRepository).findByIdAndMember_Id(recordId, memberId)
     }
 
@@ -144,11 +144,10 @@ class CoachingContextProviderTest {
         member = member,
         farm = farm,
         crop = crop,
-        workType = WorkType(
-            id = UUID.fromString("30000000-0000-0000-0000-000000000002"),
-            name = "관수"
-        ),
+        workType = WorkType.WATERING,
         workedAt = LocalDateTime.of(2026, 6, 22, 7, 50),
+        weatherCondition = "맑음",
+        weatherTemperature = 24,
         memo = "점적 관수를 진행했다.",
         entryMode = "MANUAL"
     )
