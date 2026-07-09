@@ -58,6 +58,8 @@ class PolicySyncService(
             ?: error("Transaction did not return a policy sync target year")
         try {
             val listItems = sourceClient.fetchPrograms(targetYear)
+                .distinctBy { item -> SourceIdentity(item.externalId, item.sourceYear) }
+            val currentIdentities = listItems.map { SourceIdentity(it.externalId, it.sourceYear) }.toSet()
             var synced = 0
             var detailSuccess = 0
             var detailFailure = 0
@@ -99,15 +101,17 @@ class PolicySyncService(
                     null
                 }
 
-                upsertProgram(jobId, item, detailFields)
+                if (upsertProgram(item, detailFields)) {
+                    synced += 1
+                }
                 if (detailFields == null) {
                     detailFailure += 1
                 } else {
                     detailSuccess += 1
                 }
-                synced += 1
             }
 
+            deactivateMissingSourcePolicies(targetYear, currentIdentities)
             succeedJob(jobId, listItems.size, synced, detailSuccess, detailFailure)
         } catch (exception: Exception) {
             failJob(jobId, exception)
@@ -154,24 +158,25 @@ class PolicySyncService(
     }
 
     private fun upsertProgram(
-        jobId: UUID,
         item: NongupEzPolicyListItem,
         detailFields: DetailFields?
-    ) {
-        transactionTemplate.executeWithoutResult {
-            val job = findJob(jobId)
-            val program = policyProgramRepository.findBySourceAndExternalIdAndSourceYear(
+    ): Boolean {
+        return transactionTemplate.execute {
+            val existing = policyProgramRepository.findBySourceAndExternalIdAndSourceYear(
                 PolicySource.NONGUP_EZ,
                 item.externalId,
                 item.sourceYear
-            ) ?: PolicyProgram(
+            )
+            val isNew = existing == null
+            val program = existing ?: PolicyProgram(
                 title = item.title,
                 body = item.summary ?: item.title,
                 region = DEFAULT_REGION,
                 targetManagementType = null
             )
 
-            program.applyListFields(
+            var changed = isNew
+            changed = program.applyListFields(
                 source = PolicySource.NONGUP_EZ,
                 externalId = item.externalId,
                 sourceYear = item.sourceYear,
@@ -179,14 +184,15 @@ class PolicySyncService(
                 summary = item.summary,
                 region = DEFAULT_REGION,
                 sourceUrl = detailUrl(item.externalId, item.sourceYear),
-                agencyName = item.agencyName,
-                lastSyncedJob = job
-            )
+                agencyName = item.agencyName
+            ) || changed
 
             if (detailFields == null) {
-                program.markDetailSyncFailed(rawPayload = item.rawJson)
+                if (isNew || !program.detailSynced) {
+                    changed = program.markDetailSyncFailed(rawPayload = item.rawJson) || changed
+                }
             } else {
-                program.applyDetailFields(
+                changed = program.applyDetailFields(
                     body = detailFields.body,
                     purpose = detailFields.purpose,
                     eligibilityOriginal = detailFields.eligibilityOriginal,
@@ -207,12 +213,52 @@ class PolicySyncService(
                     cropTagsJson = detailFields.cropTagsJson,
                     regionTagsJson = detailFields.regionTagsJson,
                     rawPayload = detailFields.rawPayload,
-                    recommendable = true,
-                    lastSyncedJob = job
-                )
+                    recommendable = true
+                ) || changed
             }
 
-            policyProgramRepository.save(program)
+            if (changed) {
+                policyProgramRepository.save(program)
+            }
+            changed
+        } ?: false
+    }
+
+    private fun deactivateMissingSourcePolicies(
+        sourceYear: String,
+        currentIdentities: Set<SourceIdentity>
+    ) {
+        transactionTemplate.executeWithoutResult {
+            policyProgramRepository.findBySourceAndSourceYear(PolicySource.NONGUP_EZ, sourceYear)
+                .filter { program ->
+                    SourceIdentity(program.externalId, program.sourceYear) !in currentIdentities && program.recommendable
+                }
+                .forEach { program ->
+                    program.applyDetailFields(
+                        body = program.body,
+                        purpose = program.purpose,
+                        eligibilityOriginal = program.eligibilityOriginal,
+                        eligibilitySummary = program.eligibilitySummary,
+                        benefitOriginal = program.benefitOriginal,
+                        benefitSummary = program.benefitSummary,
+                        applyStartsOn = program.applyStartsOn,
+                        applyEndsOn = program.applyEndsOn,
+                        applicationPeriodLabel = program.applicationPeriodLabel,
+                        applicationPeriodNotice = program.applicationPeriodNotice,
+                        applicationMethod = program.applicationMethod,
+                        requiredDocuments = program.requiredDocuments,
+                        selectionCriteria = program.selectionCriteria,
+                        departmentName = program.departmentName,
+                        onlineApplyAvailable = program.onlineApplyAvailable,
+                        applicationUrl = program.applicationUrl,
+                        targetTagsJson = program.targetTagsJson,
+                        cropTagsJson = program.cropTagsJson,
+                        regionTagsJson = program.regionTagsJson,
+                        rawPayload = program.rawPayload,
+                        recommendable = false
+                    )
+                    policyProgramRepository.save(program)
+                }
         }
     }
 
@@ -265,6 +311,11 @@ class PolicySyncService(
         val cropTagsJson: String,
         val regionTagsJson: String,
         val rawPayload: String
+    )
+
+    private data class SourceIdentity(
+        val externalId: String,
+        val sourceYear: String
     )
 
     private companion object {

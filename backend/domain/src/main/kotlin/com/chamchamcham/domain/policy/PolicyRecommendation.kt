@@ -30,10 +30,6 @@ class PolicyRecommendation(
     @JoinColumn(name = "policy_program_id", nullable = false)
     val policyProgram: PolicyProgram,
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "source_sync_job_id", nullable = false)
-    val sourceSyncJob: PolicySyncJob,
-
     @Column(nullable = false, precision = 8, scale = 4)
     val score: BigDecimal,
 

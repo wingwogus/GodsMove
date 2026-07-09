@@ -28,21 +28,17 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
 ) {
     private lateinit var member: Member
     private lateinit var otherMember: Member
-    private lateinit var syncJob: PolicySyncJob
-    private lateinit var otherSyncJob: PolicySyncJob
+    private val sourceYear = "2026"
+    private val otherSourceYear = "2025"
 
     private val memberId: UUID
         get() = requireNotNull(member.id) { "Persisted member id is required" }
-    private val syncJobId: UUID
-        get() = requireNotNull(syncJob.id) { "Persisted sync job id is required" }
 
     @BeforeEach
     fun setUp() {
         val now = LocalDateTime.of(2026, 7, 7, 9, 0)
         member = persist(Member(email = "policy-member@example.com", passwordHash = null), now)
         otherMember = persist(Member(email = "other-policy-member@example.com", passwordHash = null), now)
-        syncJob = persist(syncJob("2026"), now)
-        otherSyncJob = persist(syncJob("2025"), now)
     }
 
     @Test
@@ -52,7 +48,7 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
         persistRecommendation("동점 늦은 마감", score = "0.9000", applyEndsOn = LocalDate.of(2026, 8, 1))
         persistRecommendation("마감 없음", score = "0.8000", applyEndsOn = null)
         persistRecommendation("다른 회원", member = otherMember, score = "0.9900", applyEndsOn = LocalDate.of(2026, 7, 1))
-        persistRecommendation("다른 동기화", sourceSyncJob = otherSyncJob, score = "0.9900", applyEndsOn = LocalDate.of(2026, 7, 1))
+        persistRecommendation("다른 기준연도", sourceYear = otherSourceYear, score = "0.9900", applyEndsOn = LocalDate.of(2026, 7, 1))
         entityManager.flush()
         entityManager.clear()
 
@@ -73,10 +69,23 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
         assertThat(secondPage.rows.map { it.policyProgram.title }).containsExactly("동점 늦은 마감", "마감 없음")
     }
 
+    @Test
+    fun `find page filters recommendations by benefit summary`() {
+        persistRecommendation("융자 지원", benefitSummary = "융자/금융", score = "0.9000", applyEndsOn = null)
+        persistRecommendation("직불 지원", benefitSummary = "직불/수당", score = "0.9500", applyEndsOn = null)
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.findPage(condition(benefitSummary = "융자/금융"))
+
+        assertThat(result.rows.map { it.policyProgram.title }).containsExactly("융자 지원")
+    }
+
     private fun persistRecommendation(
         title: String,
         member: Member = this.member,
-        sourceSyncJob: PolicySyncJob = syncJob,
+        sourceYear: String = this.sourceYear,
+        benefitSummary: String = "지원 확인",
         score: String,
         applyEndsOn: LocalDate?
     ): PolicyRecommendation {
@@ -91,13 +100,12 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
                 applyListFields(
                     source = PolicySource.NONGUP_EZ,
                     externalId = "external-$title",
-                    sourceYear = sourceSyncJob.targetYear,
+                    sourceYear = sourceYear,
                     title = title,
                     summary = "$title 요약",
                     region = "전국",
                     sourceUrl = null,
-                    agencyName = "농림축산식품부",
-                    lastSyncedJob = sourceSyncJob
+                    agencyName = "농림축산식품부"
                 )
                 applyDetailFields(
                     body = "정책 상세",
@@ -105,7 +113,7 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
                     eligibilityOriginal = null,
                     eligibilitySummary = "자격 확인",
                     benefitOriginal = null,
-                    benefitSummary = "지원 확인",
+                    benefitSummary = benefitSummary,
                     applyStartsOn = null,
                     applyEndsOn = applyEndsOn,
                     applicationPeriodLabel = "접수기관문의",
@@ -120,8 +128,7 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
                     cropTagsJson = "[]",
                     regionTagsJson = "[]",
                     rawPayload = "{}",
-                    recommendable = true,
-                    lastSyncedJob = sourceSyncJob
+                    recommendable = true
                 )
             },
             LocalDateTime.of(2026, 7, 7, 9, 10)
@@ -130,7 +137,6 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
             PolicyRecommendation(
                 member = member,
                 policyProgram = program,
-                sourceSyncJob = sourceSyncJob,
                 score = BigDecimal(score),
                 reason = "추천 사유"
             ),
@@ -139,21 +145,17 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
     }
 
     private fun condition(
+        benefitSummary: String? = null,
         cursor: PolicyRecommendationQueryRepository.Cursor? = null,
         size: Int = 20
     ): PolicyRecommendationQueryRepository.SearchCondition =
         PolicyRecommendationQueryRepository.SearchCondition(
             memberId = memberId,
-            sourceSyncJobId = syncJobId,
+            source = PolicySource.NONGUP_EZ,
+            sourceYear = sourceYear,
+            benefitSummary = benefitSummary,
             cursor = cursor,
             size = size
-        )
-
-    private fun syncJob(targetYear: String): PolicySyncJob =
-        PolicySyncJob(
-            source = PolicySource.NONGUP_EZ,
-            targetYear = targetYear,
-            triggerType = PolicySyncTriggerType.SCHEDULED
         )
 
     private fun <T : BaseTimeEntity> persist(entity: T, createdAt: LocalDateTime): T {

@@ -13,3 +13,8 @@ policy:
   nongup-ez:
     base-url: https://www.nongupez.go.kr
     timeout-millis: 10000
+  tag-extraction:
+    openai:
+      enabled: false
+      api-key: ${OPENAI_API_KEY:}
+      model: ${OPENAI_POLICY_TAG_MODEL:gpt-5.5}

@@ -12,12 +12,22 @@ class PolicyRecommendationQueryRepositoryImpl(
         condition: PolicyRecommendationQueryRepository.SearchCondition
     ): PolicyRecommendationQueryRepository.SearchResult {
         val maxDate = LocalDate.of(9999, 12, 31)
-        val where = mutableListOf("r.member.id = :memberId", "r.sourceSyncJob.id = :sourceSyncJobId")
+        val where = mutableListOf(
+            "r.member.id = :memberId",
+            "p.source = :source",
+            "p.sourceYear = :sourceYear"
+        )
         val params = linkedMapOf<String, Any>(
             "memberId" to condition.memberId,
-            "sourceSyncJobId" to condition.sourceSyncJobId,
+            "source" to condition.source,
+            "sourceYear" to condition.sourceYear,
             "maxDate" to maxDate
         )
+
+        condition.benefitSummary?.let { benefitSummary ->
+            where += "p.benefitSummary = :benefitSummary"
+            params["benefitSummary"] = benefitSummary
+        }
 
         condition.cursor?.let { cursor ->
             where += """

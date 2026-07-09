@@ -4,6 +4,12 @@ import com.chamchamcham.application.common.OpaqueCursorCodec
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.policy.support.TextListJsonCodec
+import com.chamchamcham.domain.crop.Crop
+import com.chamchamcham.domain.crop.CropUsePartCategory
+import com.chamchamcham.domain.crop.MemberCrop
+import com.chamchamcham.domain.crop.MemberCropRepository
+import com.chamchamcham.domain.farm.Farm
+import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.member.ManagementType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
@@ -43,7 +49,6 @@ import java.util.UUID
 class PolicyRecommendationServiceTest {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000101")
     private val latestJobId = UUID.fromString("00000000-0000-0000-0000-000000000201")
-    private val oldJobId = UUID.fromString("00000000-0000-0000-0000-000000000202")
     private val policyProgramId = UUID.fromString("00000000-0000-0000-0000-000000000301")
     private val recommendationId = UUID.fromString("00000000-0000-0000-0000-000000000401")
 
@@ -52,24 +57,29 @@ class PolicyRecommendationServiceTest {
     @Mock private lateinit var policyRecommendationRepository: PolicyRecommendationRepository
     @Mock private lateinit var policyRecommendationQueryRepository: PolicyRecommendationQueryRepository
     @Mock private lateinit var memberRepository: MemberRepository
-    @Mock private lateinit var memberProfileReader: PolicyMemberProfileReader
+    @Mock private lateinit var memberCropRepository: MemberCropRepository
+    @Mock private lateinit var farmRepository: FarmRepository
 
     private lateinit var service: PolicyRecommendationService
     private lateinit var cursorCodec: OpaqueCursorCodec
     private lateinit var member: Member
     private lateinit var latestJob: PolicySyncJob
+    private lateinit var regionMatcher: PolicyRegionMatcher
 
     @BeforeEach
     fun setUp() {
         cursorCodec = OpaqueCursorCodec()
+        regionMatcher = PolicyRegionMatcher()
         service = PolicyRecommendationService(
             policySyncJobRepository = policySyncJobRepository,
             policyProgramRepository = policyProgramRepository,
             policyRecommendationRepository = policyRecommendationRepository,
             policyRecommendationQueryRepository = policyRecommendationQueryRepository,
             memberRepository = memberRepository,
-            memberProfileReader = memberProfileReader,
-            scorer = PolicyRecommendationScorer(PolicyRegionMatcher()),
+            memberCropRepository = memberCropRepository,
+            farmRepository = farmRepository,
+            regionMatcher = regionMatcher,
+            scorer = PolicyRecommendationScorer(regionMatcher),
             textListJsonCodec = TextListJsonCodec(),
             cursorCodec = cursorCodec,
             clock = Clock.fixed(Instant.parse("2026-04-01T00:00:00Z"), ZoneId.of("UTC"))
@@ -111,25 +121,24 @@ class PolicyRecommendationServiceTest {
                 PolicySyncJobStatus.SUCCEEDED
             )
         ).thenReturn(latestJob)
-        `when`(policyProgramRepository.findRecommendableCandidates(latestJobId, "2026", LocalDate.of(2026, 4, 1)))
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
             .thenReturn(listOf(program))
         `when`(
-            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndSourceSyncJobId(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
                 memberId,
-                latestJobId
+                PolicySource.NONGUP_EZ,
+                "2026"
             )
         ).thenReturn(emptyList())
-        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        `when`(memberProfileReader.read(memberId)).thenReturn(
-            PolicyMemberProfile(
-                birthDate = member.birthDate,
-                experienceLevel = member.experienceLevel,
-                managementType = member.managementType,
-                cropNames = setOf("참당귀"),
-                cropUsePartCategories = setOf("ROOT_BARK"),
-                farmRegionTokens = setOf("충청북도")
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
             )
-        )
+        ).thenReturn(null)
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        givenPolicyProfileData()
         `when`(policyRecommendationQueryRepository.findPage(any()))
             .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
 
@@ -140,16 +149,20 @@ class PolicyRecommendationServiceTest {
         assertThat(page.items.first().programTitle).isEqualTo("청년 약용작물 지원")
         assertThat(page.items.first().reason).isEqualTo("청년농 대상이고 재배 품목이 맞아요.")
         assertThat(page.nextCursor).isNull()
-        verify(policyRecommendationRepository).deleteByMember_Id(memberId)
+        verify(policyRecommendationRepository).deleteByMemberIdAndPolicyProgramSourceAndSourceYear(
+            memberId,
+            PolicySource.NONGUP_EZ,
+            "2026"
+        )
         val savedRecommendations = capturedSavedRecommendations()
         assertThat(savedRecommendations).hasSize(1)
-        assertThat(savedRecommendations.first().sourceSyncJob.id).isEqualTo(latestJobId)
         assertThat(savedRecommendations.first().score.toDouble()).isGreaterThanOrEqualTo(70.0)
     }
 
     @Test
-    fun `list recommendations regenerates when latest sync recommendation set is partial`() {
+    fun `list recommendations regenerates when latest recommendations include a policy outside current candidates`() {
         val secondPolicyProgramId = UUID.fromString("00000000-0000-0000-0000-000000000302")
+        val obsoletePolicyProgramId = UUID.fromString("00000000-0000-0000-0000-000000000399")
         val firstProgram = recommendableProgram()
         val secondProgram = recommendableProgram(
             id = secondPolicyProgramId,
@@ -163,31 +176,34 @@ class PolicyRecommendationServiceTest {
                 PolicySyncJobStatus.SUCCEEDED
             )
         ).thenReturn(latestJob)
-        `when`(policyProgramRepository.findRecommendableCandidates(latestJobId, "2026", LocalDate.of(2026, 4, 1)))
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
             .thenReturn(listOf(firstProgram, secondProgram))
         `when`(
-            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndSourceSyncJobId(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
                 memberId,
-                latestJobId
+                PolicySource.NONGUP_EZ,
+                "2026"
             )
-        ).thenReturn(listOf(policyProgramId))
+        ).thenReturn(listOf(obsoletePolicyProgramId))
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        `when`(memberProfileReader.read(memberId)).thenReturn(
-            PolicyMemberProfile(
-                birthDate = member.birthDate,
-                experienceLevel = member.experienceLevel,
-                managementType = member.managementType,
-                cropNames = setOf("참당귀"),
-                cropUsePartCategories = setOf("ROOT_BARK"),
-                farmRegionTokens = setOf("충청북도")
-            )
-        )
+        givenPolicyProfileData()
         `when`(policyRecommendationQueryRepository.findPage(any()))
             .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
 
         service.listRecommendations(memberId, cursor = null, size = 20)
 
-        verify(policyRecommendationRepository).deleteByMember_Id(memberId)
+        verify(policyRecommendationRepository).deleteByMemberIdAndPolicyProgramSourceAndSourceYear(
+            memberId,
+            PolicySource.NONGUP_EZ,
+            "2026"
+        )
         val savedRecommendations = capturedSavedRecommendations()
         assertThat(savedRecommendations.map { it.policyProgram.id }).containsExactlyInAnyOrder(
             policyProgramId,
@@ -196,10 +212,103 @@ class PolicyRecommendationServiceTest {
     }
 
     @Test
+    fun `list recommendations reuses latest recommendations when saved policies are a subset of candidates`() {
+        val ineligiblePolicyProgramId = UUID.fromString("00000000-0000-0000-0000-000000000302")
+        val eligibleProgram = recommendableProgram()
+        val ineligibleProgram = recommendableProgram(
+            id = ineligiblePolicyProgramId,
+            title = "전남 청년 약용작물 지원",
+            regionTagsJson = """["전라남도"]"""
+        )
+        val row = recommendation(eligibleProgram)
+        `when`(
+            policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
+                PolicySource.NONGUP_EZ,
+                PolicySyncJobStatus.SUCCEEDED
+            )
+        ).thenReturn(latestJob)
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
+            .thenReturn(listOf(eligibleProgram, ineligibleProgram))
+        `when`(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(listOf(policyProgramId))
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        givenPolicyProfileData()
+        `when`(policyRecommendationQueryRepository.findPage(any()))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
+
+        val page = service.listRecommendations(memberId, cursor = null, size = 20)
+
+        assertThat(page.items).hasSize(1)
+        verify(policyRecommendationRepository, never()).deleteByMemberIdAndPolicyProgramSourceAndSourceYear(
+            memberId,
+            PolicySource.NONGUP_EZ,
+            "2026"
+        )
+        verify(policyRecommendationRepository, never()).saveAll(any<Iterable<PolicyRecommendation>>())
+    }
+
+    @Test
+    fun `list recommendations saves only eligible generated recommendations`() {
+        val ineligiblePolicyProgramId = UUID.fromString("00000000-0000-0000-0000-000000000302")
+        val eligibleProgram = recommendableProgram()
+        val regionMismatchedProgram = recommendableProgram(
+            id = ineligiblePolicyProgramId,
+            title = "전남 청년 약용작물 지원",
+            regionTagsJson = """["전라남도"]"""
+        )
+        val row = recommendation(eligibleProgram)
+        `when`(
+            policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
+                PolicySource.NONGUP_EZ,
+                PolicySyncJobStatus.SUCCEEDED
+            )
+        ).thenReturn(latestJob)
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
+            .thenReturn(listOf(eligibleProgram, regionMismatchedProgram))
+        `when`(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(emptyList())
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(null)
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        givenPolicyProfileData()
+        `when`(policyRecommendationQueryRepository.findPage(any()))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
+
+        service.listRecommendations(memberId, cursor = null, size = 20)
+
+        val savedRecommendations = capturedSavedRecommendations()
+        assertThat(savedRecommendations.map { it.policyProgram.id }).containsExactly(policyProgramId)
+    }
+
+    @Test
     fun `list recommendations rejects cursor from stale sync job as invalid input`() {
         val staleCursor = cursorCodec.encode(
             PolicyRecommendationCursorPayload(
-                sourceSyncJobId = oldJobId,
+                source = PolicySource.NONGUP_EZ,
+                sourceYear = "2025",
+                benefitCategory = null,
                 score = BigDecimal("80.0"),
                 applyEndsOn = LocalDate.of(2026, 6, 30),
                 id = recommendationId
@@ -211,14 +320,24 @@ class PolicyRecommendationServiceTest {
                 PolicySyncJobStatus.SUCCEEDED
             )
         ).thenReturn(latestJob)
-        `when`(policyProgramRepository.findRecommendableCandidates(latestJobId, "2026", LocalDate.of(2026, 4, 1)))
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
             .thenReturn(listOf(recommendableProgram()))
         `when`(
-            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndSourceSyncJobId(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
                 memberId,
-                latestJobId
+                PolicySource.NONGUP_EZ,
+                "2026"
             )
         ).thenReturn(listOf(policyProgramId))
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        givenPolicyProfileData()
 
         val exception = assertThrows(BusinessException::class.java) {
             service.listRecommendations(memberId, cursor = staleCursor, size = 20)
@@ -236,14 +355,24 @@ class PolicyRecommendationServiceTest {
                 PolicySyncJobStatus.SUCCEEDED
             )
         ).thenReturn(latestJob)
-        `when`(policyProgramRepository.findRecommendableCandidates(latestJobId, "2026", LocalDate.of(2026, 4, 1)))
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
             .thenReturn(listOf(recommendableProgram()))
         `when`(
-            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndSourceSyncJobId(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
                 memberId,
-                latestJobId
+                PolicySource.NONGUP_EZ,
+                "2026"
             )
         ).thenReturn(listOf(policyProgramId))
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        givenPolicyProfileData()
 
         val exception = assertThrows(BusinessException::class.java) {
             service.listRecommendations(memberId, cursor = "not-a-valid-cursor", size = 20)
@@ -262,25 +391,24 @@ class PolicyRecommendationServiceTest {
                 PolicySyncJobStatus.SUCCEEDED
             )
         ).thenReturn(latestJob)
-        `when`(policyProgramRepository.findRecommendableCandidates(latestJobId, "2026", LocalDate.of(2026, 4, 1)))
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
             .thenReturn(listOf(program))
         `when`(
-            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndSourceSyncJobId(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
                 memberId,
-                latestJobId
+                PolicySource.NONGUP_EZ,
+                "2026"
             )
         ).thenReturn(emptyList())
-        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        `when`(memberProfileReader.read(memberId)).thenReturn(
-            PolicyMemberProfile(
-                birthDate = member.birthDate,
-                experienceLevel = member.experienceLevel,
-                managementType = member.managementType,
-                cropNames = setOf("참당귀"),
-                cropUsePartCategories = setOf("ROOT_BARK"),
-                farmRegionTokens = setOf("충청북도")
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
             )
-        )
+        ).thenReturn(null)
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        givenPolicyProfileData()
 
         assertThrows(IllegalArgumentException::class.java) {
             service.listRecommendations(memberId, cursor = null, size = 20)
@@ -334,6 +462,33 @@ class PolicyRecommendationServiceTest {
         return captor.value.toList()
     }
 
+    private fun givenPolicyProfileData() {
+        val farm = farm()
+        val crop = Crop(
+            externalNo = 1001,
+            name = "참당귀",
+            usePartCategory = CropUsePartCategory.ROOT_BARK
+        )
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(
+            listOf(
+                MemberCrop(
+                    member = member,
+                    farm = farm,
+                    crop = crop
+                )
+            )
+        )
+        `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))
+    }
+
+    private fun farm(): Farm =
+        Farm(
+            owner = member,
+            name = "제천 약초밭",
+            roadAddress = "충청북도 제천시 청풍면 약초로 1",
+            jibunAddress = "충북 제천시 청풍면"
+        )
+
     private fun syncJob(id: UUID): PolicySyncJob =
         PolicySyncJob(
             id = id,
@@ -348,7 +503,9 @@ class PolicyRecommendationServiceTest {
     private fun recommendableProgram(
         id: UUID = policyProgramId,
         title: String = "청년 약용작물 지원",
+        targetTagsJson: String = """["YOUNG_FARMER","REGISTERED_FARMER"]""",
         cropTagsJson: String = """["MEDICINAL_CROP"]""",
+        regionTagsJson: String = """["충청북도"]""",
         rawPayload: String = "{}"
     ): PolicyProgram =
         PolicyProgram(
@@ -379,10 +536,9 @@ class PolicyRecommendationServiceTest {
             selectionCriteria = "자격 확인",
             detailSynced = true,
             recommendable = true,
-            targetTagsJson = """["YOUNG_FARMER","REGISTERED_FARMER"]""",
+            targetTagsJson = targetTagsJson,
             cropTagsJson = cropTagsJson,
-            regionTagsJson = """["충청북도"]""",
-            lastSyncedJob = latestJob,
+            regionTagsJson = regionTagsJson,
             rawPayload = rawPayload
         )
 
@@ -391,7 +547,6 @@ class PolicyRecommendationServiceTest {
             id = recommendationId,
             member = member,
             policyProgram = program,
-            sourceSyncJob = latestJob,
             score = BigDecimal("96.0"),
             reason = "청년농 대상이고 재배 품목이 맞아요."
         )

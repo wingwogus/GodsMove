@@ -4,19 +4,94 @@ import com.chamchamcham.domain.member.ManagementType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
-import java.util.UUID
 
 class PolicyProgramTest {
     @Test
-    fun `detail success makes open detailed policy recommendable`() {
-        val jobId = UUID.fromString("10000000-0000-0000-0000-000000000001")
-        val job = PolicySyncJob(
-            id = jobId,
-            source = PolicySource.NONGUP_EZ,
-            targetYear = "2026",
-            triggerType = PolicySyncTriggerType.ADMIN,
-            createdByMemberId = null
+    fun `applying identical policy fields reports no change`() {
+        val program = PolicyProgram(
+            title = "친환경농업 직불 지원",
+            body = "친환경농업 지원",
+            region = "전국",
+            targetManagementType = null
         )
+
+        val listChanged = program.applyListFields(
+            source = PolicySource.NONGUP_EZ,
+            externalId = "AB000009",
+            sourceYear = "2026",
+            title = "친환경농업 직불 지원",
+            summary = "친환경농업 지원",
+            region = "전국",
+            sourceUrl = "https://example.test/policy",
+            agencyName = "농림축산식품부"
+        )
+        val detailChanged = program.applyDetailFields(
+            body = "본문",
+            purpose = "목적",
+            eligibilityOriginal = "농업인",
+            eligibilitySummary = "농업인",
+            benefitOriginal = "직불금 지원",
+            benefitSummary = "직불/수당",
+            applyStartsOn = LocalDate.of(2026, 1, 1),
+            applyEndsOn = LocalDate.of(2026, 12, 31),
+            applicationPeriodLabel = "2026.01.01~12.31",
+            applicationPeriodNotice = null,
+            applicationMethod = "방문 신청",
+            requiredDocuments = "신청서",
+            selectionCriteria = "자격 확인",
+            departmentName = "친환경농업과",
+            onlineApplyAvailable = false,
+            applicationUrl = null,
+            targetTagsJson = """["REGISTERED_FARMER"]""",
+            cropTagsJson = "[]",
+            regionTagsJson = """["전국"]""",
+            rawPayload = """{"afbzCd":"AB000009"}""",
+            recommendable = true
+        )
+
+        assertThat(listChanged).isTrue()
+        assertThat(detailChanged).isTrue()
+
+        val secondListChanged = program.applyListFields(
+            source = PolicySource.NONGUP_EZ,
+            externalId = "AB000009",
+            sourceYear = "2026",
+            title = "친환경농업 직불 지원",
+            summary = "친환경농업 지원",
+            region = "전국",
+            sourceUrl = "https://example.test/policy",
+            agencyName = "농림축산식품부"
+        )
+        val secondDetailChanged = program.applyDetailFields(
+            body = "본문",
+            purpose = "목적",
+            eligibilityOriginal = "농업인",
+            eligibilitySummary = "농업인",
+            benefitOriginal = "직불금 지원",
+            benefitSummary = "직불/수당",
+            applyStartsOn = LocalDate.of(2026, 1, 1),
+            applyEndsOn = LocalDate.of(2026, 12, 31),
+            applicationPeriodLabel = "2026.01.01~12.31",
+            applicationPeriodNotice = null,
+            applicationMethod = "방문 신청",
+            requiredDocuments = "신청서",
+            selectionCriteria = "자격 확인",
+            departmentName = "친환경농업과",
+            onlineApplyAvailable = false,
+            applicationUrl = null,
+            targetTagsJson = """["REGISTERED_FARMER"]""",
+            cropTagsJson = "[]",
+            regionTagsJson = """["전국"]""",
+            rawPayload = """{"afbzCd":"AB000009"}""",
+            recommendable = true
+        )
+
+        assertThat(secondListChanged).isFalse()
+        assertThat(secondDetailChanged).isFalse()
+    }
+
+    @Test
+    fun `detail success makes open detailed policy recommendable`() {
         val program = PolicyProgram(
             title = "친환경농업직불",
             body = "목록 내용",
@@ -32,8 +107,7 @@ class PolicyProgramTest {
             summary = "친환경농업 실천 농업인 지원",
             region = "전국",
             sourceUrl = "https://www.nongupez.go.kr/nsm/bizAply/wholeBiz/wholeBizDtls?afbzCd=AB000009&bizYr=2026",
-            agencyName = "농림축산식품부",
-            lastSyncedJob = job
+            agencyName = "농림축산식품부"
         )
         program.applyDetailFields(
             body = "상세 내용",
@@ -63,8 +137,7 @@ class PolicyProgramTest {
                   "sourceTags":["친환경","직불"]
                 }
             """.trimIndent(),
-            recommendable = true,
-            lastSyncedJob = job
+            recommendable = true
         )
 
         assertThat(program.detailSynced).isTrue()

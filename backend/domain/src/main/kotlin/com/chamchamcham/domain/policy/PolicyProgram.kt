@@ -6,12 +6,9 @@ import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
 import jakarta.persistence.Enumerated
-import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import java.time.LocalDate
@@ -125,10 +122,6 @@ class PolicyProgram(
     @Column(name = "region_tags_json", nullable = false, columnDefinition = "text")
     var regionTagsJson: String = "[]",
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "last_synced_job_id")
-    var lastSyncedJob: PolicySyncJob? = null,
-
     @Column(name = "raw_payload", nullable = false, columnDefinition = "text")
     var rawPayload: String = "{}",
 ) : BaseTimeEntity() {
@@ -140,19 +133,29 @@ class PolicyProgram(
         summary: String?,
         region: String,
         sourceUrl: String?,
-        agencyName: String,
-        lastSyncedJob: PolicySyncJob
-    ) {
-        this.source = source
-        this.externalId = externalId
-        this.sourceYear = sourceYear
-        this.title = title
-        this.summary = summary
-        this.body = summary ?: body
-        this.region = region
-        this.sourceUrl = sourceUrl
-        this.agencyName = agencyName
-        this.lastSyncedJob = lastSyncedJob
+        agencyName: String
+    ): Boolean {
+        var changed = false
+
+        fun <T> setIfChanged(current: T, next: T, setter: (T) -> Unit) {
+            if (current != next) {
+                setter(next)
+                changed = true
+            }
+        }
+
+        setIfChanged(this.source, source) { this.source = it }
+        setIfChanged(this.externalId, externalId) { this.externalId = it }
+        setIfChanged(this.sourceYear, sourceYear) { this.sourceYear = it }
+        setIfChanged(this.title, title) { this.title = it }
+        setIfChanged(this.summary, summary) { this.summary = it }
+        if (!detailSynced) {
+            setIfChanged(this.body, summary ?: body) { this.body = it }
+        }
+        setIfChanged(this.region, region) { this.region = it }
+        setIfChanged(this.sourceUrl, sourceUrl) { this.sourceUrl = it }
+        setIfChanged(this.agencyName, agencyName) { this.agencyName = it }
+        return changed
     }
 
     fun applyDetailFields(
@@ -176,41 +179,61 @@ class PolicyProgram(
         cropTagsJson: String,
         regionTagsJson: String,
         rawPayload: String,
-        recommendable: Boolean,
-        lastSyncedJob: PolicySyncJob
-    ) {
+        recommendable: Boolean
+    ): Boolean {
         require(eligibilitySummary.length <= 19)
         require(benefitSummary.length <= 19)
         require(applicationPeriodLabel.length <= 19)
-        this.body = body
-        this.purpose = purpose
-        this.eligibilityOriginal = eligibilityOriginal
-        this.eligibilitySummary = eligibilitySummary
-        this.benefitOriginal = benefitOriginal
-        this.benefitSummary = benefitSummary
-        this.applyStartsOn = applyStartsOn
-        this.applyEndsOn = applyEndsOn
-        this.applicationPeriodLabel = applicationPeriodLabel
-        this.applicationPeriodNotice = applicationPeriodNotice
-        this.applicationMethod = applicationMethod
-        this.requiredDocuments = requiredDocuments
-        this.selectionCriteria = selectionCriteria
-        this.departmentName = departmentName
-        this.onlineApplyAvailable = onlineApplyAvailable
-        this.applicationUrl = applicationUrl
-        this.targetTagsJson = targetTagsJson
-        this.cropTagsJson = cropTagsJson
-        this.regionTagsJson = regionTagsJson
-        this.rawPayload = rawPayload
-        this.detailSynced = true
-        this.recommendable = recommendable
-        this.lastSyncedJob = lastSyncedJob
+
+        var changed = false
+
+        fun <T> setIfChanged(current: T, next: T, setter: (T) -> Unit) {
+            if (current != next) {
+                setter(next)
+                changed = true
+            }
+        }
+
+        setIfChanged(this.body, body) { this.body = it }
+        setIfChanged(this.purpose, purpose) { this.purpose = it }
+        setIfChanged(this.eligibilityOriginal, eligibilityOriginal) { this.eligibilityOriginal = it }
+        setIfChanged(this.eligibilitySummary, eligibilitySummary) { this.eligibilitySummary = it }
+        setIfChanged(this.benefitOriginal, benefitOriginal) { this.benefitOriginal = it }
+        setIfChanged(this.benefitSummary, benefitSummary) { this.benefitSummary = it }
+        setIfChanged(this.applyStartsOn, applyStartsOn) { this.applyStartsOn = it }
+        setIfChanged(this.applyEndsOn, applyEndsOn) { this.applyEndsOn = it }
+        setIfChanged(this.applicationPeriodLabel, applicationPeriodLabel) { this.applicationPeriodLabel = it }
+        setIfChanged(this.applicationPeriodNotice, applicationPeriodNotice) { this.applicationPeriodNotice = it }
+        setIfChanged(this.applicationMethod, applicationMethod) { this.applicationMethod = it }
+        setIfChanged(this.requiredDocuments, requiredDocuments) { this.requiredDocuments = it }
+        setIfChanged(this.selectionCriteria, selectionCriteria) { this.selectionCriteria = it }
+        setIfChanged(this.departmentName, departmentName) { this.departmentName = it }
+        setIfChanged(this.onlineApplyAvailable, onlineApplyAvailable) { this.onlineApplyAvailable = it }
+        setIfChanged(this.applicationUrl, applicationUrl) { this.applicationUrl = it }
+        setIfChanged(this.targetTagsJson, targetTagsJson) { this.targetTagsJson = it }
+        setIfChanged(this.cropTagsJson, cropTagsJson) { this.cropTagsJson = it }
+        setIfChanged(this.regionTagsJson, regionTagsJson) { this.regionTagsJson = it }
+        setIfChanged(this.rawPayload, rawPayload) { this.rawPayload = it }
+        setIfChanged(this.detailSynced, true) { this.detailSynced = it }
+        setIfChanged(this.recommendable, recommendable) { this.recommendable = it }
+        return changed
     }
 
-    fun markDetailSyncFailed(rawPayload: String) {
-        this.detailSynced = false
-        this.recommendable = false
-        this.rawPayload = rawPayload
+    fun markDetailSyncFailed(rawPayload: String): Boolean {
+        var changed = false
+        if (detailSynced) {
+            detailSynced = false
+            changed = true
+        }
+        if (recommendable) {
+            recommendable = false
+            changed = true
+        }
+        if (this.rawPayload != rawPayload) {
+            this.rawPayload = rawPayload
+            changed = true
+        }
+        return changed
     }
 
     fun isOpenOn(today: LocalDate): Boolean {

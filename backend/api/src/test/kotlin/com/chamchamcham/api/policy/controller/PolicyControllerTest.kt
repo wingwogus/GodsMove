@@ -3,6 +3,7 @@ package com.chamchamcham.api.policy.controller
 import com.chamchamcham.api.exception.GlobalExceptionHandler
 import com.chamchamcham.application.policy.recommendation.PolicyRecommendationResult
 import com.chamchamcham.application.policy.recommendation.PolicyRecommendationService
+import com.chamchamcham.application.policy.support.PolicyBenefitCategory
 import com.chamchamcham.application.security.TokenProvider
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
@@ -42,7 +43,7 @@ class PolicyControllerTest(
 
     @Test
     fun `list recommendations maps authenticated principal and returns items plus next cursor`() {
-        `when`(policyRecommendationService.listRecommendations(memberId, null, 20))
+        `when`(policyRecommendationService.listRecommendations(memberId, null, 20, null))
             .thenReturn(
                 PolicyRecommendationResult.Page(
                     items = listOf(
@@ -80,7 +81,43 @@ class PolicyControllerTest(
             .andExpect(jsonPath("$.data.items[0].reason", equalTo("재배 작물과 지역 조건이 일치합니다")))
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-2")))
 
-        verify(policyRecommendationService).listRecommendations(memberId, null, 20)
+        verify(policyRecommendationService).listRecommendations(memberId, null, 20, null)
+    }
+
+    @Test
+    fun `list recommendations passes benefit category filter to service`() {
+        `when`(
+            policyRecommendationService.listRecommendations(
+                memberId,
+                null,
+                20,
+                PolicyBenefitCategory.FINANCE
+            )
+        ).thenReturn(PolicyRecommendationResult.Page(emptyList(), null))
+
+        mockMvc.perform(
+            get("/api/v1/policy-recommendations")
+                .param("benefitCategory", "FINANCE")
+                .with(authenticatedMember(memberId.toString()))
+        )
+            .andExpect(status().isOk)
+
+        verify(policyRecommendationService).listRecommendations(
+            memberId,
+            null,
+            20,
+            PolicyBenefitCategory.FINANCE
+        )
+    }
+
+    @Test
+    fun `list recommendations rejects unknown benefit category`() {
+        mockMvc.perform(
+            get("/api/v1/policy-recommendations")
+                .param("benefitCategory", "BAD")
+                .with(authenticatedMember(memberId.toString()))
+        )
+            .andExpect(status().isBadRequest)
     }
 
     @Test

@@ -3,7 +3,14 @@ package com.chamchamcham.application.policy.recommendation
 import com.chamchamcham.application.common.OpaqueCursorCodec
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.policy.support.PolicyBenefitCategory
 import com.chamchamcham.application.policy.support.TextListJsonCodec
+import com.chamchamcham.domain.common.BaseTimeEntity
+import com.chamchamcham.domain.crop.MemberCrop
+import com.chamchamcham.domain.crop.MemberCropRepository
+import com.chamchamcham.domain.farm.Farm
+import com.chamchamcham.domain.farm.FarmRepository
+import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
 import com.chamchamcham.domain.policy.PolicyProgram
 import com.chamchamcham.domain.policy.PolicyProgramRepository
@@ -11,16 +18,15 @@ import com.chamchamcham.domain.policy.PolicyRecommendation
 import com.chamchamcham.domain.policy.PolicyRecommendationQueryRepository
 import com.chamchamcham.domain.policy.PolicyRecommendationRepository
 import com.chamchamcham.domain.policy.PolicySource
-import com.chamchamcham.domain.policy.PolicySyncJob
 import com.chamchamcham.domain.policy.PolicySyncJobRepository
 import com.chamchamcham.domain.policy.PolicySyncJobStatus
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import java.math.BigDecimal
 import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Service
@@ -31,7 +37,9 @@ class PolicyRecommendationService(
     private val policyRecommendationRepository: PolicyRecommendationRepository,
     private val policyRecommendationQueryRepository: PolicyRecommendationQueryRepository,
     private val memberRepository: MemberRepository,
-    private val memberProfileReader: PolicyMemberProfileReader,
+    private val memberCropRepository: MemberCropRepository,
+    private val farmRepository: FarmRepository,
+    private val regionMatcher: PolicyRegionMatcher,
     private val scorer: PolicyRecommendationScorer,
     private val textListJsonCodec: TextListJsonCodec,
     private val cursorCodec: OpaqueCursorCodec,
@@ -39,35 +47,52 @@ class PolicyRecommendationService(
 ) {
     private val objectMapper = jacksonObjectMapper()
 
-    fun listRecommendations(memberId: UUID, cursor: String?, size: Int): PolicyRecommendationResult.Page {
+    fun listRecommendations(
+        memberId: UUID,
+        cursor: String?,
+        size: Int,
+        benefitCategory: PolicyBenefitCategory? = null
+    ): PolicyRecommendationResult.Page {
         validateSize(size)
         val latestJob = policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
             PolicySource.NONGUP_EZ,
             PolicySyncJobStatus.SUCCEEDED
         ) ?: return PolicyRecommendationResult.Page(emptyList(), null)
-        val latestJobId = requireNotNull(latestJob.id)
+        val source = PolicySource.NONGUP_EZ
+        val sourceYear = latestJob.targetYear
         val today = LocalDate.now(clock)
         val candidates = policyProgramRepository.findRecommendableCandidates(
-            latestJobId,
-            latestJob.targetYear,
+            source,
+            sourceYear,
             today
         )
+        val member = memberRepository.findById(memberId).orElseThrow {
+            BusinessException(ErrorCode.MEMBER_NOT_FOUND)
+        }
+        val memberCrops = memberCropRepository.findByMemberId(memberId)
+        val farms = farmRepository.findByOwnerId(memberId)
 
-        if (recommendationsAreStale(memberId, latestJobId, candidates)) {
-            regenerate(memberId, latestJob, candidates, today)
+        if (recommendationsAreStale(memberId, source, sourceYear, candidates, member, memberCrops, farms)) {
+            regenerate(memberId, member, source, sourceYear, candidates, today, memberCrops, farms)
         }
 
-        val decodedCursor = decodeCursor(cursor, latestJobId)
+        val decodedCursor = decodeCursor(cursor, source, sourceYear, benefitCategory)
         val result = policyRecommendationQueryRepository.findPage(
             PolicyRecommendationQueryRepository.SearchCondition(
                 memberId = memberId,
-                sourceSyncJobId = latestJobId,
+                source = source,
+                sourceYear = sourceYear,
+                benefitSummary = benefitCategory?.label,
                 cursor = decodedCursor,
                 size = size + 1
             )
         )
         val visible = result.rows.take(size)
-        val nextCursor = if (result.rows.size > size) visible.lastOrNull()?.let(::encodeCursor) else null
+        val nextCursor = if (result.rows.size > size) {
+            visible.lastOrNull()?.let { row -> encodeCursor(row, source, sourceYear, benefitCategory) }
+        } else {
+            null
+        }
         return PolicyRecommendationResult.Page(visible.map(::toCard), nextCursor)
     }
 
@@ -102,29 +127,45 @@ class PolicyRecommendationService(
 
     private fun recommendationsAreStale(
         memberId: UUID,
-        latestJobId: UUID,
-        candidates: List<PolicyProgram>
+        source: PolicySource,
+        sourceYear: String,
+        candidates: List<PolicyProgram>,
+        member: Member,
+        memberCrops: List<MemberCrop>,
+        farms: List<Farm>
     ): Boolean {
         val candidatePolicyIds = candidates.map { requireNotNull(it.id) }.toSet()
         val recommendationPolicyIds = policyRecommendationRepository
-            .findPolicyProgramIdsByMemberIdAndSourceSyncJobId(memberId, latestJobId)
+            .findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(memberId, source, sourceYear)
             .toSet()
-        return candidatePolicyIds != recommendationPolicyIds
+        val newestRecommendationCreatedAt = policyRecommendationRepository
+            .findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(memberId, source, sourceYear)
+            ?: return true
+        if (candidatePolicyIds.isEmpty()) {
+            return recommendationPolicyIds.isNotEmpty()
+        }
+        return recommendationPolicyIds.isEmpty() ||
+            recommendationPolicyIds.any { it !in candidatePolicyIds } ||
+            candidates.any { it.updatedAfter(newestRecommendationCreatedAt) } ||
+            member.updatedAfter(newestRecommendationCreatedAt) ||
+            memberCrops.any { it.updatedAfter(newestRecommendationCreatedAt) } ||
+            farms.any { it.updatedAfter(newestRecommendationCreatedAt) }
     }
 
     private fun regenerate(
         memberId: UUID,
-        latestJob: PolicySyncJob,
+        member: Member,
+        source: PolicySource,
+        sourceYear: String,
         candidates: List<PolicyProgram>,
-        today: LocalDate
+        today: LocalDate,
+        memberCrops: List<MemberCrop>,
+        farms: List<Farm>
     ) {
-        val member = memberRepository.findById(memberId).orElseThrow {
-            BusinessException(ErrorCode.MEMBER_NOT_FOUND)
-        }
-        val profile = memberProfileReader.read(memberId)
-        policyRecommendationRepository.deleteByMember_Id(memberId)
+        val profile = buildPolicyMemberProfile(member, memberCrops, farms)
+        policyRecommendationRepository.deleteByMemberIdAndPolicyProgramSourceAndSourceYear(memberId, source, sourceYear)
 
-        val recommendations = candidates.map { program ->
+        val recommendations = candidates.mapNotNull { program ->
             val score = scorer.score(
                 profile = profile,
                 policyTargetTags = textListJsonCodec.decode(program.targetTagsJson),
@@ -133,16 +174,37 @@ class PolicyRecommendationService(
                 onlineApplyAvailable = program.onlineApplyAvailable,
                 today = today
             )
+            if (!score.eligible) {
+                return@mapNotNull null
+            }
             PolicyRecommendation(
                 member = member,
                 policyProgram = program,
-                sourceSyncJob = latestJob,
                 score = score.score,
                 reason = score.reason
             )
-        }.filter { it.score > BigDecimal.ZERO }
+        }
 
-        policyRecommendationRepository.saveAll(recommendations)
+        if (recommendations.isNotEmpty()) {
+            policyRecommendationRepository.saveAll(recommendations)
+        }
+    }
+
+    private fun buildPolicyMemberProfile(
+        member: Member,
+        memberCrops: List<MemberCrop>,
+        farms: List<Farm>
+    ): PolicyMemberProfile {
+        return PolicyMemberProfile(
+            birthDate = member.birthDate,
+            experienceLevel = member.experienceLevel,
+            managementType = member.managementType,
+            cropNames = memberCrops.map { it.crop.name }.toSet(),
+            cropUsePartCategories = memberCrops.map { it.crop.usePartCategory.name }.toSet(),
+            farmRegionTokens = regionMatcher.extractRegionTokens(
+                farms.flatMap { listOf(it.roadAddress, it.jibunAddress) }
+            )
+        )
     }
 
     private fun validateSize(size: Int) {
@@ -153,7 +215,9 @@ class PolicyRecommendationService(
 
     private fun decodeCursor(
         cursor: String?,
-        latestJobId: UUID
+        source: PolicySource,
+        sourceYear: String,
+        benefitCategory: PolicyBenefitCategory?
     ): PolicyRecommendationQueryRepository.Cursor? {
         if (cursor.isNullOrBlank()) {
             return null
@@ -166,7 +230,10 @@ class PolicyRecommendationService(
             }
             throw exception
         }
-        if (payload.sourceSyncJobId != latestJobId) {
+        if (payload.source != source ||
+            payload.sourceYear != sourceYear ||
+            payload.benefitCategory != benefitCategory?.name
+        ) {
             throw BusinessException(ErrorCode.INVALID_INPUT)
         }
         return PolicyRecommendationQueryRepository.Cursor(
@@ -176,10 +243,17 @@ class PolicyRecommendationService(
         )
     }
 
-    private fun encodeCursor(row: PolicyRecommendation): String =
+    private fun encodeCursor(
+        row: PolicyRecommendation,
+        source: PolicySource,
+        sourceYear: String,
+        benefitCategory: PolicyBenefitCategory?
+    ): String =
         cursorCodec.encode(
             PolicyRecommendationCursorPayload(
-                sourceSyncJobId = requireNotNull(row.sourceSyncJob.id),
+                source = source,
+                sourceYear = sourceYear,
+                benefitCategory = benefitCategory?.name,
                 score = row.score,
                 applyEndsOn = row.policyProgram.applyEndsOn,
                 id = requireNotNull(row.id)
@@ -259,4 +333,7 @@ class PolicyRecommendationService(
 
     private fun JsonNode.arrayField(vararg fields: String): Iterable<JsonNode> =
         fields.firstNotNullOfOrNull { field -> path(field).takeIf { it.isArray } } ?: emptyList()
+
+    private fun BaseTimeEntity.updatedAfter(threshold: LocalDateTime): Boolean =
+        runCatching { updatedAt.isAfter(threshold) }.getOrDefault(false)
 }

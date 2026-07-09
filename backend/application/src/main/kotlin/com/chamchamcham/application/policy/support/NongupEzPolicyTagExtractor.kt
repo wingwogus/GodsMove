@@ -4,8 +4,28 @@ import com.chamchamcham.application.policy.source.nongupez.NongupEzPolicyDetail
 import org.springframework.stereotype.Component
 
 @Component
-class NongupEzPolicyTagExtractor {
+class NongupEzPolicyTagExtractor(
+    private val llmClient: PolicyTagExtractionClient = PolicyTagExtractionClient {
+        PolicyTagExtractionClientResult.Failure
+    }
+) {
     fun extract(detail: NongupEzPolicyDetail): ExtractedPolicyTags {
+        val llmTags = llmClient.extract(
+            PolicyTagExtractionRequest(
+                title = detail.title,
+                summary = detail.summary,
+                eligibility = detail.eligibility,
+                benefit = detail.benefit,
+                agencyName = detail.agencyName
+            )
+        ).takeIfValid()
+        if (llmTags != null) {
+            return llmTags
+        }
+        return extractByRules(detail)
+    }
+
+    private fun extractByRules(detail: NongupEzPolicyDetail): ExtractedPolicyTags {
         val text = listOfNotNull(detail.title, detail.summary, detail.eligibility, detail.benefit, detail.agencyName)
             .joinToString(" ")
         val targetTags = linkedSetOf<String>()
@@ -32,11 +52,31 @@ class NongupEzPolicyTagExtractor {
         )
     }
 
+    private fun PolicyTagExtractionClientResult.takeIfValid(): ExtractedPolicyTags? {
+        val success = this as? PolicyTagExtractionClientResult.Success ?: return null
+        if (!allowedTargetTags.containsAll(success.targetTags)) return null
+        if (!allowedCropTags.containsAll(success.cropTags)) return null
+        if (!allowedRegionTags.containsAll(success.regionTags)) return null
+        return ExtractedPolicyTags(
+            targetTags = success.targetTags,
+            cropTags = success.cropTags,
+            regionTags = success.regionTags.ifEmpty { setOf("전국") }
+        )
+    }
+
     private val provinceNames = listOf(
         "서울특별시", "부산광역시", "대구광역시", "인천광역시", "광주광역시", "대전광역시", "울산광역시",
         "세종특별자치시", "경기도", "강원특별자치도", "충청북도", "충청남도", "전북특별자치도",
         "전라남도", "경상북도", "경상남도", "제주특별자치도"
     )
+    private val allowedTargetTags = setOf(
+        "YOUNG_FARMER",
+        "REGISTERED_FARMER",
+        "AGRICULTURAL_CORPORATION",
+        "RETURNING_FARMER"
+    )
+    private val allowedCropTags = setOf("MEDICINAL_CROP", "SPECIAL_CROP")
+    private val allowedRegionTags = provinceNames.toSet() + "전국"
 }
 
 data class ExtractedPolicyTags(

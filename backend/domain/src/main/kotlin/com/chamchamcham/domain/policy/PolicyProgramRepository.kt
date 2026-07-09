@@ -17,7 +17,7 @@ interface PolicyProgramRepository : JpaRepository<PolicyProgram, UUID> {
         """
         select p
         from PolicyProgram p
-        where p.lastSyncedJob.id = :syncJobId
+        where p.source = :source
           and p.sourceYear = :sourceYear
           and p.detailSynced = true
           and p.recommendable = true
@@ -25,10 +25,12 @@ interface PolicyProgramRepository : JpaRepository<PolicyProgram, UUID> {
         """
     )
     fun findRecommendableCandidates(
-        @Param("syncJobId") syncJobId: UUID,
+        @Param("source") source: PolicySource,
         @Param("sourceYear") sourceYear: String,
         @Param("today") today: LocalDate
     ): List<PolicyProgram>
+
+    fun findBySourceAndSourceYear(source: PolicySource, sourceYear: String): List<PolicyProgram>
 
     fun findByIdAndDetailSyncedTrueAndRecommendableTrue(id: UUID): PolicyProgram?
 }

@@ -6,6 +6,7 @@ import com.chamchamcham.api.policy.dto.recommendation.PolicyRecommendationPageRe
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.policy.recommendation.PolicyRecommendationService
+import com.chamchamcham.application.policy.support.PolicyBenefitCategory
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.security.core.userdetails.UserDetails
@@ -25,9 +26,18 @@ class PolicyController(
     fun listRecommendations(
         @AuthenticationPrincipal principal: Any?,
         @RequestParam(required = false) cursor: String?,
-        @RequestParam(defaultValue = "20") size: Int
+        @RequestParam(defaultValue = "20") size: Int,
+        @RequestParam(required = false) benefitCategory: String?
     ): ResponseEntity<ApiResponse<PolicyRecommendationPageResponse>> {
-        val result = policyRecommendationService.listRecommendations(parseMemberId(principal), cursor, size)
+        val parsedBenefitCategory = benefitCategory?.let {
+            PolicyBenefitCategory.fromKey(it) ?: throw BusinessException(ErrorCode.INVALID_INPUT)
+        }
+        val result = policyRecommendationService.listRecommendations(
+            parseMemberId(principal),
+            cursor,
+            size,
+            parsedBenefitCategory
+        )
         return ResponseEntity.ok(ApiResponse.ok(PolicyRecommendationPageResponse.from(result)))
     }
 

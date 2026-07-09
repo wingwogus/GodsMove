@@ -9,7 +9,9 @@ interface PolicyRecommendationQueryRepository {
 
     data class SearchCondition(
         val memberId: UUID,
-        val sourceSyncJobId: UUID,
+        val source: PolicySource,
+        val sourceYear: String,
+        val benefitSummary: String?,
         val cursor: Cursor?,
         val size: Int
     )
