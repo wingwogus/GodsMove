@@ -5,6 +5,8 @@ import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.member.Member
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
@@ -29,14 +31,33 @@ class VoiceRecordSession(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "draft_record_id")
-    val draftRecord: FarmingRecord? = null,
+    var draftRecord: FarmingRecord? = null,
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
-    val status: String,
+    var status: VoiceSessionStatus,
 
     @Column(columnDefinition = "text")
-    val transcript: String? = null,
+    var transcript: String? = null,
 
     @Column(name = "confirmed_at")
-    val confirmedAt: LocalDateTime? = null,
-) : BaseTimeEntity()
+    var confirmedAt: LocalDateTime? = null,
+) : BaseTimeEntity() {
+    fun markWaitingConfirmation(transcript: String) {
+        check(status == VoiceSessionStatus.CREATED) { "session $id is not in CREATED state" }
+        this.transcript = transcript
+        this.status = VoiceSessionStatus.WAITING_CONFIRMATION
+    }
+
+    fun confirm(record: FarmingRecord, confirmedAt: LocalDateTime) {
+        check(status == VoiceSessionStatus.WAITING_CONFIRMATION) { "session $id is not in WAITING_CONFIRMATION state" }
+        this.draftRecord = record
+        this.confirmedAt = confirmedAt
+        this.status = VoiceSessionStatus.COMPLETED
+    }
+
+    fun cancel() {
+        check(status != VoiceSessionStatus.COMPLETED) { "session $id is already COMPLETED" }
+        this.status = VoiceSessionStatus.CANCELLED
+    }
+}
