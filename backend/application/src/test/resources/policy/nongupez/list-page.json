@@ -1,0 +1,19 @@
+{
+  "bizList": [
+    {
+      "afbzCd": "AB000009",
+      "bizYr": "2026",
+      "afbzNm": "친환경농업직불",
+      "bizCn": "친환경농업 실천 농업인에게 직불금을 지원합니다.",
+      "bizAtrbDtlNm": "농림축산식품부",
+      "bizAplyBgngYmd": "20260325",
+      "bizAplyEndYmd": "20260630"
+    }
+  ],
+  "paging": {
+    "totalPage": 1,
+    "curPage": 1,
+    "pageSize": 1000,
+    "pageCount": 1
+  }
+}

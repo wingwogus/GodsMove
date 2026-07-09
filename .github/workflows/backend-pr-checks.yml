@@ -1,0 +1,44 @@
+name: Backend PR Checks
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-pr-checks.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: backend-pr-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+          cache: gradle
+          cache-dependency-path: |
+            backend/*.gradle.kts
+            backend/**/build.gradle.kts
+            backend/gradle/wrapper/gradle-wrapper.properties
+
+      - name: Compile backend modules
+        working-directory: ./backend
+        run: ./gradlew :domain:compileKotlin :application:compileKotlin :api:compileKotlin :batch:compileKotlin
+
+      - name: Run stable backend tests
+        working-directory: ./backend
+        run: ./gradlew :domain:test :batch:test

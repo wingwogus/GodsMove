@@ -27,6 +27,8 @@ enum class ErrorCode(
     COMMUNITY_TOO_MANY_IMAGES("COMMUNITY_005", "error.community_too_many_images", 400),
     COMMUNITY_FARMING_RECORD_CROP_MISMATCH("COMMUNITY_006", "error.community_farming_record_crop_mismatch", 400),
     FARMING_RECORD_NOT_FOUND("FARMING_001", "error.farming_record_not_found", 404),
+    POLICY_PROGRAM_NOT_FOUND("POLICY_001", "error.policy_program_not_found", 404),
+    POLICY_SYNC_JOB_NOT_FOUND("POLICY_002", "error.policy_sync_job_not_found", 404),
     FARMING_RECORD_DETAIL_REQUIRED("FARMING_002", "error.farming_record_detail_required", 400),
     FARMING_RECORD_INVALID_DETAIL("FARMING_003", "error.farming_record_invalid_detail", 400),
     FARMING_RECORD_FORBIDDEN("FARMING_004", "error.farming_record_forbidden", 403),
