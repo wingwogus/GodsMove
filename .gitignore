@@ -69,6 +69,7 @@ pnpm-debug.log*
 /data/
 /outputs/
 .superpowers/
+.worktrees/
 
 # Local-only dev/seed code: runs only with the local profile and is not committed.
 /local-tools/
