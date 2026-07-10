@@ -63,6 +63,8 @@ enum class ErrorCode(
     RAG_INDEX_UNAVAILABLE("RAG_004", "error.rag_index_unavailable", 503),
     RAG_EMBEDDING_DIMENSION_MISMATCH("RAG_005", "error.rag_embedding_dimension_mismatch", 500),
     RAG_STRUCTURED_OUTPUT_INVALID("RAG_006", "error.rag_structured_output_invalid", 502),
+    RECORD_FEEDBACK_NOT_FOUND("COACHING_001", "error.record_feedback_not_found", 404),
+    RECORD_FEEDBACK_REGENERATION_NOT_ALLOWED("COACHING_002", "error.record_feedback_regeneration_not_allowed", 409),
     UNAUTHORIZED("AUTH_001", "error.unauthorized", 401),
     FORBIDDEN("AUTH_002", "error.forbidden", 403),
 
