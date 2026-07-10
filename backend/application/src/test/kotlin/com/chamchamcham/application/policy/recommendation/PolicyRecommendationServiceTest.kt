@@ -139,7 +139,7 @@ class PolicyRecommendationServiceTest {
         ).thenReturn(null)
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         givenPolicyProfileData()
-        `when`(policyRecommendationQueryRepository.findPage(any()))
+        `when`(policyRecommendationQueryRepository.findPage(recommendationSearchCondition()))
             .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
 
         val page = service.listRecommendations(memberId, cursor = null, size = 20)
@@ -194,7 +194,7 @@ class PolicyRecommendationServiceTest {
         ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         givenPolicyProfileData()
-        `when`(policyRecommendationQueryRepository.findPage(any()))
+        `when`(policyRecommendationQueryRepository.findPage(recommendationSearchCondition()))
             .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
 
         service.listRecommendations(memberId, cursor = null, size = 20)
@@ -245,7 +245,7 @@ class PolicyRecommendationServiceTest {
         ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         givenPolicyProfileData()
-        `when`(policyRecommendationQueryRepository.findPage(any()))
+        `when`(policyRecommendationQueryRepository.findPage(recommendationSearchCondition()))
             .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
 
         val page = service.listRecommendations(memberId, cursor = null, size = 20)
@@ -293,7 +293,7 @@ class PolicyRecommendationServiceTest {
         ).thenReturn(null)
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         givenPolicyProfileData()
-        `when`(policyRecommendationQueryRepository.findPage(any()))
+        `when`(policyRecommendationQueryRepository.findPage(recommendationSearchCondition()))
             .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
 
         service.listRecommendations(memberId, cursor = null, size = 20)
@@ -344,7 +344,7 @@ class PolicyRecommendationServiceTest {
         }
 
         assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
-        verify(policyRecommendationQueryRepository, never()).findPage(any())
+        verifyNoInteractions(policyRecommendationQueryRepository)
     }
 
     @Test
@@ -379,7 +379,7 @@ class PolicyRecommendationServiceTest {
         }
 
         assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
-        verify(policyRecommendationQueryRepository, never()).findPage(any())
+        verifyNoInteractions(policyRecommendationQueryRepository)
     }
 
     @Test
@@ -413,7 +413,7 @@ class PolicyRecommendationServiceTest {
         assertThrows(IllegalArgumentException::class.java) {
             service.listRecommendations(memberId, cursor = null, size = 20)
         }
-        verify(policyRecommendationQueryRepository, never()).findPage(any())
+        verifyNoInteractions(policyRecommendationQueryRepository)
     }
 
     @Test
@@ -461,6 +461,16 @@ class PolicyRecommendationServiceTest {
         verify(policyRecommendationRepository).saveAll(captor.capture())
         return captor.value.toList()
     }
+
+    private fun recommendationSearchCondition(): PolicyRecommendationQueryRepository.SearchCondition =
+        PolicyRecommendationQueryRepository.SearchCondition(
+            memberId = memberId,
+            source = PolicySource.NONGUP_EZ,
+            sourceYear = "2026",
+            benefitSummary = null,
+            cursor = null,
+            size = 21
+        )
 
     private fun givenPolicyProfileData() {
         val farm = farm()
