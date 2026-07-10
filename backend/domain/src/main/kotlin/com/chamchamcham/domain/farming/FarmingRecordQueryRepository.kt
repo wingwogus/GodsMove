@@ -1,5 +1,6 @@
 package com.chamchamcham.domain.farming
 
+import com.chamchamcham.domain.crop.CropUsePartCategory
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -12,6 +13,9 @@ interface FarmingRecordQueryRepository {
         val workType: WorkType?,
         val workedAtFrom: LocalDateTime?,
         val workedAtTo: LocalDateTime?,
+        val keyword: String? = null,
+        val matchedWorkTypes: List<WorkType> = emptyList(),
+        val matchedParts: List<CropUsePartCategory> = emptyList(),
         val cursor: Cursor?,
         val size: Int
     )

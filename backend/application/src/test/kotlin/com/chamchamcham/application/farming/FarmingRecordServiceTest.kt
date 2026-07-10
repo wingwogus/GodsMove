@@ -16,15 +16,14 @@ import com.chamchamcham.domain.farming.FarmingRecordQueryRepository
 import com.chamchamcham.domain.farming.FarmingRecordRepository
 import com.chamchamcham.domain.farming.FertilizingRecordRepository
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
-import com.chamchamcham.domain.farming.HarvestAmountUnit
 import com.chamchamcham.domain.farming.HarvestRecord
 import com.chamchamcham.domain.farming.HarvestRecordRepository
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.PestControlRecordRepository
 import com.chamchamcham.domain.farming.PlantingRecord
 import com.chamchamcham.domain.farming.PlantingRecordRepository
+import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
-import com.chamchamcham.domain.farming.SeedSource
 import com.chamchamcham.domain.farming.WateringRecordRepository
 import com.chamchamcham.domain.farming.WeedingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
@@ -238,7 +237,7 @@ class FarmingRecordServiceTest {
             planting = FarmingRecordCommand.PlantingDetail(
                 seedAmount = BigDecimal.TEN,
                 seedAmountUnit = SeedAmountUnit.KG,
-                seedSource = SeedSource.SELF_COLLECTED,
+                propagationMethod = PropagationMethod.SEED,
             ),
         )
 
@@ -304,7 +303,7 @@ class FarmingRecordServiceTest {
             workType = WorkType.HARVEST,
             harvest = FarmingRecordCommand.HarvestDetail(
                 harvestAmount = BigDecimal.TEN,
-                harvestAmountUnit = HarvestAmountUnit.KG,
+                medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
             ),
@@ -319,6 +318,31 @@ class FarmingRecordServiceTest {
     }
 
     @Test
+    fun `create stores null harvest amount when amount is unknown`() {
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
+        stubFarmingRecordSave()
+
+        val command = baseCommand(
+            workType = WorkType.HARVEST,
+            harvest = FarmingRecordCommand.HarvestDetail(
+                harvestAmount = null,
+                amountUnknown = true,
+                medicinalPart = CropUsePartCategory.ROOT_BARK,
+                growthPeriod = 2,
+                growthPeriodUnit = GrowthPeriodUnit.YEAR,
+            ),
+        )
+
+        service.create(command)
+
+        val captor = ArgumentCaptor.forClass(HarvestRecord::class.java)
+        verify(harvestRecordRepository).save(captor.capture())
+        assertEquals(null, captor.value.harvestAmount)
+    }
+
+    @Test
     fun `create saves no detail row when workType is PRUNING`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
@@ -330,6 +354,28 @@ class FarmingRecordServiceTest {
         val result = service.create(command)
 
         assertEquals(WorkType.PRUNING, result.workType)
+        verifyNoInteractions(
+            plantingRecordRepository,
+            wateringRecordRepository,
+            fertilizingRecordRepository,
+            pestControlRecordRepository,
+            weedingRecordRepository,
+            harvestRecordRepository,
+        )
+    }
+
+    @Test
+    fun `create saves no detail row when workType is ETC`() {
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
+        stubFarmingRecordSave()
+
+        val command = baseCommand(workType = WorkType.ETC)
+
+        val result = service.create(command)
+
+        assertEquals(WorkType.ETC, result.workType)
         verifyNoInteractions(
             plantingRecordRepository,
             wateringRecordRepository,
@@ -404,7 +450,7 @@ class FarmingRecordServiceTest {
                 workType = WorkType.HARVEST,
                 harvest = FarmingRecordCommand.HarvestDetail(
                     harvestAmount = BigDecimal.TEN,
-                    harvestAmountUnit = HarvestAmountUnit.KG,
+                    medicinalPart = CropUsePartCategory.ROOT_BARK,
                     growthPeriod = 2,
                     growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 ),
@@ -433,6 +479,7 @@ class FarmingRecordServiceTest {
                 planting = FarmingRecordCommand.PlantingDetail(
                     seedAmount = BigDecimal.ONE,
                     seedAmountUnit = SeedAmountUnit.KG,
+                    propagationMethod = PropagationMethod.SEED,
                 ),
             )
         )
@@ -537,7 +584,6 @@ class FarmingRecordServiceTest {
             HarvestRecord(
                 record = record,
                 harvestAmount = BigDecimal.TEN,
-                harvestAmountUnit = HarvestAmountUnit.KG,
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
@@ -697,11 +743,84 @@ class FarmingRecordServiceTest {
         verifyNoInteractions(farmingRecordQueryRepository)
     }
 
+    @Test
+    fun `search resolves keyword into matched work type label`() {
+        `when`(
+            farmingRecordQueryRepository.search(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropId = null,
+                    workType = null,
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    keyword = "수확",
+                    matchedWorkTypes = listOf(WorkType.HARVEST),
+                    matchedParts = emptyList(),
+                    cursor = null,
+                    size = 21
+                )
+            )
+        ).thenReturn(FarmingRecordQueryRepository.SearchResult(emptyList()))
+
+        val page = service.search(searchCondition(keyword = "수확"))
+
+        assertThat(page.items).isEmpty()
+    }
+
+    @Test
+    fun `search resolves keyword into matched harvest part label`() {
+        `when`(
+            farmingRecordQueryRepository.search(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropId = null,
+                    workType = null,
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    keyword = "잎",
+                    matchedWorkTypes = emptyList(),
+                    matchedParts = listOf(CropUsePartCategory.LEAF),
+                    cursor = null,
+                    size = 21
+                )
+            )
+        ).thenReturn(FarmingRecordQueryRepository.SearchResult(emptyList()))
+
+        val page = service.search(searchCondition(keyword = "잎"))
+
+        assertThat(page.items).isEmpty()
+    }
+
+    @Test
+    fun `search passes blank keyword as null with no matched labels`() {
+        `when`(
+            farmingRecordQueryRepository.search(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropId = null,
+                    workType = null,
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    keyword = null,
+                    matchedWorkTypes = emptyList(),
+                    matchedParts = emptyList(),
+                    cursor = null,
+                    size = 21
+                )
+            )
+        ).thenReturn(FarmingRecordQueryRepository.SearchResult(emptyList()))
+
+        val page = service.search(searchCondition(keyword = "   "))
+
+        assertThat(page.items).isEmpty()
+    }
+
     private fun searchCondition(
         cropId: UUID? = null,
         workType: WorkType? = null,
         startDate: LocalDate? = null,
         endDate: LocalDate? = null,
+        keyword: String? = null,
         cursor: String? = null,
         size: Int = 20,
     ) = FarmingRecordSearchCondition(
@@ -710,6 +829,7 @@ class FarmingRecordServiceTest {
         workType = workType,
         startDate = startDate,
         endDate = endDate,
+        keyword = keyword,
         cursor = cursor,
         size = size,
     )

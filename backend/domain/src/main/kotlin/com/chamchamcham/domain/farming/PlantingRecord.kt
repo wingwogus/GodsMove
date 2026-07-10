@@ -42,9 +42,6 @@ class PlantingRecord(
     val seedlingUnit: SeedlingUnit? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "seed_source", length = 32)
-    val seedSource: SeedSource? = null,
-
-    @Column(name = "seed_purchase_place", length = 255)
-    val seedPurchasePlace: String? = null,
+    @Column(name = "propagation_method", nullable = false, length = 32)
+    val propagationMethod: PropagationMethod,
 ) : BaseTimeEntity()

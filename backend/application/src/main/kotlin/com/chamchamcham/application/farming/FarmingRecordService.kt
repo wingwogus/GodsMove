@@ -5,6 +5,7 @@ import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
+import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecord
@@ -76,7 +77,7 @@ class FarmingRecordService(
             )
         )
 
-        saveDetail(record, command, crop)
+        saveDetail(record, command)
         attachMedia(record, media)
 
         return FarmingRecordResult.RecordId(id = requireNotNull(record.id), workType = record.workType)
@@ -86,6 +87,7 @@ class FarmingRecordService(
     fun search(condition: FarmingRecordSearchCondition): FarmingRecordResult.Page {
         validatePageSize(condition.size)
         val cursor = decodeCursor(condition.cursor)
+        val trimmedKeyword = condition.keyword?.trim()?.takeIf(String::isNotEmpty)
         val result = farmingRecordQueryRepository.search(
             FarmingRecordQueryRepository.SearchCondition(
                 memberId = condition.memberId,
@@ -93,6 +95,9 @@ class FarmingRecordService(
                 workType = condition.workType,
                 workedAtFrom = condition.startDate?.atStartOfDay(),
                 workedAtTo = condition.endDate?.plusDays(1)?.atStartOfDay(),
+                keyword = trimmedKeyword,
+                matchedWorkTypes = matchedWorkTypes(trimmedKeyword),
+                matchedParts = matchedParts(trimmedKeyword),
                 cursor = cursor,
                 size = condition.size + 1
             )
@@ -108,6 +113,12 @@ class FarmingRecordService(
             nextCursor = nextCursor
         )
     }
+
+    private fun matchedWorkTypes(keyword: String?): List<WorkType> =
+        keyword?.let { kw -> WorkType.entries.filter { it.label.contains(kw) } } ?: emptyList()
+
+    private fun matchedParts(keyword: String?): List<CropUsePartCategory> =
+        keyword?.let { kw -> CropUsePartCategory.entries.filter { it.label.contains(kw) } } ?: emptyList()
 
     @Transactional(readOnly = true)
     fun getDetail(memberId: UUID, recordId: UUID): FarmingRecordResult.Detail {
@@ -137,7 +148,7 @@ class FarmingRecordService(
             memo = command.memo,
         )
         deleteExistingDetail(record, previousWorkType)
-        saveDetail(record, command, crop)
+        saveDetail(record, command)
 
         farmingRecordMediaRepository.deleteByRecord(record)
         attachMedia(record, media)
@@ -151,9 +162,10 @@ class FarmingRecordService(
         record.softDelete()
     }
 
-    private fun saveDetail(record: FarmingRecord, payload: FarmingRecordDetailPayload, crop: Crop) {
+    private fun saveDetail(record: FarmingRecord, payload: FarmingRecordDetailPayload) {
         when (payload.workType) {
-            WorkType.PLANTING -> payload.planting?.let { detail ->
+            WorkType.PLANTING -> {
+                val detail = payload.planting ?: throw BusinessException(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
                 plantingRecordRepository.save(
                     PlantingRecord(
                         record = record,
@@ -161,8 +173,7 @@ class FarmingRecordService(
                         seedAmountUnit = detail.seedAmountUnit,
                         seedlingCount = detail.seedlingCount,
                         seedlingUnit = detail.seedlingUnit,
-                        seedSource = detail.seedSource,
-                        seedPurchasePlace = detail.seedPurchasePlace,
+                        propagationMethod = detail.propagationMethod,
                     )
                 )
             }
@@ -216,15 +227,16 @@ class FarmingRecordService(
                 harvestRecordRepository.save(
                     HarvestRecord(
                         record = record,
-                        harvestAmount = detail.harvestAmount,
-                        harvestAmountUnit = detail.harvestAmountUnit,
-                        medicinalPart = crop.usePartCategory,
+                        harvestAmount = detail.harvestAmount.takeUnless { detail.amountUnknown },
+                        medicinalPart = detail.medicinalPart,
                         harvestSource = detail.harvestSource,
                         growthPeriod = detail.growthPeriod,
                         growthPeriodUnit = detail.growthPeriodUnit,
                     )
                 )
             }
+
+            WorkType.ETC -> Unit
         }
     }
 
@@ -237,6 +249,7 @@ class FarmingRecordService(
             WorkType.WEEDING -> weedingRecordRepository.deleteByRecord(record)
             WorkType.PRUNING -> Unit
             WorkType.HARVEST -> harvestRecordRepository.deleteByRecord(record)
+            WorkType.ETC -> Unit
         }
     }
 
@@ -260,8 +273,7 @@ class FarmingRecordService(
                     seedAmountUnit = it.seedAmountUnit,
                     seedlingCount = it.seedlingCount,
                     seedlingUnit = it.seedlingUnit,
-                    seedSource = it.seedSource,
-                    seedPurchasePlace = it.seedPurchasePlace,
+                    propagationMethod = it.propagationMethod,
                 )
             }
 
@@ -301,13 +313,14 @@ class FarmingRecordService(
             WorkType.HARVEST -> harvest = harvestRecordRepository.findByRecord_Id(recordId)?.let {
                 FarmingRecordResult.HarvestDetail(
                     harvestAmount = it.harvestAmount,
-                    harvestAmountUnit = it.harvestAmountUnit,
                     medicinalPart = it.medicinalPart,
                     harvestSource = it.harvestSource,
                     growthPeriod = it.growthPeriod,
                     growthPeriodUnit = it.growthPeriodUnit,
                 )
             }
+
+            WorkType.ETC -> Unit
         }
 
         return FarmingRecordResult.Detail(

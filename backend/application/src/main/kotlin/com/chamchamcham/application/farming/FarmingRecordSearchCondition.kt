@@ -10,6 +10,7 @@ data class FarmingRecordSearchCondition(
     val workType: WorkType?,
     val startDate: LocalDate?,
     val endDate: LocalDate?,
+    val keyword: String? = null,
     val cursor: String?,
     val size: Int
 )

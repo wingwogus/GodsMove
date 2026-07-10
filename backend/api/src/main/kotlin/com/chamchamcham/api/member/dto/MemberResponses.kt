@@ -1,5 +1,6 @@
 package com.chamchamcham.api.member.dto
 
+import com.chamchamcham.api.crop.dto.CropResponses
 import com.chamchamcham.application.member.MemberProfileResult
 import java.time.LocalDate
 import java.util.UUID
@@ -100,6 +101,21 @@ object MemberResponses {
                 CropProfileResponse(
                     cropId = result.cropId,
                     cropName = result.cropName
+                )
+        }
+    }
+
+    data class FarmCropsResponse(
+        val farmId: UUID,
+        val farmName: String,
+        val crops: List<CropResponses.CropResponse>
+    ) {
+        companion object {
+            fun from(result: MemberProfileResult.FarmCrops): FarmCropsResponse =
+                FarmCropsResponse(
+                    farmId = result.farmId,
+                    farmName = result.farmName,
+                    crops = result.crops.map(CropResponses.CropResponse::from)
                 )
         }
     }
