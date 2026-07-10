@@ -1,6 +1,7 @@
 package com.chamchamcham.application.farming
 
 import com.chamchamcham.application.common.OpaqueCursorCodec
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackLifecycleService
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.report.FarmingCycleReportProjectionService
@@ -55,6 +56,7 @@ import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.lenient
+import org.mockito.Mockito.mockingDetails
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
@@ -95,6 +97,7 @@ class FarmingRecordServiceTest {
     @Mock private lateinit var harvestRecordRepository: HarvestRecordRepository
     @Mock private lateinit var detailValidator: FarmingRecordDetailValidator
     @Mock private lateinit var projectionService: FarmingCycleReportProjectionService
+    @Mock private lateinit var recordFeedbackLifecycleService: RecordFeedbackLifecycleService
 
     private lateinit var service: FarmingRecordService
     private lateinit var member: Member
@@ -126,6 +129,7 @@ class FarmingRecordServiceTest {
             detailValidator = detailValidator,
             cursorCodec = cursorCodec,
             projectionService = projectionService,
+            recordFeedbackLifecycleService = recordFeedbackLifecycleService,
         )
         member = Member(id = memberId, email = "$memberId@example.com", passwordHash = null)
         otherMember = Member(id = otherMemberId, email = "$otherMemberId@example.com", passwordHash = null)
@@ -299,6 +303,10 @@ class FarmingRecordServiceTest {
         `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(media1))
         stubFarmingRecordSave()
+        `when`(projectionService.rebuild(ReportScope(memberId, farmId, cropId))).thenAnswer {
+            assertThat(mockingDetails(recordFeedbackLifecycleService).invocations).isEmpty()
+            null
+        }
 
         service.create(baseCommand(workType = WorkType.PRUNING, mediaIds = listOf(mediaId1)))
 
@@ -307,7 +315,7 @@ class FarmingRecordServiceTest {
     }
 
     @Test
-    fun `create rebuilds scope after detail and media are attached`() {
+    fun `create queues feedback after detail media and report rebuild`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
         `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
@@ -330,11 +338,20 @@ class FarmingRecordServiceTest {
 
         @Suppress("UNCHECKED_CAST")
         val mediaCaptor = ArgumentCaptor.forClass(Iterable::class.java) as ArgumentCaptor<Iterable<FarmingRecordMedia>>
-        inOrder(harvestRecordRepository, farmingRecordMediaRepository, projectionService).apply {
+        inOrder(
+            harvestRecordRepository,
+            farmingRecordMediaRepository,
+            projectionService,
+        ).apply {
             verify(harvestRecordRepository).save(any(HarvestRecord::class.java))
             verify(farmingRecordMediaRepository).saveAll(mediaCaptor.capture())
             verify(projectionService).rebuild(ReportScope(memberId, farmId, cropId))
         }
+        val feedbackInvocations = mockingDetails(recordFeedbackLifecycleService).invocations
+        assertThat(feedbackInvocations).hasSize(1)
+        assertThat(feedbackInvocations.single().method.name).isEqualTo("enqueue")
+        val queuedRecord = feedbackInvocations.single().arguments.single() as FarmingRecord
+        assertThat(queuedRecord.id).isNotNull()
     }
 
     @Test
@@ -350,6 +367,7 @@ class FarmingRecordServiceTest {
         assertThatThrownBy { service.create(baseCommand(workType = WorkType.PRUNING)) }
             .isInstanceOf(IllegalStateException::class.java)
             .hasMessage("projection failed")
+        verifyNoInteractions(recordFeedbackLifecycleService)
     }
 
     @Test
@@ -576,7 +594,10 @@ class FarmingRecordServiceTest {
             )
         )
 
-        verify(plantingRecordRepository).deleteByRecord(record)
+        inOrder(plantingRecordRepository, farmingRecordRepository).apply {
+            verify(plantingRecordRepository).deleteByRecord(record)
+            verify(farmingRecordRepository).flush()
+        }
         val captor = ArgumentCaptor.forClass(PlantingRecord::class.java)
         verify(plantingRecordRepository).save(captor.capture())
         assertEquals(BigDecimal.ONE, captor.value.seedAmount)
@@ -597,7 +618,7 @@ class FarmingRecordServiceTest {
     }
 
     @Test
-    fun `update rebuilds old and new scopes when farm or crop changes`() {
+    fun `update increments revision queues feedback and rebuilds old and new scopes when farm or crop changes`() {
         val record = existingRecord(workType = WorkType.PRUNING)
         `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
         `when`(farmRepository.findByIdAndOwnerId(newFarmId, memberId)).thenReturn(newFarm)
@@ -612,6 +633,8 @@ class FarmingRecordServiceTest {
             ),
         )
         verify(memberCropRepository).existsByMemberIdAndFarmIdAndCropId(memberId, newFarmId, newCropId)
+        assertThat(record.sourceRevision).isEqualTo(2)
+        verify(recordFeedbackLifecycleService).enqueue(record)
     }
 
     @Test
@@ -682,7 +705,7 @@ class FarmingRecordServiceTest {
     }
 
     @Test
-    fun `delete soft deletes before rebuilding its scope`() {
+    fun `delete soft deletes rebuilds its scope then stales feedback`() {
         val record = existingRecord(workType = WorkType.PRUNING)
         `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
         `when`(projectionService.rebuild(ReportScope(memberId, farmId, cropId))).thenAnswer {
@@ -693,6 +716,9 @@ class FarmingRecordServiceTest {
         service.delete(FarmingRecordCommand.Delete(memberId = memberId, recordId = recordId))
 
         verify(projectionService).rebuild(ReportScope(memberId, farmId, cropId))
+        verify(recordFeedbackLifecycleService).staleFor(recordId)
+        assertThat(mockingDetails(recordFeedbackLifecycleService).invocations)
+            .allSatisfy { invocation -> assertThat(invocation.method.name).isEqualTo("staleFor") }
     }
 
     @Test

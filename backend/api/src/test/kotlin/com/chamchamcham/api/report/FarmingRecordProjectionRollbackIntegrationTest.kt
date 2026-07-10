@@ -18,6 +18,7 @@ import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.WateringRecordRepository
 import com.chamchamcham.domain.farming.WorkType
+import com.chamchamcham.domain.coaching.CoachingFeedbackRepository
 import com.chamchamcham.domain.media.UploadedMedia
 import com.chamchamcham.domain.media.UploadedMediaRepository
 import com.chamchamcham.domain.media.UploadedMediaType
@@ -55,6 +56,7 @@ class FarmingRecordProjectionRollbackIntegrationTest @Autowired constructor(
     private val memberCropRepository: MemberCropRepository,
     private val farmRepository: FarmRepository,
     private val cropRepository: CropRepository,
+    private val coachingFeedbackRepository: CoachingFeedbackRepository,
 ) {
     @MockBean
     private lateinit var projectionService: FarmingCycleReportProjectionService
@@ -75,6 +77,7 @@ class FarmingRecordProjectionRollbackIntegrationTest @Autowired constructor(
 
     @BeforeEach
     fun setUp() {
+        coachingFeedbackRepository.deleteAllInBatch()
         reportRepository.deleteAllInBatch()
         farmingRecordMediaRepository.deleteAllInBatch()
         wateringRecordRepository.deleteAllInBatch()
@@ -115,6 +118,7 @@ class FarmingRecordProjectionRollbackIntegrationTest @Autowired constructor(
         assertThat(farmingRecordRepository.findAll()).isEmpty()
         assertThat(wateringRecordRepository.findAll()).isEmpty()
         assertThat(farmingRecordMediaRepository.findAll()).isEmpty()
+        assertThat(coachingFeedbackRepository.findAll()).isEmpty()
     }
 
     private fun wateringCommand(withMedia: Boolean) = FarmingRecordCommand.Create(
