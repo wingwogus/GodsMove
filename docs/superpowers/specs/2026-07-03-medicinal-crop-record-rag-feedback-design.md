@@ -1,5 +1,14 @@
 # Medicinal Crop Record RAG Feedback Design
 
+> Status: Superseded
+>
+> Replacement:
+> `2026-07-10-cycle-report-record-coaching-rag-redesign.md`
+>
+> The replacement removes externally supplied production context, excludes
+> cycle statistics from record feedback, and separates record and report output
+> contracts.
+
 Date: 2026-07-03
 
 ## Purpose
