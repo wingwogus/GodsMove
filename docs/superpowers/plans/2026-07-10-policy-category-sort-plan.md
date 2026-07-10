@@ -297,7 +297,33 @@ data class Cursor(
 
 - [ ] **Step 4: Implement sort-specific predicates and order clauses**
 
-Keep common member/source/year/category predicates. For `RECOMMENDED`, require a non-null cursor score and retain the current score/deadline predicate. For `LATEST`, add this cursor logic:
+Keep common member/source/year/category predicates. For `RECOMMENDED`, require a non-null cursor score and branch on the cursor deadline so a real `9999-12-31` deadline remains distinct from null:
+
+```kotlin
+params["cursorScore"] = requireNotNull(cursor.score) {
+    "Recommended policy cursor requires score"
+}
+if (cursor.applyEndsOn == null) {
+    where += """
+        (
+            r.score < :cursorScore
+            or (r.score = :cursorScore and p.applyEndsOn is null and r.id > :cursorId)
+        )
+    """.trimIndent()
+} else {
+    where += """
+        (
+            r.score < :cursorScore
+            or (r.score = :cursorScore and p.applyEndsOn > :cursorApplyEndsOn)
+            or (r.score = :cursorScore and p.applyEndsOn = :cursorApplyEndsOn and r.id > :cursorId)
+            or (r.score = :cursorScore and p.applyEndsOn is null)
+        )
+    """.trimIndent()
+    params["cursorApplyEndsOn"] = cursor.applyEndsOn
+}
+```
+
+For `LATEST`, keep this cursor logic:
 
 ```kotlin
 if (cursor.applyStartsOn == null) {
@@ -320,7 +346,7 @@ Select the order clause with:
 ```kotlin
 val orderBy = when (condition.sort) {
     PolicyRecommendationSort.RECOMMENDED ->
-        "r.score desc, coalesce(p.applyEndsOn, :maxDate) asc, r.id asc"
+        "r.score desc, case when p.applyEndsOn is null then 1 else 0 end asc, p.applyEndsOn asc, r.id asc"
     PolicyRecommendationSort.LATEST ->
         "case when p.applyStartsOn is null then 1 else 0 end asc, p.applyStartsOn desc, r.id asc"
 }
