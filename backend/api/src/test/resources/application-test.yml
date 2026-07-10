@@ -55,6 +55,11 @@ cloudinary:
   api-secret: test-secret
   secure: true
 
+policy:
+  nongup-ez:
+    base-url: https://www.nongupez.go.kr
+    timeout-millis: 10000
+
 weather:
   kma:
     base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0

@@ -8,3 +8,8 @@ spring:
 logging:
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [traceId=%X{traceId}] [eventId=%X{eventId}] [memberId=%X{memberId}] [ip=%X{clientIp}] %-5level %logger{36} - %msg%n"
+
+policy:
+  nongup-ez:
+    base-url: https://www.nongupez.go.kr
+    timeout-millis: 10000
