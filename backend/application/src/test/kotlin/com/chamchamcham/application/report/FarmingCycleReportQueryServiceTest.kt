@@ -4,8 +4,8 @@ import com.chamchamcham.application.common.OpaqueCursorCodec
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.crop.Crop
-import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
+import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecord
@@ -48,7 +48,7 @@ class FarmingCycleReportQueryServiceTest {
     private val cursorCodec = OpaqueCursorCodec()
 
     @Mock private lateinit var farmRepository: FarmRepository
-    @Mock private lateinit var cropRepository: CropRepository
+    @Mock private lateinit var memberCropRepository: MemberCropRepository
     @Mock private lateinit var reportRepository: FarmingCycleReportRepository
     @Mock private lateinit var queryRepository: FarmingCycleReportQueryRepository
 
@@ -66,7 +66,7 @@ class FarmingCycleReportQueryServiceTest {
     fun setUp() {
         service = FarmingCycleReportQueryService(
             farmRepository = farmRepository,
-            cropRepository = cropRepository,
+            memberCropRepository = memberCropRepository,
             reportRepository = reportRepository,
             queryRepository = queryRepository,
             cursorCodec = cursorCodec,
@@ -280,9 +280,10 @@ class FarmingCycleReportQueryServiceTest {
     }
 
     @Test
-    fun `current rejects missing crop`() {
+    fun `current rejects crop that is not registered to member farm`() {
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
-        `when`(cropRepository.existsById(cropId)).thenReturn(false)
+        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId))
+            .thenReturn(false)
 
         val exception = assertThrows(BusinessException::class.java) {
             service.getCurrent(memberId, farmId, cropId)
@@ -292,9 +293,24 @@ class FarmingCycleReportQueryServiceTest {
         verifyNoInteractions(reportRepository, queryRepository)
     }
 
+    @Test
+    fun `list rejects crop that is not registered to member farm`() {
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId))
+            .thenReturn(false)
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.listCompleted(searchCondition())
+        }
+
+        assertEquals(ErrorCode.CROP_NOT_FOUND, exception.errorCode)
+        verifyNoInteractions(queryRepository)
+    }
+
     private fun stubScope() {
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
-        `when`(cropRepository.existsById(cropId)).thenReturn(true)
+        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId))
+            .thenReturn(true)
     }
 
     private fun searchCondition(

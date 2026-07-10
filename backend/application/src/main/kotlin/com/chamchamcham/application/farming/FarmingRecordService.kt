@@ -8,6 +8,7 @@ import com.chamchamcham.application.report.ReportScope
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
+import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecord
@@ -43,6 +44,7 @@ import java.util.UUID
 @Transactional
 class FarmingRecordService(
     private val memberRepository: MemberRepository,
+    private val memberCropRepository: MemberCropRepository,
     private val farmRepository: FarmRepository,
     private val cropRepository: CropRepository,
     private val farmingRecordRepository: FarmingRecordRepository,
@@ -65,6 +67,7 @@ class FarmingRecordService(
 
         val member = findMember(command.memberId)
         val farm = findFarm(command.farmId, command.memberId)
+        validateMemberCrop(command.memberId, command.farmId, command.cropId)
         val crop = findCrop(command.cropId)
         val media = validateMedia(command.memberId, command.mediaIds)
 
@@ -148,6 +151,7 @@ class FarmingRecordService(
         validateImageCount(command.mediaIds)
 
         val farm = findFarm(command.farmId, command.memberId)
+        validateMemberCrop(command.memberId, command.farmId, command.cropId)
         val crop = findCrop(command.cropId)
         val media = validateMedia(command.memberId, command.mediaIds)
 
@@ -480,6 +484,12 @@ class FarmingRecordService(
     private fun findFarm(farmId: UUID, memberId: UUID): Farm =
         farmRepository.findByIdAndOwnerId(farmId, memberId)
             ?: throw BusinessException(ErrorCode.FARM_NOT_FOUND)
+
+    private fun validateMemberCrop(memberId: UUID, farmId: UUID, cropId: UUID) {
+        if (!memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId)) {
+            throw BusinessException(ErrorCode.CROP_NOT_FOUND)
+        }
+    }
 
     private fun findCrop(cropId: UUID): Crop =
         cropRepository.findById(cropId).orElseThrow {

@@ -3,7 +3,7 @@ package com.chamchamcham.application.report
 import com.chamchamcham.application.common.OpaqueCursorCodec
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
-import com.chamchamcham.domain.crop.CropRepository
+import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.report.FarmingCycleReport
 import com.chamchamcham.domain.report.FarmingCycleReportQueryRepository
@@ -17,7 +17,7 @@ import java.util.UUID
 @Transactional(readOnly = true)
 class FarmingCycleReportQueryService(
     private val farmRepository: FarmRepository,
-    private val cropRepository: CropRepository,
+    private val memberCropRepository: MemberCropRepository,
     private val reportRepository: FarmingCycleReportRepository,
     private val queryRepository: FarmingCycleReportQueryRepository,
     private val cursorCodec: OpaqueCursorCodec,
@@ -105,7 +105,7 @@ class FarmingCycleReportQueryService(
     private fun validateScope(memberId: UUID, farmId: UUID, cropId: UUID) {
         farmRepository.findByIdAndOwnerId(farmId, memberId)
             ?: throw BusinessException(ErrorCode.FARM_NOT_FOUND)
-        if (!cropRepository.existsById(cropId)) {
+        if (!memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId)) {
             throw BusinessException(ErrorCode.CROP_NOT_FOUND)
         }
     }
