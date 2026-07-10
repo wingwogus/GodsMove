@@ -12,8 +12,10 @@ import com.chamchamcham.domain.farming.PlantingRecordRepository
 import com.chamchamcham.domain.farming.WateringRecordRepository
 import com.chamchamcham.domain.farming.WeedingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
+import org.springframework.stereotype.Component
 import java.util.UUID
 
+@Component
 class RecordFeedbackContextAssembler(
     private val recordRepository: FarmingRecordRepository,
     private val mediaRepository: FarmingRecordMediaRepository,

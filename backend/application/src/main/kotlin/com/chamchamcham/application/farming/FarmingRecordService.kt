@@ -1,6 +1,7 @@
 package com.chamchamcham.application.farming
 
 import com.chamchamcham.application.common.OpaqueCursorCodec
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackLifecycleService
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.report.FarmingCycleReportProjectionService
@@ -60,6 +61,7 @@ class FarmingRecordService(
     private val detailValidator: FarmingRecordDetailValidator,
     private val cursorCodec: OpaqueCursorCodec,
     private val projectionService: FarmingCycleReportProjectionService,
+    private val recordFeedbackLifecycleService: RecordFeedbackLifecycleService,
 ) {
     fun create(command: FarmingRecordCommand.Create): FarmingRecordResult.RecordId {
         detailValidator.validate(command)
@@ -88,6 +90,7 @@ class FarmingRecordService(
         saveDetail(record, command)
         attachMedia(record, media)
         projectionService.rebuild(ReportScope(command.memberId, command.farmId, command.cropId))
+        recordFeedbackLifecycleService.enqueue(record)
 
         return FarmingRecordResult.RecordId(id = requireNotNull(record.id), workType = record.workType)
     }
@@ -171,6 +174,7 @@ class FarmingRecordService(
             memo = command.memo,
         )
         deleteExistingDetail(record, previousWorkType)
+        farmingRecordRepository.flush()
         saveDetail(record, command)
 
         farmingRecordMediaRepository.deleteByRecord(record)
@@ -181,6 +185,7 @@ class FarmingRecordService(
             cropId = requireNotNull(record.crop.id) { "Persisted crop id is required" },
         )
         projectionService.rebuildAll(listOf(previousScope, currentScope))
+        recordFeedbackLifecycleService.enqueue(record)
 
         return FarmingRecordResult.RecordId(id = requireNotNull(record.id), workType = record.workType)
     }
@@ -195,6 +200,7 @@ class FarmingRecordService(
         )
         record.softDelete()
         projectionService.rebuild(scope)
+        recordFeedbackLifecycleService.staleFor(requireNotNull(record.id))
     }
 
     private fun saveDetail(record: FarmingRecord, payload: FarmingRecordDetailPayload) {
