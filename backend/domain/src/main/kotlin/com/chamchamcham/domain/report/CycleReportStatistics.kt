@@ -1,0 +1,222 @@
+package com.chamchamcham.domain.report
+
+import java.io.Serializable
+import java.math.BigDecimal
+import java.time.LocalDate
+
+data class Coverage(val recordedCount: Int, val targetCount: Int) : Serializable
+
+data class CountDistribution(
+    val code: String,
+    val label: String,
+    val count: Int,
+    val ratePct: BigDecimal,
+) : Serializable
+
+data class AmountByUnit(
+    val unit: String,
+    val amount: BigDecimal,
+    val coverage: Coverage,
+) : Serializable
+
+data class PropagationStatistics(
+    val code: String,
+    val label: String,
+    val recordCount: Int,
+    val recordRatePct: BigDecimal,
+    val totalQuantity: BigDecimal?,
+    val quantityUnit: String?,
+    val quantityCoverage: Coverage,
+) : Serializable
+
+data class MaterialCategoryStatistics(
+    val code: String,
+    val label: String,
+    val recordCount: Int,
+    val recordRatePct: BigDecimal,
+    val amountKg: BigDecimal,
+    val amountRatePct: BigDecimal,
+) : Serializable
+
+data class CategoryMethodStatistics(
+    val categoryCode: String,
+    val categoryLabel: String,
+    val methodCode: String,
+    val methodLabel: String,
+    val recordCount: Int,
+    val recordRatePct: BigDecimal,
+) : Serializable
+
+data class CategoryAmountByUnit(
+    val categoryCode: String,
+    val categoryLabel: String,
+    val unit: String,
+    val recordCount: Int,
+    val amount: BigDecimal,
+    val coverage: Coverage,
+) : Serializable
+
+data class TargetCount(val target: String, val count: Int) : Serializable
+
+data class HarvestPartStatistics(
+    val code: String,
+    val label: String,
+    val recordCount: Int,
+    val recordRatePct: BigDecimal,
+    val knownAmountKg: BigDecimal?,
+    val amountRatePct: BigDecimal?,
+    val amountCoverage: Coverage,
+) : Serializable
+
+data class GrowthPeriodRange(val minMonths: Int, val maxMonths: Int) : Serializable
+
+data class CommonOnlyStatistics(
+    val recordCount: Int = 0,
+    val firstWorkedOn: LocalDate? = null,
+    val lastWorkedOn: LocalDate? = null,
+    val workedDayCount: Int = 0,
+    val averageIntervalDays: BigDecimal? = null,
+    val photoAttachedRecordCount: Int = 0,
+    val photoAttachmentRatePct: BigDecimal? = null,
+    val weatherDistribution: List<CountDistribution> = emptyList(),
+    val averageTemperatureC: BigDecimal? = null,
+) : Serializable {
+    companion object {
+        fun empty() = CommonOnlyStatistics()
+    }
+}
+
+data class PlantingStatistics(
+    val recordCount: Int = 0,
+    val firstWorkedOn: LocalDate? = null,
+    val lastWorkedOn: LocalDate? = null,
+    val workedDayCount: Int = 0,
+    val averageIntervalDays: BigDecimal? = null,
+    val photoAttachedRecordCount: Int = 0,
+    val photoAttachmentRatePct: BigDecimal? = null,
+    val weatherDistribution: List<CountDistribution> = emptyList(),
+    val averageTemperatureC: BigDecimal? = null,
+    val propagationMethods: List<PropagationStatistics> = emptyList(),
+) : Serializable {
+    companion object {
+        fun empty() = PlantingStatistics()
+    }
+}
+
+data class WateringStatistics(
+    val recordCount: Int = 0,
+    val firstWorkedOn: LocalDate? = null,
+    val lastWorkedOn: LocalDate? = null,
+    val workedDayCount: Int = 0,
+    val averageIntervalDays: BigDecimal? = null,
+    val photoAttachedRecordCount: Int = 0,
+    val photoAttachmentRatePct: BigDecimal? = null,
+    val weatherDistribution: List<CountDistribution> = emptyList(),
+    val averageTemperatureC: BigDecimal? = null,
+    val amountDistribution: List<CountDistribution> = emptyList(),
+    val methodDistribution: List<CountDistribution> = emptyList(),
+) : Serializable {
+    companion object {
+        fun empty() = WateringStatistics()
+    }
+}
+
+data class FertilizingStatistics(
+    val recordCount: Int = 0,
+    val firstWorkedOn: LocalDate? = null,
+    val lastWorkedOn: LocalDate? = null,
+    val workedDayCount: Int = 0,
+    val averageIntervalDays: BigDecimal? = null,
+    val photoAttachedRecordCount: Int = 0,
+    val photoAttachmentRatePct: BigDecimal? = null,
+    val weatherDistribution: List<CountDistribution> = emptyList(),
+    val averageTemperatureC: BigDecimal? = null,
+    val totalAmountKg: BigDecimal? = null,
+    val averageAmountKg: BigDecimal? = null,
+    val amountCoverage: Coverage = Coverage(0, 0),
+    val materialCategories: List<MaterialCategoryStatistics> = emptyList(),
+    val methodDistribution: List<CountDistribution> = emptyList(),
+    val categoryMethods: List<CategoryMethodStatistics> = emptyList(),
+) : Serializable {
+    companion object {
+        fun empty() = FertilizingStatistics()
+    }
+}
+
+data class PestControlStatistics(
+    val recordCount: Int = 0,
+    val firstWorkedOn: LocalDate? = null,
+    val lastWorkedOn: LocalDate? = null,
+    val workedDayCount: Int = 0,
+    val averageIntervalDays: BigDecimal? = null,
+    val photoAttachedRecordCount: Int = 0,
+    val photoAttachmentRatePct: BigDecimal? = null,
+    val weatherDistribution: List<CountDistribution> = emptyList(),
+    val averageTemperatureC: BigDecimal? = null,
+    val categoryDistribution: List<CountDistribution> = emptyList(),
+    val pesticideAmounts: List<AmountByUnit> = emptyList(),
+    val categoryAmounts: List<CategoryAmountByUnit> = emptyList(),
+    val totalSprayAmountLiters: BigDecimal? = null,
+    val sprayAmountCoverage: Coverage = Coverage(0, 0),
+    val targets: List<TargetCount> = emptyList(),
+) : Serializable {
+    companion object {
+        fun empty() = PestControlStatistics()
+    }
+}
+
+data class WeedingStatistics(
+    val recordCount: Int = 0,
+    val firstWorkedOn: LocalDate? = null,
+    val lastWorkedOn: LocalDate? = null,
+    val workedDayCount: Int = 0,
+    val averageIntervalDays: BigDecimal? = null,
+    val photoAttachedRecordCount: Int = 0,
+    val photoAttachmentRatePct: BigDecimal? = null,
+    val weatherDistribution: List<CountDistribution> = emptyList(),
+    val averageTemperatureC: BigDecimal? = null,
+    val methodDistribution: List<CountDistribution> = emptyList(),
+) : Serializable {
+    companion object {
+        fun empty() = WeedingStatistics()
+    }
+}
+
+data class HarvestStatistics(
+    val recordCount: Int = 0,
+    val firstWorkedOn: LocalDate? = null,
+    val lastWorkedOn: LocalDate? = null,
+    val workedDayCount: Int = 0,
+    val averageIntervalDays: BigDecimal? = null,
+    val photoAttachedRecordCount: Int = 0,
+    val photoAttachmentRatePct: BigDecimal? = null,
+    val weatherDistribution: List<CountDistribution> = emptyList(),
+    val averageTemperatureC: BigDecimal? = null,
+    val totalAmountKg: BigDecimal? = null,
+    val averageAmountKg: BigDecimal? = null,
+    val amountCoverage: Coverage = Coverage(0, 0),
+    val firstHarvestedOn: LocalDate? = null,
+    val lastHarvestedOn: LocalDate? = null,
+    val medicinalParts: List<HarvestPartStatistics> = emptyList(),
+    val finalGrowthPeriodMonths: Int? = null,
+    val growthPeriodRangeMonths: GrowthPeriodRange? = null,
+) : Serializable {
+    companion object {
+        fun empty() = HarvestStatistics()
+    }
+}
+
+data class CycleReportStatistics(
+    val planting: PlantingStatistics = PlantingStatistics.empty(),
+    val watering: WateringStatistics = WateringStatistics.empty(),
+    val fertilizing: FertilizingStatistics = FertilizingStatistics.empty(),
+    val pestControl: PestControlStatistics = PestControlStatistics.empty(),
+    val weeding: WeedingStatistics = WeedingStatistics.empty(),
+    val pruning: CommonOnlyStatistics = CommonOnlyStatistics.empty(),
+    val harvest: HarvestStatistics = HarvestStatistics.empty(),
+    val etc: CommonOnlyStatistics = CommonOnlyStatistics.empty(),
+) : Serializable {
+    companion object {
+        fun empty() = CycleReportStatistics()
+    }
+}
