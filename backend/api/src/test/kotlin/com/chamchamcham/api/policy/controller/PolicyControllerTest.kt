@@ -1,6 +1,7 @@
 package com.chamchamcham.api.policy.controller
 
 import com.chamchamcham.api.exception.GlobalExceptionHandler
+import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.policy.recommendation.PolicyRecommendationResult
 import com.chamchamcham.application.policy.recommendation.PolicyRecommendationService
 import com.chamchamcham.application.policy.support.PolicyBenefitCategory
@@ -10,6 +11,7 @@ import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -160,7 +162,11 @@ class PolicyControllerTest(
             get("/api/v1/policy-recommendations")
                 .param("sort", "BAD")
                 .with(authenticatedMember(memberId.toString()))
-        ).andExpect(status().isBadRequest)
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo(ErrorCode.INVALID_INPUT.code)))
+
+        verifyNoInteractions(policyRecommendationService)
     }
 
     @Test
@@ -171,6 +177,9 @@ class PolicyControllerTest(
                 .with(authenticatedMember(memberId.toString()))
         )
             .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo(ErrorCode.INVALID_INPUT.code)))
+
+        verifyNoInteractions(policyRecommendationService)
     }
 
     @Test

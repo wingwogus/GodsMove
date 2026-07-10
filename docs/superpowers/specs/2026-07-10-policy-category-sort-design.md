@@ -77,8 +77,11 @@ benefitCategory, sort와 커서의 값이 하나라도 다르면 `INVALID_INPUT`
 - Application: 정렬과 필터를 커서에 결합하고, 다음 커서를 현재 정렬에 맞게 만든다.
 - Domain query repository: 기존 JPQL에 정렬별 cursor predicate와 order by를 선택한다.
 - Sync/card text: 새 카테고리 label과 키워드 규칙을 적용한다.
-- DB 스키마 변경과 새 의존성은 없다. 저장된 `benefitSummary`는 다음 정책 sync에서
-  같은 원문을 새 규칙으로 다시 계산하며 갱신된다.
+- DB 스키마 변경과 새 의존성은 없다.
+- 카테고리 필터는 저장된 `benefitSummary` label을 exact-match하므로, 배포 후 새 규칙으로
+  저장 label을 갱신하는 성공한 정책 sync를 최소 한 번 실행해야 카테고리 필터 롤아웃이 완료된다.
+- 커서 payload에 `sort`가 추가되므로 `sort`가 없는 기존 커서는 롤아웃 시 의도적으로
+  `INVALID_INPUT` 처리한다. 현재는 앱 API 연동 전 개발 단계이므로 구 커서 호환 계층은 추가하지 않는다.
 
 ## 오류 처리
 

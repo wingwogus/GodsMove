@@ -2,7 +2,6 @@ package com.chamchamcham.domain.policy
 
 import jakarta.persistence.EntityManager
 import org.springframework.stereotype.Repository
-import java.time.LocalDate
 
 @Repository
 class PolicyRecommendationQueryRepositoryImpl(
@@ -11,7 +10,6 @@ class PolicyRecommendationQueryRepositoryImpl(
     override fun findPage(
         condition: PolicyRecommendationQueryRepository.SearchCondition
     ): PolicyRecommendationQueryRepository.SearchResult {
-        val maxDate = LocalDate.of(9999, 12, 31)
         val where = mutableListOf(
             "r.member.id = :memberId",
             "p.source = :source",
@@ -31,17 +29,27 @@ class PolicyRecommendationQueryRepositoryImpl(
         condition.cursor?.let { cursor ->
             when (condition.sort) {
                 PolicyRecommendationSort.RECOMMENDED -> {
-                    where += """
-                        (
-                            r.score < :cursorScore
-                            or (r.score = :cursorScore and coalesce(r.policyProgram.applyEndsOn, :maxDate) > :cursorApplyEndsOn)
-                            or (r.score = :cursorScore and coalesce(r.policyProgram.applyEndsOn, :maxDate) = :cursorApplyEndsOn and r.id > :cursorId)
-                        )
-                    """.trimIndent()
                     params["cursorScore"] = requireNotNull(cursor.score) {
                         "Recommended policy cursor requires score"
                     }
-                    params["cursorApplyEndsOn"] = cursor.applyEndsOn ?: maxDate
+                    if (cursor.applyEndsOn == null) {
+                        where += """
+                            (
+                                r.score < :cursorScore
+                                or (r.score = :cursorScore and p.applyEndsOn is null and r.id > :cursorId)
+                            )
+                        """.trimIndent()
+                    } else {
+                        where += """
+                            (
+                                r.score < :cursorScore
+                                or (r.score = :cursorScore and p.applyEndsOn > :cursorApplyEndsOn)
+                                or (r.score = :cursorScore and p.applyEndsOn = :cursorApplyEndsOn and r.id > :cursorId)
+                                or (r.score = :cursorScore and p.applyEndsOn is null)
+                            )
+                        """.trimIndent()
+                        params["cursorApplyEndsOn"] = cursor.applyEndsOn
+                    }
                 }
 
                 PolicyRecommendationSort.LATEST -> {
@@ -63,10 +71,8 @@ class PolicyRecommendationQueryRepositoryImpl(
         }
 
         val orderBy = when (condition.sort) {
-            PolicyRecommendationSort.RECOMMENDED -> {
-                params["maxDate"] = maxDate
-                "r.score desc, coalesce(p.applyEndsOn, :maxDate) asc, r.id asc"
-            }
+            PolicyRecommendationSort.RECOMMENDED ->
+                "r.score desc, case when p.applyEndsOn is null then 1 else 0 end asc, p.applyEndsOn asc, r.id asc"
 
             PolicyRecommendationSort.LATEST ->
                 "case when p.applyStartsOn is null then 1 else 0 end asc, p.applyStartsOn desc, r.id asc"

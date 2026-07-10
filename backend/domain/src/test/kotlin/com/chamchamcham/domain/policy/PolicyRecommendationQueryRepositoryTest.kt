@@ -71,6 +71,50 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
     }
 
     @Test
+    fun `find page keeps real maximum deadline before null across recommended cursor pages`() {
+        val maxDate = LocalDate.of(9999, 12, 31)
+        persistRecommendation("경계 후보 A", score = "0.9000", applyEndsOn = null)
+        persistRecommendation("경계 후보 B", score = "0.9000", applyEndsOn = null)
+        persistRecommendation("경계 후보 C", score = "0.9000", applyEndsOn = null)
+
+        val rowsById = queryRepository.findPage(condition()).rows
+        val nullDeadlineRows = rowsById.dropLast(1)
+        val datedRow = rowsById.last().also { row ->
+            row.policyProgram.applyEndsOn = maxDate
+        }
+        val datedTitle = datedRow.policyProgram.title
+        val nullDeadlineTitles = nullDeadlineRows.map { it.policyProgram.title }
+        val datedCursor = PolicyRecommendationQueryRepository.Cursor(
+            score = datedRow.score,
+            applyStartsOn = null,
+            applyEndsOn = maxDate,
+            id = requireNotNull(datedRow.id)
+        )
+        entityManager.flush()
+        entityManager.clear()
+
+        val firstPage = queryRepository.findPage(condition(size = 1))
+        val pageAfterDated = queryRepository.findPage(condition(cursor = datedCursor, size = 1))
+        val firstNullRow = pageAfterDated.rows.single()
+        val pageAfterFirstNull = queryRepository.findPage(
+            condition(
+                cursor = PolicyRecommendationQueryRepository.Cursor(
+                    score = firstNullRow.score,
+                    applyStartsOn = null,
+                    applyEndsOn = null,
+                    id = requireNotNull(firstNullRow.id)
+                )
+            )
+        )
+        val titlesAcrossBoundary =
+            firstPage.rows.map { it.policyProgram.title } +
+                pageAfterDated.rows.map { it.policyProgram.title } +
+                pageAfterFirstNull.rows.map { it.policyProgram.title }
+
+        assertThat(titlesAcrossBoundary).containsExactly(datedTitle, *nullDeadlineTitles.toTypedArray())
+    }
+
+    @Test
     fun `find page filters recommendations by benefit summary`() {
         persistRecommendation("융자 지원", benefitSummary = "융자/금융", score = "0.9000", applyEndsOn = null)
         persistRecommendation("직불 지원", benefitSummary = "직불/수당", score = "0.9500", applyEndsOn = null)

@@ -5,6 +5,7 @@ import com.chamchamcham.application.policy.source.nongupez.NongupEzPolicyDetail
 import com.chamchamcham.application.policy.source.nongupez.NongupEzPolicyListItem
 import com.chamchamcham.application.policy.source.nongupez.NongupEzPolicySourceClient
 import com.chamchamcham.application.policy.support.NongupEzPolicyTagExtractor
+import com.chamchamcham.application.policy.support.PolicyBenefitCategory
 import com.chamchamcham.application.policy.support.PolicyCardTextGenerator
 import com.chamchamcham.application.policy.support.TextListJsonCodec
 import com.chamchamcham.domain.policy.PolicyProgram
@@ -157,6 +158,22 @@ class PolicySyncServiceTest {
     }
 
     @Test
+    fun `sync replaces legacy stored benefit summary with canonical label`() {
+        val existing = existingSyncedProgram(benefitSummary = "직불/수당")
+        `when`(sourceClient.detectLatestYear()).thenReturn("2026")
+        `when`(sourceClient.fetchPrograms("2026")).thenReturn(listOf(listItem()))
+        `when`(sourceClient.fetchDetail("AB000009", "2026")).thenReturn(detail())
+        `when`(policyProgramRepository.findBySourceAndSourceYear(PolicySource.NONGUP_EZ, "2026"))
+            .thenReturn(listOf(existing))
+        stubJobSaveAndFind()
+
+        service.runScheduledSync()
+
+        assertEquals(PolicyBenefitCategory.GRANT.label, existing.benefitSummary)
+        verify(policyProgramRepository).save(existing)
+    }
+
+    @Test
     fun `policy missing from current source list becomes not recommendable`() {
         val missing = existingSyncedProgram()
         `when`(sourceClient.detectLatestYear()).thenReturn("2026")
@@ -277,7 +294,9 @@ class PolicySyncServiceTest {
             rawJson = rawJson
         )
 
-    private fun existingSyncedProgram(): PolicyProgram =
+    private fun existingSyncedProgram(
+        benefitSummary: String = PolicyBenefitCategory.GRANT.label
+    ): PolicyProgram =
         PolicyProgram(
             title = "친환경농업 직불 지원",
             body = "친환경농업 확산\n\n친환경 인증 농업인 지원\n\n농업경영정보를 등록하고 친환경인증을 받은 농업인\n\n인증단계별 직불금 지원",
@@ -300,7 +319,7 @@ class PolicySyncServiceTest {
                 eligibilityOriginal = "농업경영정보를 등록하고 친환경인증을 받은 농업인",
                 eligibilitySummary = "인증 보유 농업인",
                 benefitOriginal = "인증단계별 직불금 지원",
-                benefitSummary = "지원금",
+                benefitSummary = benefitSummary,
                 applyStartsOn = LocalDate.of(2026, 2, 1),
                 applyEndsOn = LocalDate.of(2026, 3, 31),
                 applicationPeriodLabel = "2026.02.01~03.31",
