@@ -3,6 +3,8 @@ package com.chamchamcham.application.farming
 import com.chamchamcham.application.common.OpaqueCursorCodec
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.report.FarmingCycleReportProjectionService
+import com.chamchamcham.application.report.ReportScope
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
@@ -55,6 +57,7 @@ class FarmingRecordService(
     private val harvestRecordRepository: HarvestRecordRepository,
     private val detailValidator: FarmingRecordDetailValidator,
     private val cursorCodec: OpaqueCursorCodec,
+    private val projectionService: FarmingCycleReportProjectionService,
 ) {
     fun create(command: FarmingRecordCommand.Create): FarmingRecordResult.RecordId {
         detailValidator.validate(command)
@@ -81,6 +84,7 @@ class FarmingRecordService(
 
         saveDetail(record, command)
         attachMedia(record, media)
+        projectionService.rebuild(ReportScope(command.memberId, command.farmId, command.cropId))
 
         return FarmingRecordResult.RecordId(id = requireNotNull(record.id), workType = record.workType)
     }
@@ -147,6 +151,11 @@ class FarmingRecordService(
         val crop = findCrop(command.cropId)
         val media = validateMedia(command.memberId, command.mediaIds)
 
+        val previousScope = ReportScope(
+            memberId = command.memberId,
+            farmId = requireNotNull(record.farm.id) { "Persisted farm id is required" },
+            cropId = requireNotNull(record.crop.id) { "Persisted crop id is required" },
+        )
         val previousWorkType = record.workType
         record.update(
             farm = farm,
@@ -162,6 +171,12 @@ class FarmingRecordService(
 
         farmingRecordMediaRepository.deleteByRecord(record)
         attachMedia(record, media)
+        val currentScope = ReportScope(
+            memberId = command.memberId,
+            farmId = requireNotNull(record.farm.id) { "Persisted farm id is required" },
+            cropId = requireNotNull(record.crop.id) { "Persisted crop id is required" },
+        )
+        projectionService.rebuildAll(listOf(previousScope, currentScope))
 
         return FarmingRecordResult.RecordId(id = requireNotNull(record.id), workType = record.workType)
     }
@@ -169,7 +184,13 @@ class FarmingRecordService(
     fun delete(command: FarmingRecordCommand.Delete) {
         val record = findRecord(command.recordId)
         assertOwner(record, command.memberId)
+        val scope = ReportScope(
+            memberId = command.memberId,
+            farmId = requireNotNull(record.farm.id) { "Persisted farm id is required" },
+            cropId = requireNotNull(record.crop.id) { "Persisted crop id is required" },
+        )
         record.softDelete()
+        projectionService.rebuild(scope)
     }
 
     private fun saveDetail(record: FarmingRecord, payload: FarmingRecordDetailPayload) {
