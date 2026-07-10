@@ -1,8 +1,9 @@
 # 주기별 저장형 영농 리포트 통계 Implementation Plan
 
 > **상태: SUPERSEDED. 이 계획을 실행하지 않는다.** `dev` 영농일지 확장 스펙과
-> 작업별 공통 통계·타입 객체 JSONB 설계가 다시 확정되어 후속 구현 계획으로
-> 대체할 예정이다. 기준 문서는
+> 작업별 공통 통계·타입 객체 JSONB 설계가 다시 확정되어
+> `docs/superpowers/plans/2026-07-10-cycle-report-typed-jsonb-phase1.md`로 대체됐다.
+> 기준 문서는
 > `docs/superpowers/specs/2026-07-10-cycle-report-record-coaching-rag-redesign.md`다.
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
