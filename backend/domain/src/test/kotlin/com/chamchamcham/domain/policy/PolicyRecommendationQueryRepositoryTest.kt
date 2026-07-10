@@ -121,6 +121,57 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
         assertThat(result.rows.map { requireNotNull(it.id).toString() }).isSorted
     }
 
+    @Test
+    fun `find page keeps all same-date latest rows across cursor pages`() {
+        val sameDate = LocalDate.of(2026, 6, 1)
+        persistRecommendation("동일일 A", score = "0.9000", applyStartsOn = sameDate, applyEndsOn = null)
+        persistRecommendation("동일일 B", score = "0.9000", applyStartsOn = sameDate, applyEndsOn = null)
+        persistRecommendation("동일일 C", score = "0.9000", applyStartsOn = sameDate, applyEndsOn = null)
+        persistRecommendation("이전 날짜", score = "0.9000", applyStartsOn = LocalDate.of(2026, 5, 1), applyEndsOn = null)
+        entityManager.flush()
+        entityManager.clear()
+
+        val fullResult = queryRepository.findPage(condition(sort = PolicyRecommendationSort.LATEST))
+        val firstPage = queryRepository.findPage(condition(sort = PolicyRecommendationSort.LATEST, size = 1))
+        val cursorRow = firstPage.rows.single()
+        val secondPage = queryRepository.findPage(
+            condition(
+                sort = PolicyRecommendationSort.LATEST,
+                cursor = latestCursor(cursorRow)
+            )
+        )
+        val pagedIds = (firstPage.rows + secondPage.rows).map { requireNotNull(it.id) }
+
+        assertThat(cursorRow.policyProgram.applyStartsOn).isEqualTo(sameDate)
+        assertThat(pagedIds).containsExactlyElementsOf(fullResult.rows.map { requireNotNull(it.id) })
+        assertThat(pagedIds).doesNotHaveDuplicates()
+    }
+
+    @Test
+    fun `find page keeps all null-start latest rows across cursor pages`() {
+        persistRecommendation("날짜 있음", score = "0.9000", applyStartsOn = LocalDate.of(2026, 6, 1), applyEndsOn = null)
+        persistRecommendation("시작일 없음 A", score = "0.9000", applyStartsOn = null, applyEndsOn = null)
+        persistRecommendation("시작일 없음 B", score = "0.9000", applyStartsOn = null, applyEndsOn = null)
+        persistRecommendation("시작일 없음 C", score = "0.9000", applyStartsOn = null, applyEndsOn = null)
+        entityManager.flush()
+        entityManager.clear()
+
+        val fullResult = queryRepository.findPage(condition(sort = PolicyRecommendationSort.LATEST))
+        val firstPage = queryRepository.findPage(condition(sort = PolicyRecommendationSort.LATEST, size = 2))
+        val cursorRow = firstPage.rows.last()
+        val secondPage = queryRepository.findPage(
+            condition(
+                sort = PolicyRecommendationSort.LATEST,
+                cursor = latestCursor(cursorRow)
+            )
+        )
+        val pagedIds = (firstPage.rows + secondPage.rows).map { requireNotNull(it.id) }
+
+        assertThat(cursorRow.policyProgram.applyStartsOn).isNull()
+        assertThat(pagedIds).containsExactlyElementsOf(fullResult.rows.map { requireNotNull(it.id) })
+        assertThat(pagedIds).doesNotHaveDuplicates()
+    }
+
     private fun persistRecommendation(
         title: String,
         member: Member = this.member,
@@ -199,6 +250,16 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
             sort = sort,
             cursor = cursor,
             size = size
+        )
+
+    private fun latestCursor(
+        row: PolicyRecommendation
+    ): PolicyRecommendationQueryRepository.Cursor =
+        PolicyRecommendationQueryRepository.Cursor(
+            score = null,
+            applyStartsOn = row.policyProgram.applyStartsOn,
+            applyEndsOn = null,
+            id = requireNotNull(row.id)
         )
 
     private fun <T : BaseTimeEntity> persist(entity: T, createdAt: LocalDateTime): T {
