@@ -162,7 +162,7 @@ id
 member_id
 farm_id
 crop_id
-status                     ACTIVE | COMPLETED
+status                     ACTIVE | COMPLETED | SUPERSEDED
 starts_at
 ends_at                    nullable for ACTIVE
 start_basis                FIRST_RECORD | AFTER_PREVIOUS_FINAL_HARVEST
@@ -170,6 +170,7 @@ planting_milestone_at      nullable
 final_harvest_record_id    nullable for ACTIVE, required for COMPLETED
 statistics_schema_version
 statistics                 jsonb
+statistics_fingerprint     canonical payload SHA-256
 source_revision
 created_at
 updated_at
@@ -177,7 +178,9 @@ completed_at               nullable
 ```
 
 `statistics`는 타입이 있는 애플리케이션 모델을 JSONB로 직렬화한다. 임의의
-문자열 맵을 서비스 전반에 전달하지 않는다.
+문자열 맵을 서비스 전반에 전달하지 않는다. JSONB 역직렬화 과정에서 숫자
+런타임 타입이나 소수점 scale이 달라져도 같은 통계를 변경으로 오인하지 않도록
+정렬된 canonical JSON의 SHA-256을 함께 저장하고 동일 payload 판정에 사용한다.
 
 코칭 상태는 `CoachingFeedback`이 소유한다. 리포트 행에 같은 상태를 중복
 저장하지 않고, 최신 CYCLE_REPORT 피드백을 조회해 상태를 반환한다.
@@ -187,6 +190,8 @@ completed_at               nullable
 - 회원·밭·작물 조합마다 ACTIVE 리포트는 최대 하나다.
 - `final_harvest_record_id`는 COMPLETED 리포트에서 유일하다.
 - 마지막 수확 다음에 첫 기록이 들어오면 새 ACTIVE 리포트를 만든다.
+- 마지막 수확 경계 변경으로 더 이상 유효하지 않은 리포트는 삭제하지 않고
+  SUPERSEDED로 보존한다. 기본 목록·비교에서는 제외한다.
 
 ### 9.2 직전 주기 리포트 ID를 저장하지 않는 이유
 
@@ -236,10 +241,16 @@ completed_at               nullable
 MVP에서는 영농기록 변경 트랜잭션 안에서 원본과 프로젝션을 함께 반영해
 저장 직후 통계 일관성을 보장한다. LLM 생성은 같은 트랜잭션에 넣지 않는다.
 
-동일 회원·밭·작물에 기록이 동시에 저장될 수 있으므로 ACTIVE 리포트 행을
-잠근 뒤 원본을 다시 읽고 계산한다. ACTIVE 행이 아직 없는 동시 최초 생성은
-유일성 제약과 재시도로 처리한다. 여러 범위를 다시 계산할 때는 ID 정렬
-순서로 잠가 교착을 피한다.
+동일 회원·밭·작물에 기록이 동시에 저장될 수 있으므로 소유권을 검증한 밭
+행을 먼저 잠근 뒤 리포트와 원본을 다시 읽고 계산한다. 항상 존재하는 부모
+행을 잠그므로 ACTIVE 행이 아직 없는 최초 생성도 같은 임계 구역에서
+직렬화된다. 여러 범위를 다시 계산할 때는 회원·밭·작물 ID 정렬 순서로 잠가
+교착을 피하고, ACTIVE 유일성 제약은 마지막 방어선으로 유지한다.
+
+기능 도입 전에 쌓인 기록은 동일한 재계산 서비스를 호출하는 일회성 backfill로
+프로젝션을 만든다. runner는 기본 비활성화하고 스키마 적용 후 명시적으로 한
+배포에서만 켠다. fingerprint 비교 때문에 같은 backfill을 다시 실행해도 실제
+payload가 같으면 revision은 증가하지 않는다.
 
 ## 11. 공통 통계 규칙
 
