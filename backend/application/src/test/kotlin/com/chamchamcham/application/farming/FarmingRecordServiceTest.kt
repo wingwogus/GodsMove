@@ -9,6 +9,7 @@ import com.chamchamcham.domain.common.BaseTimeEntity
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
+import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecord
@@ -53,6 +54,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.doThrow
 import org.mockito.Mockito.inOrder
+import org.mockito.Mockito.lenient
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
@@ -78,6 +80,7 @@ class FarmingRecordServiceTest {
     private val cursorCodec = OpaqueCursorCodec()
 
     @Mock private lateinit var memberRepository: MemberRepository
+    @Mock private lateinit var memberCropRepository: MemberCropRepository
     @Mock private lateinit var farmRepository: FarmRepository
     @Mock private lateinit var cropRepository: CropRepository
     @Mock private lateinit var farmingRecordRepository: FarmingRecordRepository
@@ -107,6 +110,7 @@ class FarmingRecordServiceTest {
     fun setUp() {
         service = FarmingRecordService(
             memberRepository = memberRepository,
+            memberCropRepository = memberCropRepository,
             farmRepository = farmRepository,
             cropRepository = cropRepository,
             farmingRecordRepository = farmingRecordRepository,
@@ -131,6 +135,10 @@ class FarmingRecordServiceTest {
         newCrop = Crop(id = newCropId, externalNo = newCropId.hashCode(), name = "당귀", usePartCategory = CropUsePartCategory.ROOT_BARK)
         media1 = uploadedMedia(mediaId1)
         replacementMedia = uploadedMedia(replacementMediaId)
+        lenient().`when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId))
+            .thenReturn(true)
+        lenient().`when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, newFarmId, newCropId))
+            .thenReturn(true)
     }
 
     private fun baseCommand(
@@ -490,6 +498,22 @@ class FarmingRecordServiceTest {
     }
 
     @Test
+    fun `create rejects crop that is not registered to member farm`() {
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId))
+            .thenReturn(false)
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.create(baseCommand(workType = WorkType.PRUNING))
+        }
+
+        assertEquals(ErrorCode.CROP_NOT_FOUND, exception.errorCode)
+        verify(cropRepository, never()).findById(cropId)
+        verify(farmingRecordRepository, never()).save(any(FarmingRecord::class.java))
+    }
+
+    @Test
     fun `create throws BusinessException not IllegalArgumentException when detail is missing despite validator passing`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
@@ -587,6 +611,27 @@ class FarmingRecordServiceTest {
                 ReportScope(memberId, newFarmId, newCropId),
             ),
         )
+        verify(memberCropRepository).existsByMemberIdAndFarmIdAndCropId(memberId, newFarmId, newCropId)
+    }
+
+    @Test
+    fun `update rejects target crop that is not registered to member farm before mutating record`() {
+        val record = existingRecord(workType = WorkType.PRUNING)
+        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
+        `when`(farmRepository.findByIdAndOwnerId(newFarmId, memberId)).thenReturn(newFarm)
+        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, newFarmId, newCropId))
+            .thenReturn(false)
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.update(updateCommand(workType = WorkType.HARVEST, farmId = newFarmId, cropId = newCropId))
+        }
+
+        assertEquals(ErrorCode.CROP_NOT_FOUND, exception.errorCode)
+        assertEquals(farmId, record.farm.id)
+        assertEquals(cropId, record.crop.id)
+        assertEquals(WorkType.PRUNING, record.workType)
+        verify(cropRepository, never()).findById(newCropId)
+        verifyNoInteractions(farmingRecordMediaRepository, projectionService)
     }
 
     @Test

@@ -7,6 +7,8 @@ import com.chamchamcham.application.report.FarmingCycleReportQueryService
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
+import com.chamchamcham.domain.crop.MemberCrop
+import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecordMediaRepository
@@ -48,6 +50,7 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
     private val harvestRecordRepository: HarvestRecordRepository,
     private val farmingRecordMediaRepository: FarmingRecordMediaRepository,
     private val memberRepository: MemberRepository,
+    private val memberCropRepository: MemberCropRepository,
     private val farmRepository: FarmRepository,
     private val cropRepository: CropRepository,
 ) {
@@ -69,6 +72,7 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
         wateringRecordRepository.deleteAllInBatch()
         harvestRecordRepository.deleteAllInBatch()
         farmingRecordRepository.deleteAllInBatch()
+        memberCropRepository.deleteAllInBatch()
         farmRepository.deleteAllInBatch()
         cropRepository.deleteAllInBatch()
         memberRepository.deleteAllInBatch()
@@ -78,6 +82,7 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
         crop = cropRepository.save(
             Crop(externalNo = 7001, name = "황기", usePartCategory = CropUsePartCategory.ROOT_BARK),
         )
+        memberCropRepository.save(MemberCrop(member = member, farm = farm, crop = crop))
     }
 
     @Test
