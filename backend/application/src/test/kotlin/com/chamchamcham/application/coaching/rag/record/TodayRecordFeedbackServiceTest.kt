@@ -57,7 +57,7 @@ class TodayRecordFeedbackServiceTest {
     fun `generate rejects invalid schema before vector search`() {
         val vectorStore = FakeVectorStore(emptyList())
         val service = service(vectorStore = vectorStore)
-        val context = readFixture("today-record-feedback-watering.json").copy(schemaVersion = "record-feedback-context.v2")
+        val context = readFixture("today-record-feedback-watering.json").copy(schemaVersion = "record-feedback-context.v1")
 
         assertThatThrownBy { service.generate(context) }
             .isInstanceOfSatisfying(BusinessException::class.java) {
@@ -114,7 +114,7 @@ class TodayRecordFeedbackServiceTest {
 
         assertThat(result.audit.citations).containsExactly("doc-1")
         assertThat(result.model.chat).isEqualTo("test-chat")
-        assertThat(vectorStore.requests.map { it.query }).contains("참당귀 물주기 재배 관리 약용작물")
+        assertThat(vectorStore.requests.map { it.query }).contains("참당귀 관수 재배 관리 약용작물")
         assertThat(vectorStore.requests).allSatisfy {
             assertThat(it.filterExpression?.toString().orEmpty())
                 .contains("sourceType")
@@ -129,7 +129,7 @@ class TodayRecordFeedbackServiceTest {
     }
 
     @Test
-    fun `generate allows synthetic record citation from feedback request id`() {
+    fun `generate allows synthetic record citation from record id`() {
         val context = readFixture("today-record-feedback-harvest.json")
         val recordCitationId = context.recordCitationId()
         val vectorStore = FakeVectorStore(listOf(officialDocument("doc-1")))
@@ -140,7 +140,7 @@ class TodayRecordFeedbackServiceTest {
 
         assertThat(result.audit.status).isEqualTo(RagAuditStatus.PASS)
         assertThat(result.audit.citations).contains(recordCitationId, "doc-1")
-        assertThat(chatClient.requestSpec.userText).contains("$recordCitationId : 당일 영농기록 context")
+        assertThat(chatClient.requestSpec.userText).contains("$recordCitationId : 대상 영농기록 context")
     }
 
     private fun structuredResultWithUncitedRecommendation(citationId: String): CoachingStructuredResult {
@@ -203,7 +203,7 @@ class TodayRecordFeedbackServiceTest {
         return TodayRecordFeedbackService(
             chatClient = chatClient,
             vectorStore = vectorStore,
-            contextValidator = TodayRecordFeedbackContextValidator(),
+            contextValidator = RecordFeedbackContextValidator(),
             queryPlanner = RecordFeedbackRetrievalQueryPlanner(),
             promptBuilder = RecordFeedbackPromptBuilder(),
             outputValidator = CoachingStructuredOutputValidator(),
@@ -215,11 +215,11 @@ class TodayRecordFeedbackServiceTest {
         )
     }
 
-    private fun readFixture(name: String): TodayRecordFeedbackContext {
+    private fun readFixture(name: String): RecordFeedbackContext {
         val resource = javaClass.classLoader.getResource("coaching/rag/$name")
             ?: error("Missing fixture: $name")
         return resource.openStream().use {
-            objectMapper.readValue(it, TodayRecordFeedbackContext::class.java)
+            objectMapper.readValue(it, RecordFeedbackContext::class.java)
         }
     }
 

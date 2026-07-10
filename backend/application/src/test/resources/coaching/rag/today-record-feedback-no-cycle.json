@@ -1,83 +1,38 @@
 {
-  "schemaVersion": "record-feedback-context.v1",
-  "feedbackRequestId": "feedback-20260703-no-cycle",
-  "mode": "RECORD_AUTO",
+  "schemaVersion": "record-feedback-context.v2",
   "member": {
-    "memberId": "member-1",
+    "memberId": "50000000-0000-0000-0000-000000000001",
     "experienceLevel": 1,
     "managementType": "NON_REGISTERED_FARMER"
   },
   "farm": {
-    "farmId": "farm-1",
+    "farmId": "50000000-0000-0000-0000-000000000002",
     "name": "청년약초밭",
-    "address": "강원특별자치도 평창군 진부면",
-    "locationSource": "FARM_ADDRESS"
+    "roadAddress": "강원특별자치도 평창군 진부면",
+    "latitude": null,
+    "longitude": null
   },
   "crop": {
-    "cropId": "crop-angelica",
+    "cropId": "50000000-0000-0000-0000-000000000003",
     "name": "참당귀",
     "usePartCategory": "ROOT_BARK"
   },
-  "cropCycle": null,
-  "targetRecord": {
-    "recordId": "record-no-cycle-1",
-    "recordedOn": "2026-07-03",
+  "record": {
+    "recordId": "50000000-0000-0000-0000-000000000004",
+    "sourceRevision": 1,
+    "workedAt": "2026-07-03T08:30:00",
     "workType": "WEEDING",
-    "fields": {
-      "weedingMethod": "손"
+    "detail": {
+      "type": "WEEDING",
+      "weedingMethod": "HAND"
     },
+    "recordedWeatherCondition": "맑음",
+    "recordedTemperatureC": 30,
     "memo": "작물 주변 잡초를 손으로 제거함.",
-    "hasPhoto": false,
     "photoCount": 0
   },
-  "weather": {
-    "recordDay": {
-      "avgTemperatureC": 24.8,
-      "maxTemperatureC": 30.1,
-      "minTemperatureC": 19.9,
-      "rainfallMm": 0.0,
-      "humidityPct": 71.0
-    },
-    "recent7Days": {
-      "rainfallMm": 4.5,
-      "hotDaysCount": 2,
-      "dryDaysCount": 5
-    },
-    "forecast7Days": [
-      {
-        "date": "2026-07-04",
-        "rainfallMm": 12.0,
-        "rainProbabilityPct": 70,
-        "maxTemperatureC": 29.0,
-        "minTemperatureC": 21.0,
-        "humidityPct": 86.0,
-        "windSpeedMs": 2.7,
-        "riskFlags": [
-          "RAIN",
-          "HIGH_HUMIDITY"
-        ]
-      },
-      {
-        "date": "2026-07-05",
-        "rainfallMm": 0.0,
-        "rainProbabilityPct": 25,
-        "maxTemperatureC": 31.0,
-        "minTemperatureC": 22.3,
-        "humidityPct": 73.0,
-        "windSpeedMs": 2.0,
-        "riskFlags": [
-          "HOT"
-        ]
-      }
-    ],
-    "source": "SERVER_WEATHER_SNAPSHOT"
-  },
-  "recentRecords": [],
-  "workTypeStats": {
-    "cycleCounts": {},
-    "lastWorkedOnByType": {},
-    "recent30DayCounts": {
-      "WEEDING": 1
-    }
-  }
+  "weather": null,
+  "warnings": [
+    "weather_location_unavailable"
+  ]
 }

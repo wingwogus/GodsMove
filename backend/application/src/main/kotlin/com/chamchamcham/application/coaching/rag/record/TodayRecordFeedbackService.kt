@@ -28,14 +28,14 @@ data class TodayRecordFeedbackResult(
 class TodayRecordFeedbackService(
     private val chatClient: ChatClient,
     private val vectorStore: VectorStore,
-    private val contextValidator: TodayRecordFeedbackContextValidator,
+    private val contextValidator: RecordFeedbackContextValidator,
     private val queryPlanner: RecordFeedbackRetrievalQueryPlanner,
     private val promptBuilder: RecordFeedbackPromptBuilder,
     private val outputValidator: CoachingStructuredOutputValidator,
     private val sanitizer: CoachingStructuredResultSanitizer,
     private val ragProperties: RagProperties
 ) {
-    fun generate(context: TodayRecordFeedbackContext, topK: Int? = null): TodayRecordFeedbackResult {
+    fun generate(context: RecordFeedbackContext, topK: Int? = null): TodayRecordFeedbackResult {
         val validation = contextValidator.requireValid(context)
         val perQueryTopK = normalizeTopK(topK)
         val queries = queryPlanner.plan(context)
@@ -77,7 +77,7 @@ class TodayRecordFeedbackService(
     private fun enrichCitations(
         result: CoachingStructuredResult,
         documents: List<Document>,
-        context: TodayRecordFeedbackContext
+        context: RecordFeedbackContext
     ): CoachingStructuredResult {
         if (result.citations.isEmpty()) {
             return result
@@ -139,6 +139,7 @@ class TodayRecordFeedbackService(
             .user(prompt.user)
             .call()
             .entity(CoachingStructuredResult::class.java)
+            ?: throw BusinessException(ErrorCode.RAG_STRUCTURED_OUTPUT_INVALID)
     }
 
     private fun resolveAuditedResult(

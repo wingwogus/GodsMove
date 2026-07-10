@@ -3,8 +3,8 @@ package com.chamchamcham.api.coaching
 import com.chamchamcham.ApiApplication
 import com.chamchamcham.application.coaching.rag.common.RagProperties
 import com.chamchamcham.application.coaching.rag.common.RagSourceType
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContext
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackRetrievalQueryPlanner
-import com.chamchamcham.application.coaching.rag.record.TodayRecordFeedbackContext
 import com.chamchamcham.application.coaching.rag.record.TodayRecordFeedbackService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
@@ -51,7 +51,7 @@ class TodayRecordFeedbackVectorStoreSmokeTest @Autowired constructor(
             )
         }.distinctBy { it.id }
 
-        assertThat(queries.map { it.query }).contains("참당귀 물주기 재배 관리 약용작물")
+        assertThat(queries.map { it.query }).contains("참당귀 관수 재배 관리 약용작물")
         assertThat(retrieved)
             .withFailMessage("Seed real PDF chunks first with the local dev RAG seed endpoint in TECH_DOCUMENT-only mode.")
             .isNotEmpty
@@ -61,8 +61,8 @@ class TodayRecordFeedbackVectorStoreSmokeTest @Autowired constructor(
         }
     }
 
-    private fun readFixture(name: String): TodayRecordFeedbackContext {
+    private fun readFixture(name: String): RecordFeedbackContext {
         val path = Path.of("application/src/test/resources/coaching/rag", name)
-        return objectMapper.readValue(Files.readString(path), TodayRecordFeedbackContext::class.java)
+        return objectMapper.readValue(Files.readString(path), RecordFeedbackContext::class.java)
     }
 }

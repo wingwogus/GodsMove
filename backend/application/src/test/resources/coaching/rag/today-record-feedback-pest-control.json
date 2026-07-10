@@ -1,59 +1,48 @@
 {
-  "schemaVersion": "record-feedback-context.v1",
-  "feedbackRequestId": "feedback-20260703-pest-control",
-  "mode": "RECORD_AUTO",
+  "schemaVersion": "record-feedback-context.v2",
   "member": {
-    "memberId": "member-1",
+    "memberId": "40000000-0000-0000-0000-000000000001",
     "experienceLevel": 1,
     "managementType": "NON_REGISTERED_FARMER"
   },
   "farm": {
-    "farmId": "farm-1",
+    "farmId": "40000000-0000-0000-0000-000000000002",
     "name": "청년약초밭",
-    "address": "경상북도 영주시 풍기읍",
-    "locationSource": "FARM_ADDRESS"
+    "roadAddress": "경상북도 영주시 풍기읍",
+    "latitude": 36.8,
+    "longitude": 128.6
   },
   "crop": {
-    "cropId": "crop-ginseng",
+    "cropId": "40000000-0000-0000-0000-000000000003",
     "name": "인삼",
     "usePartCategory": "ROOT_BARK"
   },
-  "cropCycle": {
-    "cycleId": "cycle-3",
-    "startedRecordId": "record-planting-3",
-    "startedOn": "2026-03-20",
-    "daysAfterPlanting": 105,
-    "startBasis": "PLANTING_RECORD"
-  },
-  "targetRecord": {
-    "recordId": "record-pest-control-1",
-    "recordedOn": "2026-07-03",
+  "record": {
+    "recordId": "40000000-0000-0000-0000-000000000004",
+    "sourceRevision": 1,
+    "workedAt": "2026-07-03T16:00:00",
     "workType": "PEST_CONTROL",
-    "fields": {
+    "detail": {
+      "type": "PEST_CONTROL",
       "pesticideCategory": "FUNGICIDE",
-      "pesticideAmount": "20",
-      "pesticideAmountUnit": "mL",
-      "sprayWaterAmountL": 20,
-      "targetPestOrDisease": "점무늬병"
+      "pesticideAmount": 20.0,
+      "pesticideAmountUnit": "ML",
+      "totalSprayAmount": 20.0,
+      "totalSprayAmountUnit": "L",
+      "pestTarget": "점무늬병"
     },
+    "recordedWeatherCondition": "비",
+    "recordedTemperatureC": 25,
     "memo": "아랫잎에 반점이 보여 등록약제를 희석해 살포함.",
-    "hasPhoto": true,
     "photoCount": 2
   },
   "weather": {
-    "recordDay": {
-      "avgTemperatureC": 25.1,
-      "maxTemperatureC": 29.2,
-      "minTemperatureC": 21.6,
-      "rainfallMm": 12.0,
-      "humidityPct": 88.0
+    "current": {
+      "temperatureC": 25,
+      "skyCondition": "비",
+      "observedAt": "2026-07-03T16:00:00"
     },
-    "recent7Days": {
-      "rainfallMm": 41.0,
-      "hotDaysCount": 1,
-      "dryDaysCount": 0
-    },
-    "forecast7Days": [
+    "forecastDays": [
       {
         "date": "2026-07-04",
         "rainfallMm": 18.0,
@@ -66,43 +55,9 @@
           "RAIN",
           "HIGH_HUMIDITY"
         ]
-      },
-      {
-        "date": "2026-07-05",
-        "rainfallMm": 0.0,
-        "rainProbabilityPct": 30,
-        "maxTemperatureC": 32.0,
-        "minTemperatureC": 24.0,
-        "humidityPct": 82.0,
-        "windSpeedMs": 2.4,
-        "riskFlags": [
-          "HOT"
-        ]
       }
     ],
-    "source": "SERVER_WEATHER_SNAPSHOT"
+    "source": "FAKE_WEATHER_PORT"
   },
-  "recentRecords": [
-    {
-      "recordId": "record-20260628-1",
-      "recordedOn": "2026-06-28",
-      "workType": "WEEDING",
-      "memoSummary": "포장 가장자리 예초"
-    }
-  ],
-  "workTypeStats": {
-    "cycleCounts": {
-      "PLANTING": 1,
-      "WATERING": 5,
-      "PEST_CONTROL": 1,
-      "WEEDING": 2
-    },
-    "lastWorkedOnByType": {
-      "PEST_CONTROL": "2026-06-10"
-    },
-    "recent30DayCounts": {
-      "PEST_CONTROL": 1,
-      "WEEDING": 2
-    }
-  }
+  "warnings": []
 }

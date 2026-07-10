@@ -1,57 +1,46 @@
 {
-  "schemaVersion": "record-feedback-context.v1",
-  "feedbackRequestId": "feedback-20260703-fertilizing",
-  "mode": "RECORD_AUTO",
+  "schemaVersion": "record-feedback-context.v2",
   "member": {
-    "memberId": "member-1",
+    "memberId": "30000000-0000-0000-0000-000000000001",
     "experienceLevel": 1,
     "managementType": "NON_REGISTERED_FARMER"
   },
   "farm": {
-    "farmId": "farm-1",
+    "farmId": "30000000-0000-0000-0000-000000000002",
     "name": "청년약초밭",
-    "address": "충청북도 제천시 봉양읍",
-    "locationSource": "FARM_ADDRESS"
+    "roadAddress": "충청북도 제천시 봉양읍",
+    "latitude": 37.1,
+    "longitude": 128.2
   },
   "crop": {
-    "cropId": "crop-astragalus",
+    "cropId": "30000000-0000-0000-0000-000000000003",
     "name": "황기",
     "usePartCategory": "ROOT_BARK"
   },
-  "cropCycle": {
-    "cycleId": "cycle-2",
-    "startedRecordId": "record-planting-2",
-    "startedOn": "2026-04-01",
-    "daysAfterPlanting": 93,
-    "startBasis": "PLANTING_RECORD"
-  },
-  "targetRecord": {
-    "recordId": "record-fertilizing-1",
-    "recordedOn": "2026-07-03",
+  "record": {
+    "recordId": "30000000-0000-0000-0000-000000000004",
+    "sourceRevision": 1,
+    "workedAt": "2026-07-03T08:10:00",
     "workType": "FERTILIZING",
-    "fields": {
+    "detail": {
+      "type": "FERTILIZING",
       "materialCategory": "ORGANIC_FERTILIZER",
-      "amountScale": "보통",
-      "fertilizingMethod": "살포"
+      "amount": 2.5,
+      "amountUnit": "KG",
+      "applicationMethod": "SOIL"
     },
+    "recordedWeatherCondition": "흐림",
+    "recordedTemperatureC": 24,
     "memo": "비 오기 전 고랑 사이에 완숙퇴비를 소량 살포함.",
-    "hasPhoto": false,
     "photoCount": 0
   },
   "weather": {
-    "recordDay": {
-      "avgTemperatureC": 23.4,
-      "maxTemperatureC": 28.5,
-      "minTemperatureC": 18.7,
-      "rainfallMm": 8.0,
-      "humidityPct": 82.0
+    "current": {
+      "temperatureC": 24,
+      "skyCondition": "흐림",
+      "observedAt": "2026-07-03T09:00:00"
     },
-    "recent7Days": {
-      "rainfallMm": 23.5,
-      "hotDaysCount": 0,
-      "dryDaysCount": 1
-    },
-    "forecast7Days": [
+    "forecastDays": [
       {
         "date": "2026-07-04",
         "rainfallMm": 35.0,
@@ -64,42 +53,9 @@
           "HEAVY_RAIN",
           "HIGH_HUMIDITY"
         ]
-      },
-      {
-        "date": "2026-07-05",
-        "rainfallMm": 12.0,
-        "rainProbabilityPct": 70,
-        "maxTemperatureC": 28.0,
-        "minTemperatureC": 21.1,
-        "humidityPct": 86.0,
-        "windSpeedMs": 3.5,
-        "riskFlags": [
-          "RAIN"
-        ]
       }
     ],
-    "source": "SERVER_WEATHER_SNAPSHOT"
+    "source": "FAKE_WEATHER_PORT"
   },
-  "recentRecords": [
-    {
-      "recordId": "record-20260625-1",
-      "recordedOn": "2026-06-25",
-      "workType": "WATERING",
-      "memoSummary": "건조하여 점적 관수"
-    }
-  ],
-  "workTypeStats": {
-    "cycleCounts": {
-      "PLANTING": 1,
-      "WATERING": 6,
-      "FERTILIZING": 1
-    },
-    "lastWorkedOnByType": {
-      "FERTILIZING": "2026-05-28"
-    },
-    "recent30DayCounts": {
-      "FERTILIZING": 1,
-      "WATERING": 3
-    }
-  }
+  "warnings": []
 }

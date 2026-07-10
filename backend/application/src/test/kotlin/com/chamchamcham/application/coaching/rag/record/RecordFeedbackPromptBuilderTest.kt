@@ -26,14 +26,14 @@ class RecordFeedbackPromptBuilderTest {
         assertThat(prompt.system).contains("불확실한 판단은 단정하지 않는다")
         assertThat(prompt.system).contains("수확 후 가공, 건조, 저장 조언은 보조 점검 수준")
         assertThat(prompt.system).contains("예보는 확정된 날씨처럼 단정하지 않는다")
-        assertThat(prompt.system).contains("forecast7Days에 강우, 고온, 고습, 건조, 강풍 신호가 있으면 nextActions에 예보 기반 점검 행동을 포함한다")
+        assertThat(prompt.system).contains("forecastDays에 강우, 고온, 고습, 건조, 강풍 신호가 있으면 nextActions에 예보 기반 점검 행동을 포함한다")
         assertThat(prompt.system).contains("summary, diagnosis, observations, recommendations, nextActions에는 chunkId나 UUID를 직접 쓰지 않는다")
         assertThat(prompt.system).contains("summary는 상황 요약이 아니라 농부에게 건네는 코칭 한마디다")
         assertThat(prompt.system).contains("summary에서는 가장 중요한 한 가지만 짚어")
     }
 
     @Test
-    fun `prompt includes target record weather stats recent records and evidence`() {
+    fun `prompt includes target record live weather typed detail and evidence`() {
         val prompt = builder.build(
             context = readFixture("today-record-feedback-watering.json"),
             queries = listOf(RecordFeedbackRetrievalQuery("참당귀 물주기 재배 관리 약용작물", "crop_work_type")),
@@ -41,28 +41,26 @@ class RecordFeedbackPromptBuilderTest {
         )
 
         assertThat(prompt.user).contains("작물: 참당귀")
-        assertThat(prompt.user).contains("작업유형: 물주기")
+        assertThat(prompt.user).contains("작업유형: 관수")
         assertThat(prompt.user).contains("오전 흙 표면이 말라 보여 점적 관수함.")
-        assertThat(prompt.user).contains("최근 7일 강수량: 4.5mm")
         assertThat(prompt.user).contains("예보: 2026-07-04 강수 22.0mm")
         assertThat(prompt.user).contains("riskFlags=HEAVY_RAIN,HIGH_HUMIDITY")
-        assertThat(prompt.user).contains("WATERING=8")
+        assertThat(prompt.user).contains("작업상세: irrigationAmount=NORMAL, irrigationMethod=DRIP")
+        assertThat(prompt.user).contains("현재 날씨: 구름많음, 30C")
         assertThat(prompt.user).contains("허용 citationIds:")
-        assertThat(prompt.user).contains("record:feedback-20260703-watering : 당일 영농기록 context")
+        assertThat(prompt.user).contains("record:10000000-0000-0000-0000-000000000004 : 대상 영농기록 context")
         assertThat(prompt.user).contains("[doc-1] 농업기술길잡이 007 약용작물 p.123")
         assertThat(prompt.user).contains("영농 경력: 1")
         assertThat(prompt.user).contains("경영 형태: NON_REGISTERED_FARMER")
-        assertThat(prompt.user).contains("최저 19.9C")
         assertThat(prompt.user).contains("최저 21.4C")
-        assertThat(prompt.user).contains("유형별 마지막 작업일:")
-        assertThat(prompt.user).contains("WATERING=2026-06-30")
+        assertThat(prompt.user).doesNotContain("최근 기록", "작물주기", "작업 횟수")
     }
 
-    private fun readFixture(name: String): TodayRecordFeedbackContext {
+    private fun readFixture(name: String): RecordFeedbackContext {
         val resource = javaClass.classLoader.getResource("coaching/rag/$name")
             ?: error("Missing fixture: $name")
         return resource.openStream().use {
-            objectMapper.readValue(it, TodayRecordFeedbackContext::class.java)
+            objectMapper.readValue(it, RecordFeedbackContext::class.java)
         }
     }
 }

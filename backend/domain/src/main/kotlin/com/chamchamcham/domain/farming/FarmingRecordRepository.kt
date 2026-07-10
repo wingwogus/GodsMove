@@ -14,6 +14,19 @@ interface FarmingRecordRepository : JpaRepository<FarmingRecord, UUID> {
         join fetch r.member
         join fetch r.farm
         join fetch r.crop
+        where r.id = :id
+          and r.member.id = :memberId
+          and r.isDeleted = false
+        """
+    )
+    fun findContextSourceByIdAndMemberId(id: UUID, memberId: UUID): FarmingRecord?
+
+    @Query(
+        """
+        select r from FarmingRecord r
+        join fetch r.member
+        join fetch r.farm
+        join fetch r.crop
         where r.member.id = :memberId
           and r.farm.id = :farmId
           and r.crop.id = :cropId
