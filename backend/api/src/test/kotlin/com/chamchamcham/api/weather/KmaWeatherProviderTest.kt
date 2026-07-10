@@ -191,8 +191,9 @@ class KmaWeatherProviderTest {
     companion object {
         private const val BASE_URL = "https://weather.example.test/VilageFcstInfoService_2.0"
         private const val SERVICE_KEY = "test-service-key"
+        // 20:10 UTC is 05:10 KST on the next day. KMA issue times are KST.
         private val FIXED_CLOCK: Clock = Clock.fixed(
-            Instant.parse("2026-07-11T05:10:00Z"),
+            Instant.parse("2026-07-10T20:10:00Z"),
             ZoneId.of("UTC")
         )
 

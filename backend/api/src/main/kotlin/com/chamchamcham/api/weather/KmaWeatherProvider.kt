@@ -19,6 +19,7 @@ import java.net.URI
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import kotlin.math.roundToInt
 
@@ -54,7 +55,7 @@ class KmaWeatherProvider internal constructor(
 
     override fun fetchCurrentWeather(latitude: Double, longitude: Double): WeatherSnapshot {
         val grid = GeoToGridConverter.convert(latitude, longitude)
-        val now = LocalDateTime.now(clock)
+        val now = currentKmaTime()
 
         val ncst = requestItems(
             path = "getUltraSrtNcst",
@@ -89,7 +90,7 @@ class KmaWeatherProvider internal constructor(
 
         val current = fetchCurrentWeather(latitude, longitude)
         val grid = GeoToGridConverter.convert(latitude, longitude)
-        val now = LocalDateTime.now(clock)
+        val now = currentKmaTime()
         val villageForecast = requestItems(
             path = "getVilageFcst",
             base = KmaBaseTimeResolver.resolveVilageFcst(now),
@@ -226,6 +227,9 @@ class KmaWeatherProvider internal constructor(
         }
     }
 
+    private fun currentKmaTime(): LocalDateTime =
+        LocalDateTime.ofInstant(clock.instant(), KMA_TIME_ZONE)
+
     private fun resolveSkyCondition(fcst: List<KmaItem>): String {
         // 현재 시각에 가장 가까운(가장 이른) 예보 시각의 SKY/PTY를 사용한다.
         val targetTime = fcst
@@ -274,6 +278,7 @@ class KmaWeatherProvider internal constructor(
         private const val DEFAULT_NUM_OF_ROWS = 1000
         private const val VILAGE_FCST_NUM_OF_ROWS = 2000
         private const val KMA_SHORT_TERM_SOURCE = "KMA_SHORT_TERM"
+        private val KMA_TIME_ZONE: ZoneId = ZoneId.of("Asia/Seoul")
         private val OBSERVED_AT_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmm")
         private val FORECAST_DATE_FORMAT = DateTimeFormatter.BASIC_ISO_DATE
         private val EXACT_RAINFALL_PATTERN = Regex("""^\s*([0-9]+(?:\.[0-9]+)?)\s*(?:mm)?\s*$""")
