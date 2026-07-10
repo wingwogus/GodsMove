@@ -59,8 +59,8 @@ class RecordFeedbackRetrievalQueryPlanner {
 
         if (maxTemp >= 30.toBigDecimal()) {
             return RecordFeedbackRetrievalQuery(
-                query = "$cropName 고온 건조 관수 병해충",
-                reason = "dry_hot_weather"
+                query = "$cropName 고온 생육 관리",
+                reason = "hot_weather"
             )
         }
 
@@ -92,11 +92,18 @@ class RecordFeedbackRetrievalQueryPlanner {
                 )
             }
 
-            riskFlags.any { it in DRY_HOT_RISK_FLAGS } ||
-                maxTemperature >= 30.toBigDecimal() -> {
+            riskFlags.any { it in DRY_RISK_FLAGS } -> {
                 RecordFeedbackRetrievalQuery(
                     query = "$cropName 고온 건조 예보 관수 관리",
-                    reason = "forecast_dry_hot_weather"
+                    reason = "forecast_dry_weather"
+                )
+            }
+
+            riskFlags.any { it in HOT_RISK_FLAGS } ||
+                maxTemperature >= 30.toBigDecimal() -> {
+                RecordFeedbackRetrievalQuery(
+                    query = "$cropName 고온 예보 생육 관리",
+                    reason = "forecast_hot_weather"
                 )
             }
 
@@ -137,7 +144,8 @@ class RecordFeedbackRetrievalQueryPlanner {
 
     private companion object {
         val RAIN_RISK_FLAGS = setOf("HEAVY_RAIN", "RAIN", "HIGH_HUMIDITY", "WET", "TYPHOON")
-        val DRY_HOT_RISK_FLAGS = setOf("HOT", "HEAT", "DRY", "DROUGHT", "HIGH_TEMPERATURE")
+        val DRY_RISK_FLAGS = setOf("DRY", "DROUGHT")
+        val HOT_RISK_FLAGS = setOf("HOT", "HEAT", "HIGH_TEMPERATURE")
         val WIND_RISK_FLAGS = setOf("STRONG_WIND", "WIND", "GALE")
     }
 }

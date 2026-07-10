@@ -11,13 +11,13 @@ class RecordFeedbackRetrievalQueryPlannerTest {
     private val planner = RecordFeedbackRetrievalQueryPlanner()
 
     @Test
-    fun `watering context creates crop work type memo and weather queries without cycle query`() {
+    fun `watering context creates crop work type memo and grounded weather queries without cycle query`() {
         val queries = planner.plan(readFixture("today-record-feedback-watering.json")).map { it.query }
 
         assertThat(queries).contains(
             "참당귀 관수 재배 관리 약용작물",
             "참당귀 오전 흙 표면이 말라 보여 점적 관수함.",
-            "참당귀 고온 건조 관수 병해충",
+            "참당귀 고온 생육 관리",
             "참당귀 강우 예보 배수 과습 병해충"
         )
         assertThat(queries).noneMatch { it.contains("일차 생육 관리") }
@@ -50,9 +50,10 @@ class RecordFeedbackRetrievalQueryPlannerTest {
         assertThat(queries.map { it.query }).contains("참당귀 제초 재배 관리 약용작물")
         assertThat(queries.map { it.reason }).doesNotContain(
             "rain_wet_weather",
-            "dry_hot_weather",
+            "hot_weather",
             "forecast_rain_wet_weather",
-            "forecast_dry_hot_weather",
+            "forecast_dry_weather",
+            "forecast_hot_weather",
         )
     }
 
@@ -92,7 +93,7 @@ class RecordFeedbackRetrievalQueryPlannerTest {
         val reasons = planner.plan(context).map { it.reason }
 
         assertThat(reasons).contains("rain_wet_weather")
-        assertThat(reasons).doesNotContain("dry_hot_weather")
+        assertThat(reasons).doesNotContain("hot_weather")
     }
 
     @Test
@@ -108,8 +109,32 @@ class RecordFeedbackRetrievalQueryPlannerTest {
 
         val reasons = planner.plan(context).map { it.reason }
 
-        assertThat(reasons).doesNotContain("dry_hot_weather")
+        assertThat(reasons).doesNotContain("hot_weather")
         assertThat(reasons).doesNotContain("rain_wet_weather")
+    }
+
+    @Test
+    fun `hot forecast without dry evidence does not retrieve dry irrigation guidance`() {
+        val base = readFixture("today-record-feedback-watering.json")
+        val weather = base.weather ?: error("fixture must contain weather")
+        val context = base.copy(
+            weather = weather.copy(
+                forecastDays = listOf(
+                    weather.forecastDays.first().copy(
+                        rainfallMm = null,
+                        rainProbabilityPct = 20,
+                        maxTemperatureC = BigDecimal("32"),
+                        humidityPct = BigDecimal("50"),
+                        riskFlags = listOf("HOT"),
+                    )
+                )
+            )
+        )
+
+        val queries = planner.plan(context)
+
+        assertThat(queries.map { it.query }).contains("참당귀 고온 예보 생육 관리")
+        assertThat(queries.map { it.query }).noneMatch { it.contains("건조") || it.contains("관수 관리") }
     }
 
     private fun readFixture(name: String): RecordFeedbackContext {
