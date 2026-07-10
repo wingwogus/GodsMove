@@ -11,8 +11,8 @@
 ## Global Constraints
 
 - 이 계획은 1단계 주기 리포트 기반만 구현한다. LLM, RAG, 코칭 상태·생성은 포함하지 않는다.
-- Task 1 시작 전에 후속 영농일지 PR의 비료 카테고리, 약제 카테고리, 마지막 수확 여부가 `dev`에 병합되어야 한다.
-- 후속 PR의 실제 타입 이름은 `FarmingCycleReportSourceLoader` 한 곳에서 정규화하며 자유 문자열 `materialName`·`pesticideName`을 임시 집계 키로 사용하지 않는다.
+- 병행 PR이 시작되지 않아 사용자 승인으로 Task 0에서 비료 카테고리, 약제 카테고리, 마지막 수확 여부를 선행 구현한다.
+- Task 0의 enum을 `FarmingCycleReportSourceLoader` 한 곳에서 정규화하며 자유 문자열 `materialName`·`pesticideName`을 남기거나 임시 집계 키로 사용하지 않는다.
 - 주기는 회원·밭·작물별로 계산하고 같은 범위의 중첩 주기는 지원하지 않는다.
 - 심기는 주기 시작점이 아니며 심기 전 준비 작업도 같은 주기에 포함한다.
 - 마지막 수확은 해당 기록을 포함해 주기를 닫고, 일부 수확은 현재 주기를 유지한다.
@@ -28,9 +28,9 @@
 - 각 Task는 실패 테스트 작성 → 실패 확인 → 최소 구현 → 통과 확인 → 커밋 순서로 실행한다.
 - 커밋은 Conventional Commits와 저장소 Lore trailer 규칙을 따른다.
 
-## Execution Gate: 병행 영농일지 PR
+## Execution Gate: 선행 영농일지 계약
 
-Task 1 전에 다음 명령을 실행한다.
+Task 0 완료 후 Task 1 전에 다음 명령을 실행한다.
 
 ```bash
 rg -n "isFinalHarvest|materialCategory|pesticideCategory|PropagationMethod|SOIL|FOLIAR|amountUnknown|medicinalPart" \
@@ -40,13 +40,16 @@ rg -n "isFinalHarvest|materialCategory|pesticideCategory|PropagationMethod|SOIL|
 Expected:
 
 - 이미 병합된 `PropagationMethod`, `SOIL/FOLIAR`, 수확량 모름, 수확 약용 부위가 검색된다.
-- 후속 PR의 안정적인 비료 카테고리 code/label, 약제 카테고리 code/label, 마지막 수확 Boolean이 검색된다.
-- 세 후속 의미가 하나라도 없으면 구현을 시작하지 않고 해당 PR 병합을 기다린다.
+- Task 0의 안정적인 비료 카테고리 code/label, 약제 카테고리 code/label, 마지막 수확 Boolean이 검색된다.
+- 세 의미가 하나라도 없거나 `materialName`·`pesticideName`이 제품 코드에 남아 있으면 Task 1로 진행하지 않는다.
 
 ## File Structure
 
 ### Domain
 
+- Create `backend/domain/src/main/kotlin/com/chamchamcham/domain/farming/FertilizerMaterialCategory.kt`: 비료·자재 안정 코드와 표시명
+- Create `backend/domain/src/main/kotlin/com/chamchamcham/domain/farming/PesticideCategory.kt`: 약제 안정 코드와 표시명
+- Modify 영농기록 domain/application/API 계약: 자유 입력명을 카테고리로 교체하고 마지막 수확 Boolean 추가
 - Create `backend/domain/src/main/kotlin/com/chamchamcham/domain/report/CycleReportStatistics.kt`: JSONB로 저장하는 불변 작업별 통계 타입 전체
 - Create `backend/domain/src/main/kotlin/com/chamchamcham/domain/report/FarmingCycleReportStatus.kt`: ACTIVE, COMPLETED, SUPERSEDED
 - Create `backend/domain/src/main/kotlin/com/chamchamcham/domain/report/FarmingCycleStartBasis.kt`: FIRST_RECORD, AFTER_PREVIOUS_FINAL_HARVEST
@@ -86,6 +89,171 @@ Expected:
 - Modify `frontend/docs/API 명세서/DTO(데이터 전달 객체)/FarmingReportResponse 3909e2d9440581bbbf69c0e35cd17b8b.md`: 타입 통계 응답
 
 ---
+
+### Task 0: 카테고리형 영농기록과 마지막 수확 계약
+
+**Files:**
+- Create: `backend/domain/src/main/kotlin/com/chamchamcham/domain/farming/FertilizerMaterialCategory.kt`
+- Create: `backend/domain/src/main/kotlin/com/chamchamcham/domain/farming/PesticideCategory.kt`
+- Modify: fertilizing, pest-control, harvest entities and their repository search contract
+- Modify: farming record command, result, service, field catalog, request, response, controller
+- Modify: focused domain/application/API tests for those contracts
+- Create: `backend/docs/db/farming-record-report-contract-schema.sql`
+
+**Interfaces:**
+- Produces: `FertilizerMaterialCategory`, `PesticideCategory`, `HarvestRecord.isFinalHarvest`
+- Replaces: `materialName` with `materialCategory`, `pesticideName` with `pesticideCategory`
+- Preserves: amount/unit behavior, nullable methods, amount-unknown behavior, category-label keyword search
+
+- [ ] **Step 1: enum·catalog·request 실패 테스트를 작성하고 실행한다**
+
+Required assertions:
+
+```kotlin
+assertThat(FertilizerMaterialCategory.COMPOUND_FERTILIZER.label)
+    .isEqualTo("복합비료")
+assertThat(PesticideCategory.FUNGICIDE.label).isEqualTo("살균제")
+assertThat(fields(WorkType.FERTILIZING).first().name)
+    .isEqualTo("materialCategory")
+assertThat(fields(WorkType.PEST_CONTROL).first().name)
+    .isEqualTo("pesticideCategory")
+assertThat(fields(WorkType.HARVEST).last().name)
+    .isEqualTo("isFinalHarvest")
+assertThat(fields(WorkType.HARVEST).last().type)
+    .isEqualTo(FieldValueType.BOOLEAN)
+```
+
+A HARVEST HTTP request without `isFinalHarvest` must return 400; explicit `false` must be accepted.
+
+Run:
+
+```bash
+cd backend && ./gradlew \
+  :application:test --tests '*WorkTypeCatalogServiceTest' \
+  :api:test --tests '*FarmingRecordControllerTest'
+```
+
+Expected: FAIL because the three contracts do not exist.
+
+- [ ] **Step 2: exact category enums and Boolean field type를 구현한다**
+
+```kotlin
+enum class FertilizerMaterialCategory(val label: String) {
+    COMPOUND_FERTILIZER("복합비료"),
+    NITROGEN_FERTILIZER("질소질비료"),
+    PHOSPHATE_FERTILIZER("인산질비료"),
+    POTASSIUM_FERTILIZER("칼리질비료"),
+    ORGANIC_FERTILIZER("유기질비료"),
+    LIME_FERTILIZER("석회질비료"),
+    OTHER("기타"),
+}
+
+enum class PesticideCategory(val label: String) {
+    FUNGICIDE("살균제"),
+    INSECTICIDE("살충제"),
+    HERBICIDE("제초제"),
+    ACARICIDE("살비제"),
+    BIOPESTICIDE("생물농약"),
+    OTHER("기타"),
+}
+```
+
+Add `BOOLEAN` to `FieldValueType`.
+
+- [ ] **Step 3: entity부터 HTTP까지 자유 입력명을 category로 교체한다**
+
+Entity mappings:
+
+```kotlin
+@Enumerated(EnumType.STRING)
+@Column(name = "material_category", nullable = false, length = 48)
+val materialCategory: FertilizerMaterialCategory
+
+@Enumerated(EnumType.STRING)
+@Column(name = "pesticide_category", nullable = false, length = 32)
+val pesticideCategory: PesticideCategory
+
+@Column(name = "is_final_harvest", nullable = false)
+val isFinalHarvest: Boolean
+```
+
+Use those exact names/types in command, result, request, response, controller mapping, and service detail mapping. Request category and final flag fields are nullable with `@NotNull`; controller maps them with `requireNotNull`. Remove `materialName` and `pesticideName` from product code.
+
+Field catalog uses required ENUM options from each enum and required BOOLEAN `isFinalHarvest`.
+
+- [ ] **Step 4: category-label keyword search를 구현한다**
+
+Add to `FarmingRecordQueryRepository.SearchCondition`:
+
+```kotlin
+val matchedFertilizerCategories: List<FertilizerMaterialCategory> = emptyList(),
+val matchedPesticideCategories: List<PesticideCategory> = emptyList(),
+```
+
+The query adds enum `in` predicates against `FertilizingRecord.materialCategory` and `PestControlRecord.pesticideCategory`. `FarmingRecordService.search` derives those lists by matching the trimmed keyword against enum labels. Delete the old free-text LIKE predicates.
+
+- [ ] **Step 5: fixtures·검색·round-trip tests를 새 계약으로 갱신한다**
+
+Required coverage:
+
+| fixture/input | assertion |
+| --- | --- |
+| ORGANIC_FERTILIZER record + `유기질비료` keyword | only that record is returned |
+| FUNGICIDE record + `살균제` keyword | only that record is returned |
+| harvest create/detail with true and false | each `isFinalHarvest` value round-trips unchanged |
+| category field catalog | every enum name and label appears exactly once |
+| missing category or final flag HTTP request | 400 and service is not called |
+
+Replace all old name fixtures with enums; every test must assert returned rows, mapped command/result, or HTTP JSON.
+
+- [ ] **Step 6: 수동 PostgreSQL DDL을 작성한다**
+
+Add category columns, add `is_final_harvest boolean not null default false`, then set category columns NOT NULL and drop old name columns. The SQL header must state that existing rows require manual category mapping before NOT NULL/drop; do not guess categories from old text.
+
+- [ ] **Step 7: 집중 검증과 gate 검사를 통과시킨다**
+
+```bash
+cd backend && ./gradlew \
+  :domain:test --tests '*FarmingRecordQueryRepositoryTest' \
+  :application:test --tests '*WorkTypeCatalogServiceTest' \
+  :application:test --tests '*FarmingRecordServiceTest' \
+  :application:test --tests '*FarmingRecordDetailValidatorTest' \
+  :api:test --tests '*FarmingRecordControllerTest' \
+  :api:test --tests '*WorkTypeControllerTest'
+```
+
+Expected: PASS.
+
+```bash
+rg -n "materialName|pesticideName" \
+  backend/domain/src/main backend/application/src/main backend/api/src/main
+```
+
+Expected: no matches.
+
+```bash
+rg -n "isFinalHarvest|materialCategory|pesticideCategory" \
+  backend/domain/src/main backend/application/src/main backend/api/src/main
+```
+
+Expected: all three contracts appear across domain, application, and API.
+
+- [ ] **Step 8: Task 0을 커밋한다**
+
+```bash
+git add backend/domain backend/application backend/api \
+  backend/docs/db/farming-record-report-contract-schema.sql
+git commit -m "feat(farming): 리포트용 기록 분류 계약을 확정" \
+  -m "Constraint: 자유 입력 비료명과 약제명을 안정적인 enum 코드로 교체" \
+  -m "Rejected: 기존 문자열을 집계 키로 유지 | 동일 카테고리 보장 불가" \
+  -m "Confidence: high" \
+  -m "Scope-risk: broad" \
+  -m "Directive: 기존 운영 행은 수동 매핑 후 DDL 적용" \
+  -m "Tested: farming query service catalog and controller tests"
+```
+
+---
+
 
 ### Task 1: 타입 통계 값 객체와 저장형 리포트 도메인
 
