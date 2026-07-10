@@ -5,18 +5,17 @@ API 분류: API Response
 
 ## Fields
 
-- id: uuid, required.
-- userId: uuid, required.
-- recordId: uuid, required for single record feedback.
-- feedbackType: enum, required. RECORD, REPORT.
-- summary: string, required.
-- riskSignals: string[], optional.
-- nextActions: string[], required.
-- inputSummary: object, optional.
-- sourceRefs: object, required. 근거 데이터 참조.
-- modelName: string, optional.
+- feedbackId: uuid, required.
+- recordId: uuid, required.
+- status: enum, required. `PENDING`, `READY`, `FAILED`, `STALE`.
+- sourceRevision: number, required.
+- inputPrepared: boolean, required.
+- failureCode: string, optional.
 - createdAt: datetime, required.
+- updatedAt: datetime, required.
 
 ## Rule
 
-MVP 피드백은 단일 영농일지 기준 1건으로 생성한다. AI 실패 시 영농일지는 정상 저장하고 피드백만 실패 처리한다.
+2단계 응답은 생성 상태만 제공한다. `inputSnapshot`, 구조화 코칭 결과, 인용,
+모델 이름, 감사 결과는 노출하지 않는다. LLM이 생성할 잘한 점·다음 행동·근거
+문구는 3단계에서 `READY` 결과로 추가된다.
