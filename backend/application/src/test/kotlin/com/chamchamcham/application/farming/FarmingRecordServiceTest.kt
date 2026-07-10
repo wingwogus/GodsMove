@@ -3,6 +3,8 @@ package com.chamchamcham.application.farming
 import com.chamchamcham.application.common.OpaqueCursorCodec
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.report.FarmingCycleReportProjectionService
+import com.chamchamcham.application.report.ReportScope
 import com.chamchamcham.domain.common.BaseTimeEntity
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
@@ -37,6 +39,7 @@ import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -48,6 +51,8 @@ import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.doThrow
+import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
@@ -63,7 +68,9 @@ class FarmingRecordServiceTest {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val otherMemberId = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val farmId = UUID.fromString("00000000-0000-0000-0000-000000000101")
+    private val newFarmId = UUID.fromString("00000000-0000-0000-0000-000000000102")
     private val cropId = UUID.fromString("00000000-0000-0000-0000-000000000201")
+    private val newCropId = UUID.fromString("00000000-0000-0000-0000-000000000202")
     private val recordId = UUID.fromString("00000000-0000-0000-0000-000000000301")
     private val secondRecordId = UUID.fromString("00000000-0000-0000-0000-000000000302")
     private val mediaId1 = UUID.fromString("00000000-0000-0000-0000-000000000401")
@@ -84,12 +91,15 @@ class FarmingRecordServiceTest {
     @Mock private lateinit var weedingRecordRepository: WeedingRecordRepository
     @Mock private lateinit var harvestRecordRepository: HarvestRecordRepository
     @Mock private lateinit var detailValidator: FarmingRecordDetailValidator
+    @Mock private lateinit var projectionService: FarmingCycleReportProjectionService
 
     private lateinit var service: FarmingRecordService
     private lateinit var member: Member
     private lateinit var otherMember: Member
     private lateinit var farm: Farm
+    private lateinit var newFarm: Farm
     private lateinit var crop: Crop
+    private lateinit var newCrop: Crop
     private lateinit var media1: UploadedMedia
     private lateinit var replacementMedia: UploadedMedia
 
@@ -111,11 +121,14 @@ class FarmingRecordServiceTest {
             harvestRecordRepository = harvestRecordRepository,
             detailValidator = detailValidator,
             cursorCodec = cursorCodec,
+            projectionService = projectionService,
         )
         member = Member(id = memberId, email = "$memberId@example.com", passwordHash = null)
         otherMember = Member(id = otherMemberId, email = "$otherMemberId@example.com", passwordHash = null)
         farm = Farm(id = farmId, owner = member, name = "약초농장", roadAddress = "서울시 강남구")
+        newFarm = Farm(id = newFarmId, owner = member, name = "새 약초농장", roadAddress = "서울시 서초구")
         crop = Crop(id = cropId, externalNo = cropId.hashCode(), name = "황기", usePartCategory = CropUsePartCategory.ROOT_BARK)
+        newCrop = Crop(id = newCropId, externalNo = newCropId.hashCode(), name = "당귀", usePartCategory = CropUsePartCategory.ROOT_BARK)
         media1 = uploadedMedia(mediaId1)
         replacementMedia = uploadedMedia(replacementMediaId)
     }
@@ -141,6 +154,8 @@ class FarmingRecordServiceTest {
 
     private fun updateCommand(
         workType: WorkType,
+        farmId: UUID = this.farmId,
+        cropId: UUID = this.cropId,
         planting: FarmingRecordCommand.PlantingDetail? = null,
         harvest: FarmingRecordCommand.HarvestDetail? = null,
         mediaIds: List<UUID> = emptyList(),
@@ -281,6 +296,52 @@ class FarmingRecordServiceTest {
 
         assertEquals(UploadedMediaStatus.ATTACHED, media1.status)
         assertThat(capturedFarmingRecordMedia().map { it.uploadedMedia.id }).containsExactly(mediaId1)
+    }
+
+    @Test
+    fun `create rebuilds scope after detail and media are attached`() {
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
+        `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(media1))
+        stubFarmingRecordSave()
+
+        service.create(
+            baseCommand(
+                workType = WorkType.HARVEST,
+                harvest = FarmingRecordCommand.HarvestDetail(
+                    harvestAmount = BigDecimal.TEN,
+                    medicinalPart = CropUsePartCategory.ROOT_BARK,
+                    growthPeriod = 2,
+                    growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                    isFinalHarvest = true,
+                ),
+                mediaIds = listOf(mediaId1),
+            )
+        )
+
+        @Suppress("UNCHECKED_CAST")
+        val mediaCaptor = ArgumentCaptor.forClass(Iterable::class.java) as ArgumentCaptor<Iterable<FarmingRecordMedia>>
+        inOrder(harvestRecordRepository, farmingRecordMediaRepository, projectionService).apply {
+            verify(harvestRecordRepository).save(any(HarvestRecord::class.java))
+            verify(farmingRecordMediaRepository).saveAll(mediaCaptor.capture())
+            verify(projectionService).rebuild(ReportScope(memberId, farmId, cropId))
+        }
+    }
+
+    @Test
+    fun `projection failure is propagated from the record transaction`() {
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
+        stubFarmingRecordSave()
+        doThrow(IllegalStateException("projection failed"))
+            .`when`(projectionService)
+            .rebuild(ReportScope(memberId, farmId, cropId))
+
+        assertThatThrownBy { service.create(baseCommand(workType = WorkType.PRUNING)) }
+            .isInstanceOf(IllegalStateException::class.java)
+            .hasMessage("projection failed")
     }
 
     @Test
@@ -512,6 +573,23 @@ class FarmingRecordServiceTest {
     }
 
     @Test
+    fun `update rebuilds old and new scopes when farm or crop changes`() {
+        val record = existingRecord(workType = WorkType.PRUNING)
+        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
+        `when`(farmRepository.findByIdAndOwnerId(newFarmId, memberId)).thenReturn(newFarm)
+        `when`(cropRepository.findById(newCropId)).thenReturn(Optional.of(newCrop))
+
+        service.update(updateCommand(workType = WorkType.PRUNING, farmId = newFarmId, cropId = newCropId))
+
+        verify(projectionService).rebuildAll(
+            listOf(
+                ReportScope(memberId, farmId, cropId),
+                ReportScope(memberId, newFarmId, newCropId),
+            ),
+        )
+    }
+
+    @Test
     fun `update rejects more than five media`() {
         val record = existingRecord(workType = WorkType.PRUNING)
         `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
@@ -556,6 +634,20 @@ class FarmingRecordServiceTest {
 
         assertTrue(record.isDeleted)
         verify(farmingRecordRepository, never()).delete(any(FarmingRecord::class.java))
+    }
+
+    @Test
+    fun `delete soft deletes before rebuilding its scope`() {
+        val record = existingRecord(workType = WorkType.PRUNING)
+        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
+        `when`(projectionService.rebuild(ReportScope(memberId, farmId, cropId))).thenAnswer {
+            assertTrue(record.isDeleted)
+            null
+        }
+
+        service.delete(FarmingRecordCommand.Delete(memberId = memberId, recordId = recordId))
+
+        verify(projectionService).rebuild(ReportScope(memberId, farmId, cropId))
     }
 
     @Test
