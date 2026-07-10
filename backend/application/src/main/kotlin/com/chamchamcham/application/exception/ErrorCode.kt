@@ -14,6 +14,7 @@ enum class ErrorCode(
     MEMBER_NOT_FOUND("MEMBER_001", "error.member_not_found", 404),
     CROP_NOT_FOUND("CROP_001", "error.crop_not_found", 404),
     FARM_NOT_FOUND("FARM_001", "error.farm_not_found", 404),
+    REPORT_NOT_FOUND("REPORT_001", "error.report_not_found", 404),
     MEDIA_NOT_FOUND("MEDIA_001", "error.media_not_found", 404),
     MEDIA_NOT_OWNED("MEDIA_002", "error.media_not_owned", 403),
     MEDIA_USAGE_MISMATCH("MEDIA_003", "error.media_usage_mismatch", 400),
