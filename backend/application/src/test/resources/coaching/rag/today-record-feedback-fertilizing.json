@@ -30,7 +30,7 @@
     "recordedOn": "2026-07-03",
     "workType": "FERTILIZING",
     "fields": {
-      "materialName": "완숙퇴비",
+      "materialCategory": "ORGANIC_FERTILIZER",
       "amountScale": "보통",
       "fertilizingMethod": "살포"
     },

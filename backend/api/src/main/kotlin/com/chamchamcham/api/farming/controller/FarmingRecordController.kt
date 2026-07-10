@@ -158,7 +158,7 @@ class FarmingRecordController(
     private fun FarmingRecordRequests.SaveRecordRequest.toFertilizingDetail(): FarmingRecordCommand.FertilizingDetail? =
         fertilizing?.let {
             FarmingRecordCommand.FertilizingDetail(
-                materialName = it.materialName,
+                materialCategory = requireNotNull(it.materialCategory),
                 amount = it.amount,
                 amountUnit = it.amountUnit,
                 applicationMethod = it.applicationMethod,
@@ -168,7 +168,7 @@ class FarmingRecordController(
     private fun FarmingRecordRequests.SaveRecordRequest.toPestControlDetail(): FarmingRecordCommand.PestControlDetail? =
         pestControl?.let {
             FarmingRecordCommand.PestControlDetail(
-                pesticideName = it.pesticideName,
+                pesticideCategory = requireNotNull(it.pesticideCategory),
                 pesticideAmount = it.pesticideAmount,
                 pesticideAmountUnit = it.pesticideAmountUnit,
                 totalSprayAmount = it.totalSprayAmount,
@@ -189,6 +189,7 @@ class FarmingRecordController(
                 harvestSource = it.harvestSource,
                 growthPeriod = it.growthPeriod,
                 growthPeriodUnit = it.growthPeriodUnit,
+                isFinalHarvest = requireNotNull(it.isFinalHarvest),
             )
         }
 

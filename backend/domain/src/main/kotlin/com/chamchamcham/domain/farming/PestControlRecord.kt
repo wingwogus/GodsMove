@@ -27,8 +27,9 @@ class PestControlRecord(
     @JoinColumn(name = "record_id", nullable = false, unique = true)
     val record: FarmingRecord,
 
-    @Column(name = "pesticide_name", nullable = false, length = 255)
-    val pesticideName: String,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "pesticide_category", nullable = false, length = 32)
+    val pesticideCategory: PesticideCategory,
 
     @Column(name = "pesticide_amount", nullable = false, precision = 18, scale = 4)
     val pesticideAmount: BigDecimal,

@@ -2,12 +2,14 @@ package com.chamchamcham.application.farming
 
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
+import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PesticideCategory
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -75,14 +77,14 @@ object FarmingRecordCommand {
     )
 
     data class FertilizingDetail(
-        val materialName: String,
+        val materialCategory: FertilizerMaterialCategory,
         val amount: BigDecimal,
         val amountUnit: FertilizerAmountUnit,
         val applicationMethod: FertilizingMethod? = null,
     )
 
     data class PestControlDetail(
-        val pesticideName: String,
+        val pesticideCategory: PesticideCategory,
         val pesticideAmount: BigDecimal,
         val pesticideAmountUnit: PesticideAmountUnit,
         val totalSprayAmount: BigDecimal,
@@ -101,5 +103,6 @@ object FarmingRecordCommand {
         val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
         val growthPeriod: Int,
         val growthPeriodUnit: GrowthPeriodUnit,
+        val isFinalHarvest: Boolean,
     )
 }

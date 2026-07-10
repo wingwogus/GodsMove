@@ -13,10 +13,12 @@ import com.chamchamcham.domain.farming.FarmingRecordMedia
 import com.chamchamcham.domain.farming.FarmingRecordMediaRepository
 import com.chamchamcham.domain.farming.FarmingRecordQueryRepository
 import com.chamchamcham.domain.farming.FarmingRecordRepository
+import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingRecord
 import com.chamchamcham.domain.farming.FertilizingRecordRepository
 import com.chamchamcham.domain.farming.HarvestRecord
 import com.chamchamcham.domain.farming.HarvestRecordRepository
+import com.chamchamcham.domain.farming.PesticideCategory
 import com.chamchamcham.domain.farming.PestControlRecord
 import com.chamchamcham.domain.farming.PestControlRecordRepository
 import com.chamchamcham.domain.farming.PlantingRecord
@@ -98,6 +100,8 @@ class FarmingRecordService(
                 keyword = trimmedKeyword,
                 matchedWorkTypes = matchedWorkTypes(trimmedKeyword),
                 matchedParts = matchedParts(trimmedKeyword),
+                matchedFertilizerCategories = matchedFertilizerCategories(trimmedKeyword),
+                matchedPesticideCategories = matchedPesticideCategories(trimmedKeyword),
                 cursor = cursor,
                 size = condition.size + 1
             )
@@ -119,6 +123,12 @@ class FarmingRecordService(
 
     private fun matchedParts(keyword: String?): List<CropUsePartCategory> =
         keyword?.let { kw -> CropUsePartCategory.entries.filter { it.label.contains(kw) } } ?: emptyList()
+
+    private fun matchedFertilizerCategories(keyword: String?): List<FertilizerMaterialCategory> =
+        keyword?.let { kw -> FertilizerMaterialCategory.entries.filter { it.label.contains(kw) } } ?: emptyList()
+
+    private fun matchedPesticideCategories(keyword: String?): List<PesticideCategory> =
+        keyword?.let { kw -> PesticideCategory.entries.filter { it.label.contains(kw) } } ?: emptyList()
 
     @Transactional(readOnly = true)
     fun getDetail(memberId: UUID, recordId: UUID): FarmingRecordResult.Detail {
@@ -193,7 +203,7 @@ class FarmingRecordService(
                 fertilizingRecordRepository.save(
                     FertilizingRecord(
                         record = record,
-                        materialName = detail.materialName,
+                        materialCategory = detail.materialCategory,
                         amount = detail.amount,
                         amountUnit = detail.amountUnit,
                         applicationMethod = detail.applicationMethod,
@@ -206,7 +216,7 @@ class FarmingRecordService(
                 pestControlRecordRepository.save(
                     PestControlRecord(
                         record = record,
-                        pesticideName = detail.pesticideName,
+                        pesticideCategory = detail.pesticideCategory,
                         pesticideAmount = detail.pesticideAmount,
                         pesticideAmountUnit = detail.pesticideAmountUnit,
                         totalSprayAmount = detail.totalSprayAmount,
@@ -232,6 +242,7 @@ class FarmingRecordService(
                         harvestSource = detail.harvestSource,
                         growthPeriod = detail.growthPeriod,
                         growthPeriodUnit = detail.growthPeriodUnit,
+                        isFinalHarvest = detail.isFinalHarvest,
                     )
                 )
             }
@@ -286,7 +297,7 @@ class FarmingRecordService(
 
             WorkType.FERTILIZING -> fertilizing = fertilizingRecordRepository.findByRecord_Id(recordId)?.let {
                 FarmingRecordResult.FertilizingDetail(
-                    materialName = it.materialName,
+                    materialCategory = it.materialCategory,
                     amount = it.amount,
                     amountUnit = it.amountUnit,
                     applicationMethod = it.applicationMethod,
@@ -295,7 +306,7 @@ class FarmingRecordService(
 
             WorkType.PEST_CONTROL -> pestControl = pestControlRecordRepository.findByRecord_Id(recordId)?.let {
                 FarmingRecordResult.PestControlDetail(
-                    pesticideName = it.pesticideName,
+                    pesticideCategory = it.pesticideCategory,
                     pesticideAmount = it.pesticideAmount,
                     pesticideAmountUnit = it.pesticideAmountUnit,
                     totalSprayAmount = it.totalSprayAmount,
@@ -317,6 +328,7 @@ class FarmingRecordService(
                     harvestSource = it.harvestSource,
                     growthPeriod = it.growthPeriod,
                     growthPeriodUnit = it.growthPeriodUnit,
+                    isFinalHarvest = it.isFinalHarvest,
                 )
             }
 

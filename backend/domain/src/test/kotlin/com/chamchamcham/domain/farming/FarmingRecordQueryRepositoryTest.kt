@@ -178,30 +178,40 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
     }
 
     @Test
-    fun `search matches keyword against fertilizing material name`() {
+    fun `search matches keyword against fertilizing material category label`() {
         val record = persistRecord(workType = WorkType.FERTILIZING)
-        persistFertilizingDetail(record, materialName = "유박비료")
+        persistFertilizingDetail(record, materialCategory = FertilizerMaterialCategory.ORGANIC_FERTILIZER)
         val other = persistRecord(workType = WorkType.FERTILIZING)
-        persistFertilizingDetail(other, materialName = "복합비료")
+        persistFertilizingDetail(other, materialCategory = FertilizerMaterialCategory.COMPOUND_FERTILIZER)
         entityManager.flush()
         entityManager.clear()
 
-        val result = queryRepository.search(condition(keyword = "유박"))
+        val result = queryRepository.search(
+            condition(
+                keyword = "유기질비료",
+                matchedFertilizerCategories = listOf(FertilizerMaterialCategory.ORGANIC_FERTILIZER)
+            )
+        )
 
         assertThat(result.rows).hasSize(1)
         assertThat(result.rows.single().record.id).isEqualTo(record.id)
     }
 
     @Test
-    fun `search matches keyword against pest control pesticide name`() {
+    fun `search matches keyword against pest control pesticide category label`() {
         val record = persistRecord(workType = WorkType.PEST_CONTROL)
-        persistPestControlDetail(record, pesticideName = "친환경약제")
+        persistPestControlDetail(record, pesticideCategory = PesticideCategory.FUNGICIDE)
         val other = persistRecord(workType = WorkType.PEST_CONTROL)
-        persistPestControlDetail(other, pesticideName = "일반약제")
+        persistPestControlDetail(other, pesticideCategory = PesticideCategory.HERBICIDE)
         entityManager.flush()
         entityManager.clear()
 
-        val result = queryRepository.search(condition(keyword = "친환경"))
+        val result = queryRepository.search(
+            condition(
+                keyword = "살균제",
+                matchedPesticideCategories = listOf(PesticideCategory.FUNGICIDE)
+            )
+        )
 
         assertThat(result.rows).hasSize(1)
         assertThat(result.rows.single().record.id).isEqualTo(record.id)
@@ -298,11 +308,14 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         persist(FarmingRecordMedia(record = record, uploadedMedia = media, displayOrder = displayOrder), now)
     }
 
-    private fun persistFertilizingDetail(record: FarmingRecord, materialName: String) {
+    private fun persistFertilizingDetail(
+        record: FarmingRecord,
+        materialCategory: FertilizerMaterialCategory
+    ) {
         persist(
             FertilizingRecord(
                 record = record,
-                materialName = materialName,
+                materialCategory = materialCategory,
                 amount = BigDecimal.TEN,
                 amountUnit = FertilizerAmountUnit.KG,
             ),
@@ -310,11 +323,14 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         )
     }
 
-    private fun persistPestControlDetail(record: FarmingRecord, pesticideName: String) {
+    private fun persistPestControlDetail(
+        record: FarmingRecord,
+        pesticideCategory: PesticideCategory
+    ) {
         persist(
             PestControlRecord(
                 record = record,
-                pesticideName = pesticideName,
+                pesticideCategory = pesticideCategory,
                 pesticideAmount = BigDecimal.ONE,
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal.TEN,
@@ -333,6 +349,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 1,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
             ),
             now
         )
@@ -349,6 +366,8 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         keyword: String? = null,
         matchedWorkTypes: List<WorkType> = emptyList(),
         matchedParts: List<CropUsePartCategory> = emptyList(),
+        matchedFertilizerCategories: List<FertilizerMaterialCategory> = emptyList(),
+        matchedPesticideCategories: List<PesticideCategory> = emptyList(),
         cursor: FarmingRecordQueryRepository.Cursor? = null,
         size: Int = 20,
     ): FarmingRecordQueryRepository.SearchCondition =
@@ -361,6 +380,8 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
             keyword = keyword,
             matchedWorkTypes = matchedWorkTypes,
             matchedParts = matchedParts,
+            matchedFertilizerCategories = matchedFertilizerCategories,
+            matchedPesticideCategories = matchedPesticideCategories,
             cursor = cursor,
             size = size,
         )

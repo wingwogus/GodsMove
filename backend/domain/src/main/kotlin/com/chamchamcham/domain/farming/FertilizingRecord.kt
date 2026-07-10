@@ -27,8 +27,9 @@ class FertilizingRecord(
     @JoinColumn(name = "record_id", nullable = false, unique = true)
     val record: FarmingRecord,
 
-    @Column(name = "material_name", nullable = false, length = 255)
-    val materialName: String,
+    @Enumerated(EnumType.STRING)
+    @Column(name = "material_category", nullable = false, length = 48)
+    val materialCategory: FertilizerMaterialCategory,
 
     @Column(nullable = false, precision = 18, scale = 4)
     val amount: BigDecimal,

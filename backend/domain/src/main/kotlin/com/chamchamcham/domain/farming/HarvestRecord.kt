@@ -18,7 +18,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "harvest_record")
-class   HarvestRecord(
+class HarvestRecord(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(nullable = false, updatable = false, columnDefinition = "uuid")
@@ -45,4 +45,7 @@ class   HarvestRecord(
     @Enumerated(EnumType.STRING)
     @Column(name = "growth_period_unit", nullable = false, length = 16)
     val growthPeriodUnit: GrowthPeriodUnit,
+
+    @Column(name = "is_final_harvest", nullable = false)
+    val isFinalHarvest: Boolean,
 ) : BaseTimeEntity()

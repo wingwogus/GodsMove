@@ -4,8 +4,10 @@ import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
+import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PesticideCategory
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -158,7 +160,7 @@ class FarmingRecordDetailValidatorTest {
         payloads(
             workType = WorkType.FERTILIZING,
             fertilizing = FarmingRecordCommand.FertilizingDetail(
-                materialName = "요소비료",
+                materialCategory = FertilizerMaterialCategory.NITROGEN_FERTILIZER,
                 amount = BigDecimal.TEN,
                 amountUnit = FertilizerAmountUnit.KG,
             ),
@@ -178,7 +180,7 @@ class FarmingRecordDetailValidatorTest {
         payloads(
             workType = WorkType.PEST_CONTROL,
             pestControl = FarmingRecordCommand.PestControlDetail(
-                pesticideName = "약제",
+                pesticideCategory = PesticideCategory.FUNGICIDE,
                 pesticideAmount = BigDecimal.ONE,
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal.TEN,
@@ -204,6 +206,7 @@ class FarmingRecordDetailValidatorTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = true,
             ),
         ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
@@ -218,6 +221,7 @@ class FarmingRecordDetailValidatorTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
             ),
         ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
@@ -232,6 +236,7 @@ class FarmingRecordDetailValidatorTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
             ),
         ).forEach { payload ->
             val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
@@ -249,6 +254,7 @@ class FarmingRecordDetailValidatorTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
             ),
         ).forEach { payload ->
             val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }

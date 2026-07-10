@@ -13,6 +13,7 @@ import com.chamchamcham.domain.farming.WorkType
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -139,7 +140,7 @@ class FarmingRecordControllerTest(
     }
 
     @Test
-    fun `create record rejects blank fertilizing material name`() {
+    fun `create record rejects missing fertilizing material category before service call`() {
         val json = """
             {
               "farmId":"$farmId",
@@ -150,7 +151,6 @@ class FarmingRecordControllerTest(
               "weatherTemperature":28,
               "memo":"오늘은 날씨가 좋아 하루 종일 시비 작업을 진행했고 별다른 문제 없이 마무리했습니다",
               "fertilizing":{
-                "materialName":" ",
                 "amount":10,
                 "amountUnit":"KG"
               }
@@ -165,6 +165,8 @@ class FarmingRecordControllerTest(
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+
+        verifyNoInteractions(farmingRecordService)
     }
 
     @Test
@@ -182,6 +184,37 @@ class FarmingRecordControllerTest(
                 "harvestAmount":10,
                 "harvestSource":"CULTIVATED",
                 "growthPeriod":2,
+                "growthPeriodUnit":"YEAR",
+                "isFinalHarvest":false
+              }
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            post("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `create record rejects harvest without final harvest flag before service call`() {
+        val json = """
+            {
+              "farmId":"$farmId",
+              "cropId":"$cropId",
+              "workType":"HARVEST",
+              "workedAt":"2026-06-01T09:00:00",
+              "weatherCondition":"맑음",
+              "weatherTemperature":28,
+              "memo":"오늘은 날씨가 좋아 하루 종일 수확 작업을 진행했고 별다른 문제 없이 마무리했습니다",
+              "harvest":{
+                "harvestAmount":10,
+                "medicinalPart":"ROOT_BARK",
+                "harvestSource":"CULTIVATED",
+                "growthPeriod":2,
                 "growthPeriodUnit":"YEAR"
               }
             }
@@ -194,6 +227,61 @@ class FarmingRecordControllerTest(
                 .content(json)
         )
             .andExpect(status().isBadRequest)
+
+        verifyNoInteractions(farmingRecordService)
+    }
+
+    @Test
+    fun `create record accepts explicit false final harvest flag`() {
+        val command = FarmingRecordCommand.Create(
+            memberId = memberId,
+            farmId = farmId,
+            cropId = cropId,
+            workType = WorkType.HARVEST,
+            workedAt = workedAt,
+            weatherCondition = "맑음",
+            weatherTemperature = 28,
+            memo = "오늘은 날씨가 좋아 하루 종일 수확 작업을 진행했고 별다른 문제 없이 마무리했습니다",
+            harvest = FarmingRecordCommand.HarvestDetail(
+                harvestAmount = BigDecimal.TEN,
+                medicinalPart = CropUsePartCategory.ROOT_BARK,
+                harvestSource = HarvestSource.CULTIVATED,
+                growthPeriod = 2,
+                growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
+            ),
+            mediaIds = emptyList(),
+        )
+        `when`(farmingRecordService.create(command))
+            .thenReturn(FarmingRecordResult.RecordId(id = recordId, workType = WorkType.HARVEST))
+
+        val json = """
+            {
+              "farmId":"$farmId",
+              "cropId":"$cropId",
+              "workType":"HARVEST",
+              "workedAt":"2026-06-01T09:00:00",
+              "weatherCondition":"맑음",
+              "weatherTemperature":28,
+              "memo":"오늘은 날씨가 좋아 하루 종일 수확 작업을 진행했고 별다른 문제 없이 마무리했습니다",
+              "harvest":{
+                "harvestAmount":10,
+                "medicinalPart":"ROOT_BARK",
+                "harvestSource":"CULTIVATED",
+                "growthPeriod":2,
+                "growthPeriodUnit":"YEAR",
+                "isFinalHarvest":false
+              }
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            post("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+        )
+            .andExpect(status().isOk)
     }
 
     @Test
@@ -214,6 +302,7 @@ class FarmingRecordControllerTest(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
             ),
         )
         `when`(farmingRecordService.create(command)).thenReturn(FarmingRecordResult.RecordId(id = recordId, workType = WorkType.HARVEST))
@@ -232,7 +321,8 @@ class FarmingRecordControllerTest(
                 "medicinalPart":"ROOT_BARK",
                 "harvestSource":"CULTIVATED",
                 "growthPeriod":2,
-                "growthPeriodUnit":"YEAR"
+                "growthPeriodUnit":"YEAR",
+                "isFinalHarvest":false
               }
             }
         """.trimIndent()
@@ -438,7 +528,8 @@ class FarmingRecordControllerTest(
                 "medicinalPart":"ROOT_BARK",
                 "harvestSource":"CULTIVATED",
                 "growthPeriod":$growthPeriod,
-                "growthPeriodUnit":"YEAR"
+                "growthPeriodUnit":"YEAR",
+                "isFinalHarvest":false
               },
               "mediaIds":$mediaIdsJson
             }
@@ -461,6 +552,7 @@ class FarmingRecordControllerTest(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
             ),
             mediaIds = listOf(mediaId),
         )
@@ -482,6 +574,7 @@ class FarmingRecordControllerTest(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
             ),
             mediaIds = listOf(mediaId),
         )
@@ -523,6 +616,7 @@ class FarmingRecordControllerTest(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
             ),
             imageUrls = listOf("https://example.test/1.jpg"),
             createdAt = createdAt,

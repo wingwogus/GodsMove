@@ -14,11 +14,13 @@ import com.chamchamcham.domain.farming.FarmingRecordMedia
 import com.chamchamcham.domain.farming.FarmingRecordMediaRepository
 import com.chamchamcham.domain.farming.FarmingRecordQueryRepository
 import com.chamchamcham.domain.farming.FarmingRecordRepository
+import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingRecordRepository
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestRecord
 import com.chamchamcham.domain.farming.HarvestRecordRepository
 import com.chamchamcham.domain.farming.HarvestSource
+import com.chamchamcham.domain.farming.PesticideCategory
 import com.chamchamcham.domain.farming.PestControlRecordRepository
 import com.chamchamcham.domain.farming.PlantingRecord
 import com.chamchamcham.domain.farming.PlantingRecordRepository
@@ -306,6 +308,7 @@ class FarmingRecordServiceTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = true,
             ),
         )
 
@@ -315,6 +318,7 @@ class FarmingRecordServiceTest {
         verify(harvestRecordRepository).save(captor.capture())
         assertEquals(BigDecimal.TEN, captor.value.harvestAmount)
         assertEquals(CropUsePartCategory.ROOT_BARK, captor.value.medicinalPart)
+        assertTrue(captor.value.isFinalHarvest)
     }
 
     @Test
@@ -332,6 +336,7 @@ class FarmingRecordServiceTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
             ),
         )
 
@@ -340,6 +345,7 @@ class FarmingRecordServiceTest {
         val captor = ArgumentCaptor.forClass(HarvestRecord::class.java)
         verify(harvestRecordRepository).save(captor.capture())
         assertEquals(null, captor.value.harvestAmount)
+        assertFalse(captor.value.isFinalHarvest)
     }
 
     @Test
@@ -453,6 +459,7 @@ class FarmingRecordServiceTest {
                     medicinalPart = CropUsePartCategory.ROOT_BARK,
                     growthPeriod = 2,
                     growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                    isFinalHarvest = true,
                 ),
             )
         )
@@ -588,6 +595,7 @@ class FarmingRecordServiceTest {
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isFinalHarvest = false,
             )
         )
         `when`(farmingRecordMediaRepository.findByRecord_Id(recordId)).thenReturn(
@@ -603,6 +611,7 @@ class FarmingRecordServiceTest {
         assertEquals("맑음", detail.weatherCondition)
         assertEquals(20, detail.weatherTemperature)
         assertEquals(BigDecimal.TEN, detail.harvest?.harvestAmount)
+        assertEquals(false, detail.harvest?.isFinalHarvest)
         assertThat(detail.imageUrls).containsExactly(media1.fileUrl)
     }
 
@@ -787,6 +796,58 @@ class FarmingRecordServiceTest {
         ).thenReturn(FarmingRecordQueryRepository.SearchResult(emptyList()))
 
         val page = service.search(searchCondition(keyword = "잎"))
+
+        assertThat(page.items).isEmpty()
+    }
+
+    @Test
+    fun `search resolves keyword into matched fertilizer category label`() {
+        `when`(
+            farmingRecordQueryRepository.search(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropId = null,
+                    workType = null,
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    keyword = "유기질비료",
+                    matchedWorkTypes = emptyList(),
+                    matchedParts = emptyList(),
+                    matchedFertilizerCategories = listOf(FertilizerMaterialCategory.ORGANIC_FERTILIZER),
+                    matchedPesticideCategories = emptyList(),
+                    cursor = null,
+                    size = 21
+                )
+            )
+        ).thenReturn(FarmingRecordQueryRepository.SearchResult(emptyList()))
+
+        val page = service.search(searchCondition(keyword = "유기질비료"))
+
+        assertThat(page.items).isEmpty()
+    }
+
+    @Test
+    fun `search resolves keyword into matched pesticide category label`() {
+        `when`(
+            farmingRecordQueryRepository.search(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropId = null,
+                    workType = null,
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    keyword = "살균제",
+                    matchedWorkTypes = emptyList(),
+                    matchedParts = emptyList(),
+                    matchedFertilizerCategories = emptyList(),
+                    matchedPesticideCategories = listOf(PesticideCategory.FUNGICIDE),
+                    cursor = null,
+                    size = 21
+                )
+            )
+        ).thenReturn(FarmingRecordQueryRepository.SearchResult(emptyList()))
+
+        val page = service.search(searchCondition(keyword = "살균제"))
 
         assertThat(page.items).isEmpty()
     }

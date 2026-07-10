@@ -2,12 +2,14 @@ package com.chamchamcham.api.farming.dto
 
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
+import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PesticideCategory
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -89,8 +91,8 @@ object FarmingRecordRequests {
     )
 
     data class FertilizingDetailRequest(
-        @field:NotBlank(message = "자재명을 입력해주세요")
-        val materialName: String,
+        @field:NotNull(message = "자재 분류를 선택해주세요")
+        val materialCategory: FertilizerMaterialCategory?,
 
         @field:DecimalMin(value = "0.01", message = "시비량은 0보다 커야 합니다")
         val amount: BigDecimal,
@@ -99,8 +101,8 @@ object FarmingRecordRequests {
     )
 
     data class PestControlDetailRequest(
-        @field:NotBlank(message = "농약명을 입력해주세요")
-        val pesticideName: String,
+        @field:NotNull(message = "농약 분류를 선택해주세요")
+        val pesticideCategory: PesticideCategory?,
 
         @field:DecimalMin(value = "0.01", message = "농약량은 0보다 커야 합니다")
         val pesticideAmount: BigDecimal,
@@ -128,5 +130,8 @@ object FarmingRecordRequests {
         @field:Min(value = 1, message = "재배기간은 1 이상이어야 합니다")
         val growthPeriod: Int,
         val growthPeriodUnit: GrowthPeriodUnit,
+
+        @field:NotNull(message = "마지막 수확 여부를 선택해주세요")
+        val isFinalHarvest: Boolean?,
     )
 }

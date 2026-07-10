@@ -30,7 +30,7 @@
     "recordedOn": "2026-07-03",
     "workType": "PEST_CONTROL",
     "fields": {
-      "pesticideName": "등록약제A",
+      "pesticideCategory": "FUNGICIDE",
       "pesticideAmount": "20",
       "pesticideAmountUnit": "mL",
       "sprayWaterAmountL": 20,

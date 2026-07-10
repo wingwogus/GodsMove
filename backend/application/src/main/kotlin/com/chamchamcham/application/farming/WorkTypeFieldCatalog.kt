@@ -2,12 +2,14 @@ package com.chamchamcham.application.farming
 
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
+import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PesticideCategory
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -82,10 +84,10 @@ object WorkTypeFieldCatalog {
 
     private val FERTILIZING_FIELDS: List<WorkTypeResult.FieldSummary> = listOf(
         WorkTypeResult.FieldSummary(
-            name = "materialName",
-            type = FieldValueType.STRING,
+            name = "materialCategory",
+            type = FieldValueType.ENUM,
             required = true,
-            options = emptyList()
+            options = FertilizerMaterialCategory.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
         ),
         WorkTypeResult.FieldSummary(
             name = "amount",
@@ -109,10 +111,10 @@ object WorkTypeFieldCatalog {
 
     private val PEST_CONTROL_FIELDS: List<WorkTypeResult.FieldSummary> = listOf(
         WorkTypeResult.FieldSummary(
-            name = "pesticideName",
-            type = FieldValueType.STRING,
+            name = "pesticideCategory",
+            type = FieldValueType.ENUM,
             required = true,
-            options = emptyList()
+            options = PesticideCategory.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
         ),
         WorkTypeResult.FieldSummary(
             name = "pesticideAmount",
@@ -188,6 +190,12 @@ object WorkTypeFieldCatalog {
             type = FieldValueType.ENUM,
             required = true,
             options = GrowthPeriodUnit.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
+        ),
+        WorkTypeResult.FieldSummary(
+            name = "isFinalHarvest",
+            type = FieldValueType.BOOLEAN,
+            required = true,
+            options = emptyList()
         )
     )
 }
