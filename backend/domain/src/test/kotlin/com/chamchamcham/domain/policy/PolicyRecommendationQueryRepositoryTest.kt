@@ -59,6 +59,7 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
                 size = 10,
                 cursor = PolicyRecommendationQueryRepository.Cursor(
                     score = cursorRow.score,
+                    applyStartsOn = null,
                     applyEndsOn = cursorRow.policyProgram.applyEndsOn,
                     id = requireNotNull(cursorRow.id)
                 )
@@ -81,12 +82,52 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
         assertThat(result.rows.map { it.policyProgram.title }).containsExactly("융자 지원")
     }
 
+    @Test
+    fun `find page orders latest policies by start date with null last and cursor`() {
+        persistRecommendation("최근", score = "0.7000", applyStartsOn = LocalDate.of(2026, 7, 1), applyEndsOn = null)
+        persistRecommendation("중간", score = "0.9000", applyStartsOn = LocalDate.of(2026, 6, 1), applyEndsOn = null)
+        persistRecommendation("과거", score = "0.9500", applyStartsOn = LocalDate.of(2026, 5, 1), applyEndsOn = null)
+        persistRecommendation("시작일 없음", score = "0.9900", applyStartsOn = null, applyEndsOn = null)
+        entityManager.flush()
+        entityManager.clear()
+
+        val firstPage = queryRepository.findPage(condition(sort = PolicyRecommendationSort.LATEST, size = 2))
+        val cursorRow = firstPage.rows.last()
+        val secondPage = queryRepository.findPage(
+            condition(
+                sort = PolicyRecommendationSort.LATEST,
+                cursor = PolicyRecommendationQueryRepository.Cursor(
+                    score = null,
+                    applyStartsOn = cursorRow.policyProgram.applyStartsOn,
+                    applyEndsOn = null,
+                    id = requireNotNull(cursorRow.id)
+                )
+            )
+        )
+
+        assertThat(firstPage.rows.map { it.policyProgram.title }).containsExactly("최근", "중간")
+        assertThat(secondPage.rows.map { it.policyProgram.title }).containsExactly("과거", "시작일 없음")
+    }
+
+    @Test
+    fun `find page orders equal latest dates by id`() {
+        persistRecommendation("동일일 A", score = "0.9000", applyStartsOn = LocalDate.of(2026, 6, 1), applyEndsOn = null)
+        persistRecommendation("동일일 B", score = "0.9000", applyStartsOn = LocalDate.of(2026, 6, 1), applyEndsOn = null)
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.findPage(condition(sort = PolicyRecommendationSort.LATEST))
+
+        assertThat(result.rows.map { requireNotNull(it.id).toString() }).isSorted
+    }
+
     private fun persistRecommendation(
         title: String,
         member: Member = this.member,
         sourceYear: String = this.sourceYear,
         benefitSummary: String = "지원 확인",
         score: String,
+        applyStartsOn: LocalDate? = null,
         applyEndsOn: LocalDate?
     ): PolicyRecommendation {
         val program = persist(
@@ -114,7 +155,7 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
                     eligibilitySummary = "자격 확인",
                     benefitOriginal = null,
                     benefitSummary = benefitSummary,
-                    applyStartsOn = null,
+                    applyStartsOn = applyStartsOn,
                     applyEndsOn = applyEndsOn,
                     applicationPeriodLabel = "접수기관문의",
                     applicationPeriodNotice = null,
@@ -146,6 +187,7 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
 
     private fun condition(
         benefitSummary: String? = null,
+        sort: PolicyRecommendationSort = PolicyRecommendationSort.RECOMMENDED,
         cursor: PolicyRecommendationQueryRepository.Cursor? = null,
         size: Int = 20
     ): PolicyRecommendationQueryRepository.SearchCondition =
@@ -154,6 +196,7 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
             source = PolicySource.NONGUP_EZ,
             sourceYear = sourceYear,
             benefitSummary = benefitSummary,
+            sort = sort,
             cursor = cursor,
             size = size
         )

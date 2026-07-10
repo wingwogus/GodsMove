@@ -12,12 +12,14 @@ interface PolicyRecommendationQueryRepository {
         val source: PolicySource,
         val sourceYear: String,
         val benefitSummary: String?,
+        val sort: PolicyRecommendationSort,
         val cursor: Cursor?,
         val size: Int
     )
 
     data class Cursor(
-        val score: BigDecimal,
+        val score: BigDecimal?,
+        val applyStartsOn: LocalDate?,
         val applyEndsOn: LocalDate?,
         val id: UUID
     )
