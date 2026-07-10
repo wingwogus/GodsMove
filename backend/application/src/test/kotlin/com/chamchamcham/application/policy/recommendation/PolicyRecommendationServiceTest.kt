@@ -3,6 +3,7 @@ package com.chamchamcham.application.policy.recommendation
 import com.chamchamcham.application.common.OpaqueCursorCodec
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.policy.support.PolicyBenefitCategory
 import com.chamchamcham.application.policy.support.TextListJsonCodec
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
@@ -18,6 +19,7 @@ import com.chamchamcham.domain.policy.PolicyProgramRepository
 import com.chamchamcham.domain.policy.PolicyRecommendation
 import com.chamchamcham.domain.policy.PolicyRecommendationQueryRepository
 import com.chamchamcham.domain.policy.PolicyRecommendationRepository
+import com.chamchamcham.domain.policy.PolicyRecommendationSort
 import com.chamchamcham.domain.policy.PolicySource
 import com.chamchamcham.domain.policy.PolicySyncJob
 import com.chamchamcham.domain.policy.PolicySyncJobRepository
@@ -303,13 +305,115 @@ class PolicyRecommendationServiceTest {
     }
 
     @Test
+    fun `list recommendations passes benefit category and latest sort to query repository`() {
+        val program = recommendableProgram()
+        `when`(
+            policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
+                PolicySource.NONGUP_EZ,
+                PolicySyncJobStatus.SUCCEEDED
+            )
+        ).thenReturn(latestJob)
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
+            .thenReturn(listOf(program))
+        `when`(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(listOf(policyProgramId))
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        givenPolicyProfileData()
+        val expectedCondition = recommendationSearchCondition(
+            benefitSummary = "융자·금융",
+            sort = PolicyRecommendationSort.LATEST
+        )
+        `when`(policyRecommendationQueryRepository.findPage(expectedCondition))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(emptyList()))
+
+        service.listRecommendations(
+            memberId = memberId,
+            cursor = null,
+            size = 20,
+            benefitCategory = PolicyBenefitCategory.FINANCE,
+            sort = PolicyRecommendationSort.LATEST
+        )
+
+        val captor = ArgumentCaptor.forClass(PolicyRecommendationQueryRepository.SearchCondition::class.java)
+        verify(policyRecommendationQueryRepository).findPage(captor.capture() ?: expectedCondition)
+        assertThat(captor.value.benefitSummary).isEqualTo("융자·금융")
+        assertThat(captor.value.sort).isEqualTo(PolicyRecommendationSort.LATEST)
+    }
+
+    @Test
+    fun `list recommendations rejects cursor bound to a different sort`() {
+        val mismatchedCursor = cursorCodec.encode(
+            PolicyRecommendationCursorPayload(
+                source = PolicySource.NONGUP_EZ,
+                sourceYear = "2026",
+                benefitCategory = null,
+                sort = PolicyRecommendationSort.RECOMMENDED,
+                score = BigDecimal("80.0"),
+                applyStartsOn = null,
+                applyEndsOn = LocalDate.of(2026, 6, 30),
+                id = recommendationId
+            )
+        )
+        `when`(
+            policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
+                PolicySource.NONGUP_EZ,
+                PolicySyncJobStatus.SUCCEEDED
+            )
+        ).thenReturn(latestJob)
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
+            .thenReturn(listOf(recommendableProgram()))
+        `when`(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(listOf(policyProgramId))
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        givenPolicyProfileData()
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.listRecommendations(
+                memberId = memberId,
+                cursor = mismatchedCursor,
+                size = 20,
+                sort = PolicyRecommendationSort.LATEST
+            )
+        }
+
+        assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+        verifyNoInteractions(policyRecommendationQueryRepository)
+    }
+
+    @Test
     fun `list recommendations rejects cursor from stale sync job as invalid input`() {
         val staleCursor = cursorCodec.encode(
             PolicyRecommendationCursorPayload(
                 source = PolicySource.NONGUP_EZ,
                 sourceYear = "2025",
                 benefitCategory = null,
+                sort = PolicyRecommendationSort.RECOMMENDED,
                 score = BigDecimal("80.0"),
+                applyStartsOn = null,
                 applyEndsOn = LocalDate.of(2026, 6, 30),
                 id = recommendationId
             )
@@ -462,12 +566,16 @@ class PolicyRecommendationServiceTest {
         return captor.value.toList()
     }
 
-    private fun recommendationSearchCondition(): PolicyRecommendationQueryRepository.SearchCondition =
+    private fun recommendationSearchCondition(
+        benefitSummary: String? = null,
+        sort: PolicyRecommendationSort = PolicyRecommendationSort.RECOMMENDED
+    ): PolicyRecommendationQueryRepository.SearchCondition =
         PolicyRecommendationQueryRepository.SearchCondition(
             memberId = memberId,
             source = PolicySource.NONGUP_EZ,
             sourceYear = "2026",
-            benefitSummary = null,
+            benefitSummary = benefitSummary,
+            sort = sort,
             cursor = null,
             size = 21
         )
