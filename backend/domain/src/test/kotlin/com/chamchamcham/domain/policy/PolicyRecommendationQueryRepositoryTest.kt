@@ -3,6 +3,7 @@ package com.chamchamcham.domain.policy
 import com.chamchamcham.domain.common.BaseTimeEntity
 import com.chamchamcham.domain.member.Member
 import org.assertj.core.api.Assertions.assertThat
+import org.hibernate.SessionFactory
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
@@ -19,7 +20,9 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
-@DataJpaTest
+@DataJpaTest(
+    properties = ["spring.jpa.properties.hibernate.generate_statistics=true"]
+)
 @ActiveProfiles("test")
 @Import(PolicyRecommendationQueryRepositoryImpl::class)
 class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
@@ -39,6 +42,33 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
         val now = LocalDateTime.of(2026, 7, 7, 9, 0)
         member = persist(Member(email = "policy-member@example.com", passwordHash = null), now)
         otherMember = persist(Member(email = "other-policy-member@example.com", passwordHash = null), now)
+    }
+
+    @Test
+    fun `find page avoids policy program selects proportional to card count`() {
+        persistRecommendation("정책 A", score = "0.9500", applyEndsOn = null)
+        persistRecommendation("정책 B", score = "0.9000", applyEndsOn = null)
+        persistRecommendation("정책 C", score = "0.8500", applyEndsOn = null)
+        entityManager.flush()
+        entityManager.clear()
+
+        val statistics = entityManager.entityManager.entityManagerFactory
+            .unwrap(SessionFactory::class.java)
+            .statistics
+        statistics.clear()
+
+        val result = queryRepository.findPage(condition(size = 10))
+        val cardFields = result.rows.map { row ->
+            listOf(
+                row.policyProgram.title,
+                row.policyProgram.eligibilitySummary,
+                row.policyProgram.benefitSummary,
+                row.policyProgram.agencyName
+            )
+        }
+
+        assertThat(cardFields).hasSize(3)
+        assertThat(statistics.prepareStatementCount).isLessThanOrEqualTo(2L)
     }
 
     @Test
