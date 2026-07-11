@@ -103,3 +103,37 @@ No separate `lsp_diagnostics` tool was available in this session; Kotlin compile
 
 - The local vector-store smoke test remains environment-gated by `RUN_LOCAL_RAG_SMOKE=true`; it was compiled and reported as skipped in the default local test environment.
 - No Task 4 processor/controller exception mapping was added.
+
+## Review Fix Evidence — 2026-07-11
+
+Scope:
+
+- Updated only `RecordFeedbackGenerationService.kt` and `RecordFeedbackGenerationServiceTest.kt`.
+- Added a citable-official-evidence gate before the generator's empty-evidence check: retrieved `TECH_DOCUMENT` documents must have nonblank `id` and nonblank `text`.
+- Added regression coverage for blank official document ID and blank official document text, both asserting `INSUFFICIENT_EVIDENCE` and zero LLM calls.
+
+Red:
+
+```bash
+cd backend
+./gradlew :application:test --tests '*RecordFeedbackGenerationServiceTest' --rerun-tasks
+```
+
+Result: `BUILD FAILED`; the two new tests failed because blank-ID and blank-text official documents still reached generation.
+
+Green/final focused gate:
+
+```bash
+cd backend
+./gradlew :application:test --tests '*RecordFeedbackGenerationServiceTest' --tests '*RecordFeedbackRetrievalQueryPlannerTest' --rerun-tasks
+```
+
+Result: `BUILD SUCCESSFUL in 7s`, 8 actionable tasks executed.
+
+Additional check:
+
+```bash
+git diff --check
+```
+
+Result: passed with no whitespace errors.

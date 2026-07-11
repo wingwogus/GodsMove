@@ -49,6 +49,7 @@ class RecordFeedbackGenerationService(
         val perQueryTopK = normalizeTopK(topK)
         val queries = queryPlanner.plan(context)
         val documents = retrieveDocuments(queries, perQueryTopK, context.crop.name.trim())
+            .filter { it.isCitableOfficialEvidence() }
 
         if (documents.isEmpty()) {
             throw RecordFeedbackGenerationException(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE)
@@ -156,6 +157,12 @@ class RecordFeedbackGenerationService(
                 exception,
             )
         }
+    }
+
+    private fun Document.isCitableOfficialEvidence(): Boolean {
+        return metadata["sourceType"] == RagSourceType.TECH_DOCUMENT.name &&
+            id.isNotBlank() &&
+            !text.isNullOrBlank()
     }
 
     private fun Document.toRecordFeedbackEvidence(): RecordFeedbackEvidence {

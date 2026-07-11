@@ -118,6 +118,32 @@ class RecordFeedbackGenerationServiceTest {
     }
 
     @Test
+    fun `official document with blank id is insufficient evidence without llm call`() {
+        val chatClient = FakeChatClient(validResult("doc-1", context.recordCitationId()))
+
+        assertThatThrownBy {
+            service(documents = listOf(officialDocument(id = " ")), chatClient = chatClient)
+                .generate(context)
+        }.isInstanceOfSatisfying(RecordFeedbackGenerationException::class.java) {
+            assertThat(it.code).isEqualTo(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE)
+        }
+        assertThat(chatClient.attempts).isZero()
+    }
+
+    @Test
+    fun `official document with blank text is insufficient evidence without llm call`() {
+        val chatClient = FakeChatClient(validResult("doc-1", context.recordCitationId()))
+
+        assertThatThrownBy {
+            service(documents = listOf(officialDocument(text = " ")), chatClient = chatClient)
+                .generate(context)
+        }.isInstanceOfSatisfying(RecordFeedbackGenerationException::class.java) {
+            assertThat(it.code).isEqualTo(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE)
+        }
+        assertThat(chatClient.attempts).isZero()
+    }
+
+    @Test
     fun `returns server citation metadata after product output validation`() {
         val generated = service(documents = listOf(officialDocument("doc-1")))
             .generate(context)
@@ -192,14 +218,23 @@ class RecordFeedbackGenerationServiceTest {
         }
     }
 
-    private fun officialDocument(id: String): Document {
+    private fun officialDocument(
+        id: String = "doc-1",
+        text: String = "약용작물 관수 후 토양 수분과 배수 상태를 확인한다.",
+    ): Document {
+        val metadata = mapOf(
+            "sourceType" to RagSourceType.TECH_DOCUMENT.name,
+            "documentTitle" to "농업기술길잡이 007 약용작물",
+            "page" to 123,
+            "pdfPath" to "/data/rag/medicinal-plants/raw/pdfs/guide.pdf",
+        )
+        if (id.isBlank()) {
+            return BlankIdDocument(text, metadata)
+        }
         return Document.builder()
             .id(id)
-            .text("약용작물 관수 후 토양 수분과 배수 상태를 확인한다.")
-            .metadata("sourceType", RagSourceType.TECH_DOCUMENT.name)
-            .metadata("documentTitle", "농업기술길잡이 007 약용작물")
-            .metadata("page", 123)
-            .metadata("pdfPath", "/data/rag/medicinal-plants/raw/pdfs/guide.pdf")
+            .text(text)
+            .metadata(metadata)
             .build()
     }
 
@@ -284,6 +319,13 @@ class RecordFeedbackGenerationServiceTest {
             exception?.let { throw it }
             return documents
         }
+    }
+
+    private class BlankIdDocument(
+        text: String,
+        metadata: Map<String, Any>,
+    ) : Document("placeholder-id", text, metadata) {
+        override fun getId(): String = " "
     }
 
     private class FakeChatClient(
