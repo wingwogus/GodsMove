@@ -10,7 +10,7 @@ import SwiftUI
 /// Figma `image` upload slot. Empty state shows the camera affordance; filled state accepts a
 /// thumbnail view and can expose a remove action.
 struct AppImageUploadSlot<Thumbnail: View>: View {
-    var size: CGFloat = 92
+    var size: CGFloat = 96
     var label: String = "n/n"
     var onTap: () -> Void = {}
     var onRemove: (() -> Void)? = nil
@@ -18,7 +18,7 @@ struct AppImageUploadSlot<Thumbnail: View>: View {
     private let thumbnail: Thumbnail?
 
     init(
-        size: CGFloat = 92,
+        size: CGFloat = 96,
         label: String = "n/n",
         onTap: @escaping () -> Void = {},
         onRemove: (() -> Void)? = nil,
@@ -76,7 +76,7 @@ struct AppImageUploadSlot<Thumbnail: View>: View {
 
 extension AppImageUploadSlot where Thumbnail == EmptyView {
     init(
-        size: CGFloat = 92,
+        size: CGFloat = 96,
         label: String = "n/n",
         onTap: @escaping () -> Void = {}
     ) {

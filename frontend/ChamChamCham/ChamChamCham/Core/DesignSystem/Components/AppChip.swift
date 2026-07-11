@@ -9,10 +9,9 @@ import SwiftUI
 
 /// Figma `chip`. A selectable pill in one of two styles:
 /// - `solidPastel`: selected = soft green fill + green border + green text.
-/// - `solid`: selected = bold dark fill + white text.
+/// - `solid`: selected = bold dark fill + white text; unselected = white fill + subtle border.
 ///
-/// Unselected is a neutral grey fill in both styles. Pass `systemImage` for the optional trailing
-/// icon. (Figma spells the token "soild"/"soild-pastel".)
+/// Pass `systemImage` for the optional trailing icon. (Figma spells the token "soild"/"soild-pastel".)
 struct AppChip: View {
     enum Style {
         case solid
@@ -44,8 +43,8 @@ struct AppChip: View {
             .frame(minWidth: 48, minHeight: 32)
             .background(backgroundColor)
             .overlay {
-                if hasBorder {
-                    Capsule().stroke(Color.Border.primary, lineWidth: 1)
+                if let borderColor {
+                    Capsule().stroke(borderColor, lineWidth: 1)
                 }
             }
             .clipShape(Capsule())
@@ -54,7 +53,12 @@ struct AppChip: View {
     }
 
     private var backgroundColor: Color {
-        guard isSelected else { return Color.Object.muted }
+        guard isSelected else {
+            switch style {
+            case .solid: return Color.Object.default
+            case .solidPastel: return Color.Object.muted
+            }
+        }
         switch style {
         case .solid: return Color.Object.bold
         case .solidPastel: return Color.Object.primarySubtle
@@ -69,8 +73,15 @@ struct AppChip: View {
         }
     }
 
-    private var hasBorder: Bool {
-        isSelected && style == .solidPastel
+    private var borderColor: Color? {
+        switch (style, isSelected) {
+        case (.solidPastel, true):
+            Color.Border.primary
+        case (.solid, false):
+            Color.Border.subtle
+        default:
+            nil
+        }
     }
 }
 

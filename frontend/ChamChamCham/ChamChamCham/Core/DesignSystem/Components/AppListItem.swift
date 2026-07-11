@@ -98,7 +98,8 @@ struct AppListItem<Thumbnail: View>: View {
         Text(title)
             .appTypography(.titleMediumEmphasized)
             .foregroundStyle(Color.Text.default)
-            .lineLimit(1)
+            .lineLimit(2)
+            .minimumScaleFactor(0.9)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 

@@ -36,11 +36,11 @@ struct AppTopAppBar: View {
 
     var body: some View {
         content
-            .frame(height: isDetail ? 64 : nil)
             .frame(maxWidth: .infinity)
-            .padding(.vertical, Spacing.sm)
+            .padding(.vertical, isDetail ? Spacing.sm : 6)
             .padding(.leading, isDetail ? 12 : Spacing.lg)
             .padding(.trailing, 12)
+            .frame(height: isDetail ? 64 : 60)
             .background(backgroundColor)
             .overlay(alignment: .bottom) {
                 if showBorder {
@@ -65,7 +65,7 @@ struct AppTopAppBar: View {
         } else {
             HStack(spacing: 0) {
                 Text(title)
-                    .appTypography(.headlineLarge)
+                    .appTypography(.headlineLargeEmphasized)
                     .foregroundStyle(Color.Text.default)
                     .lineLimit(1)
                 Spacer()
@@ -87,7 +87,7 @@ struct AppTopAppBar: View {
     private func iconButton(_ icon: BarIcon) -> some View {
         Button(action: icon.action) {
             Image(systemName: icon.systemName)
-                .font(.system(size: 26))
+                .font(.system(size: 32))
                 .frame(width: 48, height: 48)
                 .foregroundStyle(Color.Icon.default)
         }

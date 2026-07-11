@@ -319,8 +319,15 @@ import SwiftUI
 #Preview("AppCard") {
     ScrollView {
         VStack(spacing: Spacing.lg) {
+            AppCard(size: .xsmall, title: "타이틀", captions: ["캡션"], badges: ["레이블"])
             AppCard(size: .small, title: "타이틀", captions: ["캡션...", "캡션..."], badges: ["레이블"])
             AppCard(size: .medium, title: "타이틀", captions: ["캡션..."], badges: ["레이블", "레이블"])
+            AppCard(
+                size: .large,
+                title: "타이틀",
+                captions: ["캡션은 두 줄까지 표시할 수 있습니다."],
+                badges: ["레이블", "레이블"]
+            )
         }
         .padding()
         .background(Color.Background.subtle)
