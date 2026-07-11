@@ -4,8 +4,8 @@ import com.chamchamcham.ApiApplication
 import com.chamchamcham.application.coaching.rag.common.RagProperties
 import com.chamchamcham.application.coaching.rag.common.RagSourceType
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContext
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationService
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackRetrievalQueryPlanner
-import com.chamchamcham.application.coaching.rag.record.TodayRecordFeedbackService
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Tag
@@ -24,9 +24,9 @@ import java.nio.file.Path
 @ActiveProfiles("local")
 @SpringBootTest(classes = [ApiApplication::class])
 @EnabledIfEnvironmentVariable(named = "RUN_LOCAL_RAG_SMOKE", matches = "true")
-class TodayRecordFeedbackVectorStoreSmokeTest @Autowired constructor(
+class RecordFeedbackGenerationVectorStoreSmokeTest @Autowired constructor(
     private val vectorStore: VectorStore,
-    private val ragProperties: RagProperties
+    private val ragProperties: RagProperties,
 ) {
     private val objectMapper: ObjectMapper = Jackson2ObjectMapperBuilder.json().build()
     private val planner = RecordFeedbackRetrievalQueryPlanner()
@@ -45,9 +45,9 @@ class TodayRecordFeedbackVectorStoreSmokeTest @Autowired constructor(
                     .similarityThreshold(ragProperties.retrieval.lowSimilarityThreshold)
                     .filterExpression(
                         "sourceType == '${RagSourceType.TECH_DOCUMENT.name}' && " +
-                            "cropName in ['$cropName', '${TodayRecordFeedbackService.GENERAL_CROP_NAME}']"
+                            "cropName in ['$cropName', '${RecordFeedbackGenerationService.GENERAL_CROP_NAME}']",
                     )
-                    .build()
+                    .build(),
             )
         }.distinctBy { it.id }
 
