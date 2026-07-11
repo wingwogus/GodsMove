@@ -171,10 +171,11 @@ class RecordFeedbackPromptBuilder {
     }
 
     private fun formatEvidence(evidence: List<RecordFeedbackEvidence>): String {
-        if (evidence.isEmpty()) {
+        val citableEvidence = evidence.filter { it.id.isNotBlank() }
+        if (citableEvidence.isEmpty()) {
             return "검색된 공식문서 근거 없음"
         }
-        return evidence.joinToString("\n\n") {
+        return citableEvidence.joinToString("\n\n") {
             val page = it.page?.let { page -> " p.$page" } ?: ""
             "[${it.id}] ${it.title}$page\n${it.content}"
         }
@@ -192,7 +193,7 @@ class RecordFeedbackPromptBuilder {
                     appendLine("- weather:${it.date} : 예보 날씨 context")
                 }
             }
-            evidence.forEach {
+            evidence.filter { it.id.isNotBlank() }.forEach {
                 appendLine("- ${it.id} : ${it.title}")
             }
         }.trim()
