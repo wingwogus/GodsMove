@@ -1,6 +1,20 @@
 package com.chamchamcham.api.coaching
 
 import com.chamchamcham.ApiApplication
+import com.chamchamcham.application.coaching.rag.common.RagModelInfo
+import com.chamchamcham.application.coaching.rag.record.CommonFeedbackDetail
+import com.chamchamcham.application.coaching.rag.record.GeneratedRecordFeedback
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionCategory
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionDue
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackCoachingResult
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContext
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackCropContext
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackFarmContext
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationService
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackItem
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackMemberContext
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackNextAction
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackRecordContext
 import com.chamchamcham.application.farming.FarmingRecordCommand
 import com.chamchamcham.application.farming.FarmingRecordService
 import com.chamchamcham.application.report.FarmingCycleReportProjectionService
@@ -30,6 +44,7 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDateTime
 import java.util.UUID
+import org.mockito.Mockito.`when`
 
 @SpringBootTest(
     classes = [ApiApplication::class],
@@ -51,6 +66,9 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
     @MockBean
     private lateinit var projectionService: FarmingCycleReportProjectionService
 
+    @MockBean
+    private lateinit var generationService: RecordFeedbackGenerationService
+
     private lateinit var member: Member
     private lateinit var farm: Farm
     private lateinit var crop: Crop
@@ -71,10 +89,11 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
             Crop(externalNo = 7101, name = "황기", usePartCategory = CropUsePartCategory.ROOT_BARK),
         )
         memberCropRepository.save(MemberCrop(member = member, farm = farm, crop = crop))
+        `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenReturn(generatedFeedback())
     }
 
     @Test
-    fun `create commits a pending feedback with an entity derived input snapshot`() {
+    fun `create commits a ready feedback with an entity derived input snapshot`() {
         val recordId = farmingRecordService.create(wateringCreateCommand()).id
 
         val record = farmingRecordRepository.findById(recordId).orElseThrow()
@@ -85,14 +104,17 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
         ) ?: error("record feedback must be created")
 
         assertThat(record.sourceRevision).isEqualTo(1)
-        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.PENDING)
+        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.READY)
         assertThat(feedback.inputSnapshot)
             .containsEntry("schemaVersion", "record-feedback-context.v2")
             .doesNotContainKeys("recentRecords", "workTypeStats", "cropCycle", "daysAfterPlanting")
+        assertThat(feedback.structuredResult).containsKey("goodPoint")
+        assertThat(feedback.auditStatus).isEqualTo("PASS")
+        assertThat(feedback.modelName).isEqualTo("chat-test")
     }
 
     @Test
-    fun `update stales the prior revision and prepares a new pending snapshot`() {
+    fun `update stales the prior revision and prepares a new ready snapshot`() {
         val recordId = farmingRecordService.create(wateringCreateCommand()).id
 
         farmingRecordService.update(wateringUpdateCommand(recordId))
@@ -111,8 +133,9 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
 
         assertThat(record.sourceRevision).isEqualTo(2)
         assertThat(first.status).isEqualTo(CoachingFeedbackStatus.STALE)
-        assertThat(second.status).isEqualTo(CoachingFeedbackStatus.PENDING)
+        assertThat(second.status).isEqualTo(CoachingFeedbackStatus.READY)
         assertThat(second.inputSnapshot).containsEntry("schemaVersion", "record-feedback-context.v2")
+        assertThat(second.structuredResult).containsKey("goodPoint")
     }
 
     @Test
@@ -169,5 +192,52 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
             irrigationAmount = IrrigationAmount.LOW,
             irrigationMethod = IrrigationMethod.DRIP,
         ),
+    )
+
+    private fun generatedFeedback() = GeneratedRecordFeedback(
+        result = RecordFeedbackCoachingResult(
+            goodPoint = RecordFeedbackItem(
+                basis = "자동 생성 테스트 근거입니다.",
+                text = "관수 기록이 구체적입니다.",
+                evidenceRefs = listOf("doc-1"),
+            ),
+            nextActions = listOf(
+                RecordFeedbackNextAction(
+                    due = RecordFeedbackActionDue.NEXT_CHECK,
+                    category = RecordFeedbackActionCategory.CULTIVATION,
+                    basis = "다음 점검이 필요합니다.",
+                    text = "토양 수분을 다시 확인하세요.",
+                    evidenceRefs = listOf("doc-1"),
+                ),
+            ),
+        ),
+        citations = listOf(mapOf("id" to "doc-1", "title" to "농업기술길잡이")),
+        auditWarnings = emptyList(),
+        modelInfo = RagModelInfo(
+            embedding = "embedding-test",
+            chat = "chat-test",
+        ),
+    )
+
+    private fun anyContext(): RecordFeedbackContext {
+        return org.mockito.Mockito.any(RecordFeedbackContext::class.java) ?: fallbackContext()
+    }
+
+    private fun fallbackContext() = RecordFeedbackContext(
+        member = RecordFeedbackMemberContext(requireNotNull(member.id), null, null),
+        farm = RecordFeedbackFarmContext(requireNotNull(farm.id), farm.name, farm.roadAddress, null, null),
+        crop = RecordFeedbackCropContext(requireNotNull(crop.id), crop.name, crop.usePartCategory),
+        record = RecordFeedbackRecordContext(
+            recordId = UUID.randomUUID(),
+            sourceRevision = 1,
+            workedAt = LocalDateTime.of(2026, 7, 11, 8, 30),
+            workType = WorkType.WATERING,
+            detail = CommonFeedbackDetail,
+            recordedWeatherCondition = "맑음",
+            recordedTemperatureC = 24,
+            memo = "점적관수로 토양 수분을 보충했습니다.",
+            photoCount = 0,
+        ),
+        weather = null,
     )
 }

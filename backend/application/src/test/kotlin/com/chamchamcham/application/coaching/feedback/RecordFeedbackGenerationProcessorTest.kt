@@ -28,6 +28,7 @@ import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.Member
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.Assertions.assertDoesNotThrow
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -38,6 +39,9 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
+import org.springframework.transaction.TransactionDefinition
+import org.springframework.transaction.support.AbstractPlatformTransactionManager
+import org.springframework.transaction.support.DefaultTransactionStatus
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -76,6 +80,7 @@ class RecordFeedbackGenerationProcessorTest {
             feedbackRepository = feedbackRepository,
             generationService = generationService,
             objectMapper = objectMapper,
+            transactionManager = NoOpTransactionManager(),
         )
     }
 
@@ -95,7 +100,7 @@ class RecordFeedbackGenerationProcessorTest {
     fun `processor persists ready result from the stored snapshot`() {
         val feedback = feedback(inputSnapshot = snapshot())
         val event = event(feedback)
-        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        stubInitialAndFinalFeedback(event, feedback)
         `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenReturn(generatedFeedback())
 
         processor.generate(event)
@@ -118,7 +123,7 @@ class RecordFeedbackGenerationProcessorTest {
     fun `processor stores insufficient evidence failure without touching record`() {
         val feedback = feedback(inputSnapshot = snapshot())
         val event = event(feedback)
-        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        stubInitialAndFinalFeedback(event, feedback)
         `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenThrow(
             RecordFeedbackGenerationException(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE),
         )
@@ -133,13 +138,45 @@ class RecordFeedbackGenerationProcessorTest {
     fun `processor maps malformed snapshot to structured output invalid failure`() {
         val feedback = feedback(inputSnapshot = mapOf("schemaVersion" to "record-feedback-context/v1"))
         val event = event(feedback)
-        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        stubInitialAndFinalFeedback(event, feedback)
 
         processor.generate(event)
 
         assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.FAILED)
         assertThat(feedback.failureCode).isEqualTo("STRUCTURED_OUTPUT_INVALID")
         verifyNoInteractions(generationService)
+    }
+
+    @Test
+    fun `processor does not mark ready when feedback becomes stale during generation`() {
+        val feedback = feedback(inputSnapshot = snapshot())
+        val event = event(feedback)
+        stubInitialAndFinalFeedback(event, feedback)
+        `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenAnswer {
+            feedback.markStale()
+            generatedFeedback()
+        }
+
+        assertDoesNotThrow { processor.generate(event) }
+
+        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.STALE)
+        assertThat(feedback.structuredResult).isNull()
+    }
+
+    @Test
+    fun `processor does not mark failed when feedback becomes stale during generation failure`() {
+        val feedback = feedback(inputSnapshot = snapshot())
+        val event = event(feedback)
+        stubInitialAndFinalFeedback(event, feedback)
+        `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenAnswer {
+            feedback.markStale()
+            throw RecordFeedbackGenerationException(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE)
+        }
+
+        assertDoesNotThrow { processor.generate(event) }
+
+        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.STALE)
+        assertThat(feedback.failureCode).isNull()
     }
 
     private fun feedback(
@@ -217,6 +254,24 @@ class RecordFeedbackGenerationProcessorTest {
 
     private fun captureContext(captor: ArgumentCaptor<RecordFeedbackContext>): RecordFeedbackContext {
         return captor.capture() ?: context()
+    }
+
+    private fun stubInitialAndFinalFeedback(
+        event: RecordFeedbackGenerationRequested,
+        feedback: CoachingFeedback,
+    ) {
+        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        `when`(feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)).thenReturn(feedback)
+    }
+
+    private class NoOpTransactionManager : AbstractPlatformTransactionManager() {
+        override fun doGetTransaction(): Any = Any()
+
+        override fun doBegin(transaction: Any, definition: TransactionDefinition) = Unit
+
+        override fun doCommit(status: DefaultTransactionStatus) = Unit
+
+        override fun doRollback(status: DefaultTransactionStatus) = Unit
     }
 
     private companion object {
