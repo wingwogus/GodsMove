@@ -262,6 +262,20 @@ class PolicyRecommendationServiceTest {
     }
 
     @Test
+    fun `list recommendations loads crops through policy fetch join query`() {
+        val program = recommendableProgram()
+        val row = recommendation(program)
+        givenReusableRecommendations(program)
+        `when`(policyRecommendationQueryRepository.findPage(recommendationSearchCondition()))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
+
+        service.listRecommendations(memberId, cursor = null, size = 20)
+
+        verify(memberCropRepository).findAllWithCropByMemberId(memberId)
+        verify(memberCropRepository, never()).findByMemberId(memberId)
+    }
+
+    @Test
     fun `list recommendations saves only eligible generated recommendations`() {
         val ineligiblePolicyProgramId = UUID.fromString("00000000-0000-0000-0000-000000000302")
         val eligibleProgram = recommendableProgram()
@@ -784,7 +798,7 @@ class PolicyRecommendationServiceTest {
             name = "참당귀",
             usePartCategory = CropUsePartCategory.ROOT_BARK
         )
-        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(
+        `when`(memberCropRepository.findAllWithCropByMemberId(memberId)).thenReturn(
             listOf(
                 MemberCrop(
                     member = member,

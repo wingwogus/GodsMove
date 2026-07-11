@@ -72,7 +72,7 @@ class PolicyRecommendationService(
         val member = memberRepository.findById(memberId).orElseThrow {
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)
         }
-        val memberCrops = memberCropRepository.findByMemberId(memberId)
+        val memberCrops = memberCropRepository.findAllWithCropByMemberId(memberId)
         val farms = farmRepository.findByOwnerId(memberId)
 
         if (recommendationsAreStale(memberId, source, sourceYear, candidates, member, memberCrops, farms)) {
