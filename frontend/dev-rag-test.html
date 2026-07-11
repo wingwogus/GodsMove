@@ -1,0 +1,1419 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ChamChamCham RAG Console</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: #f5f7f4;
+      color: #17221b;
+      --ink: #17221b;
+      --muted: #617067;
+      --line: #d5ddd5;
+      --panel: #ffffff;
+      --soft: #f8faf7;
+      --accent: #227044;
+      --accent-weak: #e7f4ec;
+      --danger: #a83c32;
+      --warn: #9a6a12;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 18px;
+      background: var(--soft);
+    }
+
+    main {
+      max-width: 1440px;
+      margin: 0 auto;
+      display: grid;
+      gap: 12px;
+    }
+
+    header {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      align-items: end;
+      padding-bottom: 10px;
+      border-bottom: 1px solid var(--line);
+    }
+
+    h1,
+    h2,
+    h3,
+    p {
+      margin: 0;
+      letter-spacing: 0;
+    }
+
+    h1 {
+      font-size: 22px;
+      line-height: 1.2;
+    }
+
+    h2 {
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    h3 {
+      font-size: 13px;
+      line-height: 1.3;
+    }
+
+    .subtle {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .shell {
+      display: grid;
+      grid-template-columns: minmax(280px, 340px) minmax(0, 1fr) minmax(340px, 460px);
+      gap: 12px;
+      align-items: start;
+    }
+
+    .stack {
+      display: grid;
+      gap: 10px;
+    }
+
+    section,
+    .panel {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--panel);
+    }
+
+    .compact {
+      gap: 8px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .three {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
+    label {
+      display: grid;
+      gap: 5px;
+      color: #33443a;
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+
+    input,
+    textarea,
+    select,
+    button {
+      font: inherit;
+      font-size: 13px;
+      letter-spacing: 0;
+    }
+
+    input,
+    textarea,
+    select {
+      width: 100%;
+      min-width: 0;
+      border: 1px solid #c8d3ca;
+      border-radius: 6px;
+      padding: 9px 10px;
+      background: #fbfcfb;
+      color: var(--ink);
+    }
+
+    textarea {
+      min-height: 150px;
+      resize: vertical;
+      line-height: 1.45;
+      font-family: var(--mono);
+      font-size: 12px;
+    }
+
+    .token-box {
+      min-height: 90px;
+    }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      padding: 4px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #eef4ef;
+    }
+
+    button {
+      min-height: 36px;
+      border: 1px solid var(--accent);
+      border-radius: 6px;
+      padding: 0 12px;
+      background: var(--accent);
+      color: #ffffff;
+      font-weight: 700;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    button.secondary {
+      border-color: #bdc9c0;
+      background: #f6f8f5;
+      color: var(--ink);
+    }
+
+    button.tab {
+      border-color: transparent;
+      background: transparent;
+      color: #425146;
+    }
+
+    button[aria-selected="true"],
+    button.tab.active {
+      border-color: #9bc4aa;
+      background: #ffffff;
+      color: var(--accent);
+    }
+
+    button:disabled {
+      cursor: not-allowed;
+      opacity: 0.55;
+    }
+
+    .button-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .status-line {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+      justify-content: flex-end;
+    }
+
+    .badge {
+      display: inline-flex;
+      min-height: 26px;
+      align-items: center;
+      border: 1px solid #b9c7bc;
+      border-radius: 999px;
+      padding: 3px 9px;
+      background: #f7faf7;
+      color: #33443a;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .badge.ready {
+      border-color: #8ec09e;
+      background: var(--accent-weak);
+      color: #155b34;
+    }
+
+    .badge.failed {
+      border-color: #e0a39e;
+      background: #fff0ee;
+      color: var(--danger);
+    }
+
+    .badge.pending {
+      border-color: #dfc58b;
+      background: #fff8e8;
+      color: var(--warn);
+    }
+
+    .badge.polling {
+      animation: pulse 1.1s ease-in-out infinite;
+    }
+
+    @keyframes pulse {
+      0%,
+      100% {
+        opacity: 1;
+      }
+      50% {
+        opacity: 0.55;
+      }
+    }
+
+    .metrics {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .metric {
+      min-width: 0;
+      padding: 9px;
+      border: 1px solid #dce3dc;
+      border-radius: 6px;
+      background: #fbfdfb;
+    }
+
+    .metric strong {
+      display: block;
+      overflow-wrap: anywhere;
+      color: var(--ink);
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .metric span {
+      display: block;
+      margin-top: 3px;
+      color: var(--muted);
+      font-size: 11px;
+      line-height: 1.25;
+    }
+
+    .feedback-result {
+      display: grid;
+      gap: 8px;
+      padding: 10px;
+      border: 1px solid #dce3dc;
+      border-radius: 6px;
+      background: #fbfdfb;
+    }
+
+    .good-point {
+      line-height: 1.55;
+    }
+
+    .actions {
+      display: grid;
+      gap: 6px;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .action {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 8px;
+      align-items: start;
+      padding: 8px;
+      border: 1px solid #dce3dc;
+      border-radius: 6px;
+      background: #ffffff;
+      line-height: 1.45;
+    }
+
+    .action-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      margin-top: 4px;
+    }
+
+    .mini {
+      display: inline-flex;
+      align-items: center;
+      border: 1px solid #cbd7ce;
+      border-radius: 999px;
+      padding: 2px 7px;
+      color: #46564b;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      font-size: 12px;
+    }
+
+    .table th,
+    .table td {
+      padding: 7px 8px;
+      border-bottom: 1px solid #edf1ed;
+      text-align: left;
+      vertical-align: top;
+      overflow-wrap: anywhere;
+    }
+
+    .table th {
+      color: #3e5044;
+      font-weight: 800;
+    }
+
+    pre {
+      min-height: 500px;
+      max-height: calc(100vh - 180px);
+      overflow: auto;
+      margin: 0;
+      padding: 12px;
+      border: 1px solid #1e2d23;
+      border-radius: 8px;
+      background: #0d1510;
+      color: #e5f0e7;
+      font-family: var(--mono);
+      font-size: 12px;
+      line-height: 1.45;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .log {
+      display: grid;
+      gap: 5px;
+      max-height: 130px;
+      overflow: auto;
+      padding: 8px;
+      border: 1px solid #dce3dc;
+      border-radius: 6px;
+      background: #fbfdfb;
+      font-size: 12px;
+    }
+
+    .empty {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .report-title {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: start;
+    }
+
+    .report-tabs,
+    .work-tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    @media (max-width: 1160px) {
+      .shell {
+        grid-template-columns: minmax(260px, 330px) minmax(0, 1fr);
+      }
+
+      .inspector {
+        grid-column: 1 / -1;
+      }
+
+      pre {
+        max-height: 440px;
+        min-height: 300px;
+      }
+    }
+
+    @media (max-width: 760px) {
+      body {
+        padding: 10px;
+      }
+
+      header,
+      .shell,
+      .row,
+      .three,
+      .report-title {
+        grid-template-columns: 1fr;
+      }
+
+      .metrics {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+
+      .status-line {
+        justify-content: start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="stack compact">
+        <h1>ChamChamCham RAG Test Console</h1>
+        <p class="subtle">로컬 백엔드의 기록 피드백 상태 전이와 주기 리포트 통계를 확인합니다. 5173 origin에서 제공해야 CORS 검증이 쉽습니다.</p>
+      </div>
+      <div class="status-line" aria-live="polite">
+        <span id="authStatus" class="badge">token 없음</span>
+        <span id="requestStatus" class="badge">대기</span>
+      </div>
+    </header>
+
+    <div class="shell">
+      <aside class="stack">
+        <section>
+          <h2>연결</h2>
+          <label>
+            Backend base URL
+            <input id="baseUrl" value="http://127.0.0.1:8080" autocomplete="off">
+          </label>
+          <button id="saveConnection" class="secondary" type="button">연결 설정 저장</button>
+        </section>
+
+        <section>
+          <h2>인증</h2>
+          <div class="row">
+            <label>
+              Email
+              <input id="email" type="email" autocomplete="username">
+            </label>
+            <label>
+              Password
+              <input id="password" type="password" autocomplete="current-password">
+            </label>
+          </div>
+          <button id="emailLogin" type="button">이메일 로그인</button>
+          <label>
+            Access token
+            <textarea id="accessToken" class="token-box" placeholder="Bearer 없이 JWT만 입력"></textarea>
+          </label>
+          <div class="button-row">
+            <button id="useManualToken" class="secondary" type="button">수동 토큰 적용</button>
+            <button id="clearToken" class="secondary" type="button">토큰 삭제</button>
+          </div>
+        </section>
+
+        <section>
+          <h2>자주 쓰는 ID</h2>
+          <label>
+            Farm ID
+            <input id="farmId" autocomplete="off">
+          </label>
+          <label>
+            Crop ID
+            <input id="cropId" autocomplete="off">
+          </label>
+          <button id="saveIds" class="secondary" type="button">ID 저장</button>
+        </section>
+
+        <section>
+          <h2>요청 로그</h2>
+          <div id="requestLog" class="log" aria-live="polite"></div>
+        </section>
+      </aside>
+
+      <div class="stack">
+        <nav aria-label="테스트 영역">
+          <button data-view="feedback" aria-selected="true" type="button">기록 피드백</button>
+          <button data-view="report" aria-selected="false" type="button">리포트 통계</button>
+        </nav>
+
+        <section id="feedbackView">
+          <div class="report-title">
+            <div class="stack compact">
+              <h2>기록 저장 및 피드백</h2>
+              <p class="subtle">기록 생성/수정 성공 시 반환된 <code>data.id</code>를 Record ID에 반영하고 피드백 조회와 폴링을 시작합니다.</p>
+            </div>
+            <span id="feedbackStatusBadge" class="badge">ID 없음</span>
+          </div>
+
+          <div class="row">
+            <label>
+              Record ID
+              <input id="recordId" autocomplete="off" placeholder="생성 후 자동 반영">
+            </label>
+            <label>
+              Preview fixture (UI-only)
+              <select id="feedbackPreview">
+                <option value="">백엔드 응답 사용</option>
+                <option value="PENDING">UI-only PENDING</option>
+                <option value="READY">UI-only READY</option>
+                <option value="FAILED">UI-only FAILED</option>
+                <option value="STALE">UI-only STALE</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            FarmingRecord SaveRecordRequest JSON
+            <textarea id="recordPayload"></textarea>
+          </label>
+
+          <div class="button-row">
+            <button id="createRecord" type="button">기록 생성</button>
+            <button id="updateRecord" class="secondary" type="button">기록 수정</button>
+            <button id="loadFeedback" class="secondary" type="button">피드백 조회</button>
+            <button id="regenerateFeedback" class="secondary" type="button" disabled>FAILED 재생성</button>
+            <button id="stopPolling" class="secondary" type="button">폴링 중지</button>
+            <button id="renderPreview" class="secondary" type="button">UI-only 미리보기</button>
+          </div>
+
+          <div class="metrics" aria-live="polite">
+            <div class="metric">
+              <strong id="feedbackStatus">-</strong>
+              <span>Status</span>
+            </div>
+            <div class="metric">
+              <strong id="feedbackInputPrepared">-</strong>
+              <span>Input prepared</span>
+            </div>
+            <div class="metric">
+              <strong id="feedbackFailureCode">-</strong>
+              <span>Failure code</span>
+            </div>
+            <div class="metric">
+              <strong id="pollAttempts">0</strong>
+              <span>Poll attempts / 60</span>
+            </div>
+          </div>
+
+          <div class="feedback-result">
+            <h3>공개 피드백 결과</h3>
+            <div id="goodPoint" class="good-point">아직 생성된 피드백이 없습니다.</div>
+            <ul id="actions" class="actions"></ul>
+          </div>
+        </section>
+
+        <section id="reportView" hidden>
+          <div class="report-title">
+            <div class="stack compact">
+              <h2>리포트 통계</h2>
+              <p class="subtle">현재/직전 주기, 완료 목록, 상세 리포트의 typed 통계를 작업 유형별로 확인합니다.</p>
+            </div>
+            <span id="reportStatusBadge" class="badge">리포트 없음</span>
+          </div>
+
+          <div class="row three">
+            <label>
+              Cursor
+              <input id="reportCursor" autocomplete="off" placeholder="목록 nextCursor">
+            </label>
+            <label>
+              Size
+              <input id="reportSize" type="number" min="1" max="100" value="20">
+            </label>
+            <label>
+              Report ID
+              <input id="reportId" autocomplete="off" placeholder="상세 조회">
+            </label>
+          </div>
+
+          <div class="button-row">
+            <button id="loadCurrentReport" type="button">현재/직전 조회</button>
+            <button id="loadReportList" class="secondary" type="button">완료 목록 조회</button>
+            <button id="loadReportDetail" class="secondary" type="button">상세 조회</button>
+          </div>
+
+          <div class="report-tabs" aria-label="스냅샷 선택">
+            <button class="tab active" data-report-scope="current" type="button">현재</button>
+            <button class="tab" data-report-scope="previous" type="button">직전</button>
+            <button class="tab" data-report-scope="selected" type="button">상세</button>
+          </div>
+
+          <div id="reportSummary" class="metrics"></div>
+          <div id="reportList" class="panel compact"></div>
+
+          <div class="work-tabs" aria-label="작업 유형"></div>
+          <div id="workStats" class="panel compact"></div>
+        </section>
+      </div>
+
+      <aside class="stack inspector">
+        <section>
+          <h2>원본 응답</h2>
+          <pre id="rawOutput">{}</pre>
+        </section>
+      </aside>
+    </div>
+  </main>
+
+  <script>
+    const storageKeys = {
+      baseUrl: "chamchamcham.ragConsole.baseUrl",
+      farmId: "chamchamcham.ragConsole.farmId",
+      cropId: "chamchamcham.ragConsole.cropId"
+    };
+
+    const sessionKeys = {
+      accessToken: "chamchamcham.ragConsole.accessToken"
+    };
+
+    const terminalFeedbackStatuses = ["READY", "FAILED", "STALE"];
+    const workTypeOrder = ["planting", "watering", "fertilizing", "pestControl", "weeding", "pruning", "harvest", "etc"];
+    const commonStatisticKeys = [
+      "recordCount",
+      "firstWorkedOn",
+      "lastWorkedOn",
+      "workedDayCount",
+      "averageIntervalDays",
+      "photoAttachedRecordCount",
+      "photoAttachmentRatePct",
+      "averageTemperatureC"
+    ];
+
+    const workTypeLabels = {
+      planting: "파종",
+      watering: "관수",
+      fertilizing: "시비",
+      pestControl: "방제",
+      weeding: "제초",
+      pruning: "전정",
+      harvest: "수확",
+      etc: "기타"
+    };
+
+    const state = {
+      accessToken: sessionStorage.getItem(sessionKeys.accessToken) || "",
+      pollTimer: null,
+      pollAttempts: 0,
+      report: {
+        current: null,
+        previous: null,
+        selected: null
+      },
+      reportScope: "current",
+      workType: "planting",
+      requestLog: []
+    };
+
+    const $ = (id) => document.getElementById(id);
+    const $$ = (selector, root = document) => Array.from(root.querySelectorAll(selector));
+
+    const fixtures = {
+      PENDING: {
+        feedbackId: "00000000-0000-0000-0000-000000000201",
+        recordId: "00000000-0000-0000-0000-000000000101",
+        status: "PENDING",
+        sourceRevision: 1,
+        inputPrepared: true,
+        failureCode: null,
+        feedback: null,
+        createdAt: "2026-07-11T10:00:00",
+        updatedAt: "2026-07-11T10:00:30"
+      },
+      READY: {
+        feedbackId: "00000000-0000-0000-0000-000000000202",
+        recordId: "00000000-0000-0000-0000-000000000101",
+        status: "READY",
+        sourceRevision: 2,
+        inputPrepared: true,
+        failureCode: null,
+        feedback: {
+          goodPoint: {
+            text: "점적관수 후 토양 상태를 메모로 남긴 점이 좋습니다."
+          },
+          nextActions: [
+            {
+              text: "오늘 오후에 토양 표면 건조 여부를 한 번 더 확인하세요.",
+              due: "TODAY",
+              category: "IRRIGATION"
+            },
+            {
+              text: "이번 주 안에 배수로 주변의 막힌 흙을 정리하세요.",
+              due: "THIS_WEEK",
+              category: "CULTIVATION"
+            }
+          ]
+        },
+        createdAt: "2026-07-11T10:00:00",
+        updatedAt: "2026-07-11T10:02:00"
+      },
+      FAILED: {
+        feedbackId: "00000000-0000-0000-0000-000000000203",
+        recordId: "00000000-0000-0000-0000-000000000101",
+        status: "FAILED",
+        sourceRevision: 2,
+        inputPrepared: true,
+        failureCode: "GENERATION_FAILED",
+        feedback: null,
+        createdAt: "2026-07-11T10:00:00",
+        updatedAt: "2026-07-11T10:02:00"
+      },
+      STALE: {
+        feedbackId: "00000000-0000-0000-0000-000000000204",
+        recordId: "00000000-0000-0000-0000-000000000101",
+        status: "STALE",
+        sourceRevision: 1,
+        inputPrepared: false,
+        failureCode: null,
+        feedback: null,
+        createdAt: "2026-07-11T10:00:00",
+        updatedAt: "2026-07-11T10:03:00"
+      }
+    };
+
+    const defaultRecordPayload = {
+      farmId: "",
+      cropId: "",
+      workType: "WATERING",
+      workedAt: "2026-07-11T09:00:00",
+      weatherCondition: "맑음",
+      weatherTemperature: 28,
+      memo: "오늘은 관수 작업을 진행했고 토양 수분과 배수 상태를 함께 확인했습니다.",
+      watering: {
+        irrigationAmount: "NORMAL",
+        irrigationMethod: "DRIP"
+      },
+      mediaIds: []
+    };
+
+    function normalizeBaseUrl(value) {
+      const normalized = (value || "http://127.0.0.1:8080").trim().replace(/\/+$/, "");
+      return normalized === "http://localhost:8080" ? "http://127.0.0.1:8080" : normalized;
+    }
+
+    function baseUrl() {
+      return normalizeBaseUrl($("baseUrl").value);
+    }
+
+    function value(id) {
+      return $(id).value.trim();
+    }
+
+    function setText(id, text) {
+      $(id).textContent = text == null || text === "" ? "-" : String(text);
+    }
+
+    function setBusy(button, busy) {
+      button.disabled = busy;
+      button.dataset.busy = busy ? "true" : "false";
+    }
+
+    function updateAuthStatus() {
+      $("accessToken").value = state.accessToken;
+      $("authStatus").textContent = state.accessToken ? `token 적용됨 (${state.accessToken.length})` : "token 없음";
+      $("authStatus").className = `badge${state.accessToken ? " ready" : ""}`;
+    }
+
+    function setToken(token) {
+      state.accessToken = (token || "").trim();
+      if (state.accessToken) {
+        sessionStorage.setItem(sessionKeys.accessToken, state.accessToken);
+      } else {
+        sessionStorage.removeItem(sessionKeys.accessToken);
+      }
+      updateAuthStatus();
+    }
+
+    function redactTokenKeys(input) {
+      if (Array.isArray(input)) {
+        return input.map(redactTokenKeys);
+      }
+      if (input && typeof input === "object") {
+        return Object.fromEntries(
+          Object.entries(input).map(([key, entry]) => {
+            const lowered = key.toLowerCase();
+            const isTokenLike = lowered.includes("token") || lowered === "authorization" || lowered.endsWith("jwt");
+            return [key, isTokenLike ? "[redacted]" : redactTokenKeys(entry)];
+          })
+        );
+      }
+      return input;
+    }
+
+    function renderRawResponse(payload) {
+      $("rawOutput").textContent = JSON.stringify(redactTokenKeys(payload), null, 2);
+    }
+
+    function appendRequestLog(entry) {
+      state.requestLog.unshift(entry);
+      state.requestLog = state.requestLog.slice(0, 14);
+      $("requestLog").replaceChildren(
+        ...state.requestLog.map((item) => {
+          const row = document.createElement("div");
+          row.textContent = `${item.time} ${item.method} ${item.path} -> ${item.status}`;
+          return row;
+        })
+      );
+    }
+
+    async function request(path, options = {}) {
+      const method = options.method || "GET";
+      const headers = {
+        "Content-Type": "application/json",
+        ...(options.headers || {})
+      };
+
+      if (options.auth !== false && state.accessToken) {
+        headers.Authorization = `Bearer ${state.accessToken}`;
+      }
+
+      $("requestStatus").textContent = `${method} ${path}`;
+      $("requestStatus").className = "badge pending";
+
+      let response;
+      let body = null;
+      try {
+        response = await fetch(`${baseUrl()}${path}`, {
+          ...options,
+          method,
+          headers
+        });
+      } catch (cause) {
+        const errorBody = {
+          success: false,
+          error: {
+            code: "FETCH_FAILED",
+            message: `${baseUrl()} 연결 또는 CORS origin http://127.0.0.1:5173 허용 여부를 확인해주세요.`,
+            detail: cause instanceof Error ? cause.message : String(cause)
+          }
+        };
+        renderRawResponse({ method, path, response: errorBody });
+        appendRequestLog({ time: new Date().toLocaleTimeString(), method, path, status: "FETCH_FAILED" });
+        $("requestStatus").textContent = "fetch 실패";
+        $("requestStatus").className = "badge failed";
+        const error = new Error("fetch 실패");
+        error.body = errorBody;
+        throw error;
+      }
+
+      const text = await response.text();
+      try {
+        body = text ? JSON.parse(text) : null;
+      } catch (cause) {
+        body = {
+          success: false,
+          error: {
+            code: "INVALID_JSON_RESPONSE",
+            message: "서버 응답을 JSON으로 파싱할 수 없습니다.",
+            detail: text
+          }
+        };
+      }
+
+      renderRawResponse({ method, path, httpStatus: response.status, response: body });
+      appendRequestLog({ time: new Date().toLocaleTimeString(), method, path, status: response.status });
+      $("requestStatus").textContent = `${response.status} ${method}`;
+      $("requestStatus").className = `badge${response.ok ? " ready" : " failed"}`;
+
+      if (!response.ok) {
+        const error = new Error(`HTTP ${response.status}`);
+        error.body = body;
+        throw error;
+      }
+
+      return body;
+    }
+
+    function parseJsonTextarea(id) {
+      try {
+        return JSON.parse($(id).value);
+      } catch (cause) {
+        const error = new Error("JSON 파싱 실패");
+        error.body = {
+          success: false,
+          error: {
+            code: "INVALID_JSON_REQUEST",
+            message: `${id} 요청 본문을 JSON으로 파싱할 수 없습니다.`,
+            detail: cause instanceof Error ? cause.message : String(cause)
+          }
+        };
+        renderRawResponse(error.body);
+        throw error;
+      }
+    }
+
+    async function run(button, action) {
+      setBusy(button, true);
+      try {
+        await action();
+      } catch (error) {
+        if (error.body) {
+          renderRawResponse(error.body);
+        }
+        $("requestStatus").textContent = error.message;
+        $("requestStatus").className = "badge failed";
+      } finally {
+        setBusy(button, false);
+        syncDisabledStates();
+      }
+    }
+
+    function badgeClass(status) {
+      const normalized = String(status || "").toLowerCase();
+      if (normalized === "ready") return "badge ready";
+      if (normalized === "failed") return "badge failed";
+      if (normalized === "pending") return `badge pending${state.pollTimer ? " polling" : ""}`;
+      if (normalized === "stale") return "badge failed";
+      return "badge";
+    }
+
+    function renderAction(action, index) {
+      const item = document.createElement("li");
+      item.className = "action";
+
+      const number = document.createElement("span");
+      number.className = "mini";
+      number.textContent = String(index + 1);
+
+      const content = document.createElement("div");
+      const text = document.createElement("div");
+      text.textContent = action?.text || "-";
+
+      const tags = document.createElement("div");
+      tags.className = "action-tags";
+      ["due", "category"].forEach((key) => {
+        const tag = document.createElement("span");
+        tag.className = "mini";
+        tag.textContent = `${key}: ${action?.[key] || "-"}`;
+        tags.append(tag);
+      });
+
+      content.append(text, tags);
+      item.append(number, content);
+      return item;
+    }
+
+    function renderFeedback(feedback) {
+      const status = feedback?.status || "-";
+      $("feedbackStatusBadge").textContent = status;
+      $("feedbackStatusBadge").className = badgeClass(status);
+      setText("feedbackStatus", status);
+      setText("feedbackInputPrepared", feedback?.inputPrepared);
+      setText("feedbackFailureCode", feedback?.failureCode);
+      setText("pollAttempts", state.pollAttempts);
+      $("regenerateFeedback").disabled = status !== "FAILED";
+      $("goodPoint").textContent = feedback?.feedback?.goodPoint?.text || "아직 생성된 피드백이 없습니다.";
+      const nextActions = feedback?.feedback?.nextActions || [];
+      $("actions").replaceChildren(...nextActions.map(renderAction));
+      if (nextActions.length === 0) {
+        const empty = document.createElement("li");
+        empty.className = "empty";
+        empty.textContent = "다음 행동이 아직 없습니다.";
+        $("actions").append(empty);
+      }
+    }
+
+    async function loadFeedback(recordId) {
+      const response = await request(`/api/v1/farming-records/${encodeURIComponent(recordId)}/coaching-feedback`);
+      renderFeedback(response.data);
+      return response.data;
+    }
+
+    function stopPolling() {
+      if (state.pollTimer) {
+        window.clearInterval(state.pollTimer);
+        state.pollTimer = null;
+      }
+      $("feedbackStatusBadge").className = badgeClass($("feedbackStatus").textContent);
+    }
+
+    async function pollFeedback(recordId) {
+      stopPolling();
+      state.pollAttempts = 0;
+      setText("pollAttempts", state.pollAttempts);
+      state.pollTimer = window.setInterval(async () => {
+        try {
+          const feedback = await loadFeedback(recordId);
+          state.pollAttempts += 1;
+          setText("pollAttempts", state.pollAttempts);
+          if (terminalFeedbackStatuses.includes(feedback.status) || state.pollAttempts >= 60) {
+            stopPolling();
+          }
+        } catch (_) {
+          state.pollAttempts += 1;
+          setText("pollAttempts", state.pollAttempts);
+          if (state.pollAttempts >= 60) {
+            stopPolling();
+          }
+        }
+      }, 2000);
+      $("feedbackStatusBadge").className = `${$("feedbackStatusBadge").className} polling`;
+    }
+
+    async function saveRecord(method, recordId) {
+      const payload = parseJsonTextarea("recordPayload");
+      const path = method === "PATCH"
+        ? `/api/v1/farming-records/${encodeURIComponent(recordId)}`
+        : "/api/v1/farming-records";
+      const response = await request(path, {
+        method,
+        body: JSON.stringify(payload)
+      });
+      const savedRecordId = response?.data?.id;
+      if (savedRecordId) {
+        $("recordId").value = savedRecordId;
+        await loadFeedback(savedRecordId);
+        await pollFeedback(savedRecordId);
+      }
+      return response;
+    }
+
+    function applyPreviewFixture() {
+      const selected = $("feedbackPreview").value;
+      if (!selected) return;
+      stopPolling();
+      state.pollAttempts = 0;
+      renderRawResponse({
+        fixture: "UI-only",
+        status: selected,
+        response: fixtures[selected]
+      });
+      renderFeedback(fixtures[selected]);
+    }
+
+    function metric(label, value) {
+      const box = document.createElement("div");
+      box.className = "metric";
+      const strong = document.createElement("strong");
+      strong.textContent = value == null || value === "" ? "-" : String(value);
+      const span = document.createElement("span");
+      span.textContent = label;
+      box.append(strong, span);
+      return box;
+    }
+
+    function snapshotForScope(scope = state.reportScope) {
+      return state.report[scope] || null;
+    }
+
+    function renderReportSnapshot(current, previous) {
+      state.report.current = current || null;
+      state.report.previous = previous || null;
+      if (!state.report.current && state.reportScope === "current") {
+        state.reportScope = state.report.previous ? "previous" : "current";
+      }
+      renderReport();
+    }
+
+    function renderReport() {
+      $$(".report-tabs button").forEach((button) => {
+        const active = button.dataset.reportScope === state.reportScope;
+        button.classList.toggle("active", active);
+      });
+
+      const selected = snapshotForScope();
+      $("reportStatusBadge").textContent = selected?.status || "리포트 없음";
+      $("reportStatusBadge").className = `badge${selected ? " ready" : ""}`;
+
+      if (!selected) {
+        $("reportSummary").replaceChildren(metric("선택된 스냅샷", "없음"));
+        $("workStats").replaceChildren(emptyNode("선택된 리포트가 없습니다."));
+        renderWorkTabs();
+        return;
+      }
+
+      $("reportSummary").replaceChildren(
+        metric("Report ID", selected.id),
+        metric("Farm", selected.farmName || selected.farmId),
+        metric("Crop", selected.cropName || selected.cropId),
+        metric("Period", `${formatDate(selected.startsAt)} - ${formatDate(selected.endsAt)}`)
+      );
+      renderWorkTabs();
+      renderWorkStats(selected.statistics?.[state.workType] || null);
+    }
+
+    function renderWorkTabs() {
+      const container = document.querySelector(".work-tabs");
+      container.replaceChildren(
+        ...workTypeOrder.map((type) => {
+          const button = document.createElement("button");
+          button.type = "button";
+          button.className = `tab${state.workType === type ? " active" : ""}`;
+          button.dataset.workType = type;
+          button.textContent = workTypeLabels[type];
+          button.addEventListener("click", () => {
+            state.workType = type;
+            renderReport();
+          });
+          return button;
+        })
+      );
+    }
+
+    function renderWorkStats(stats) {
+      const container = $("workStats");
+      if (!stats) {
+        container.replaceChildren(emptyNode(`${workTypeLabels[state.workType]} 통계가 없습니다.`));
+        return;
+      }
+
+      const common = document.createElement("div");
+      common.className = "metrics";
+      common.replaceChildren(
+        ...commonStatisticKeys.map((key) => metric(labelize(key), formatValue(stats[key])))
+      );
+
+      const weatherTable = keyValueTable("weatherDistribution", stats.weatherDistribution || []);
+      const restRows = Object.entries(stats)
+        .filter(([key]) => !commonStatisticKeys.includes(key) && key !== "weatherDistribution")
+        .map(([key, entry]) => [labelize(key), formatValue(entry)]);
+
+      const rest = document.createElement("div");
+      rest.className = "stack compact";
+      const restTitle = document.createElement("h3");
+      restTitle.textContent = "유형별 분포/합계";
+      rest.append(restTitle, keyValueTable("typed", restRows));
+
+      container.replaceChildren(common, weatherTable, rest);
+    }
+
+    function keyValueTable(title, input) {
+      const wrap = document.createElement("div");
+      wrap.className = "stack compact";
+      const heading = document.createElement("h3");
+      heading.textContent = labelize(title);
+
+      const table = document.createElement("table");
+      table.className = "table";
+      const body = document.createElement("tbody");
+
+      const rows = Array.isArray(input)
+        ? input.map((entry, index) => Array.isArray(entry) ? entry : [`#${index + 1}`, formatValue(entry)])
+        : Object.entries(input || {}).map(([key, entry]) => [labelize(key), formatValue(entry)]);
+
+      if (rows.length === 0) {
+        const tr = document.createElement("tr");
+        const td = document.createElement("td");
+        td.colSpan = 2;
+        td.className = "empty";
+        td.textContent = "데이터 없음";
+        tr.append(td);
+        body.append(tr);
+      } else {
+        rows.forEach(([key, entry]) => {
+          const tr = document.createElement("tr");
+          const th = document.createElement("th");
+          const td = document.createElement("td");
+          th.scope = "row";
+          th.textContent = key;
+          td.textContent = entry;
+          tr.append(th, td);
+          body.append(tr);
+        });
+      }
+
+      table.append(body);
+      wrap.append(heading, table);
+      return wrap;
+    }
+
+    function renderReportList(items, nextCursor) {
+      const container = $("reportList");
+      const title = document.createElement("h3");
+      title.textContent = "완료 리포트 목록";
+
+      if (!items || items.length === 0) {
+        container.replaceChildren(title, emptyNode("완료 리포트가 없습니다."));
+        return;
+      }
+
+      const table = document.createElement("table");
+      table.className = "table";
+      table.innerHTML = "<thead><tr><th>ID</th><th>상태</th><th>기간</th><th>선택</th></tr></thead>";
+      const body = document.createElement("tbody");
+      items.forEach((item) => {
+        const tr = document.createElement("tr");
+        const id = document.createElement("td");
+        const status = document.createElement("td");
+        const period = document.createElement("td");
+        const action = document.createElement("td");
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "secondary";
+        button.textContent = "상세";
+        button.addEventListener("click", () => {
+          $("reportId").value = item.id;
+          $("loadReportDetail").click();
+        });
+        id.textContent = item.id;
+        status.textContent = item.status;
+        period.textContent = `${formatDate(item.startsAt)} - ${formatDate(item.endsAt)}`;
+        action.append(button);
+        tr.append(id, status, period, action);
+        body.append(tr);
+      });
+      table.append(body);
+
+      const cursor = document.createElement("p");
+      cursor.className = "subtle";
+      cursor.textContent = `nextCursor: ${nextCursor || "-"}`;
+      container.replaceChildren(title, table, cursor);
+      if (nextCursor) $("reportCursor").value = nextCursor;
+    }
+
+    async function loadCurrentReport() {
+      const query = new URLSearchParams({ farmId: value("farmId"), cropId: value("cropId") });
+      const response = await request(`/api/v1/farming-reports/current?${query}`);
+      state.report.current = response.data.current;
+      state.report.previous = response.data.previous;
+      renderReportSnapshot(response.data.current, response.data.previous);
+      return response.data;
+    }
+
+    async function loadReportList() {
+      const params = new URLSearchParams({
+        farmId: value("farmId"),
+        cropId: value("cropId"),
+        size: value("reportSize") || "20"
+      });
+      if (value("reportCursor")) params.set("cursor", value("reportCursor"));
+      const response = await request(`/api/v1/farming-reports?${params}`);
+      renderReportList(response.data.items, response.data.nextCursor);
+      return response.data;
+    }
+
+    async function loadReportDetail() {
+      const reportId = value("reportId");
+      const response = await request(`/api/v1/farming-reports/${encodeURIComponent(reportId)}`);
+      state.report.selected = response.data.selected;
+      state.report.previous = response.data.previous || state.report.previous;
+      state.reportScope = "selected";
+      renderReport();
+      return response.data;
+    }
+
+    function formatDate(value) {
+      if (!value) return "-";
+      return String(value).replace("T", " ").slice(0, 16);
+    }
+
+    function formatValue(value) {
+      if (value == null || value === "") return "-";
+      if (Array.isArray(value)) {
+        if (value.length === 0) return "[]";
+        return value.map((entry, index) => `${index + 1}. ${formatValue(entry)}`).join("\n");
+      }
+      if (typeof value === "object") {
+        return Object.entries(value)
+          .map(([key, entry]) => `${labelize(key)}: ${formatValue(entry)}`)
+          .join(", ");
+      }
+      return String(value);
+    }
+
+    function labelize(key) {
+      return String(key)
+        .replace(/([A-Z])/g, " $1")
+        .replace(/^./, (char) => char.toUpperCase());
+    }
+
+    function emptyNode(message) {
+      const node = document.createElement("div");
+      node.className = "empty";
+      node.textContent = message;
+      return node;
+    }
+
+    function syncDisabledStates() {
+      const failed = $("feedbackStatus").textContent === "FAILED";
+      $("regenerateFeedback").disabled = !failed;
+    }
+
+    function switchView(view) {
+      const isFeedback = view === "feedback";
+      $("feedbackView").hidden = !isFeedback;
+      $("reportView").hidden = isFeedback;
+      $$("nav button").forEach((button) => {
+        button.setAttribute("aria-selected", String(button.dataset.view === view));
+      });
+    }
+
+    function initialize() {
+      $("baseUrl").value = normalizeBaseUrl(localStorage.getItem(storageKeys.baseUrl) || $("baseUrl").value);
+      $("farmId").value = localStorage.getItem(storageKeys.farmId) || "";
+      $("cropId").value = localStorage.getItem(storageKeys.cropId) || "";
+      defaultRecordPayload.farmId = $("farmId").value;
+      defaultRecordPayload.cropId = $("cropId").value;
+      $("recordPayload").value = JSON.stringify(defaultRecordPayload, null, 2);
+      updateAuthStatus();
+      renderFeedback(null);
+      renderReport();
+      renderRawResponse({});
+
+      $("saveConnection").addEventListener("click", () => {
+        $("baseUrl").value = baseUrl();
+        localStorage.setItem(storageKeys.baseUrl, $("baseUrl").value);
+        $("requestStatus").textContent = "연결 저장됨";
+        $("requestStatus").className = "badge ready";
+      });
+
+      $("saveIds").addEventListener("click", () => {
+        localStorage.setItem(storageKeys.farmId, value("farmId"));
+        localStorage.setItem(storageKeys.cropId, value("cropId"));
+        $("requestStatus").textContent = "ID 저장됨";
+        $("requestStatus").className = "badge ready";
+      });
+
+      $("emailLogin").addEventListener("click", (event) => run(event.currentTarget, async () => {
+        const response = await request("/api/v1/auth/login", {
+          method: "POST",
+          auth: false,
+          body: JSON.stringify({
+            email: value("email"),
+            password: $("password").value
+          })
+        });
+        setToken(response.data.accessToken);
+      }));
+
+      $("useManualToken").addEventListener("click", () => setToken($("accessToken").value));
+      $("clearToken").addEventListener("click", () => setToken(""));
+
+      $("createRecord").addEventListener("click", (event) => run(event.currentTarget, async () => {
+        await saveRecord("POST");
+      }));
+
+      $("updateRecord").addEventListener("click", (event) => run(event.currentTarget, async () => {
+        const recordId = value("recordId");
+        if (!recordId) throw new Error("Record ID가 필요합니다.");
+        await saveRecord("PATCH", recordId);
+      }));
+
+      $("loadFeedback").addEventListener("click", (event) => run(event.currentTarget, async () => {
+        const recordId = value("recordId");
+        if (!recordId) throw new Error("Record ID가 필요합니다.");
+        await loadFeedback(recordId);
+      }));
+
+      $("regenerateFeedback").addEventListener("click", (event) => run(event.currentTarget, async () => {
+        const recordId = value("recordId");
+        if (!recordId) throw new Error("Record ID가 필요합니다.");
+        const response = await request(`/api/v1/farming-records/${encodeURIComponent(recordId)}/coaching-feedback/regenerate`, {
+          method: "POST"
+        });
+        renderFeedback(response.data);
+        await pollFeedback(recordId);
+      }));
+
+      $("stopPolling").addEventListener("click", stopPolling);
+      $("renderPreview").addEventListener("click", applyPreviewFixture);
+      $("feedbackPreview").addEventListener("change", applyPreviewFixture);
+
+      $("loadCurrentReport").addEventListener("click", (event) => run(event.currentTarget, loadCurrentReport));
+      $("loadReportList").addEventListener("click", (event) => run(event.currentTarget, loadReportList));
+      $("loadReportDetail").addEventListener("click", (event) => run(event.currentTarget, loadReportDetail));
+
+      $$("nav button").forEach((button) => {
+        button.addEventListener("click", () => switchView(button.dataset.view));
+      });
+
+      $$(".report-tabs button").forEach((button) => {
+        button.addEventListener("click", () => {
+          state.reportScope = button.dataset.reportScope;
+          renderReport();
+        });
+      });
+    }
+
+    initialize();
+  </script>
+</body>
+</html>
