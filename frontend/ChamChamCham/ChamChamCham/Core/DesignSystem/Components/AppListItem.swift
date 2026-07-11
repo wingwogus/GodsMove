@@ -7,15 +7,8 @@
 
 import SwiftUI
 
-/// Figma `list` row. One component covering five sizes:
-/// - `xsmall`: title only (used in onboarding crop selection).
-/// - `small`: badges + title + caption, with a right-aligned 88pt thumbnail.
-/// - `medium`: date + title + badges, with a right-aligned 96pt thumbnail.
-/// - `large`: title + organization + label/value info rows (no image).
-/// - `xlarge`: full-width top image + badge/date row + title/caption + profile & reactions footer.
-///
-/// All sizes have zero horizontal padding and a full-width bottom divider. Images use
-/// ``AppImagePlaceholder`` unless a `thumbnail` is provided.
+/// Figma `list` row. `large` is the new 120-point thumbnail layout; `xlarge` is the policy
+/// information layout retained from the prior large component.
 struct AppListItem<Thumbnail: View>: View {
     enum Size {
         case xsmall
@@ -23,6 +16,25 @@ struct AppListItem<Thumbnail: View>: View {
         case medium
         case large
         case xlarge
+
+        var canvasSize: CGSize {
+            switch self {
+            case .xsmall: CGSize(width: 390, height: 58)
+            case .small: CGSize(width: 390, height: 120)
+            case .medium: CGSize(width: 390, height: 160)
+            case .large: CGSize(width: 390, height: 184)
+            case .xlarge: CGSize(width: 390, height: 169)
+            }
+        }
+
+        var thumbnailSide: CGFloat? {
+            switch self {
+            case .small: 88
+            case .medium: 96
+            case .large: 120
+            case .xsmall, .xlarge: nil
+            }
+        }
     }
 
     let size: Size
@@ -72,9 +84,13 @@ struct AppListItem<Thumbnail: View>: View {
 
     var body: some View {
         content
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.top, size == .xlarge ? 0 : Spacing.md)
-            .padding(.bottom, size == .xlarge ? Spacing.lg : Spacing.md)
+            .padding(.horizontal, horizontalPadding)
+            .frame(
+                maxWidth: .infinity,
+                minHeight: size.canvasSize.height,
+                maxHeight: size.canvasSize.height,
+                alignment: .topLeading
+            )
             .overlay(alignment: .bottom) {
                 if showsDivider {
                     Rectangle().fill(Color.Border.default).frame(height: 1)
@@ -82,33 +98,35 @@ struct AppListItem<Thumbnail: View>: View {
             }
     }
 
+    private var horizontalPadding: CGFloat {
+        switch size {
+        case .small: 16
+        case .xsmall, .medium, .large, .xlarge: 20
+        }
+    }
+
     @ViewBuilder private var content: some View {
         switch size {
         case .xsmall: xsmallBody
         case .small: smallBody
-        case .medium: mediumBody
-        case .large: largeBody
+        case .medium: mediaBody(thumbnailSide: 96, reactions: true)
+        case .large: mediaBody(thumbnailSide: 120, reactions: false)
         case .xlarge: xlargeBody
         }
     }
 
-    // MARK: - Sizes
-
     private var xsmallBody: some View {
         Text(title)
             .appTypography(.titleMediumEmphasized)
-            .foregroundStyle(Color.Text.default)
-            .lineLimit(2)
-            .minimumScaleFactor(0.9)
-            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle(Color.Text.subtle)
+            .lineLimit(1)
+            .frame(maxWidth: .infinity, minHeight: size.canvasSize.height, alignment: .leading)
     }
 
     private var smallBody: some View {
-        HStack(alignment: .center, spacing: Spacing.md) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                if !badges.isEmpty {
-                    badgeRow(size: .small)
-                }
+        HStack(spacing: 16) {
+            VStack(alignment: .leading, spacing: 8) {
+                badgeRow(size: .small)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title)
                         .appTypography(.titleMediumEmphasized)
@@ -122,40 +140,55 @@ struct AppListItem<Thumbnail: View>: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            if showsImage {
-                mediaView.frame(width: 88, height: 88)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
-            }
+            thumbnail(side: 88)
         }
+        .frame(height: 88)
+        .padding(.vertical, 16)
     }
 
-    private var mediumBody: some View {
-        HStack(alignment: .center, spacing: Spacing.md) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
+    private func mediaBody(thumbnailSide: CGFloat, reactions: Bool) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                badgeRow(size: .medium)
+                Spacer(minLength: 8)
                 Text(dateText)
                     .appTypography(.labelMedium)
                     .foregroundStyle(Color.Text.muted)
-                VStack(alignment: .leading, spacing: 6) {
+            }
+            .frame(height: 32)
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 0) {
                     Text(title)
                         .appTypography(.titleLargeEmphasized)
-                        .foregroundStyle(Color.Text.default)
+                        .foregroundStyle(Color.Text.subtle)
                         .lineLimit(1)
-                    if !badges.isEmpty {
-                        badgeRow(size: .medium)
+
+                    Text(caption)
+                        .appTypography(.bodyLarge)
+                        .foregroundStyle(Color.Text.muted)
+                        .padding(.top, 4)
+                        .lineLimit(1)
+
+                    if reactions {
+                        Spacer(minLength: 0)
+                        HStack(spacing: 12) {
+                            reaction(systemImage: "heart", text: likeText)
+                            reaction(systemImage: "bubble.left", text: commentText)
+                        }
                     }
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
+                .frame(maxWidth: .infinity, maxHeight: thumbnailSide, alignment: .topLeading)
 
-            if showsImage {
-                mediaView.frame(width: 96, height: 96)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                thumbnail(side: thumbnailSide)
             }
+            .frame(height: thumbnailSide)
         }
+        .frame(height: size.canvasSize.height - 20, alignment: .top)
     }
 
-    private var largeBody: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
+    private var xlargeBody: some View {
+        VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
                     .appTypography(.titleLargeEmphasized)
@@ -166,9 +199,10 @@ struct AppListItem<Thumbnail: View>: View {
                     .foregroundStyle(Color.Text.subtle)
                     .lineLimit(1)
             }
+            .frame(height: 57, alignment: .top)
 
-            HStack(alignment: .top, spacing: Spacing.md) {
-                VStack(alignment: .leading, spacing: Spacing.xs) {
+            HStack(alignment: .top, spacing: 16) {
+                VStack(alignment: .leading, spacing: 4) {
                     ForEach(infoRows.indices, id: \.self) { index in
                         Text(infoRows[index].label)
                             .lineLimit(1)
@@ -178,7 +212,7 @@ struct AppListItem<Thumbnail: View>: View {
                 .foregroundStyle(Color.Text.muted)
                 .frame(width: 56, alignment: .leading)
 
-                VStack(alignment: .leading, spacing: Spacing.xs) {
+                VStack(alignment: .leading, spacing: 4) {
                     ForEach(infoRows.indices, id: \.self) { index in
                         Text(infoRows[index].value)
                             .lineLimit(1)
@@ -188,63 +222,23 @@ struct AppListItem<Thumbnail: View>: View {
                 .foregroundStyle(Color.Text.default)
             }
         }
+        .frame(height: size.canvasSize.height - 20, alignment: .top)
     }
 
-    private var xlargeBody: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if showsImage {
-                mediaView
-                    .frame(height: 200)
-                    .frame(maxWidth: .infinity)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-
-            HStack(alignment: .top) {
-                badgeRow(size: .small)
-                Spacer(minLength: Spacing.md)
-                Text(dateText)
-                    .appTypography(.bodyMedium)
-                    .foregroundStyle(Color.Text.subtle)
-            }
-
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(title)
-                    .appTypography(.titleLargeEmphasized)
-                    .foregroundStyle(Color.Text.subtle)
-                    .lineLimit(1)
-                Text(caption)
-                    .appTypography(.bodyLarge)
-                    .foregroundStyle(Color.Text.muted)
-                    .lineLimit(1)
-            }
-
-            HStack(spacing: Spacing.xs) {
-                HStack(spacing: Spacing.sm) {
-                    AppAvatar(size: .small) {
-                        AppImagePlaceholder(isCircle: true, squareSize: 6)
-                    }
-                    Text(nickname)
-                        .appTypography(.bodyMedium)
-                        .foregroundStyle(Color.Text.muted)
-                        .lineLimit(1)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                HStack(spacing: 12) {
-                    reaction(systemImage: "heart", text: likeText)
-                    reaction(systemImage: "bubble.left", text: commentText)
-                }
+    private func badgeRow(size badgeSize: AppBadge.Size) -> some View {
+        HStack(spacing: 8) {
+            ForEach(Array(badges.prefix(2).enumerated()), id: \.offset) { _, badge in
+                AppBadge(label: badge, size: badgeSize, style: .solidPastel, variant: .secondary)
             }
         }
     }
 
-    // MARK: - Helpers
-
-    private func badgeRow(size badgeSize: AppBadge.Size) -> some View {
-        HStack(spacing: badgeSize == .medium ? 6 : Spacing.xs) {
-            ForEach(Array(badges.prefix(2).enumerated()), id: \.offset) { _, badge in
-                AppBadge(label: badge, size: badgeSize, style: .solidPastel, variant: .secondary)
-            }
+    @ViewBuilder private func thumbnail(side: CGFloat) -> some View {
+        if showsImage {
+            media
+                .frame(width: side, height: side)
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 8))
         }
     }
 
@@ -260,7 +254,7 @@ struct AppListItem<Thumbnail: View>: View {
         }
     }
 
-    @ViewBuilder private var mediaView: some View {
+    @ViewBuilder private var media: some View {
         if let thumbnail {
             thumbnail
         } else {
@@ -305,15 +299,15 @@ extension AppListItem where Thumbnail == EmptyView {
         VStack(spacing: 0) {
             AppListItem(size: .xsmall, title: "타이틀")
             AppListItem(size: .small, title: "타이틀", caption: "캡션", badges: ["레이블", "레이블"])
-            AppListItem(size: .medium, title: "타이틀", badges: ["레이블", "레이블"])
+            AppListItem(size: .medium, title: "타이틀", caption: "캡션", badges: ["레이블", "레이블"])
+            AppListItem(size: .large, title: "타이틀", caption: "캡션", badges: ["레이블", "레이블"])
             AppListItem(
-                size: .large,
+                size: .xlarge,
                 title: "타이틀",
                 organization: "기관",
                 infoRows: [("대상자", "캡션"), ("지원금액", "캡션"), ("접수기간", "캡션")]
             )
-            AppListItem(size: .xlarge, title: "타이틀", caption: "캡션...", badges: ["레이블", "레이블"])
         }
-        .padding(.horizontal, Spacing.lg)
+        .padding(.horizontal, 20)
     }
 }

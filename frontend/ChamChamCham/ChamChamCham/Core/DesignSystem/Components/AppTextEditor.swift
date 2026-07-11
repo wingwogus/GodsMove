@@ -18,11 +18,16 @@ struct AppTextEditor: View {
     var helperText: String? = nil
     var errorMessage: String? = nil
     var characterLimit: Int? = nil
+    /// Mirrors Figma's separate `filled` property while retaining text-derived state by default.
+    var filled: Bool? = nil
 
     @FocusState private var isFocused: Bool
     @Environment(\.isEnabled) private var isEnabled
 
     private var isError: Bool { errorMessage != nil }
+    private var isFilled: Bool {
+        AppFieldContainer<EmptyView>.resolvedFilled(override: filled, hasValue: !text.isEmpty)
+    }
 
     var body: some View {
         AppFieldContainer(
@@ -42,7 +47,7 @@ struct AppTextEditor: View {
                             .padding(.leading, 5)
                     }
                     TextEditor(text: $text)
-                        .foregroundStyle(isEnabled ? Color.Text.default : Color.Text.disabled)
+                        .foregroundStyle(isEnabled ? (isFilled ? Color.Text.default : Color.Text.muted) : Color.Text.disabled)
                         .scrollContentBackground(.hidden)
                         .focused($isFocused)
                         .onChange(of: text) { _, newValue in
@@ -55,7 +60,7 @@ struct AppTextEditor: View {
 
                 Text(counterText)
                     .appTypography(.labelMedium)
-                    .foregroundStyle(Color.Text.muted)
+                    .foregroundStyle(Color.Text.default)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .frame(height: 172)

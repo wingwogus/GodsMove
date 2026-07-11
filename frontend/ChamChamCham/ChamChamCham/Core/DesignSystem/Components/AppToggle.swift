@@ -7,21 +7,24 @@
 
 import SwiftUI
 
-/// Figma `toggle`. A 56×32 pill switch: on = green (`object/primary`), off = dark
-/// (`object/bold`), both grey out when disabled via the `.disabled(_:)` environment.
+/// Figma `toggle`. A 48 x 28 pill switch: on = green (`object/primary`), off =
+/// `object/strong`, and disabled states use a muted thumb.
 struct AppToggle: View {
+    static let trackSize = CGSize(width: 48, height: 28)
+    static let thumbSize: CGFloat = 24
+
     @Binding var isOn: Bool
 
     @Environment(\.isEnabled) private var isEnabled
 
     var body: some View {
         Capsule()
-            .fill(trackColor)
-            .frame(width: 56, height: 32)
+            .fill(Self.trackColor(isOn: isOn, isEnabled: isEnabled))
+            .frame(width: Self.trackSize.width, height: Self.trackSize.height)
             .overlay(alignment: isOn ? .trailing : .leading) {
                 Circle()
-                    .fill(knobColor)
-                    .frame(width: 28, height: 28)
+                    .fill(Self.thumbColor(isEnabled: isEnabled))
+                    .frame(width: Self.thumbSize, height: Self.thumbSize)
                     .padding(2)
             }
             .animation(.easeInOut(duration: 0.15), value: isOn)
@@ -32,13 +35,13 @@ struct AppToggle: View {
             }
     }
 
-    private var trackColor: Color {
-        if !isEnabled { return Color.Object.disabled }
-        return isOn ? Color.Object.primary : Color.Object.bold
+    static func trackColor(isOn: Bool, isEnabled: Bool) -> Color {
+        if !isEnabled { return Color.Object.strong }
+        return isOn ? Color.Object.primary : Color.Object.strong
     }
 
-    private var knobColor: Color {
-        isEnabled ? Color.Object.default : Color.Object.disabledSubtle
+    static func thumbColor(isEnabled: Bool) -> Color {
+        isEnabled ? Color.Object.default : Color.Object.muted
     }
 }
 

@@ -61,10 +61,12 @@ import SwiftUI
         HStack(spacing: Spacing.sm) {
             AppChip(label: "레이블", isSelected: true, style: .solid)
             AppChip(label: "레이블", isSelected: true, style: .solid, systemImage: "checkmark")
+            AppChip(label: "레이블", isSelected: true, style: .solid, leadingSystemImage: "checkmark")
         }
         HStack(spacing: Spacing.sm) {
             AppChip(label: "레이블", isSelected: true, style: .solidPastel)
             AppChip(label: "레이블", isSelected: false, style: .solidPastel)
+            AppChip(label: "레이블", isSelected: false, style: .solidPastel, trailingSystemImage: "checkmark")
         }
         AppChip(label: "토글되는 칩", isSelected: selected, style: .solid) { selected.toggle() }
     }
@@ -75,6 +77,15 @@ import SwiftUI
     @Previewable @State var selection = 0
     AppSegmentedControl(titles: ["레이블", "레이블"], selection: $selection)
         .padding()
+}
+
+#Preview("AppDivider") {
+    VStack(spacing: Spacing.lg) {
+        AppDivider(size: .small)
+        AppDivider(size: .medium)
+    }
+    .frame(width: 390)
+    .padding()
 }
 
 #Preview("AppSortButton") {
@@ -188,6 +199,10 @@ import SwiftUI
                     isRequired: true, helperText: "메시지를 전달합니다.")
         AppDropdown("레이블", options: ["감자", "고구마"], selection: .constant("감자"),
                     isRequired: true, helperText: "메시지를 전달합니다.")
+        AppDropdown("레이블", options: ["감자", "고구마"], selection: .constant(nil),
+                    isRequired: true, errorMessage: "메시지를 전달합니다.")
+        AppDropdown("레이블", options: ["감자", "고구마"], selection: .constant("감자"),
+                    isRequired: true, errorMessage: "메시지를 전달합니다.")
     }
     .padding()
 }
@@ -256,10 +271,13 @@ import SwiftUI
 
 #Preview("AppImageUploadSlot") {
     HStack(spacing: Spacing.lg) {
-        AppImageUploadSlot(onRemove: {}) {
+        AppImageUploadSlot(size: .medium, onRemove: {}) {
             AppImagePlaceholder(cornerRadius: 8)
         }
-        AppImageUploadSlot(label: "0/5")
+        AppImageUploadSlot(size: .medium, label: "0/5")
+        AppImageUploadSlot(size: .small, onRemove: {}) {
+            AppImagePlaceholder(cornerRadius: 4)
+        }
     }
     .padding()
 }
@@ -283,35 +301,52 @@ import SwiftUI
         VStack(spacing: 0) {
             AppListItem(size: .xsmall, title: "타이틀")
             AppListItem(size: .small, title: "타이틀", caption: "캡션", badges: ["레이블", "레이블"])
-            AppListItem(size: .medium, title: "타이틀", badges: ["레이블", "레이블"])
+            AppListItem(size: .medium, title: "타이틀", caption: "캡션", badges: ["레이블", "레이블"])
+            AppListItem(size: .large, title: "타이틀", caption: "캡션", badges: ["레이블", "레이블"])
             AppListItem(
-                size: .large,
+                size: .xlarge,
                 title: "타이틀",
                 organization: "기관",
                 infoRows: [("대상자", "캡션"), ("지원금액", "캡션"), ("접수기간", "캡션")]
             )
-            AppListItem(size: .xlarge, title: "타이틀", caption: "캡션...", badges: ["레이블", "레이블"])
         }
         .padding(.horizontal, Spacing.lg)
     }
     .background(Color.Background.subtle)
 }
 
-#Preview("AppCommentRow") {
+#Preview("AppComment") {
     VStack(spacing: 0) {
-        AppCommentRow(
+        AppComment(
             nickname: "닉네임",
             bodyText: "댓글은 최대 3줄까지 보여집니다. 댓글은 최대 3줄까지 보여집니다. 댓글은 최대 3줄까지 보여집니다. 댓글은 최대 3줄까지 보여집니다.",
-            primaryActionTitle: "자세히 보기"
+            onReadMore: {}
         )
-        AppCommentRow(
+        AppComment(
             nickname: "닉네임",
             bodyText: "짧은 댓글.",
-            showsDivider: false
+            isMyComment: true,
+            onDelete: {},
+            attachment: { AppImagePlaceholder(cornerRadius: 8) }
         )
     }
     .padding()
     .background(Color.Background.subtle)
+}
+
+#Preview("AppCommentInput") {
+    @Previewable @State var empty = ""
+    @Previewable @State var filled = "댓글 내용"
+    @FocusState var emptyFocused: Bool
+    @FocusState var filledFocused: Bool
+
+    VStack(spacing: Spacing.lg) {
+        AppCommentInput(text: $empty, isFocused: $emptyFocused)
+        AppCommentInput(text: $filled, isFocused: $filledFocused) {
+            AppImagePlaceholder(cornerRadius: 4)
+        }
+    }
+    .frame(width: 390)
 }
 
 // MARK: - Cards
@@ -319,14 +354,14 @@ import SwiftUI
 #Preview("AppCard") {
     ScrollView {
         VStack(spacing: Spacing.lg) {
-            AppCard(size: .xsmall, title: "타이틀", captions: ["캡션"], badges: ["레이블"])
-            AppCard(size: .small, title: "타이틀", captions: ["캡션...", "캡션..."], badges: ["레이블"])
-            AppCard(size: .medium, title: "타이틀", captions: ["캡션..."], badges: ["레이블", "레이블"])
+            AppCard(size: .xsmall, title: "타이틀", captions: ["캡션", "캡션"])
+            AppCard(size: .small, title: "비료 주기", captions: ["캡션"], badges: ["레이블", "레이블"])
+            AppCard(size: .medium, title: "타이틀", captions: ["캡션", "캡션"], badges: ["레이블"])
             AppCard(
                 size: .large,
                 title: "타이틀",
-                captions: ["캡션은 두 줄까지 표시할 수 있습니다."],
-                badges: ["레이블", "레이블"]
+                captions: ["캡션", "캡션"],
+                badges: ["레이블"]
             )
         }
         .padding()

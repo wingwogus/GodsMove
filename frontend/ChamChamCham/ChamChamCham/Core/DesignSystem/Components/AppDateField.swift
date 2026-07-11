@@ -19,11 +19,16 @@ struct AppDateField: View {
     /// When non-nil, the field renders the error variant (red border) and shows this string,
     /// taking precedence over `helperText`.
     var errorMessage: String? = nil
+    /// Mirrors Figma's separate `filled` property while retaining selection-derived state by default.
+    var filled: Bool? = nil
 
     @Environment(\.isEnabled) private var isEnabled
     @State private var isPickerPresented = false
 
     private var isError: Bool { errorMessage != nil }
+    private var isFilled: Bool {
+        AppFieldContainer<EmptyView>.resolvedFilled(override: filled, hasValue: selection != nil)
+    }
 
     var body: some View {
         AppFieldContainer(
@@ -60,7 +65,7 @@ struct AppDateField: View {
 
     private var valueColor: Color {
         if !isEnabled { return Color.Text.disabled }
-        return selection == nil ? Color.Text.muted : Color.Text.default
+        return isFilled ? Color.Text.default : Color.Text.muted
     }
 
     private var iconColor: Color {

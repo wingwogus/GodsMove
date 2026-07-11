@@ -75,4 +75,8 @@ struct AppFieldContainer<Content: View>: View {
         if isFocused { return Color.Border.primary }
         return Color.Border.default
     }
+
+    static func resolvedFilled(override: Bool?, hasValue: Bool) -> Bool {
+        override ?? hasValue
+    }
 }

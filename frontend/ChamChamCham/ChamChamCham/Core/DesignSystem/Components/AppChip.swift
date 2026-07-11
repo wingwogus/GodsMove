@@ -9,9 +9,10 @@ import SwiftUI
 
 /// Figma `chip`. A selectable pill in one of two styles:
 /// - `solidPastel`: selected = soft green fill + green border + green text.
-/// - `solid`: selected = bold dark fill + white text; unselected = white fill + subtle border.
+/// - `solid`: selected = bold dark fill + white text; unselected = muted gray fill.
 ///
-/// Pass `systemImage` for the optional trailing icon. (Figma spells the token "soild"/"soild-pastel".)
+/// `systemImage` remains the legacy trailing icon. Use `leadingSystemImage` and
+/// `trailingSystemImage` to match Figma's separate icon properties.
 struct AppChip: View {
     enum Style {
         case solid
@@ -22,25 +23,27 @@ struct AppChip: View {
     var isSelected: Bool = false
     var style: Style = .solidPastel
     var systemImage: String? = nil
+    var leadingSystemImage: String? = nil
+    var trailingSystemImage: String? = nil
     var action: () -> Void = {}
 
     var body: some View {
         Button(action: action) {
             HStack(spacing: 2) {
+                if let leadingSystemImage {
+                    icon(leadingSystemImage)
+                }
                 Text(label)
                     .appTypography(.labelMedium)
                     .foregroundStyle(textColor)
-                if let systemImage {
-                    Image(systemName: systemImage)
-                        .font(.system(size: 16))
-                        .foregroundStyle(textColor)
-                        .frame(width: 24, height: 24)
+                if let trailingIcon {
+                    icon(trailingIcon)
                 }
             }
-            .padding(.vertical, 8)
-            .padding(.leading, 12)
-            .padding(.trailing, systemImage == nil ? 12 : 10)
-            .frame(minWidth: 48, minHeight: 32)
+            .padding(.vertical, 4)
+            .padding(.leading, Self.leadingPadding(hasLeadingIcon: leadingSystemImage != nil))
+            .padding(.trailing, Self.trailingPadding(hasTrailingIcon: trailingIcon != nil))
+            .frame(minWidth: 48, minHeight: 32, maxHeight: 32)
             .background(backgroundColor)
             .overlay {
                 if let borderColor {
@@ -53,16 +56,7 @@ struct AppChip: View {
     }
 
     private var backgroundColor: Color {
-        guard isSelected else {
-            switch style {
-            case .solid: return Color.Object.default
-            case .solidPastel: return Color.Object.muted
-            }
-        }
-        switch style {
-        case .solid: return Color.Object.bold
-        case .solidPastel: return Color.Object.primarySubtle
-        }
+        Self.fillColor(style: style, isSelected: isSelected)
     }
 
     private var textColor: Color {
@@ -74,13 +68,42 @@ struct AppChip: View {
     }
 
     private var borderColor: Color? {
+        Self.borderColor(style: style, isSelected: isSelected)
+    }
+
+    private var trailingIcon: String? {
+        trailingSystemImage ?? systemImage
+    }
+
+    private func icon(_ systemImage: String) -> some View {
+        Image(systemName: systemImage)
+            .font(.system(size: 16))
+            .foregroundStyle(textColor)
+            .frame(width: 24, height: 24)
+    }
+
+    static func leadingPadding(hasLeadingIcon: Bool) -> CGFloat {
+        hasLeadingIcon ? 8 : 12
+    }
+
+    static func trailingPadding(hasTrailingIcon: Bool) -> CGFloat {
+        hasTrailingIcon ? 8 : 12
+    }
+
+    static func fillColor(style: Style, isSelected: Bool) -> Color {
         switch (style, isSelected) {
-        case (.solidPastel, true):
-            Color.Border.primary
-        case (.solid, false):
-            Color.Border.subtle
-        default:
-            nil
+        case (.solid, true): Color.Object.bold
+        case (.solid, false): Color.Object.muted
+        case (.solidPastel, true): Color.Object.primarySubtle
+        case (.solidPastel, false): Color.Object.default
+        }
+    }
+
+    static func borderColor(style: Style, isSelected: Bool) -> Color? {
+        switch (style, isSelected) {
+        case (.solidPastel, true): Color.Border.primary
+        case (.solidPastel, false): Color.Border.subtle
+        case (.solid, _): nil
         }
     }
 }

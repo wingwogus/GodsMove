@@ -7,20 +7,38 @@
 
 import SwiftUI
 
-/// Figma `card`. A reusable card with four sizes:
-/// - `xsmall`: compact horizontal card — title/caption content with a right-aligned image.
-/// - `small`: compact vertical card (default width 258) — image with an overlaid white badge,
-///   title, and up to two caption lines.
-/// - `medium`: full-width post card — image, a badge row + date, title, caption, and footer.
-/// - `large`: expanded post card — larger image and slightly roomier text treatment.
-///
-/// Images use ``AppImagePlaceholder`` by default; pass a `thumbnail` for real media.
+/// Figma `card`. The four sizes are distinct compositions, rather than one layout scaled up or down.
 struct AppCard<Thumbnail: View>: View {
     enum Size {
         case xsmall
         case small
         case medium
         case large
+
+        var canvasSize: CGSize {
+            switch self {
+            case .xsmall: CGSize(width: 168, height: 168)
+            case .small: CGSize(width: 350, height: 180)
+            case .medium: CGSize(width: 258, height: 261)
+            case .large: CGSize(width: 350, height: 334)
+            }
+        }
+
+        var cornerRadius: CGFloat {
+            switch self {
+            case .xsmall, .small: 16
+            case .medium: 20
+            case .large: 24
+            }
+        }
+
+        var padding: CGFloat {
+            switch self {
+            case .xsmall: 12
+            case .medium: 16
+            case .small, .large: 20
+            }
+        }
     }
 
     let size: Size
@@ -32,7 +50,6 @@ struct AppCard<Thumbnail: View>: View {
     var likeText: String = "nn"
     var commentText: String = "nn"
     var showsPostInfo: Bool = true
-    /// Overrides width. `small` defaults to 258; other sizes fill their container when omitted.
     var width: CGFloat? = nil
 
     private let thumbnail: Thumbnail?
@@ -64,79 +81,190 @@ struct AppCard<Thumbnail: View>: View {
     }
 
     var body: some View {
-        Group {
-            switch size {
-            case .xsmall:
-                xsmallContent
-            case .small:
-                smallLayout
-            case .medium:
-                postLayout(imageHeight: 178, titleLineLimit: 1, captionLineLimit: 1)
-            case .large:
-                postLayout(imageHeight: 220, titleLineLimit: 2, captionLineLimit: 2)
-            }
-        }
-        .padding(cardPadding)
-        .frame(minHeight: size == .xsmall ? 104 : nil)
-        .frame(width: resolvedWidth)
-        .frame(maxWidth: fillsAvailableWidth ? .infinity : nil)
-        .background(Color.Object.default)
-
-        .overlay(RoundedRectangle(cornerRadius: 16).stroke(Color.Border.default, lineWidth: 1))
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        content
+            .padding(size.padding)
+            .frame(width: resolvedWidth, height: size.canvasSize.height)
+            .frame(maxWidth: fillsAvailableWidth ? .infinity : nil)
+            .background(Color.Object.default)
+            .overlay(RoundedRectangle(cornerRadius: size.cornerRadius).stroke(Color.Border.default, lineWidth: 1))
+            .clipShape(RoundedRectangle(cornerRadius: size.cornerRadius))
     }
 
-    private var cardPadding: CGFloat {
+    @ViewBuilder private var content: some View {
         switch size {
-        case .xsmall, .small: Spacing.md
-        case .medium, .large: Spacing.lg
+        case .xsmall: xsmallLayout
+        case .small: smallLayout
+        case .medium: mediumLayout
+        case .large: largeLayout
         }
     }
 
     private var resolvedWidth: CGFloat? {
         switch size {
-        case .small:
-            width ?? 258
-        case .xsmall, .medium, .large:
-            width
+        case .xsmall, .medium: width ?? size.canvasSize.width
+        case .small, .large: width
         }
     }
 
     private var fillsAvailableWidth: Bool {
         switch size {
-        case .small:
-            width != nil
-        case .xsmall, .medium, .large:
-            width == nil
+        case .xsmall, .medium: false
+        case .small, .large: width == nil
         }
     }
 
-    // MARK: - Image
+    // MARK: - XSmall
 
-    private var smallImageArea: some View {
-        media
-            .frame(height: 126)
-            .frame(maxWidth: .infinity)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .overlay(alignment: .topLeading) {
-                if let badge = badges.first {
-                    overlayBadge(badge)
-                        .padding(Spacing.sm)
+    private var xsmallLayout: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            imageArea(height: 84, overlayHeight: 35, badgePadding: nil, dateInset: 8)
+
+            VStack(alignment: .leading, spacing: 2) {
+                Text(title)
+                    .appTypography(.titleMediumEmphasized)
+                    .foregroundStyle(Color.Text.subtle)
+                    .lineLimit(1)
+
+                HStack(spacing: 2) {
+                    ForEach(Array(captions.prefix(2).enumerated()), id: \.offset) { index, caption in
+                        if index > 0 {
+                            Text("·")
+                        }
+                        Text(caption)
+                    }
+                }
+                .appTypography(.labelMedium)
+                .foregroundStyle(Color.Text.muted)
+                .lineLimit(1)
+            }
+        }
+    }
+
+    // MARK: - Small
+
+    private var smallLayout: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack {
+                badgeRow(size: .medium, maxCount: 2)
+                Spacer(minLength: 8)
+                Text(dateText)
+                    .appTypography(.labelMedium)
+                    .foregroundStyle(Color.Text.muted)
+            }
+            .frame(height: 32)
+
+            HStack(spacing: 12) {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .appTypography(.titleLargeEmphasized)
+                        .foregroundStyle(Color.Text.subtle)
+                        .lineLimit(1)
+                    if let caption = captions.first {
+                        Text(caption)
+                            .appTypography(.bodyLarge)
+                            .foregroundStyle(Color.Text.muted)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+
+                media
+                    .frame(width: 96, height: 96)
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .frame(height: 96)
+        }
+    }
+
+    // MARK: - Medium / Large
+
+    private var mediumLayout: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            imageArea(height: 126, overlayHeight: 48, badgePadding: 8, dateInset: 12)
+
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .appTypography(.titleLargeEmphasized)
+                    .foregroundStyle(Color.Text.subtle)
+                    .lineLimit(1)
+
+                VStack(alignment: .leading, spacing: 2) {
+                    ForEach(Array(captions.prefix(2).enumerated()), id: \.offset) { _, caption in
+                        Text(caption)
+                            .appTypography(.bodyLarge)
+                            .foregroundStyle(Color.Text.muted)
+                            .lineLimit(1)
+                    }
                 }
             }
+        }
     }
 
-    private func postImageArea(height: CGFloat) -> some View {
+    private var largeLayout: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            imageArea(height: 178, overlayHeight: 56, badgePadding: 10, dateInset: 12)
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text(title)
+                    .appTypography(.headlineMedium)
+                    .foregroundStyle(Color.Text.subtle)
+                    .lineLimit(1)
+
+                VStack(alignment: .leading, spacing: 4) {
+                    ForEach(Array(captions.prefix(2).enumerated()), id: \.offset) { _, caption in
+                        Text(caption)
+                            .appTypography(.titleMedium)
+                            .foregroundStyle(Color.Text.muted)
+                            .lineLimit(1)
+                    }
+                }
+            }
+        }
+    }
+
+    // MARK: - Shared views
+
+    private func imageArea(
+        height: CGFloat,
+        overlayHeight: CGFloat,
+        badgePadding: CGFloat?,
+        dateInset: CGFloat
+    ) -> some View {
         media
-            .frame(height: height)
             .frame(maxWidth: .infinity)
+            .frame(height: height)
+            .clipped()
             .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-
-    private func trailingImage(side: CGFloat) -> some View {
-        media
-            .frame(width: side, height: side)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay(alignment: .top) {
+                LinearGradient(
+                    colors: [Color(hex: 0x343434).opacity(0.64), .clear],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: overlayHeight)
+                .overlay {
+                    if let badgePadding {
+                        HStack {
+                            if let badge = badges.first {
+                                imageBadge(badge, horizontalPadding: badgePadding, height: badgePadding == 8 ? 28 : 32)
+                            }
+                            Spacer()
+                            Text(dateText)
+                                .appTypography(.labelMedium)
+                                .foregroundStyle(Color.Text.inverse)
+                        }
+                        .padding(dateInset)
+                    } else {
+                        HStack {
+                            Text(dateText)
+                                .appTypography(.labelMedium)
+                                .foregroundStyle(Color.Text.inverse)
+                            Spacer()
+                        }
+                        .padding(dateInset)
+                    }
+                }
+            }
     }
 
     @ViewBuilder private var media: some View {
@@ -147,150 +275,21 @@ struct AppCard<Thumbnail: View>: View {
         }
     }
 
-    private func overlayBadge(_ label: String) -> some View {
+    private func imageBadge(_ label: String, horizontalPadding: CGFloat, height: CGFloat) -> some View {
         Text(label)
             .appTypography(.labelMedium)
             .foregroundStyle(Color.Text.subtle)
-            .padding(Spacing.sm)
-            .frame(minWidth: 36, minHeight: 28)
+            .padding(.horizontal, horizontalPadding)
+            .frame(height: height)
             .background(Color.Object.default)
             .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
-    // MARK: - XSmall
-
-    private var xsmallContent: some View {
-        HStack(alignment: .center, spacing: Spacing.md) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                if !badges.isEmpty {
-                    badgeRow(size: .small, maxCount: 1)
-                }
-
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(title)
-                        .appTypography(.titleMediumEmphasized)
-                        .foregroundStyle(Color.Text.default)
-                        .lineLimit(2)
-                        .minimumScaleFactor(0.9)
-
-                    if let caption = captions.first {
-                        Text(caption)
-                            .appTypography(.bodyMedium)
-                            .foregroundStyle(Color.Text.muted)
-                            .lineLimit(1)
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            trailingImage(side: 72)
-        }
-    }
-
-    // MARK: - Small
-
-    private var smallLayout: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            smallImageArea
-            smallContent
-        }
-    }
-
-    private var smallContent: some View {
-        VStack(alignment: .leading, spacing: Spacing.xs) {
-            Text(title)
-                .appTypography(.titleLargeEmphasized)
-                .foregroundStyle(Color.Text.subtle)
-                .lineLimit(1)
-
-            if !captions.isEmpty {
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(Array(captions.prefix(2).enumerated()), id: \.offset) { _, caption in
-                        Text(caption)
-                            .appTypography(.bodyLarge)
-                            .foregroundStyle(Color.Text.subtle)
-                            .lineLimit(1)
-                    }
-                }
-            }
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
-    }
-
-    // MARK: - Medium / Large
-
-    private func postLayout(
-        imageHeight: CGFloat,
-        titleLineLimit: Int,
-        captionLineLimit: Int
-    ) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            postImageArea(height: imageHeight)
-            postMetaRow
-
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text(title)
-                    .appTypography(.titleLargeEmphasized)
-                    .foregroundStyle(Color.Text.subtle)
-                    .lineLimit(titleLineLimit)
-                if let caption = captions.first {
-                    Text(caption)
-                        .appTypography(.bodyLarge)
-                        .foregroundStyle(Color.Text.muted)
-                        .lineLimit(captionLineLimit)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            if showsPostInfo {
-                HStack(spacing: Spacing.xs) {
-                    HStack(spacing: Spacing.sm) {
-                        AppAvatar(size: .small) {
-                            AppImagePlaceholder(isCircle: true, squareSize: 6)
-                        }
-                        Text(nickname)
-                            .appTypography(.bodyMedium)
-                            .foregroundStyle(Color.Text.muted)
-                            .lineLimit(1)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                    HStack(spacing: 12) {
-                        reaction(systemImage: "heart", text: likeText)
-                        reaction(systemImage: "bubble.left", text: commentText)
-                    }
-                }
-            }
-        }
-    }
-
-    private var postMetaRow: some View {
-        HStack(alignment: .top) {
-            badgeRow(size: .small, maxCount: 2)
-            Spacer(minLength: Spacing.md)
-            Text(dateText)
-                .appTypography(.bodyMedium)
-                .foregroundStyle(Color.Text.subtle)
-        }
-    }
-
     private func badgeRow(size badgeSize: AppBadge.Size, maxCount: Int) -> some View {
-        HStack(spacing: Spacing.xs) {
+        HStack(spacing: 8) {
             ForEach(Array(badges.prefix(maxCount).enumerated()), id: \.offset) { _, badge in
                 AppBadge(label: badge, size: badgeSize, style: .solidPastel, variant: .secondary)
             }
-        }
-    }
-
-    private func reaction(systemImage: String, text: String) -> some View {
-        HStack(spacing: 2) {
-            Image(systemName: systemImage)
-                .font(.system(size: 22))
-                .foregroundStyle(Color.Icon.subtle)
-                .frame(width: 24, height: 24)
-            Text(text)
-                .appTypography(.bodyMedium)
-                .foregroundStyle(Color.Text.muted)
         }
     }
 }
@@ -325,33 +324,10 @@ extension AppCard where Thumbnail == EmptyView {
 #Preview {
     ScrollView {
         VStack(spacing: Spacing.lg) {
-            AppCard(
-                size: .xsmall,
-                title: "타이틀",
-                captions: ["캡션"],
-                badges: ["레이블"]
-            )
-
-            AppCard(
-                size: .small,
-                title: "타이틀",
-                captions: ["캡션...", "캡션..."],
-                badges: ["레이블"]
-            )
-
-            AppCard(
-                size: .medium,
-                title: "타이틀",
-                captions: ["캡션..."],
-                badges: ["레이블", "레이블"]
-            )
-
-            AppCard(
-                size: .large,
-                title: "타이틀",
-                captions: ["캡션은 두 줄까지 표시할 수 있습니다."],
-                badges: ["레이블", "레이블"]
-            )
+            AppCard(size: .xsmall, title: "타이틀", captions: ["캡션", "캡션"])
+            AppCard(size: .small, title: "비료 주기", captions: ["캡션"], badges: ["레이블", "레이블"])
+            AppCard(size: .medium, title: "타이틀", captions: ["캡션", "캡션"], badges: ["레이블"])
+            AppCard(size: .large, title: "타이틀", captions: ["캡션", "캡션"], badges: ["레이블"])
         }
         .padding()
         .background(Color.Background.subtle)

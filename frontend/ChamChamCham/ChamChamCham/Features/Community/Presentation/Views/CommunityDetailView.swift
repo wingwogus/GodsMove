@@ -102,6 +102,7 @@ struct CommunityDetailView: View {
                             .padding(.top, Spacing.xl)
                         commentsSection
                             .padding(.top, Spacing.lg)
+                            .padding(.horizontal, -horizontalInset)
                     }
                 }
                 .padding(.horizontal, horizontalInset)
@@ -217,12 +218,14 @@ struct CommunityDetailView: View {
             Text("댓글 \(viewModel.detail?.commentCount ?? viewModel.comments.count)")
                 .appTypography(.bodyLargeEmphasized)
                 .foregroundStyle(Color.Text.default)
+                .padding(.horizontal, horizontalInset)
 
             if viewModel.comments.isEmpty {
                 Text("첫 댓글을 남겨보세요.")
                     .appTypography(.bodyMedium)
                     .foregroundStyle(Color.Text.muted)
                     .padding(.vertical, Spacing.md)
+                    .padding(.horizontal, horizontalInset)
             } else {
                 ForEach(viewModel.comments) { comment in
                     CommentRow(
@@ -240,7 +243,9 @@ struct CommunityDetailView: View {
                     .task { await viewModel.loadMoreCommentsIfNeeded(currentItem: comment) }
                 }
                 if viewModel.isLoadingMoreComments {
-                    ProgressView().frame(maxWidth: .infinity)
+                    ProgressView()
+                        .frame(maxWidth: .infinity)
+                        .padding(.horizontal, horizontalInset)
                 }
             }
         }
@@ -263,54 +268,18 @@ struct CommunityDetailView: View {
                 .padding(.horizontal, Spacing.md)
                 .padding(.top, Spacing.sm)
             }
-            HStack(spacing: 0) {
-                Button {} label: {
-                    Image(systemName: "photo")
-                        .font(.system(size: 24))
-                        .foregroundStyle(Color.Icon.default)
-                        .frame(width: 48, height: 48)
-                }
-                .buttonStyle(.plain)
-                .disabled(true)
-
-                TextField("댓글을 입력해주세요.", text: $viewModel.draftComment, axis: .vertical)
-                    .appTypography(.bodyLarge)
-                    .foregroundStyle(Color.Text.default)
-                    .focused($commentFieldFocused)
-                    .lineLimit(1...4)
-
-                Spacer(minLength: 12)
-
-                Button {
+            AppCommentInput(
+                text: $viewModel.draftComment,
+                isFocused: $commentFieldFocused,
+                isSubmitting: viewModel.isSubmittingComment,
+                isPhotoEnabled: false,
+                onSubmit: {
                     commentFieldFocused = false
                     Task { await viewModel.submitComment() }
-                } label: {
-                    if viewModel.isSubmittingComment {
-                        ProgressView()
-                            .frame(width: 48, height: 48)
-                    } else {
-                        Image(systemName: "arrow.right")
-                            .font(.system(size: 22, weight: .semibold))
-                            .foregroundStyle(canSubmitComment ? Color.Icon.inverse : Color.Icon.disabled)
-                            .frame(width: 48, height: 48)
-                            .background(Circle().fill(canSubmitComment ? Color.Object.primary : Color.Object.disabled))
-                    }
                 }
-                .disabled(!canSubmitComment)
-            }
-            .frame(minHeight: 64)
-            .padding(.horizontal, 12)
+            )
         }
         .background(Color.Background.default)
-        .overlay(
-            Rectangle()
-                .stroke(Color.Border.default, lineWidth: 1)
-        )
-    }
-
-    private var canSubmitComment: Bool {
-        !viewModel.draftComment.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            && !viewModel.isSubmittingComment
     }
 }
 
@@ -323,6 +292,7 @@ private struct CommentRow: View {
     let currentMemberId: UUID?
     let onReply: (CommunityComment) -> Void
     let onDelete: (CommunityComment) -> Void
+    @State private var isReadMoreActive = false
 
     private var isMine: Bool {
         currentMemberId != nil && comment.author.memberId == currentMemberId
@@ -330,41 +300,7 @@ private struct CommentRow: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack(alignment: .top, spacing: Spacing.sm) {
-                CommunityAvatar(profileImageUrl: comment.author.profileImageUrl, size: .small)
-                VStack(alignment: .leading, spacing: Spacing.xs) {
-                    HStack(spacing: Spacing.sm) {
-                        Text(comment.author.nickname ?? "익명")
-                            .appTypography(.labelMediumEmphasized)
-                            .foregroundStyle(Color.Text.default)
-                        Text(CommunityRelativeTime.string(from: comment.createdAt))
-                            .appTypography(.labelMedium)
-                            .foregroundStyle(Color.Text.muted)
-                    }
-                    Text(comment.isDeleted ? "삭제된 댓글입니다." : comment.body)
-                        .appTypography(.bodyMedium)
-                        .foregroundStyle(comment.isDeleted ? Color.Text.muted : Color.Text.subtle)
-
-                    if let imageUrl = comment.imageUrl, !comment.isDeleted {
-                        CommunityRemoteImage(url: imageUrl)
-                            .frame(width: 120, height: 120)
-                    }
-
-                    if !comment.isDeleted {
-                        HStack(spacing: Spacing.md) {
-                            Button("댓글 달기") { onReply(replyTarget) }
-                                .appTypography(.labelMedium)
-                                .foregroundStyle(Color.Text.muted)
-                            if isMine {
-                                Button("삭제") { onDelete(comment) }
-                                    .appTypography(.labelMedium)
-                                    .foregroundStyle(Color.Text.red)
-                            }
-                        }
-                    }
-                }
-                Spacer(minLength: 0)
-            }
+            commentCell
 
             ForEach(comment.replies) { reply in
                 CommentRow(
@@ -376,6 +312,44 @@ private struct CommentRow: View {
                 )
                 .padding(.leading, Spacing.xl)
             }
+        }
+    }
+
+    @ViewBuilder private var commentCell: some View {
+        if let imageUrl = comment.imageUrl, !comment.isDeleted {
+            AppComment(
+                nickname: comment.author.nickname ?? "익명",
+                dateText: CommunityRelativeTime.string(from: comment.createdAt),
+                bodyText: comment.body,
+                isReadMoreActive: isReadMoreActive,
+                isMyComment: isMine,
+                onReadMore: { isReadMoreActive.toggle() },
+                onReply: { onReply(replyTarget) },
+                onDelete: { onDelete(comment) },
+                avatar: {
+                    CommunityAvatar(profileImageUrl: comment.author.profileImageUrl, size: .small)
+                },
+                attachment: {
+                    CommunityRemoteImage(url: imageUrl, cornerRadius: 8)
+                }
+            )
+        } else {
+            AppComment(
+                nickname: comment.author.nickname ?? "익명",
+                dateText: CommunityRelativeTime.string(from: comment.createdAt),
+                bodyText: comment.isDeleted ? "삭제된 댓글입니다." : comment.body,
+                isReadMoreActive: isReadMoreActive,
+                isMyComment: isMine,
+                bodyColor: comment.isDeleted ? Color.Text.muted : Color.Text.default,
+                showsActions: !comment.isDeleted,
+                showsHeaderAction: !comment.isDeleted,
+                onReadMore: { isReadMoreActive.toggle() },
+                onReply: { onReply(replyTarget) },
+                onDelete: { onDelete(comment) },
+                avatar: {
+                    CommunityAvatar(profileImageUrl: comment.author.profileImageUrl, size: .small)
+                }
+            )
         }
     }
 }
