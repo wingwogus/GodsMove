@@ -5,6 +5,7 @@ import com.chamchamcham.domain.coaching.CoachingFeedbackRepository
 import com.chamchamcham.domain.coaching.CoachingFeedbackStatus
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
@@ -14,6 +15,7 @@ class RecordFeedbackPreparationService(
     private val feedbackRepository: CoachingFeedbackRepository,
     private val contextAssembler: RecordFeedbackContextAssembler,
     private val objectMapper: ObjectMapper,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     fun prepare(event: RecordFeedbackPreparationRequested) {
@@ -33,7 +35,16 @@ class RecordFeedbackPreparationService(
             feedback.attachInputSnapshot(snapshot)
         } catch (_: RuntimeException) {
             feedback.markFailed(CONTEXT_ASSEMBLY_FAILED)
+            return
         }
+        eventPublisher.publishEvent(
+            RecordFeedbackGenerationRequested(
+                feedbackId = event.feedbackId,
+                memberId = event.memberId,
+                recordId = event.recordId,
+                sourceRevision = event.sourceRevision,
+            ),
+        )
     }
 
     private companion object {

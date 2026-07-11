@@ -24,9 +24,11 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
 import java.time.LocalDateTime
 import java.util.UUID
@@ -35,6 +37,7 @@ import java.util.UUID
 class RecordFeedbackPreparationServiceTest {
     @Mock private lateinit var feedbackRepository: CoachingFeedbackRepository
     @Mock private lateinit var contextAssembler: RecordFeedbackContextAssembler
+    @Mock private lateinit var eventPublisher: ApplicationEventPublisher
 
     private val member = Member(id = UUID.randomUUID(), email = "member@example.com", passwordHash = null)
     private val farm = Farm(id = UUID.randomUUID(), owner = member, name = "약초밭", roadAddress = "강원도 평창군")
@@ -65,6 +68,7 @@ class RecordFeedbackPreparationServiceTest {
             feedbackRepository = feedbackRepository,
             contextAssembler = contextAssembler,
             objectMapper = Jackson2ObjectMapperBuilder.json().build(),
+            eventPublisher = eventPublisher,
         )
     }
 
@@ -85,6 +89,26 @@ class RecordFeedbackPreparationServiceTest {
     }
 
     @Test
+    fun `preparation publishes generation request only after snapshot is attached`() {
+        val feedback = feedback()
+        val event = event(feedback)
+        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenReturn(context())
+
+        service.prepare(event)
+
+        assertThat(feedback.inputSnapshot).isNotNull
+        verify(eventPublisher).publishEvent(
+            RecordFeedbackGenerationRequested(
+                feedbackId = event.feedbackId,
+                memberId = event.memberId,
+                recordId = event.recordId,
+                sourceRevision = event.sourceRevision,
+            ),
+        )
+    }
+
+    @Test
     fun `prepare marks pending feedback failed when context assembly fails`() {
         val feedback = feedback()
         val event = event(feedback)
@@ -95,6 +119,7 @@ class RecordFeedbackPreparationServiceTest {
 
         assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.FAILED)
         assertThat(feedback.failureCode).isEqualTo("CONTEXT_ASSEMBLY_FAILED")
+        verifyNoMoreInteractions(eventPublisher)
     }
 
     @Test
