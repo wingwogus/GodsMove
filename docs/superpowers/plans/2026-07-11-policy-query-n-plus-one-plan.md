@@ -30,7 +30,9 @@
 **Interfaces:**
 - Consumes: 기존 `MemberCrop`, `Crop`, `Farm`, `Member` JPA 엔티티와 `MemberCropRepository.findByMemberId(UUID)`.
 - Produces: `fun findAllWithCropByMemberId(memberId: UUID): List<MemberCrop>`.
-- Guarantee: 반환된 모든 `MemberCrop.crop`의 필드를 접근해도 전체 SELECT 수는 1회다.
+- Guarantee: 반환된 모든 `MemberCrop.crop`의 필드를 접근해도 전체 SELECT 수는 3회
+  이하이며 작물 수에 비례해 증가하지 않는다. 현재 final 엔티티 매핑 때문에 본 쿼리
+  외에 `member`, `farm` 고정 조회가 각각 1회 발생한다.
 
 - [ ] **Step 1: 새 정책 전용 메서드를 요구하는 실패 테스트 작성**
 
@@ -52,6 +54,7 @@ import org.springframework.boot.autoconfigure.domain.EntityScan
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest
 import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
+import org.springframework.data.jpa.repository.config.EnableJpaAuditing
 import org.springframework.test.context.ActiveProfiles
 import java.util.UUID
 
@@ -96,20 +99,24 @@ class MemberCropRepositoryTest @Autowired constructor(
         val memberCrops = memberCropRepository.findAllWithCropByMemberId(
             requireNotNull(member.id)
         )
+        val afterRepositoryQuery = statistics.prepareStatementCount
         val cropValues = memberCrops.map { it.crop.name to it.crop.usePartCategory }
+        val afterCropAccess = statistics.prepareStatementCount
 
         assertThat(cropValues).containsExactlyInAnyOrder(
             "참당귀" to CropUsePartCategory.ROOT_BARK,
             "황기" to CropUsePartCategory.ROOT_BARK,
             "작약" to CropUsePartCategory.ROOT_BARK
         )
-        assertThat(statistics.prepareStatementCount).isEqualTo(1L)
+        assertThat(afterRepositoryQuery).isLessThanOrEqualTo(3L)
+        assertThat(afterCropAccess).isEqualTo(afterRepositoryQuery)
     }
 }
 
 @SpringBootConfiguration
 @EnableAutoConfiguration
 @EntityScan(basePackages = ["com.chamchamcham.domain"])
+@EnableJpaAuditing
 @EnableJpaRepositories(basePackages = ["com.chamchamcham.domain"])
 private class MemberCropRepositoryTestApplication
 ```
@@ -161,7 +168,8 @@ Run:
 ```
 
 Expected: `BUILD SUCCESSFUL`; 반환된 작물 3개의 필드 접근 후
-`prepareStatementCount == 1` 검증이 통과한다.
+`prepareStatementCount <= 3` 검증이 통과한다. 이후 `join fetch`를 임시로 `join`으로
+바꾸면 서로 다른 작물 조회가 추가되어 테스트가 실패하는지 확인하고 즉시 복원한다.
 
 - [ ] **Step 5: Task 1 변경만 커밋**
 
@@ -171,9 +179,9 @@ git add \
   backend/domain/src/test/kotlin/com/chamchamcham/domain/crop/MemberCropRepositoryTest.kt
 git commit \
   -m "fix(policy): 정책 프로필 작물 조회 N+1 방지" \
-  -m "정책 추천 전용 MemberCrop-Crop fetch join을 추가하고 서로 다른 작물 수와 무관하게 SELECT 1회임을 Hibernate statistics로 고정한다." \
+  -m "정책 추천 전용 MemberCrop-Crop fetch join을 추가하고 서로 다른 작물 수에 비례한 SELECT가 발생하지 않음을 Hibernate statistics로 고정한다." \
   -m "Constraint: 기존 findByMemberId 계약과 전역 Hibernate fetch 설정은 변경하지 않는다." \
-  -m "Rejected: default_batch_fetch_size 전역 적용 | 다른 조회 경로까지 영향을 주고 쿼리 수를 정확히 1회로 보장하지 못한다." \
+  -m "Rejected: member/farm 추가 fetch join | 정책 프로필이 사용하지 않는 연관을 총 1회 수치만 위해 로딩한다." \
   -m "Confidence: high" \
   -m "Scope-risk: narrow" \
   -m "Tested: MemberCropRepositoryTest" \
@@ -290,7 +298,8 @@ git commit \
 
 **Interfaces:**
 - Consumes: 기존 `PolicyRecommendationQueryRepository.findPage(SearchCondition)`.
-- Produces: 결과의 `PolicyRecommendation.policyProgram` 카드 필드 접근까지 SELECT 1회라는 회귀 계약.
+- Produces: 결과의 `PolicyRecommendation.policyProgram` 카드 필드 접근까지 SELECT가
+  2회 이하이며 카드 수에 비례해 증가하지 않는다는 회귀 계약.
 - Preserves: repository production query의 기존 `join fetch r.policyProgram` 구현.
 
 - [ ] **Step 1: Hibernate statistics 설정과 query-count 테스트 추가**
@@ -313,7 +322,7 @@ import org.hibernate.SessionFactory
 
 ```kotlin
 @Test
-fun `find page fetches policy programs in one select`() {
+fun `find page avoids policy program selects proportional to card count`() {
     persistRecommendation("정책 A", score = "0.9500", applyEndsOn = null)
     persistRecommendation("정책 B", score = "0.9000", applyEndsOn = null)
     persistRecommendation("정책 C", score = "0.8500", applyEndsOn = null)
@@ -336,7 +345,7 @@ fun `find page fetches policy programs in one select`() {
     }
 
     assertThat(cardFields).hasSize(3)
-    assertThat(statistics.prepareStatementCount).isEqualTo(1L)
+    assertThat(statistics.prepareStatementCount).isLessThanOrEqualTo(2L)
 }
 ```
 
@@ -349,7 +358,7 @@ Run from `backend/`:
   --tests 'com.chamchamcham.domain.policy.PolicyRecommendationQueryRepositoryTest'
 ```
 
-Expected: `BUILD SUCCESSFUL`; 새 테스트의 statement count가 1이다.
+Expected: `BUILD SUCCESSFUL`; 새 테스트의 statement count가 2 이하이다.
 
 - [ ] **Step 3: mutation으로 테스트가 실제 N+1을 탐지하는지 확인**
 
@@ -361,8 +370,8 @@ join r.policyProgram p
 
 Step 2 명령을 다시 실행한다.
 
-Expected: `find page fetches policy programs in one select`가 실패하고
-`prepareStatementCount`가 1보다 크다. 이 실패를 확인한 즉시 production query를 다음
+Expected: `find page avoids policy program selects proportional to card count`가 실패하고
+`prepareStatementCount`가 2보다 크다. 이 실패를 확인한 즉시 production query를 다음
 원래 코드로 복원한다.
 
 ```kotlin
@@ -408,7 +417,7 @@ git add \
   backend/domain/src/test/kotlin/com/chamchamcham/domain/policy/PolicyRecommendationQueryRepositoryTest.kt
 git commit \
   -m "test(policy): 추천 카드 fetch join 쿼리 수 고정" \
-  -m "정책 추천 페이지 결과의 PolicyProgram 카드 필드를 접근해도 SELECT가 1회임을 Hibernate statistics와 mutation 검증으로 고정한다." \
+  -m "정책 추천 페이지 결과의 PolicyProgram 수에 비례한 SELECT가 발생하지 않음을 Hibernate statistics와 mutation 검증으로 고정한다." \
   -m "Constraint: production query와 운영 Hibernate 설정은 변경하지 않는다." \
   -m "Rejected: PostgreSQL 인덱스 선제 추가 | 실제 실행 계획과 지연 증거가 없다." \
   -m "Confidence: high" \
@@ -425,8 +434,8 @@ git commit \
 - [ ] `MemberCropRepository.findByMemberId()`는 그대로 존재한다.
 - [ ] `findAllWithCropByMemberId()`만 `crop`을 fetch join한다.
 - [ ] `PolicyRecommendationService`는 새 정책 전용 메서드만 호출한다.
-- [ ] 서로 다른 작물 3개 접근의 statement count가 1이다.
-- [ ] 정책 카드 필드 접근의 statement count가 1이다.
+- [ ] 서로 다른 작물 3개 접근의 statement count가 3 이하이고 mutation에서 초과한다.
+- [ ] 정책 카드 필드 접근의 statement count가 2 이하이고 mutation에서 초과한다.
 - [ ] production 설정에 Hibernate statistics 또는 batch fetch가 추가되지 않았다.
 - [ ] index DDL과 `@Index`가 추가되지 않았다.
 - [ ] `./gradlew test`가 통과한다.

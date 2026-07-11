@@ -15,8 +15,9 @@
 
 ## 목표
 
-- 정책 추천 프로필 생성 시 `MemberCrop`과 `Crop`을 단일 SELECT로 조회한다.
-- 정책 추천 카드 조회 시 기존 `PolicyRecommendation`과 `PolicyProgram` 단일 SELECT
+- 정책 추천 프로필 생성 시 `MemberCrop`과 `Crop`을 같은 SELECT로 조회해 작물 수에
+  비례한 추가 SELECT를 제거한다.
+- 정책 추천 카드 조회 시 기존 `PolicyRecommendation`과 `PolicyProgram` fetch join
   계약을 회귀 테스트로 고정한다.
 - 조회 결과, 정렬, 커서, stale 판정, 추천 재생성 동작은 변경하지 않는다.
 - 새 테스트 라이브러리나 전역 Hibernate fetch 설정을 추가하지 않는다.
@@ -53,13 +54,17 @@ fun findAllWithCropByMemberId(@Param("memberId") memberId: UUID): List<MemberCro
 `PolicyRecommendationService.listRecommendations()`만 이 메서드를 사용한다.
 추천 프로필 생성에서 `crop.name`과 `crop.usePartCategory`를 읽어도 영속성 컨텍스트가
 추가 SELECT를 수행하지 않는다. 이 경로에서 사용하지 않는 `member`와 `farm`은 fetch
-join하지 않는다.
+join하지 않는다. 현재 엔티티 bytecode가 `final`이라 cold persistence context에서는
+사용하지 않는 `member`와 `farm`을 Hibernate가 각각 한 번 추가 조회할 수 있다. 이
+고정 비용을 없애기 위해 불필요한 연관까지 fetch join하거나 전역 프록시 설정을
+바꾸지는 않는다.
 
 ### 기존 정책 카드 조회 유지
 
 `PolicyRecommendationQueryRepositoryImpl.findPage()`의
 `join fetch r.policyProgram`은 유지한다. 구현을 재설계하지 않고 Hibernate query-count
-테스트를 추가해 카드 필드 접근까지 단일 SELECT임을 고정한다.
+테스트를 추가해 카드 수에 비례한 추가 SELECT가 없음을 고정한다. 여기서도 final인
+`member` 연관의 고정 SELECT 1회는 허용한다.
 
 ## 데이터 흐름
 
@@ -80,8 +85,10 @@ join하지 않는다.
 
 도메인 JPA 테스트에서 서로 다른 작물 3개를 가진 회원을 저장한다. 영속성 컨텍스트를
 비우고 Hibernate statistics를 초기화한 뒤 정책 전용 메서드를 호출한다. 반환된 모든
-`crop.name`과 `crop.usePartCategory`를 실제로 읽은 다음
-`prepareStatementCount == 1`을 검증한다.
+`crop.name`과 `crop.usePartCategory`를 실제로 읽은 다음 statement count가 3 이하인지
+검증한다. 현재 매핑에서는 본 쿼리 1회와 final인 `member`, `farm`의 고정 조회가 각각
+1회 발생한다. fetch join을 제거하면 서로 다른 작물 3개 조회가 더해져 이 상한을
+초과하는지 mutation으로 확인한다.
 
 테스트 클래스에만 다음 속성을 사용한다.
 
@@ -94,8 +101,10 @@ spring.jpa.properties.hibernate.generate_statistics=true
 ### 정책 카드 N+1 회귀 테스트
 
 기존 정책 추천 저장소 테스트에서 영속성 컨텍스트와 statistics를 초기화한다.
-`findPage()` 결과의 `policyProgram` 카드 필드를 읽고
-`prepareStatementCount == 1`을 검증한다. 정렬과 커서 테스트는 그대로 유지한다.
+`findPage()` 결과의 `policyProgram` 카드 필드를 읽고 statement count가 2 이하인지
+검증한다. 본 쿼리와 final인 `member`의 고정 조회 1회만 허용하며, fetch join을 제거하면
+정책 프로그램 수만큼 조회가 늘어 상한을 초과하는지 mutation으로 확인한다. 정렬과
+커서 테스트는 그대로 유지한다.
 
 ### 서비스 계약 테스트
 
@@ -130,8 +139,10 @@ spring.jpa.properties.hibernate.generate_statistics=true
 
 ## 완료 기준
 
-- 서로 다른 작물 3개에 접근해도 회원 작물 SELECT가 정확히 1회다.
-- 정책 추천 페이지의 `PolicyProgram` 필드 접근까지 SELECT가 정확히 1회다.
+- 서로 다른 작물 3개에 접근해도 회원 작물 SELECT가 3회 이하이며, fetch join 제거
+  mutation에서 이 상한을 초과한다.
+- 정책 추천 페이지의 `PolicyProgram` 필드 접근까지 SELECT가 2회 이하이며, fetch join
+  제거 mutation에서 이 상한을 초과한다.
 - 정책 추천 서비스가 정책 전용 fetch join 메서드를 사용한다.
 - 기존 정책 추천 정렬·필터·커서 테스트와 전체 백엔드 테스트가 통과한다.
 - 새 의존성, 전역 fetch 설정, 인덱스 DDL이 추가되지 않는다.
