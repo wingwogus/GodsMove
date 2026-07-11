@@ -31,6 +31,14 @@ class MemberController(
         return ResponseEntity.ok(ApiResponse.ok(MemberResponses.MyProfileResponse.from(profile)))
     }
 
+    @GetMapping("/me/farm-crops")
+    fun getMyFarmCrops(
+        @AuthenticationPrincipal memberId: String?
+    ): ResponseEntity<ApiResponse<List<MemberResponses.FarmCropsResponse>>> {
+        val farmCrops = memberProfileService.getMyFarmCrops(parseMemberId(memberId))
+        return ResponseEntity.ok(ApiResponse.ok(farmCrops.map(MemberResponses.FarmCropsResponse::from)))
+    }
+
     @PutMapping("/me/profile")
     fun updateMyProfile(
         @AuthenticationPrincipal memberId: String?,

@@ -1,5 +1,6 @@
 package com.chamchamcham.application.member
 
+import com.chamchamcham.application.crop.CropResult
 import java.time.LocalDate
 import java.util.UUID
 
@@ -44,5 +45,11 @@ object MemberProfileResult {
     data class CropProfile(
         val cropId: UUID,
         val cropName: String
+    )
+
+    data class FarmCrops(
+        val farmId: UUID,
+        val farmName: String,
+        val crops: List<CropResult.CropSummary>
     )
 }

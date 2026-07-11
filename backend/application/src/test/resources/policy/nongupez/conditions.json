@@ -1,0 +1,22 @@
+{
+  "dsBizSrchCndList": [
+    {
+      "srchCndKywd": "SRCH_BIZ_YR",
+      "srchCndNm": "사업연도",
+      "srchCndDtlCd": "0000",
+      "srchCndDtlNm": "전체"
+    },
+    {
+      "srchCndKywd": "SRCH_BIZ_YR",
+      "srchCndNm": "사업연도",
+      "srchCndDtlCd": "2025",
+      "srchCndDtlNm": "2025"
+    },
+    {
+      "srchCndKywd": "SRCH_BIZ_YR",
+      "srchCndNm": "사업연도",
+      "srchCndDtlCd": "2026",
+      "srchCndDtlNm": "2026"
+    }
+  ]
+}

@@ -1,15 +1,15 @@
 package com.chamchamcham.application.farming
 
+import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
-import com.chamchamcham.domain.farming.HarvestAmountUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
-import com.chamchamcham.domain.farming.SeedSource
 import com.chamchamcham.domain.farming.SeedlingUnit
 import com.chamchamcham.domain.farming.SprayAmountUnit
 import com.chamchamcham.domain.farming.WeedingMethod
@@ -66,8 +66,7 @@ object FarmingRecordCommand {
         val seedAmountUnit: SeedAmountUnit? = null,
         val seedlingCount: Int? = null,
         val seedlingUnit: SeedlingUnit? = null,
-        val seedSource: SeedSource? = null,
-        val seedPurchasePlace: String? = null,
+        val propagationMethod: PropagationMethod,
     )
 
     data class WateringDetail(
@@ -96,8 +95,9 @@ object FarmingRecordCommand {
     )
 
     data class HarvestDetail(
-        val harvestAmount: BigDecimal,
-        val harvestAmountUnit: HarvestAmountUnit,
+        val harvestAmount: BigDecimal?,
+        val amountUnknown: Boolean = false,
+        val medicinalPart: CropUsePartCategory,
         val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
         val growthPeriod: Int,
         val growthPeriodUnit: GrowthPeriodUnit,

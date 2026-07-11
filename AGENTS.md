@@ -57,6 +57,20 @@ Common types:
 - `test`: test addition or update
 - `chore`: build, configuration, or miscellaneous work
 
+## Pull Requests
+
+- Use `.github/pull_request_template.md` for every pull request, including pull
+  requests created by AI agents.
+- Complete every template section from the actual diff. Write `해당 없음` when
+  a section does not apply instead of deleting it.
+- Record exact verification commands and results. Disclose skipped checks and
+  remaining risks.
+- State API, database, configuration, deployment, and compatibility impact.
+- Never include secrets, tokens, private keys, or raw environment values in a
+  pull request body.
+- Create a Draft pull request unless the user explicitly requests Ready for
+  review.
+
 ## Branch Strategy
 
 Use a simple branch strategy:

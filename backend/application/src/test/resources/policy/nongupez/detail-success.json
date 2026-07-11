@@ -1,0 +1,31 @@
+{
+  "bizDtl": {
+    "afbzCd": "AB000009",
+    "bizYr": "2026",
+    "afbzNm": "친환경농업직불",
+    "bizPrpsCn": "친환경농업 확산",
+    "bizCn": "친환경농업 실천 농업인에게 직불금을 지원합니다.",
+    "bizSprtQlfcCn": "농업경영정보를 등록한 농업·임업인·법인으로 친환경인증을 받은 자",
+    "bizSprtCn": "인증단계 및 품목에 따라 직불금을 지급",
+    "bizAplyBgngYmd": "20260325",
+    "bizAplyEndYmd": "20260630",
+    "bizAplyMthdCn": "읍면동 방문 신청",
+    "bizRqdcCn": "사업 신청서",
+    "bizSlctnCrtrCn": "자격 요건 검토",
+    "bizTkcgInstNm": "농림축산식품부"
+  },
+  "bizPicList": [
+    {
+      "bizTkcgInstCdNm": "농림축산식품부",
+      "bizTkcgDeptInstCdNm": "친환경농업과",
+      "bizPicTelno": "0442012434"
+    }
+  ],
+  "bizAtchFileList": [
+    {
+      "originalName": "2026년 친환경농업직불 시행지침.pdf",
+      "extension": "pdf",
+      "size": 1537272
+    }
+  ]
+}
