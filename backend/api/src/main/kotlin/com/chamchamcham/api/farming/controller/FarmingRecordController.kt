@@ -46,6 +46,7 @@ class FarmingRecordController(
         @RequestParam(required = false) workType: WorkType?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate?,
+        @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<FarmingRecordResponses.RecordPageResponse>> {
@@ -56,6 +57,7 @@ class FarmingRecordController(
                 workType = workType,
                 startDate = startDate,
                 endDate = endDate,
+                keyword = keyword,
                 cursor = cursor,
                 size = size
             )
@@ -141,8 +143,7 @@ class FarmingRecordController(
                 seedAmountUnit = it.seedAmountUnit,
                 seedlingCount = it.seedlingCount,
                 seedlingUnit = it.seedlingUnit,
-                seedSource = it.seedSource,
-                seedPurchasePlace = it.seedPurchasePlace,
+                propagationMethod = requireNotNull(it.propagationMethod),
             )
         }
 
@@ -183,7 +184,8 @@ class FarmingRecordController(
         harvest?.let {
             FarmingRecordCommand.HarvestDetail(
                 harvestAmount = it.harvestAmount,
-                harvestAmountUnit = it.harvestAmountUnit,
+                amountUnknown = it.harvestAmountUnknown,
+                medicinalPart = requireNotNull(it.medicinalPart),
                 harvestSource = it.harvestSource,
                 growthPeriod = it.growthPeriod,
                 growthPeriodUnit = it.growthPeriodUnit,

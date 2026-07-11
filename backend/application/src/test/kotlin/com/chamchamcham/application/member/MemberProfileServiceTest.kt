@@ -99,6 +99,23 @@ class MemberProfileServiceTest {
     }
 
     @Test
+    fun `get my farm crops groups crops by farm`() {
+        val secondFarm = farm(secondFarmId, roadAddress = "제주특별자치도 서귀포시 색달동 1")
+        `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm, secondFarm))
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(
+            listOf(memberCrop(farm, crop), memberCrop(farm, secondCrop))
+        )
+
+        val farmCrops = service.getMyFarmCrops(memberId)
+
+        assertEquals(2, farmCrops.size)
+        val firstFarmCrops = farmCrops.first { it.farmId == farmId }
+        assertThat(firstFarmCrops.crops.map { it.id }).containsExactly(cropId, secondCropId)
+        val secondFarmCrops = farmCrops.first { it.farmId == secondFarmId }
+        assertThat(secondFarmCrops.crops).isEmpty()
+    }
+
+    @Test
     fun `get public profile excludes private fields and returns region and crops`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))

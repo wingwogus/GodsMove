@@ -38,15 +38,15 @@ class WorkTypeControllerTest(
                 WorkTypeResult.WorkTypeSummary(
                     code = "PLANTING",
                     label = "파종/정식",
-                    detailRequired = false,
+                    detailRequired = true,
                     fields = listOf(
                         WorkTypeResult.FieldSummary(
-                            name = "seedSource",
+                            name = "propagationMethod",
                             type = FieldValueType.ENUM,
-                            required = false,
+                            required = true,
                             options = listOf(
-                                WorkTypeResult.EnumOptionSummary("SELF_COLLECTED", "자가채종"),
-                                WorkTypeResult.EnumOptionSummary("PURCHASED", "구매")
+                                WorkTypeResult.EnumOptionSummary("SEED", "종자"),
+                                WorkTypeResult.EnumOptionSummary("CUTTING", "삽목")
                             )
                         )
                     )
@@ -92,11 +92,11 @@ class WorkTypeControllerTest(
             .andExpect(jsonPath("$.data", hasSize<Any>(4)))
             .andExpect(jsonPath("$.data[0].code", equalTo("PLANTING")))
             .andExpect(jsonPath("$.data[0].label", equalTo("파종/정식")))
-            .andExpect(jsonPath("$.data[0].detailRequired", equalTo(false)))
-            .andExpect(jsonPath("$.data[0].fields[0].name", equalTo("seedSource")))
+            .andExpect(jsonPath("$.data[0].detailRequired", equalTo(true)))
+            .andExpect(jsonPath("$.data[0].fields[0].name", equalTo("propagationMethod")))
             .andExpect(jsonPath("$.data[0].fields[0].type", equalTo("ENUM")))
-            .andExpect(jsonPath("$.data[0].fields[0].options[1].code", equalTo("PURCHASED")))
-            .andExpect(jsonPath("$.data[0].fields[0].options[1].label", equalTo("구매")))
+            .andExpect(jsonPath("$.data[0].fields[0].options[1].code", equalTo("CUTTING")))
+            .andExpect(jsonPath("$.data[0].fields[0].options[1].label", equalTo("삽목")))
             .andExpect(jsonPath("$.data[1].code", equalTo("WATERING")))
             .andExpect(jsonPath("$.data[1].fields[0].required", equalTo(false)))
             .andExpect(jsonPath("$.data[2].code", equalTo("FERTILIZING")))

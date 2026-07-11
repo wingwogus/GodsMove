@@ -35,6 +35,7 @@ enum class ErrorCode(
     FARMING_RECORD_TOO_MANY_IMAGES("FARMING_005", "error.farming_record_too_many_images", 400),
     WEATHER_LOCATION_REQUIRED("WEATHER_001", "error.weather_location_required", 400),
     WEATHER_PROVIDER_UNAVAILABLE("WEATHER_002", "error.weather_provider_unavailable", 503),
+    SEARCH_CATEGORY_NOT_SUPPORTED("SEARCH_001", "error.search_category_not_supported", 400),
     USER_ALREADY_EXISTS("USER_002", "error.user_already_exists", 409),
     DUPLICATE_EMAIL("AUTH_003", "error.duplicate_email", 409),
     EMAIL_NOT_VERIFIED("AUTH_004", "error.email_not_verified", 400),

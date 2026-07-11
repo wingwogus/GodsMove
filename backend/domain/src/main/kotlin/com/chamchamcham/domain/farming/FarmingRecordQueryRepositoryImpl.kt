@@ -47,6 +47,27 @@ class FarmingRecordQueryRepositoryImpl(
             where += "r.workedAt < :workedAtTo"
             params["workedAtTo"] = it
         }
+
+        val keywordPredicates = mutableListOf<String>()
+        condition.keyword?.trim()?.lowercase()?.takeIf(String::isNotEmpty)?.let { kw ->
+            params["keyword"] = "%$kw%"
+            keywordPredicates += "lower(r.crop.name) like :keyword"
+            keywordPredicates += "lower(r.memo) like :keyword"
+            keywordPredicates += "exists (select 1 from FertilizingRecord f where f.record.id = r.id and lower(f.materialName) like :keyword)"
+            keywordPredicates += "exists (select 1 from PestControlRecord p where p.record.id = r.id and lower(p.pesticideName) like :keyword)"
+        }
+        if (condition.matchedWorkTypes.isNotEmpty()) {
+            keywordPredicates += "r.workType in :matchedWorkTypes"
+            params["matchedWorkTypes"] = condition.matchedWorkTypes
+        }
+        if (condition.matchedParts.isNotEmpty()) {
+            keywordPredicates += "exists (select 1 from HarvestRecord h where h.record.id = r.id and h.medicinalPart in :matchedParts)"
+            params["matchedParts"] = condition.matchedParts
+        }
+        if (keywordPredicates.isNotEmpty()) {
+            where += "(${keywordPredicates.joinToString(" or ")})"
+        }
+
         condition.cursor?.let { cursor ->
             where += "(r.workedAt < :cursorWorkedAt or (r.workedAt = :cursorWorkedAt and r.id < :cursorId))"
             params["cursorWorkedAt"] = cursor.workedAt

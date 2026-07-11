@@ -1,10 +1,12 @@
 package com.chamchamcham.api.member.controller
 
 import com.chamchamcham.api.exception.GlobalExceptionHandler
+import com.chamchamcham.application.crop.CropResult
 import com.chamchamcham.application.member.MemberProfileCommand
 import com.chamchamcham.application.member.MemberProfileResult
 import com.chamchamcham.application.member.MemberProfileService
 import com.chamchamcham.application.security.TokenProvider
+import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.member.ManagementType
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
@@ -91,6 +93,37 @@ class MemberControllerTest(
             .andExpect(jsonPath("$.data.birthDate").doesNotExist())
             .andExpect(jsonPath("$.data.farms[0].roadAddress").doesNotExist())
             .andExpect(jsonPath("$.data.farms[0].jibunAddress").doesNotExist())
+    }
+
+    @Test
+    fun `get my farm crops returns farms with nested crop lists`() {
+        `when`(memberProfileService.getMyFarmCrops(memberId)).thenReturn(
+            listOf(
+                MemberProfileResult.FarmCrops(
+                    farmId = farmId,
+                    farmName = "횡성 황기밭",
+                    crops = listOf(
+                        CropResult.CropSummary(
+                            id = cropId,
+                            externalNo = 1,
+                            name = "황기",
+                            usePartCategory = CropUsePartCategory.ROOT_BARK.name,
+                            usePartCategoryLabel = CropUsePartCategory.ROOT_BARK.label
+                        )
+                    )
+                )
+            )
+        )
+
+        mockMvc.perform(
+            get("/api/v1/members/me/farm-crops")
+                .with(authenticatedMember(memberId.toString()))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data[0].farmId", equalTo(farmId.toString())))
+            .andExpect(jsonPath("$.data[0].farmName", equalTo("횡성 황기밭")))
+            .andExpect(jsonPath("$.data[0].crops[0].id", equalTo(cropId.toString())))
+            .andExpect(jsonPath("$.data[0].crops[0].usePartCategoryLabel", equalTo("뿌리·껍질")))
     }
 
     @Test

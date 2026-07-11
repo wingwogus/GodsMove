@@ -18,7 +18,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "harvest_record")
-class HarvestRecord(
+class   HarvestRecord(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(nullable = false, updatable = false, columnDefinition = "uuid")
@@ -28,12 +28,8 @@ class HarvestRecord(
     @JoinColumn(name = "record_id", nullable = false, unique = true)
     val record: FarmingRecord,
 
-    @Column(name = "harvest_amount", nullable = false, precision = 18, scale = 4)
-    val harvestAmount: BigDecimal,
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "harvest_amount_unit", nullable = false, length = 16)
-    val harvestAmountUnit: HarvestAmountUnit,
+    @Column(name = "harvest_amount", precision = 18, scale = 4)
+    val harvestAmount: BigDecimal?,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "medicinal_part", nullable = false, length = 32)

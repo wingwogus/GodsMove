@@ -1,5 +1,6 @@
 package com.chamchamcham.application.member
 
+import com.chamchamcham.application.crop.CropResult
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.crop.Crop
@@ -64,6 +65,21 @@ class MemberProfileService(
             farms = farms.map(::toPublicFarm),
             crops = toCropProfiles(crops)
         )
+    }
+
+    @Transactional(readOnly = true)
+    fun getMyFarmCrops(memberId: UUID): List<MemberProfileResult.FarmCrops> {
+        val farms = farmRepository.findByOwnerId(memberId)
+        val cropsByFarmId = memberCropRepository.findByMemberId(memberId).groupBy { it.farm.id }
+
+        return farms.map { farm ->
+            val farmId = requireNotNull(farm.id) { "Persisted farm id is required" }
+            MemberProfileResult.FarmCrops(
+                farmId = farmId,
+                farmName = farm.name,
+                crops = cropsByFarmId[farmId].orEmpty().map { CropResult.CropSummary.from(it.crop) }
+            )
+        }
     }
 
     fun updateMyProfile(command: MemberProfileCommand.UpdateMyProfile): MemberProfileResult.MyProfile {

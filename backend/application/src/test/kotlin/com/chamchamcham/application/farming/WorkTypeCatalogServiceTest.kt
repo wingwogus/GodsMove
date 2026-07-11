@@ -21,19 +21,23 @@ class WorkTypeCatalogServiceTest {
     }
 
     @Test
-    fun `PLANTING has optional detail with six optional fields`() {
+    fun `PLANTING has required detail with propagationMethod as the only required field`() {
         val planting = service.listWorkTypes().first { it.code == "PLANTING" }
 
-        assertThat(planting.detailRequired).isFalse()
+        assertThat(planting.detailRequired).isTrue()
         assertThat(planting.fields.map { it.name }).containsExactly(
-            "seedAmount", "seedAmountUnit", "seedlingCount", "seedlingUnit", "seedSource", "seedPurchasePlace"
+            "seedAmount", "seedAmountUnit", "seedlingCount", "seedlingUnit", "propagationMethod"
         )
-        assertThat(planting.fields).allMatch { !it.required }
-        val seedSourceField = planting.fields.first { it.name == "seedSource" }
-        assertThat(seedSourceField.type).isEqualTo(FieldValueType.ENUM)
-        assertThat(seedSourceField.options).containsExactly(
-            WorkTypeResult.EnumOptionSummary("SELF_COLLECTED", "자가채종"),
-            WorkTypeResult.EnumOptionSummary("PURCHASED", "구매")
+        assertThat(planting.fields.filter { it.required }.map { it.name }).containsExactly("propagationMethod")
+        val propagationMethodField = planting.fields.first { it.name == "propagationMethod" }
+        assertThat(propagationMethodField.type).isEqualTo(FieldValueType.ENUM)
+        assertThat(propagationMethodField.options).containsExactly(
+            WorkTypeResult.EnumOptionSummary("SEED", "종자"),
+            WorkTypeResult.EnumOptionSummary("CUTTING", "삽목"),
+            WorkTypeResult.EnumOptionSummary("GRAFTING", "접목"),
+            WorkTypeResult.EnumOptionSummary("LAYERING", "취목"),
+            WorkTypeResult.EnumOptionSummary("DIVISION", "분주·분리"),
+            WorkTypeResult.EnumOptionSummary("TISSUE_CULTURE", "조직배양")
         )
     }
 
@@ -84,14 +88,22 @@ class WorkTypeCatalogServiceTest {
     }
 
     @Test
-    fun `HARVEST has required detail and does not include medicinalPart`() {
+    fun `ETC has no detail requirement and no fields`() {
+        val etc = service.listWorkTypes().first { it.code == "ETC" }
+
+        assertThat(etc.detailRequired).isFalse()
+        assertThat(etc.fields).isEmpty()
+    }
+
+    @Test
+    fun `HARVEST has required detail including medicinalPart`() {
         val harvest = service.listWorkTypes().first { it.code == "HARVEST" }
 
         assertThat(harvest.detailRequired).isTrue()
-        assertThat(harvest.fields.map { it.name }).doesNotContain("medicinalPart")
         assertThat(harvest.fields.map { it.name }).containsExactly(
-            "harvestAmount", "harvestAmountUnit", "harvestSource", "growthPeriod", "growthPeriodUnit"
+            "harvestAmount", "medicinalPart", "harvestSource", "growthPeriod", "growthPeriodUnit"
         )
+        assertThat(harvest.fields.first { it.name == "medicinalPart" }.required).isTrue()
         assertThat(harvest.fields.first { it.name == "harvestSource" }.required).isFalse()
     }
 
@@ -102,9 +114,10 @@ class WorkTypeCatalogServiceTest {
         assertThat(byCode.getValue("FERTILIZING").detailRequired).isTrue()
         assertThat(byCode.getValue("PEST_CONTROL").detailRequired).isTrue()
         assertThat(byCode.getValue("HARVEST").detailRequired).isTrue()
-        assertThat(byCode.getValue("PLANTING").detailRequired).isFalse()
+        assertThat(byCode.getValue("PLANTING").detailRequired).isTrue()
         assertThat(byCode.getValue("WATERING").detailRequired).isFalse()
         assertThat(byCode.getValue("WEEDING").detailRequired).isFalse()
         assertThat(byCode.getValue("PRUNING").detailRequired).isFalse()
+        assertThat(byCode.getValue("ETC").detailRequired).isFalse()
     }
 }

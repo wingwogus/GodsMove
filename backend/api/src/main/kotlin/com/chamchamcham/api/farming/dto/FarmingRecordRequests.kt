@@ -1,15 +1,15 @@
 package com.chamchamcham.api.farming.dto
 
+import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
-import com.chamchamcham.domain.farming.HarvestAmountUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
-import com.chamchamcham.domain.farming.SeedSource
 import com.chamchamcham.domain.farming.SeedlingUnit
 import com.chamchamcham.domain.farming.SprayAmountUnit
 import com.chamchamcham.domain.farming.WeedingMethod
@@ -45,6 +45,7 @@ object FarmingRecordRequests {
         val weatherTemperature: Int?,
 
         @field:NotBlank(message = "메모를 입력해주세요")
+        @field:Size(min = 30, max = 500, message = "메모는 30자 이상 500자 이내로 입력해주세요")
         val memo: String,
 
         @field:Valid
@@ -77,8 +78,9 @@ object FarmingRecordRequests {
         @field:Min(value = 1, message = "모종수는 1 이상이어야 합니다")
         val seedlingCount: Int? = null,
         val seedlingUnit: SeedlingUnit? = null,
-        val seedSource: SeedSource? = null,
-        val seedPurchasePlace: String? = null,
+
+        @field:NotNull(message = "번식법을 선택해주세요")
+        val propagationMethod: PropagationMethod?,
     )
 
     data class WateringDetailRequest(
@@ -116,8 +118,11 @@ object FarmingRecordRequests {
 
     data class HarvestDetailRequest(
         @field:DecimalMin(value = "0.01", message = "수확량은 0보다 커야 합니다")
-        val harvestAmount: BigDecimal,
-        val harvestAmountUnit: HarvestAmountUnit,
+        val harvestAmount: BigDecimal? = null,
+        val harvestAmountUnknown: Boolean = false,
+
+        @field:NotNull(message = "수확 부위를 선택해주세요")
+        val medicinalPart: CropUsePartCategory?,
         val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
 
         @field:Min(value = 1, message = "재배기간은 1 이상이어야 합니다")
