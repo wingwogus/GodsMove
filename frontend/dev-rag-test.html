@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>ChamChamCham RAG Console</title>
+  <link rel="icon" href="data:,">
   <style>
     :root {
       color-scheme: light;
@@ -24,6 +25,10 @@
 
     * {
       box-sizing: border-box;
+    }
+
+    [hidden] {
+      display: none !important;
     }
 
     body {
@@ -538,8 +543,8 @@
 
       <div class="stack">
         <nav aria-label="테스트 영역">
-          <button data-view="feedback" aria-selected="true" type="button">기록 피드백</button>
-          <button data-view="report" aria-selected="false" type="button">리포트 통계</button>
+          <button class="tab" data-view="feedback" aria-selected="true" type="button">기록 피드백</button>
+          <button class="tab" data-view="report" aria-selected="false" type="button">리포트 통계</button>
         </nav>
 
         <section id="feedbackView">
