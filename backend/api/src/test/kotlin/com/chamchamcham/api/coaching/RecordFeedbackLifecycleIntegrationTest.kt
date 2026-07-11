@@ -146,10 +146,20 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
             .containsEntry("workType", "WATERING")
             .containsEntry("memo", "점적관수로 토양 수분을 보충했습니다.")
         assertThat(userOutput.feedback?.goodPoint?.text).isEqualTo("관수 기록이 구체적입니다.")
-        val nextAction = userOutput.feedback?.nextActions?.singleOrNull()
-        assertThat(nextAction?.text).isEqualTo("토양 수분을 다시 확인하세요.")
-        assertThat(nextAction?.due).isEqualTo(RecordFeedbackActionDue.NEXT_CHECK)
-        assertThat(nextAction?.category).isEqualTo(RecordFeedbackActionCategory.CULTIVATION)
+        val nextActions = userOutput.feedback?.nextActions.orEmpty()
+        assertThat(nextActions).hasSize(2)
+        assertThat(nextActions.map { it.text }).containsExactly(
+            "토양 수분을 다시 확인하세요.",
+            "관수량 변화를 주간 기록에 남기세요.",
+        )
+        assertThat(nextActions.map { it.due }).containsExactly(
+            RecordFeedbackActionDue.NEXT_CHECK,
+            RecordFeedbackActionDue.THIS_WEEK,
+        )
+        assertThat(nextActions.map { it.category }).containsExactly(
+            RecordFeedbackActionCategory.CULTIVATION,
+            RecordFeedbackActionCategory.IRRIGATION,
+        )
 
         lifecycleService.enqueue(record)
         generationProcessor.generate(
@@ -266,6 +276,13 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
                     category = RecordFeedbackActionCategory.CULTIVATION,
                     basis = "다음 점검이 필요합니다.",
                     text = "토양 수분을 다시 확인하세요.",
+                    evidenceRefs = listOf("doc-1"),
+                ),
+                RecordFeedbackNextAction(
+                    due = RecordFeedbackActionDue.THIS_WEEK,
+                    category = RecordFeedbackActionCategory.IRRIGATION,
+                    basis = "주간 관수량 추적이 필요합니다.",
+                    text = "관수량 변화를 주간 기록에 남기세요.",
                     evidenceRefs = listOf("doc-1"),
                 ),
             ),

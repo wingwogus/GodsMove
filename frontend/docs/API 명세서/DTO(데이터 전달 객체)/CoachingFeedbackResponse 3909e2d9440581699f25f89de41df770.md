@@ -16,8 +16,8 @@ API 분류: API Response
     - text: string, required.
   - nextActions: array, required.
     - text: string, required.
-    - due: enum, required. `TODAY`, `NEXT_CHECK`, `THIS_WEEK`, `BEFORE_NEXT_WORK`.
-    - category: enum, required. `IRRIGATION`, `CULTIVATION`, `PEST_CONTROL`, `HARVEST`, `RECORDING`.
+    - due: enum, required. `TODAY`, `THIS_WEEK`, `NEXT_WEEK`, `NEXT_CHECK`.
+    - category: enum, required. `WEATHER`, `PEST_DISEASE`, `IRRIGATION`, `FERTILIZING`, `PEST_CONTROL`, `HARVEST`, `CULTIVATION`, `GENERAL`.
 - createdAt: datetime, required.
 - updatedAt: datetime, required.
 
