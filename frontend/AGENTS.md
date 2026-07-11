@@ -60,6 +60,32 @@ and text fallbacks such as wrapping, `lineLimit`, or `minimumScaleFactor` where
 needed. Treat iPhone SE 2/3 as the minimum layout QA size, especially for bottom
 navigation, onboarding forms, compose screens, and comment input flows.
 
+## Figma Screen Implementation Rule
+
+When implementing a screen from Figma Dev Mode, treat the Figma frame as the
+visual target while keeping implementation decisions aligned with API readiness,
+offline-first behavior, and the existing SwiftUI architecture.
+
+Apply screen designs in this order:
+
+1. Reuse existing design-system components where possible.
+2. Extend an existing component only when the new state or variant repeats.
+3. Keep one-off layout details inside the feature screen.
+4. Create a new design-system component only for repeated UI with stable
+   behavior.
+
+Screen implementation should follow API readiness:
+
+- API ready: connect the screen to its real view model and repository flow.
+- API partially ready: implement the skeleton with loading, empty, error, and
+  disabled states.
+- API unavailable: render a clear placeholder or disabled affordance without
+  inventing networking code.
+
+Every Figma-backed screen should include the relevant runtime states, not only
+the happy-path frame: loading, empty, error, disabled, submitting, and retry
+where applicable.
+
 ## Product Source of Truth
 
 Do not duplicate product behavior into this file. Read from:
