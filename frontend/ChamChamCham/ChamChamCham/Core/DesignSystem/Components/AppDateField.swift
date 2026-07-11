@@ -64,8 +64,12 @@ struct AppDateField: View {
     }
 
     private var iconColor: Color {
+        Self.iconColor(isEnabled: isEnabled, isError: isError)
+    }
+
+    static func iconColor(isEnabled: Bool, isError: Bool) -> Color {
         if !isEnabled { return Color.Icon.disabled }
-        if isError { return Color.Icon.red }
+        if isError { return Color.Icon.subtle }
         return Color.Icon.default
     }
 
