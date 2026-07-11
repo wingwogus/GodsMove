@@ -107,6 +107,25 @@ class CoachingFeedback(
         failureCode = code
     }
 
+    fun markReady(
+        structuredResult: Map<String, Any?>,
+        citations: List<Map<String, Any?>>,
+        auditStatus: String,
+        auditWarnings: List<String>,
+        modelName: String,
+        embeddingModel: String,
+    ) {
+        check(status == CoachingFeedbackStatus.PENDING) { "only pending feedback can become ready" }
+        this.structuredResult = structuredResult
+        this.citations = citations
+        this.auditStatus = auditStatus
+        this.auditWarnings = auditWarnings
+        this.modelName = modelName
+        this.embeddingModel = embeddingModel
+        status = CoachingFeedbackStatus.READY
+        failureCode = null
+    }
+
     fun retry() {
         check(status == CoachingFeedbackStatus.FAILED) { "only failed feedback can retry" }
         status = CoachingFeedbackStatus.PENDING

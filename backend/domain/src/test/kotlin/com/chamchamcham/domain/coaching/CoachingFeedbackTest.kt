@@ -60,6 +60,33 @@ class CoachingFeedbackTest {
     }
 
     @Test
+    fun `pending feedback becomes ready with immutable result metadata`() {
+        val feedback = CoachingFeedback.pendingRecord(member, record, 1)
+        val inputSnapshot = mapOf("schemaVersion" to "record-feedback-context.v2")
+
+        feedback.attachInputSnapshot(inputSnapshot)
+        feedback.markReady(
+            structuredResult = mapOf("goodPoint" to mapOf("text" to "점적관수로 토양 상태를 확인한 점이 좋았어요.")),
+            citations = listOf(mapOf("id" to "record:${record.id}")),
+            auditStatus = "PASS",
+            auditWarnings = emptyList(),
+            modelName = "test-chat",
+            embeddingModel = "test-embedding",
+        )
+
+        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.READY)
+        assertThat(feedback.structuredResult).containsKey("goodPoint")
+        assertThat(feedback.citations).containsExactly(mapOf("id" to "record:${record.id}"))
+        assertThat(feedback.auditStatus).isEqualTo("PASS")
+        assertThat(feedback.auditWarnings).isEmpty()
+        assertThat(feedback.failureCode).isNull()
+        assertThat(feedback.modelName).isEqualTo("test-chat")
+        assertThat(feedback.embeddingModel).isEqualTo("test-embedding")
+        assertThat(feedback.inputSnapshot).isEqualTo(inputSnapshot)
+        assertThatThrownBy { feedback.attachInputSnapshot(emptyMap()) }.isInstanceOf(IllegalStateException::class.java)
+    }
+
+    @Test
     fun `pending record feedback rejects invalid lifecycle transitions`() {
         val feedback = CoachingFeedback.pendingRecord(member, record, 1)
 
@@ -69,6 +96,16 @@ class CoachingFeedbackTest {
 
         assertThatThrownBy {
             feedback.attachInputSnapshot(mapOf("schemaVersion" to "record-feedback-context.v2"))
+        }.isInstanceOf(IllegalStateException::class.java)
+        assertThatThrownBy {
+            feedback.markReady(
+                structuredResult = mapOf("goodPoint" to mapOf("text" to "점적관수로 토양 상태를 확인한 점이 좋았어요.")),
+                citations = listOf(mapOf("id" to "record:${record.id}")),
+                auditStatus = "PASS",
+                auditWarnings = emptyList(),
+                modelName = "test-chat",
+                embeddingModel = "test-embedding",
+            )
         }.isInstanceOf(IllegalStateException::class.java)
     }
 }
