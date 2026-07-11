@@ -802,9 +802,9 @@ POST /api/v1/farming-records/{recordId}/coaching-feedback/regenerate
 
 조회는 현재 원본 revision과 일치하는 가장 최신 생성 시도를 반환한다. 현재
 revision의 결과가 없으면 가장 최신 STALE 결과를 반환한다. 재생성은 현재
-revision의 FAILED 행을 같은 행에서 PENDING으로 되돌린다. 현재 revision 행이
-없고 STALE 결과만 있으면 새 현재 revision PENDING을 만든다. 현재 PENDING,
-READY, STALE 행은 재생성할 수 없다.
+revision의 FAILED 행만 같은 행에서 PENDING으로 되돌린다. 현재 revision 행이
+없고 STALE 결과만 있으면 재생성을 거부한다. 피드백 이력이 전혀 없으면 찾을 수
+없음으로 응답한다. 현재 PENDING, READY, STALE 행은 재생성할 수 없다.
 
 프로덕션 API는 `TodayRecordFeedbackContext` 전체를 요청 본문으로 받지 않는다.
 로컬 실험 도구가 필요하면 제품 컨트롤러와 분리된 local profile에서만

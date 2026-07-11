@@ -34,7 +34,7 @@ class RecordFeedbackQueryService(
 
         if (current == null) {
             if (findLatestStale(record) != null) {
-                return lifecycleService.enqueue(record).toResult()
+                throw BusinessException(ErrorCode.RECORD_FEEDBACK_REGENERATION_NOT_ALLOWED)
             }
             throw BusinessException(ErrorCode.RECORD_FEEDBACK_NOT_FOUND)
         }

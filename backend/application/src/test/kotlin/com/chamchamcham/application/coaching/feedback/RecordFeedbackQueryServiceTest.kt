@@ -256,10 +256,9 @@ class RecordFeedbackQueryServiceTest {
     }
 
     @Test
-    fun `regenerate creates the current revision feedback when only an older stale row remains`() {
+    fun `regenerate rejects stale-only history without creating current revision feedback`() {
         stubOwnedRecord()
         val stale = feedback(status = CoachingFeedbackStatus.STALE, sourceRevision = 2)
-        val created = feedback(status = CoachingFeedbackStatus.PENDING, sourceRevision = 3)
         `when`(feedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
             FeedbackType.RECORD,
             record.id!!,
@@ -270,14 +269,35 @@ class RecordFeedbackQueryServiceTest {
             record.id!!,
             CoachingFeedbackStatus.STALE,
         )).thenReturn(stale)
-        `when`(lifecycleService.enqueue(record)).thenReturn(created)
 
-        val result = service.regenerate(member.id!!, record.id!!)
+        assertThatThrownBy { service.regenerate(member.id!!, record.id!!) }
+            .isInstanceOf(BusinessException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.RECORD_FEEDBACK_REGENERATION_NOT_ALLOWED)
 
-        verify(lifecycleService).enqueue(record)
-        assertThat(result.feedbackId).isEqualTo(created.id)
-        assertThat(result.sourceRevision).isEqualTo(3)
-        assertThat(result.status).isEqualTo(CoachingFeedbackStatus.PENDING)
+        verifyNoInteractions(lifecycleService)
+    }
+
+    @Test
+    fun `regenerate reports not found when the owned record has no feedback history`() {
+        stubOwnedRecord()
+        `when`(feedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
+            FeedbackType.RECORD,
+            record.id!!,
+            record.sourceRevision,
+        )).thenReturn(null)
+        `when`(feedbackRepository.findTopByFeedbackTypeAndRecord_IdAndStatusOrderByUpdatedAtDesc(
+            FeedbackType.RECORD,
+            record.id!!,
+            CoachingFeedbackStatus.STALE,
+        )).thenReturn(null)
+
+        assertThatThrownBy { service.regenerate(member.id!!, record.id!!) }
+            .isInstanceOf(BusinessException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.RECORD_FEEDBACK_NOT_FOUND)
+
+        verifyNoInteractions(lifecycleService)
     }
 
     private fun feedback(
