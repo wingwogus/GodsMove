@@ -65,7 +65,7 @@ struct AppDateField: View {
 
     private var iconColor: Color {
         if !isEnabled { return Color.Icon.disabled }
-        if isError { return Color.Icon.error }
+        if isError { return Color.Icon.red }
         return Color.Icon.default
     }
 

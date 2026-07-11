@@ -177,7 +177,7 @@ struct CommunityDetailView: View {
         } label: {
             Image(systemName: detail.likedByMe ? "heart.fill" : "heart")
                 .font(.system(size: 28, weight: .regular))
-                .foregroundStyle(detail.likedByMe ? Color.Icon.error : Color.Icon.default)
+                .foregroundStyle(detail.likedByMe ? Color.Icon.red : Color.Icon.default)
                 .frame(width: 32, height: 32)
         }
         .buttonStyle(.plain)

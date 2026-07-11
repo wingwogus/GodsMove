@@ -112,7 +112,7 @@ struct CommunityMetrics: View {
             } label: {
                 Label("\(likeCount)", systemImage: likedByMe ? "heart.fill" : "heart")
                     .appTypography(.labelMedium)
-                    .foregroundStyle(likedByMe ? Color.Icon.error : Color.Text.muted)
+                    .foregroundStyle(likedByMe ? Color.Icon.red : Color.Text.muted)
             }
             .buttonStyle(.plain)
             .disabled(onTapLike == nil)

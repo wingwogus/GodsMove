@@ -299,7 +299,7 @@ struct CommunityPostRow: View {
                 onTapLike()
             } label: {
                 reaction(systemName: post.likedByMe ? "heart.fill" : "heart", text: "\(post.likeCount)")
-                    .foregroundStyle(post.likedByMe ? Color.Icon.error : Color.Text.muted)
+                    .foregroundStyle(post.likedByMe ? Color.Icon.red : Color.Text.muted)
             }
             .buttonStyle(.plain)
 
