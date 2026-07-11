@@ -11,8 +11,44 @@ class RecordFeedbackCoachingResultTest {
     @Test
     fun `coaching result keeps one good point and typed next actions in JSON`() {
         val json = objectMapper.writeValueAsString(validResult())
+        val root = objectMapper.readTree(json)
+        val goodPoint = root["goodPoint"]
+        val nextAction = root["nextActions"][0]
 
-        assertThat(json).contains("goodPoint", "nextActions", "NEXT_WEEK", "WEATHER")
+        assertThat(root.fieldNames().asSequence().toSet()).containsExactlyInAnyOrder(
+            "goodPoint",
+            "nextActions",
+        )
+        assertThat(goodPoint.fieldNames().asSequence().toSet()).containsExactlyInAnyOrder(
+            "basis",
+            "text",
+            "evidenceRefs",
+        )
+        assertThat(nextAction.fieldNames().asSequence().toSet()).containsExactlyInAnyOrder(
+            "due",
+            "category",
+            "basis",
+            "text",
+            "evidenceRefs",
+        )
+        assertThat(nextAction["due"].asText()).isEqualTo("NEXT_WEEK")
+        assertThat(nextAction["category"].asText()).isEqualTo("WEATHER")
+        assertThat(RecordFeedbackActionDue.entries.map { it.name }).containsExactly(
+            "TODAY",
+            "THIS_WEEK",
+            "NEXT_WEEK",
+            "NEXT_CHECK",
+        )
+        assertThat(RecordFeedbackActionCategory.entries.map { it.name }).containsExactly(
+            "WEATHER",
+            "PEST_DISEASE",
+            "IRRIGATION",
+            "FERTILIZING",
+            "PEST_CONTROL",
+            "HARVEST",
+            "CULTIVATION",
+            "GENERAL",
+        )
     }
 
     private fun validResult(): RecordFeedbackCoachingResult {
