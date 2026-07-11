@@ -702,7 +702,10 @@
     const state = {
       accessToken: sessionStorage.getItem(sessionKeys.accessToken) || "",
       pollTimer: null,
+      pollRunId: 0,
       pollAttempts: 0,
+      feedbackSource: "none",
+      feedbackStatus: null,
       report: {
         current: null,
         previous: null,
@@ -1001,15 +1004,17 @@
       return item;
     }
 
-    function renderFeedback(feedback) {
+    function renderFeedback(feedback, source = "api") {
       const status = feedback?.status || "-";
+      state.feedbackSource = source;
+      state.feedbackStatus = feedback?.status || null;
       $("feedbackStatusBadge").textContent = status;
       $("feedbackStatusBadge").className = badgeClass(status);
       setText("feedbackStatus", status);
       setText("feedbackInputPrepared", feedback?.inputPrepared);
       setText("feedbackFailureCode", feedback?.failureCode);
       setText("pollAttempts", state.pollAttempts);
-      $("regenerateFeedback").disabled = status !== "FAILED";
+      $("regenerateFeedback").disabled = source !== "api" || status !== "FAILED";
       $("goodPoint").textContent = feedback?.feedback?.goodPoint?.text || "아직 생성된 피드백이 없습니다.";
       const nextActions = feedback?.feedback?.nextActions || [];
       $("actions").replaceChildren(...nextActions.map(renderAction));
@@ -1022,6 +1027,8 @@
     }
 
     function renderDeletedRecord(recordId) {
+      state.feedbackSource = "none";
+      state.feedbackStatus = "DELETED";
       $("feedbackStatusBadge").textContent = "DELETED";
       $("feedbackStatusBadge").className = "badge";
       setText("feedbackStatus", "DELETED");
@@ -1047,15 +1054,22 @@
       $("pollingError").hidden = false;
     }
 
-    async function loadFeedback(recordId) {
+    async function fetchFeedback(recordId) {
       const response = await request(`/api/v1/farming-records/${encodeURIComponent(recordId)}/coaching-feedback`);
-      renderFeedback(response.data);
       return response.data;
     }
 
+    async function loadFeedback(recordId) {
+      stopPolling();
+      const feedback = await fetchFeedback(recordId);
+      renderFeedback(feedback, "api");
+      return feedback;
+    }
+
     function stopPolling() {
+      state.pollRunId += 1;
       if (state.pollTimer) {
-        window.clearInterval(state.pollTimer);
+        window.clearTimeout(state.pollTimer);
         state.pollTimer = null;
       }
       $("feedbackStatusBadge").className = badgeClass($("feedbackStatus").textContent);
@@ -1066,21 +1080,31 @@
       clearPollingError();
       state.pollAttempts = 0;
       setText("pollAttempts", state.pollAttempts);
-      state.pollTimer = window.setInterval(async () => {
+      const runId = state.pollRunId;
+
+      const pollOnce = async () => {
+        if (runId !== state.pollRunId) return;
         try {
-          const feedback = await loadFeedback(recordId);
+          const feedback = await fetchFeedback(recordId);
+          if (runId !== state.pollRunId) return;
           state.pollAttempts += 1;
           setText("pollAttempts", state.pollAttempts);
+          renderFeedback(feedback, "api");
           if (terminalFeedbackStatuses.includes(feedback.status) || state.pollAttempts >= 60) {
             stopPolling();
+            return;
           }
+          state.pollTimer = window.setTimeout(pollOnce, 2000);
         } catch (error) {
-          stopPolling();
+          if (runId !== state.pollRunId) return;
           state.pollAttempts += 1;
           setText("pollAttempts", state.pollAttempts);
+          stopPolling();
           showPollingError(error);
         }
-      }, 2000);
+      };
+
+      state.pollTimer = window.setTimeout(pollOnce, 2000);
       $("feedbackStatusBadge").className = `${$("feedbackStatusBadge").className} polling`;
     }
 
@@ -1112,7 +1136,7 @@
         status: selected,
         response: fixtures[selected]
       });
-      renderFeedback(fixtures[selected]);
+      renderFeedback(fixtures[selected], "preview");
     }
 
     function metric(label, value) {
@@ -1359,8 +1383,8 @@
     }
 
     function syncDisabledStates() {
-      const failed = $("feedbackStatus").textContent === "FAILED";
-      $("regenerateFeedback").disabled = !failed;
+      const canRegenerate = state.feedbackSource === "api" && state.feedbackStatus === "FAILED";
+      $("regenerateFeedback").disabled = !canRegenerate;
     }
 
     function switchView(view) {
@@ -1380,7 +1404,7 @@
       defaultRecordPayload.cropId = $("cropId").value;
       $("recordPayload").value = JSON.stringify(defaultRecordPayload, null, 2);
       updateAuthStatus();
-      renderFeedback(null);
+      renderFeedback(null, "none");
       renderReport();
       renderRawResponse({});
 
@@ -1445,10 +1469,13 @@
       $("regenerateFeedback").addEventListener("click", (event) => run(event.currentTarget, async () => {
         const recordId = value("recordId");
         if (!recordId) throw new Error("Record ID가 필요합니다.");
+        if (state.feedbackSource !== "api" || state.feedbackStatus !== "FAILED") {
+          throw new Error("실제 API에서 조회한 FAILED 피드백만 재생성할 수 있습니다.");
+        }
         const response = await request(`/api/v1/farming-records/${encodeURIComponent(recordId)}/coaching-feedback/regenerate`, {
           method: "POST"
         });
-        renderFeedback(response.data);
+        renderFeedback(response.data, "api");
         await pollFeedback(recordId);
       }));
 
