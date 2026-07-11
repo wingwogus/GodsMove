@@ -1,6 +1,10 @@
 package com.chamchamcham.api.coaching
 
 import com.chamchamcham.ApiApplication
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackGenerationProcessor
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackGenerationRequested
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackLifecycleService
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackQueryService
 import com.chamchamcham.application.coaching.rag.common.RagModelInfo
 import com.chamchamcham.application.coaching.rag.record.CommonFeedbackDetail
 import com.chamchamcham.application.coaching.rag.record.GeneratedRecordFeedback
@@ -44,6 +48,8 @@ import org.springframework.boot.test.mock.mockito.MockBean
 import org.springframework.test.context.ActiveProfiles
 import java.time.LocalDateTime
 import java.util.UUID
+import org.mockito.Mockito.times
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 
 @SpringBootTest(
@@ -62,6 +68,9 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
     private val memberCropRepository: MemberCropRepository,
     private val farmRepository: FarmRepository,
     private val cropRepository: CropRepository,
+    private val lifecycleService: RecordFeedbackLifecycleService,
+    private val generationProcessor: RecordFeedbackGenerationProcessor,
+    private val queryService: RecordFeedbackQueryService,
 ) {
     @MockBean
     private lateinit var projectionService: FarmingCycleReportProjectionService
@@ -111,6 +120,56 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
         assertThat(feedback.structuredResult).containsKey("goodPoint")
         assertThat(feedback.auditStatus).isEqualTo("PASS")
         assertThat(feedback.modelName).isEqualTo("chat-test")
+    }
+
+    @Test
+    fun `automatic record feedback keeps one immutable snapshot and exposes only user output`() {
+        val recordId = farmingRecordService.create(wateringCreateCommand()).id
+
+        val record = farmingRecordRepository.findById(recordId).orElseThrow()
+        val feedback = coachingFeedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
+            FeedbackType.RECORD,
+            recordId,
+            1,
+        ) ?: error("record feedback must be created")
+        val feedbackId = requireNotNull(feedback.id)
+        val snapshot = requireNotNull(feedback.inputSnapshot)
+        val userOutput = queryService.get(requireNotNull(member.id), recordId)
+
+        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.READY)
+        assertThat(snapshot).containsEntry("schemaVersion", "record-feedback-context.v2")
+        @Suppress("UNCHECKED_CAST")
+        val recordSnapshot = snapshot["record"] as Map<String, Any?>
+        assertThat(recordSnapshot)
+            .containsEntry("recordId", recordId.toString())
+            .containsEntry("sourceRevision", 1)
+            .containsEntry("workType", "WATERING")
+            .containsEntry("memo", "점적관수로 토양 수분을 보충했습니다.")
+        assertThat(userOutput.feedback?.goodPoint?.text).isEqualTo("관수 기록이 구체적입니다.")
+        val nextAction = userOutput.feedback?.nextActions?.singleOrNull()
+        assertThat(nextAction?.text).isEqualTo("토양 수분을 다시 확인하세요.")
+        assertThat(nextAction?.due).isEqualTo(RecordFeedbackActionDue.NEXT_CHECK)
+        assertThat(nextAction?.category).isEqualTo(RecordFeedbackActionCategory.CULTIVATION)
+
+        lifecycleService.enqueue(record)
+        generationProcessor.generate(
+            RecordFeedbackGenerationRequested(
+                feedbackId = feedbackId,
+                memberId = requireNotNull(member.id),
+                recordId = recordId,
+                sourceRevision = 1,
+            ),
+        )
+
+        val feedbacks = coachingFeedbackRepository.findAll().filter {
+            it.feedbackType == FeedbackType.RECORD && it.record?.id == recordId
+        }
+        val reloaded = coachingFeedbackRepository.findById(feedbackId).orElseThrow()
+        assertThat(feedbacks).hasSize(1)
+        assertThat(feedbacks.single().id).isEqualTo(feedbackId)
+        assertThat(reloaded.status).isEqualTo(CoachingFeedbackStatus.READY)
+        assertThat(reloaded.inputSnapshot).isEqualTo(snapshot)
+        verify(generationService, times(1)).generate(anyContext(), org.mockito.Mockito.isNull())
     }
 
     @Test
