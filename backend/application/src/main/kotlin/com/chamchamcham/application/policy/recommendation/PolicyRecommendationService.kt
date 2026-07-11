@@ -72,8 +72,8 @@ class PolicyRecommendationService(
         val member = memberRepository.findById(memberId).orElseThrow {
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)
         }
+        val farms = farmRepository.findAllWithBoundaryCoordinatesByOwnerId(memberId)
         val memberCrops = memberCropRepository.findAllWithCropByMemberId(memberId)
-        val farms = farmRepository.findByOwnerId(memberId)
 
         if (recommendationsAreStale(memberId, source, sourceYear, candidates, member, memberCrops, farms)) {
             regenerate(memberId, member, source, sourceYear, candidates, today, memberCrops, farms)

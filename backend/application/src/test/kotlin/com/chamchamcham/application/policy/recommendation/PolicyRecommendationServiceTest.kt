@@ -33,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
+import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
@@ -262,7 +263,7 @@ class PolicyRecommendationServiceTest {
     }
 
     @Test
-    fun `list recommendations loads crops through policy fetch join query`() {
+    fun `list recommendations loads farms before crops through policy fetch join queries`() {
         val program = recommendableProgram()
         val row = recommendation(program)
         givenReusableRecommendations(program)
@@ -271,8 +272,13 @@ class PolicyRecommendationServiceTest {
 
         service.listRecommendations(memberId, cursor = null, size = 20)
 
-        verify(memberCropRepository).findAllWithCropByMemberId(memberId)
+        verify(farmRepository).findAllWithBoundaryCoordinatesByOwnerId(memberId)
+        verify(farmRepository, never()).findByOwnerId(memberId)
         verify(memberCropRepository, never()).findByMemberId(memberId)
+        inOrder(farmRepository, memberCropRepository).apply {
+            verify(farmRepository).findAllWithBoundaryCoordinatesByOwnerId(memberId)
+            verify(memberCropRepository).findAllWithCropByMemberId(memberId)
+        }
     }
 
     @Test
@@ -807,7 +813,7 @@ class PolicyRecommendationServiceTest {
                 )
             )
         )
-        `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))
+        `when`(farmRepository.findAllWithBoundaryCoordinatesByOwnerId(memberId)).thenReturn(listOf(farm))
     }
 
     private fun farm(): Farm =
