@@ -14,6 +14,7 @@ struct CommunityView: View {
     @State private var viewModel: CommunityFeedViewModel
     @State private var showCompose = false
     @State private var showCropPicker = false
+    private let horizontalInset: CGFloat = 20
 
     init(container: DIContainer) {
         self.container = container
@@ -31,11 +32,11 @@ struct CommunityView: View {
                 VStack(spacing: 0) {
                     AppTopAppBar(
                         title: "커뮤니티",
+                        showBorder: false,
                         trailing: [.init("magnifyingglass"), .init("bell")]
                     )
                     postTypeTabs
                     cropChipRow
-                    Divider()
                     postList
                 }
                 writeButton
@@ -46,7 +47,7 @@ struct CommunityView: View {
             }
         }
         .task { await viewModel.onAppear() }
-        .sheet(isPresented: $showCompose) {
+        .fullScreenCover(isPresented: $showCompose) {
             CommunityComposeView(container: container) { _ in
                 Task { await viewModel.reload() }
             }
@@ -62,10 +63,16 @@ struct CommunityView: View {
 
     private var postTypeTabs: some View {
         HStack(spacing: 0) {
-            tab(title: "자유 이야기", type: .general)
-            tab(title: "Q&A", type: .question)
+            tab(title: "일반 게시물", type: .general)
+            tab(title: "Q&A 게시물", type: .question)
         }
-        .padding(.top, Spacing.sm)
+        .frame(height: 56)
+        .background(Color.Background.default)
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.Border.subtle)
+                .frame(height: 1)
+        }
     }
 
     private func tab(title: String, type: CommunityPostType) -> some View {
@@ -73,14 +80,20 @@ struct CommunityView: View {
         return Button {
             Task { await viewModel.selectPostType(type) }
         } label: {
-            VStack(spacing: Spacing.sm) {
-                Text(title)
-                    .appTypography(isSelected ? .bodyLargeEmphasized : .bodyLarge)
-                    .foregroundStyle(isSelected ? Color.Text.default : Color.Text.muted)
-                Rectangle()
-                    .fill(isSelected ? Color.Object.bold : Color.clear)
-                    .frame(height: 2)
-            }
+            Text(title)
+                .appTypography(isSelected ? .titleMediumEmphasized : .titleMedium)
+                .foregroundStyle(isSelected ? Color.Text.default : Color.Text.muted)
+                .lineLimit(1)
+                .minimumScaleFactor(0.86)
+                .frame(maxWidth: .infinity)
+                .frame(height: 56)
+                .overlay(alignment: .bottom) {
+                    if isSelected {
+                        Rectangle()
+                            .fill(Color.Border.primary)
+                            .frame(height: 3)
+                    }
+                }
             .frame(maxWidth: .infinity)
         }
         .buttonStyle(.plain)
@@ -89,30 +102,44 @@ struct CommunityView: View {
     // MARK: - Crop board chips
 
     private var cropChipRow: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Spacing.sm) {
-                AppChip(label: "전체", isSelected: viewModel.selectedCropId == nil) {
-                    Task { await viewModel.selectCrop(nil) }
-                }
-                ForEach(viewModel.boards) { board in
-                    AppChip(label: board.cropName, isSelected: viewModel.selectedCropId == board.cropId) {
-                        Task { await viewModel.selectCrop(board.cropId) }
+        HStack(spacing: 0) {
+            Button {
+                showCropPicker = true
+            } label: {
+                Image(systemName: "plus")
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.Icon.subtle)
+                    .frame(width: 32, height: 32)
+                    .background(Color.Object.default)
+                    .overlay(Circle().stroke(Color.Border.default, lineWidth: 1))
+                    .clipShape(Circle())
+            }
+            .buttonStyle(.plain)
+            .frame(width: 60, height: 60)
+            .overlay(alignment: .trailing) {
+                Rectangle()
+                    .fill(Color.Border.default)
+                    .frame(width: 1, height: 24)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Spacing.sm) {
+                    AppChip(label: "전체", isSelected: viewModel.selectedCropId == nil, style: .solid) {
+                        Task { await viewModel.selectCrop(nil) }
+                    }
+                    ForEach(viewModel.boards) { board in
+                        AppChip(label: board.cropName, isSelected: viewModel.selectedCropId == board.cropId, style: .solid) {
+                            Task { await viewModel.selectCrop(board.cropId) }
+                        }
                     }
                 }
-                Button {
-                    showCropPicker = true
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 16))
-                        .foregroundStyle(Color.Icon.subtle)
-                        .frame(width: 32, height: 32)
-                        .background(Circle().stroke(Color.Border.default, lineWidth: 1))
-                }
-                .buttonStyle(.plain)
+                .padding(.leading, Spacing.sm)
+                .padding(.trailing, horizontalInset)
+                .padding(.vertical, 14)
             }
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.sm)
         }
+        .frame(height: 60)
+        .background(Color.Background.subtle)
     }
 
     // MARK: - List
@@ -138,12 +165,12 @@ struct CommunityView: View {
                         }
                         .buttonStyle(.plain)
                         .task { await viewModel.loadMoreIfNeeded(currentItem: post) }
-                        Divider().padding(.horizontal, Spacing.md)
                     }
                     if viewModel.isLoadingMore {
                         ProgressView().padding(Spacing.md)
                     }
                 }
+                .padding(.bottom, 112)
             }
         }
         .refreshable { await viewModel.reload() }
@@ -164,8 +191,9 @@ struct CommunityView: View {
                 .foregroundStyle(Color.Text.subtle)
             }
         }
-        .padding(.horizontal, Spacing.md)
-        .padding(.vertical, Spacing.sm)
+        .frame(height: 48)
+        .padding(.horizontal, horizontalInset)
+        .background(Color.Background.default)
     }
 
     private func emptyState(text: String, systemImage: String) -> some View {
@@ -186,61 +214,113 @@ struct CommunityView: View {
             showCompose = true
         } label: {
             Image(systemName: "pencil")
-                .font(.system(size: 24))
+                .font(.system(size: 40))
                 .foregroundStyle(Color.Icon.inverse)
-                .frame(width: 56, height: 56)
+                .frame(width: 72, height: 72)
                 .background(Color.Object.primary)
                 .clipShape(Circle())
                 .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
         }
-        .padding(Spacing.lg)
+        .padding(.trailing, horizontalInset)
+        .padding(.bottom, Spacing.xl)
+        .accessibilityLabel("게시물 작성")
     }
 }
 
-/// One row in the community list: title, one-line preview, [Q&A]/[crop] tags, author line, metrics, and an
-/// optional thumbnail. Matches the "게시물 리스트 필수 제시 항목" in the wireframe.
+/// One row in the community list: badges/date header, title, one-line preview, reactions, and a
+/// fixed thumbnail slot.
 struct CommunityPostRow: View {
     let post: CommunityPostSummary
     var onTapLike: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: Spacing.md) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text(post.title)
-                    .appTypography(.bodyLargeEmphasized)
-                    .foregroundStyle(Color.Text.default)
-                    .lineLimit(1)
-                    .multilineTextAlignment(.leading)
+        VStack(alignment: .leading, spacing: 12) {
+            header
+            HStack(alignment: .top, spacing: 12) {
+                VStack(alignment: .leading, spacing: 0) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text(post.title)
+                            .appTypography(.titleLargeEmphasized)
+                            .foregroundStyle(Color.Text.subtle)
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.86)
+                            .multilineTextAlignment(.leading)
 
-                if !post.bodyPreview.isEmpty {
-                    Text(post.bodyPreview)
-                        .appTypography(.bodyMedium)
-                        .foregroundStyle(Color.Text.subtle)
-                        .lineLimit(1)
-                        .multilineTextAlignment(.leading)
+                        if !post.bodyPreview.isEmpty {
+                            Text(post.bodyPreview)
+                                .appTypography(.bodyLarge)
+                                .foregroundStyle(Color.Text.muted)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.9)
+                                .multilineTextAlignment(.leading)
+                        }
+                    }
+
+                    Spacer(minLength: 0)
+
+                    reactionRow
                 }
+                .frame(maxWidth: .infinity, minHeight: 96, maxHeight: 96, alignment: .topLeading)
 
-                CommunityTagRow(postType: post.postType, cropName: post.cropName)
-
-                HStack {
-                    CommunityAuthorLine(author: post.author, createdAt: post.createdAt)
-                    Spacer()
-                    CommunityMetrics(
-                        likeCount: post.likeCount,
-                        likedByMe: post.likedByMe,
-                        commentCount: post.commentCount,
-                        onTapLike: onTapLike
-                    )
-                }
-            }
-
-            if let thumbnailUrl = post.thumbnailUrl {
-                CommunityRemoteImage(url: thumbnailUrl)
-                    .frame(width: 80, height: 80)
+                CommunityRemoteImage(url: post.thumbnailUrl)
+                    .frame(width: 96, height: 96)
             }
         }
-        .padding(.vertical, Spacing.md)
-        .padding(.horizontal, Spacing.md)
+        .padding(.horizontal, 20)
+        .frame(height: 160, alignment: .top)
+        .overlay {
+            Rectangle()
+                .stroke(Color.Border.default, lineWidth: 1)
+        }
         .contentShape(Rectangle())
+    }
+
+    private var header: some View {
+        HStack(alignment: .center, spacing: Spacing.sm) {
+            HStack(spacing: Spacing.sm) {
+                AppBadge(label: post.cropName, size: .medium, style: .solidPastel, variant: .secondary)
+                if post.postType == .question {
+                    AppBadge(label: "Q&A", size: .medium, style: .solidPastel, variant: .secondary)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+
+            Text(rowDateText(post.createdAt))
+                .appTypography(.labelMedium)
+                .foregroundStyle(Color.Text.muted)
+                .lineLimit(1)
+        }
+        .frame(height: 32)
+    }
+
+    private var reactionRow: some View {
+        HStack(spacing: 12) {
+            Button {
+                onTapLike()
+            } label: {
+                reaction(systemName: post.likedByMe ? "heart.fill" : "heart", text: "\(post.likeCount)")
+                    .foregroundStyle(post.likedByMe ? Color.Icon.error : Color.Text.muted)
+            }
+            .buttonStyle(.plain)
+
+            reaction(systemName: "bubble.left", text: "\(post.commentCount)")
+                .foregroundStyle(Color.Text.muted)
+        }
+    }
+
+    private func reaction(systemName: String, text: String) -> some View {
+        HStack(spacing: 2) {
+            Image(systemName: systemName)
+                .font(.system(size: 22))
+                .frame(width: 24, height: 24)
+            Text(text)
+                .appTypography(.bodyMedium)
+        }
+    }
+
+    private func rowDateText(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM/dd"
+        return formatter.string(from: date)
     }
 }

@@ -21,8 +21,9 @@ final class CommunityComposeViewModel {
         var isUploading: Bool
     }
 
-    static let titleLimit = 50
-    static let maxImages = 5
+    static let titleLimit = 30
+    static let bodyLimit = 500
+    static let maxImages = 10
 
     /// Crop boards offered as chips. Seeded from the member's boards; the picker can add more.
     private(set) var boards: [CommunityBoard] = []
@@ -54,10 +55,20 @@ final class CommunityComposeViewModel {
     /// True while any attachment is still uploading — submit waits for these so no `mediaId` is missed.
     var isUploadingImage: Bool { attachments.contains(where: \.isUploading) }
 
+    var isTitleOverLimit: Bool {
+        title.count > Self.titleLimit
+    }
+
+    var isBodyOverLimit: Bool {
+        body.count > Self.bodyLimit
+    }
+
     var canSubmit: Bool {
         selectedCropId != nil
             && !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             && !body.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            && !isTitleOverLimit
+            && !isBodyOverLimit
             && !isSubmitting
             && !isUploadingImage
     }

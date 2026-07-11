@@ -12,6 +12,7 @@ import SwiftUI
 struct CommunityDetailView: View {
     let postId: UUID
     private let container: DIContainer
+    private let horizontalInset: CGFloat = 20
 
     @State private var viewModel: CommunityDetailViewModel
     /// The logged-in member, read from the local cache — used to show delete only on the user's own content.
@@ -29,9 +30,9 @@ struct CommunityDetailView: View {
     var body: some View {
         VStack(spacing: 0) {
             header
-            Divider()
             content
         }
+        .background(Color.Background.default)
         .navigationBarHidden(true)
         .safeAreaInset(edge: .bottom) { commentComposer }
         .task {
@@ -47,39 +48,44 @@ struct CommunityDetailView: View {
         currentMemberId != nil && viewModel.detail?.author.memberId == currentMemberId
     }
 
+    private var shouldShowCommentsSection: Bool {
+        (viewModel.detail?.commentCount ?? viewModel.comments.count) > 0 || !viewModel.comments.isEmpty
+    }
+
     // MARK: - Header
 
     private var header: some View {
-        HStack {
+        HStack(spacing: 0) {
             Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 20))
+                Image(systemName: "chevron.backward")
+                    .font(.system(size: 26, weight: .regular))
                     .foregroundStyle(Color.Icon.default)
-                    .frame(width: 44, height: 44)
+                    .frame(width: 48, height: 48)
             }
             Spacer()
-            Text("게시글 상세")
-                .appTypography(.bodyLargeEmphasized)
-                .foregroundStyle(Color.Text.default)
-            Spacer()
-            Menu {
-                if isPostAuthor {
+
+            if isPostAuthor {
+                Menu {
                     Button(role: .destructive) {
                         Task { await viewModel.deletePost() }
                     } label: {
                         Label("삭제", systemImage: "trash")
                     }
+                    Button {} label: { Label("신고하기", systemImage: "exclamationmark.bubble") }
+                        .disabled(true) // 신고 백엔드 미구현
+                } label: {
+                    Image(systemName: "ellipsis")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color.Icon.default)
+                        .frame(width: 48, height: 48)
                 }
-                Button {} label: { Label("신고하기", systemImage: "exclamationmark.bubble") }
-                    .disabled(true) // 신고 백엔드 미구현
-            } label: {
-                Image(systemName: "ellipsis")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.Icon.default)
-                    .frame(width: 44, height: 44)
+            } else {
+                Color.clear.frame(width: 48, height: 48)
             }
         }
-        .padding(.horizontal, Spacing.sm)
+        .frame(height: 60)
+        .padding(.horizontal, 12)
+        .background(Color.Background.default)
     }
 
     // MARK: - Content
@@ -89,12 +95,18 @@ struct CommunityDetailView: View {
             ProgressView().frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let detail = viewModel.detail {
             ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.md) {
+                VStack(alignment: .leading, spacing: 0) {
                     postBody(detail)
-                    Divider()
-                    commentsSection
+                    if shouldShowCommentsSection {
+                        Divider()
+                            .padding(.top, Spacing.xl)
+                        commentsSection
+                            .padding(.top, Spacing.lg)
+                    }
                 }
-                .padding(Spacing.md)
+                .padding(.horizontal, horizontalInset)
+                .padding(.top, Spacing.md)
+                .padding(.bottom, Spacing.xl)
             }
         } else {
             VStack(spacing: Spacing.md) {
@@ -110,39 +122,92 @@ struct CommunityDetailView: View {
     }
 
     private func postBody(_ detail: CommunityPostDetail) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            CommunityAuthorLine(author: detail.author, createdAt: detail.createdAt, avatarSize: .small)
-
-            Text(detail.title)
-                .appTypography(.titleMediumEmphasized)
-                .foregroundStyle(Color.Text.default)
-
-            if !detail.imageUrls.isEmpty {
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: Spacing.sm) {
-                        ForEach(detail.imageUrls, id: \.self) { url in
-                            CommunityRemoteImage(url: url, cornerRadius: 12)
-                                .frame(width: 280, height: 210)
-                        }
-                    }
-                }
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .center, spacing: Spacing.sm) {
+                postAuthorLine(detail)
+                Spacer(minLength: Spacing.md)
+                likeButton(detail)
             }
+            .frame(height: 32)
 
-            Text(detail.body)
-                .appTypography(.bodyLarge)
-                .foregroundStyle(Color.Text.default)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(detail.title)
+                    .appTypography(.titleLarge)
+                    .foregroundStyle(Color.Text.default)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, horizontalInset)
 
-            HStack {
-                CommunityTagRow(postType: detail.postType, cropName: detail.cropName)
-                Spacer()
-                CommunityMetrics(
-                    likeCount: detail.likeCount,
-                    likedByMe: detail.likedByMe,
-                    commentCount: detail.commentCount,
-                    onTapLike: { Task { await viewModel.toggleLike() } }
-                )
+                if !detail.imageUrls.isEmpty {
+                    imageCarousel(detail.imageUrls)
+                        .padding(.top, Spacing.md)
+                }
+
+                Text(detail.body)
+                    .appTypography(.bodyLarge)
+                    .foregroundStyle(Color.Text.subtle)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .padding(.top, Spacing.md)
+
+                detailTagRow(detail)
+                    .padding(.top, horizontalInset)
             }
         }
+    }
+
+    private func postAuthorLine(_ detail: CommunityPostDetail) -> some View {
+        HStack(spacing: Spacing.sm) {
+            CommunityAvatar(profileImageUrl: detail.author.profileImageUrl, size: .small)
+            Text(detail.author.nickname ?? "익명")
+                .appTypography(.bodyLarge)
+                .foregroundStyle(Color.Text.default)
+                .lineLimit(1)
+            Text("·")
+                .appTypography(.bodyLarge)
+                .foregroundStyle(Color.Text.muted)
+            Text(detailDateText(detail.createdAt))
+                .appTypography(.bodyLarge)
+                .foregroundStyle(Color.Text.muted)
+                .lineLimit(1)
+        }
+    }
+
+    private func likeButton(_ detail: CommunityPostDetail) -> some View {
+        Button {
+            Task { await viewModel.toggleLike() }
+        } label: {
+            Image(systemName: detail.likedByMe ? "heart.fill" : "heart")
+                .font(.system(size: 28, weight: .regular))
+                .foregroundStyle(detail.likedByMe ? Color.Icon.error : Color.Icon.default)
+                .frame(width: 32, height: 32)
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(detail.likedByMe ? "좋아요 취소" : "좋아요")
+    }
+
+    private func imageCarousel(_ imageUrls: [String]) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: Spacing.sm) {
+                ForEach(imageUrls, id: \.self) { url in
+                    CommunityRemoteImage(url: url, cornerRadius: 12)
+                        .frame(width: 280, height: 210)
+                }
+            }
+        }
+    }
+
+    private func detailTagRow(_ detail: CommunityPostDetail) -> some View {
+        HStack(spacing: Spacing.sm) {
+            if detail.postType == .question {
+                AppBadge(label: "Q&A", size: .medium, style: .solidPastel, variant: .secondary)
+            }
+            AppBadge(label: detail.cropName, size: .medium, style: .solidPastel, variant: .secondary)
+        }
+    }
+
+    private func detailDateText(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM.dd"
+        return formatter.string(from: date)
     }
 
     // MARK: - Comments
@@ -185,7 +250,6 @@ struct CommunityDetailView: View {
 
     private var commentComposer: some View {
         VStack(spacing: 0) {
-            Divider()
             if let replyTarget = viewModel.replyTarget {
                 HStack {
                     Text("\(replyTarget.author.nickname ?? "익명")님에게 답글 남기는 중")
@@ -199,28 +263,49 @@ struct CommunityDetailView: View {
                 .padding(.horizontal, Spacing.md)
                 .padding(.top, Spacing.sm)
             }
-            HStack(spacing: Spacing.sm) {
-                TextField("댓글을 작성해주세요.", text: $viewModel.draftComment, axis: .vertical)
-                    .appTypography(.bodyMedium)
+            HStack(spacing: 0) {
+                Button {} label: {
+                    Image(systemName: "photo")
+                        .font(.system(size: 24))
+                        .foregroundStyle(Color.Icon.default)
+                        .frame(width: 48, height: 48)
+                }
+                .buttonStyle(.plain)
+                .disabled(true)
+
+                TextField("댓글을 입력해주세요.", text: $viewModel.draftComment, axis: .vertical)
+                    .appTypography(.bodyLarge)
+                    .foregroundStyle(Color.Text.default)
                     .focused($commentFieldFocused)
                     .lineLimit(1...4)
+
+                Spacer(minLength: 12)
+
                 Button {
                     commentFieldFocused = false
                     Task { await viewModel.submitComment() }
                 } label: {
                     if viewModel.isSubmittingComment {
                         ProgressView()
+                            .frame(width: 48, height: 48)
                     } else {
-                        Image(systemName: "arrow.up.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundStyle(canSubmitComment ? Color.Icon.primary : Color.Icon.disabled)
+                        Image(systemName: "arrow.right")
+                            .font(.system(size: 22, weight: .semibold))
+                            .foregroundStyle(canSubmitComment ? Color.Icon.inverse : Color.Icon.disabled)
+                            .frame(width: 48, height: 48)
+                            .background(Circle().fill(canSubmitComment ? Color.Object.primary : Color.Object.disabled))
                     }
                 }
                 .disabled(!canSubmitComment)
             }
-            .padding(Spacing.md)
+            .frame(minHeight: 64)
+            .padding(.horizontal, 12)
         }
         .background(Color.Background.default)
+        .overlay(
+            Rectangle()
+                .stroke(Color.Border.default, lineWidth: 1)
+        )
     }
 
     private var canSubmitComment: Bool {
