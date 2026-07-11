@@ -183,6 +183,12 @@
       color: var(--ink);
     }
 
+    button.danger {
+      border-color: #c9857e;
+      background: #fff5f3;
+      color: var(--danger);
+    }
+
     button.tab {
       border-color: transparent;
       background: transparent;
@@ -297,6 +303,17 @@
       border: 1px solid #dce3dc;
       border-radius: 6px;
       background: #fbfdfb;
+    }
+
+    .polling-error {
+      padding: 9px 10px;
+      border: 1px solid #e0a39e;
+      border-radius: 6px;
+      background: #fff0ee;
+      color: var(--danger);
+      font-size: 12px;
+      font-weight: 700;
+      line-height: 1.45;
     }
 
     .good-point {
@@ -559,11 +576,14 @@
           <div class="button-row">
             <button id="createRecord" type="button">기록 생성</button>
             <button id="updateRecord" class="secondary" type="button">기록 수정</button>
+            <button id="deleteRecord" class="danger" type="button">기록 삭제</button>
             <button id="loadFeedback" class="secondary" type="button">피드백 조회</button>
             <button id="regenerateFeedback" class="secondary" type="button" disabled>FAILED 재생성</button>
             <button id="stopPolling" class="secondary" type="button">폴링 중지</button>
             <button id="renderPreview" class="secondary" type="button">UI-only 미리보기</button>
           </div>
+
+          <div id="pollingError" class="polling-error" role="alert" hidden></div>
 
           <div class="metrics" aria-live="polite">
             <div class="metric">
@@ -1001,6 +1021,32 @@
       }
     }
 
+    function renderDeletedRecord(recordId) {
+      $("feedbackStatusBadge").textContent = "DELETED";
+      $("feedbackStatusBadge").className = "badge";
+      setText("feedbackStatus", "DELETED");
+      setText("feedbackInputPrepared", "-");
+      setText("feedbackFailureCode", "-");
+      setText("pollAttempts", state.pollAttempts);
+      $("regenerateFeedback").disabled = true;
+      $("goodPoint").textContent = `기록 ${recordId} 삭제됨`;
+      const deleted = document.createElement("li");
+      deleted.className = "empty";
+      deleted.textContent = "삭제된 기록의 피드백은 표시하지 않습니다.";
+      $("actions").replaceChildren(deleted);
+    }
+
+    function clearPollingError() {
+      $("pollingError").hidden = true;
+      $("pollingError").textContent = "";
+    }
+
+    function showPollingError(error) {
+      const detail = error?.body?.error?.message || error?.message || "피드백 조회 실패";
+      $("pollingError").textContent = `자동 폴링 중단: ${detail} 피드백 조회 버튼으로 수동 재시도하세요.`;
+      $("pollingError").hidden = false;
+    }
+
     async function loadFeedback(recordId) {
       const response = await request(`/api/v1/farming-records/${encodeURIComponent(recordId)}/coaching-feedback`);
       renderFeedback(response.data);
@@ -1017,6 +1063,7 @@
 
     async function pollFeedback(recordId) {
       stopPolling();
+      clearPollingError();
       state.pollAttempts = 0;
       setText("pollAttempts", state.pollAttempts);
       state.pollTimer = window.setInterval(async () => {
@@ -1027,12 +1074,11 @@
           if (terminalFeedbackStatuses.includes(feedback.status) || state.pollAttempts >= 60) {
             stopPolling();
           }
-        } catch (_) {
+        } catch (error) {
+          stopPolling();
           state.pollAttempts += 1;
           setText("pollAttempts", state.pollAttempts);
-          if (state.pollAttempts >= 60) {
-            stopPolling();
-          }
+          showPollingError(error);
         }
       }, 2000);
       $("feedbackStatusBadge").className = `${$("feedbackStatusBadge").className} polling`;
@@ -1377,10 +1423,23 @@
         await saveRecord("PATCH", recordId);
       }));
 
+      $("deleteRecord").addEventListener("click", (event) => run(event.currentTarget, async () => {
+        const recordId = value("recordId");
+        if (!recordId) throw new Error("Record ID가 필요합니다.");
+        stopPolling();
+        await request(`/api/v1/farming-records/${encodeURIComponent(recordId)}`, {
+          method: "DELETE"
+        });
+        clearPollingError();
+        state.pollAttempts = 0;
+        renderDeletedRecord(recordId);
+      }));
+
       $("loadFeedback").addEventListener("click", (event) => run(event.currentTarget, async () => {
         const recordId = value("recordId");
         if (!recordId) throw new Error("Record ID가 필요합니다.");
         await loadFeedback(recordId);
+        clearPollingError();
       }));
 
       $("regenerateFeedback").addEventListener("click", (event) => run(event.currentTarget, async () => {
