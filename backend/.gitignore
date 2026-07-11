@@ -42,3 +42,7 @@ out/
 ### Kotlin ###
 .kotlin
 .omx/
+
+### Local-only dev tools ###
+scripts/verify-farming-record-api.sh
+scripts/verify-weather-api.sh

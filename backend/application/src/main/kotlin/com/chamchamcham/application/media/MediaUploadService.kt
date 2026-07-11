@@ -68,5 +68,6 @@ class MediaUploadService(
         when (this) {
             UploadedMediaUsageType.PROFILE -> "profiles"
             UploadedMediaUsageType.COMMUNITY_POST -> "community-posts"
+            UploadedMediaUsageType.FARMING_RECORD -> "farming-records"
         }
 }
