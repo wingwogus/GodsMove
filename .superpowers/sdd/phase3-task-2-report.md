@@ -144,3 +144,48 @@ BUILD SUCCESSFUL in 7s
 - Blank output `evidenceRefs` entries now emit `*_evidence_ref_blank`; lists with no nonblank refs also keep the existing `*_evidence_refs_blank` warning.
 - Unknown evidence checks skip blank refs so blank refs are reported through the nonblank contract warning.
 - Added focused contract tests for 15/45 valid text lengths, 14/46 invalid text lengths, 3/4 action boundaries, blank text plus blank ref, blank document IDs, and pest/disease action without document evidence.
+
+## Prompt Builder Blank Evidence ID Review Fix
+
+### RED
+
+Command:
+
+```bash
+cd backend
+./gradlew :application:test --tests '*RecordFeedbackOutputValidatorTest' --tests '*RecordFeedbackPromptBuilderTest' --rerun-tasks
+```
+
+Result:
+
+```text
+RecordFeedbackPromptBuilderTest > prompt excludes blank evidence id from official evidence and allowed citations() FAILED
+BUILD FAILED
+```
+
+This failed for the intended review finding: `formatEvidence()` and
+`formatAllowedCitationIds()` rendered a whitespace-only
+`RecordFeedbackEvidence.id` into prompt citation sections.
+
+### GREEN
+
+Command:
+
+```bash
+cd backend
+./gradlew :application:test --tests '*RecordFeedbackOutputValidatorTest' --tests '*RecordFeedbackPromptBuilderTest' --rerun-tasks
+```
+
+Result:
+
+```text
+BUILD SUCCESSFUL in 6s
+8 actionable tasks: 8 executed
+```
+
+### Review Fix Notes
+
+- `formatEvidence()` now filters official document evidence to entries with nonblank IDs before rendering `[id]` official evidence.
+- `formatAllowedCitationIds()` applies the same nonblank-ID filter before rendering document citation IDs.
+- Added a prompt-builder regression test proving a whitespace-only evidence ID is absent from both the allowed citation section and official evidence section while `doc-1` remains present.
+- Scope stayed limited to `RecordFeedbackPromptBuilder.kt`, `RecordFeedbackPromptBuilderTest.kt`, and this report.

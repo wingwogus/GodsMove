@@ -68,6 +68,27 @@ class RecordFeedbackPromptBuilderTest {
         assertThat(prompt.user).doesNotContain("최근 기록", "작물주기", "작업 횟수")
     }
 
+    @Test
+    fun `prompt excludes blank evidence id from official evidence and allowed citations`() {
+        val prompt = builder.build(
+            context = readFixture("today-record-feedback-watering.json"),
+            queries = listOf(RecordFeedbackRetrievalQuery("참당귀 물주기 재배 관리 약용작물", "crop_work_type")),
+            evidence = listOf(
+                RecordFeedbackEvidence("   ", "공백 ID 문서", 7, "공백 ID 근거는 prompt citation으로 쓰면 안 된다."),
+                RecordFeedbackEvidence("doc-1", "농업기술길잡이 007 약용작물", 123, "관수 후 토양 상태를 확인한다.")
+            )
+        )
+
+        val allowedCitationSection = prompt.user.substringAfter("허용 citationIds:")
+            .substringBefore("공식문서 근거:")
+        val officialEvidenceSection = prompt.user.substringAfter("공식문서 근거:")
+
+        assertThat(allowedCitationSection).contains("doc-1 : 농업기술길잡이 007 약용작물")
+        assertThat(allowedCitationSection).doesNotContain("공백 ID 문서")
+        assertThat(officialEvidenceSection).contains("[doc-1] 농업기술길잡이 007 약용작물 p.123")
+        assertThat(officialEvidenceSection).doesNotContain("공백 ID 문서")
+    }
+
     private fun readFixture(name: String): RecordFeedbackContext {
         val resource = javaClass.classLoader.getResource("coaching/rag/$name")
             ?: error("Missing fixture: $name")
