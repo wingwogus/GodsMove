@@ -100,3 +100,47 @@ BUILD SUCCESSFUL in 4s
 
 - No separate LSP diagnostics tool is available in this session; Kotlin compilation and application tests were used as diagnostics/typecheck evidence.
 - Gradle reports existing deprecation warnings about Gradle 9 compatibility; not introduced by this task.
+
+## Review Fix Evidence
+
+### RED
+
+Command:
+
+```bash
+cd backend
+./gradlew :application:test --tests '*RecordFeedbackOutputValidatorTest' --rerun-tasks
+```
+
+Result:
+
+```text
+RecordFeedbackOutputValidatorTest > rejects blank text and blank evidence ref() FAILED
+RecordFeedbackOutputValidatorTest > does not allow blank document ids as evidence refs() FAILED
+BUILD FAILED
+```
+
+This failed for the intended review findings: blank output refs had no dedicated nonblank warning, and blank document IDs could enter allowed evidence refs.
+
+### GREEN
+
+Command:
+
+```bash
+cd backend
+./gradlew :application:test --tests '*RecordFeedbackOutputValidatorTest' --tests '*RecordFeedbackPromptBuilderTest' --rerun-tasks
+```
+
+Result:
+
+```text
+BUILD SUCCESSFUL in 7s
+8 actionable tasks: 8 executed
+```
+
+### Review Fix Notes
+
+- Blank retrieved document IDs are filtered out before constructing allowed evidence refs.
+- Blank output `evidenceRefs` entries now emit `*_evidence_ref_blank`; lists with no nonblank refs also keep the existing `*_evidence_refs_blank` warning.
+- Unknown evidence checks skip blank refs so blank refs are reported through the nonblank contract warning.
+- Added focused contract tests for 15/45 valid text lengths, 14/46 invalid text lengths, 3/4 action boundaries, blank text plus blank ref, blank document IDs, and pest/disease action without document evidence.

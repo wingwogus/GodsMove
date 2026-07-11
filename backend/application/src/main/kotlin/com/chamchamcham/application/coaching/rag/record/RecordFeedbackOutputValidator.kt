@@ -33,7 +33,10 @@ class RecordFeedbackOutputValidator {
                 context.weather.forecastDays.forEach { add("weather:${it.date}") }
             }
         }
-        val documentIds = evidence.mapTo(linkedSetOf()) { it.id }
+        val documentIds = evidence
+            .map { it.id }
+            .filter { it.isNotBlank() }
+            .toCollection(linkedSetOf())
 
         return RecordFeedbackAllowedEvidenceRefs(
             ids = linkedSetOf(context.recordCitationId()) + weatherIds + documentIds,
@@ -101,13 +104,18 @@ class RecordFeedbackOutputValidator {
         if (item.text.isBlank()) {
             warnings += "${prefix}_text_blank"
         }
-        if (item.evidenceRefs.isEmpty()) {
+        val blankEvidenceRefs = item.evidenceRefs.filter { it.isBlank() }
+        if (item.evidenceRefs.none { it.isNotBlank() }) {
             warnings += "${prefix}_evidence_refs_blank"
+        }
+        if (blankEvidenceRefs.isNotEmpty()) {
+            warnings += "${prefix}_evidence_ref_blank"
         }
         if (item.text.length !in MIN_TEXT_LENGTH..MAX_TEXT_LENGTH) {
             warnings += "${prefix}_text_length"
         }
         item.evidenceRefs
+            .filter { it.isNotBlank() }
             .filterNot { it in allowedEvidenceRefs.ids }
             .forEach { warnings += "unknown_evidence:$it" }
         if (item.basis.isNotBlank() && item.text.isNotBlank() && !hasBasisTokenInText(item.basis, item.text)) {
