@@ -48,14 +48,14 @@ class SecurityConfigAdminTest(
 
     @Test
     fun `unauthenticated admin request returns 401`() {
-        mockMvc.perform(post("/api/v1/admin/policy-sync-jobs"))
+        mockMvc.perform(post("/api/v1/admin/policies/sync-jobs"))
             .andExpect(status().isUnauthorized)
     }
 
     @Test
     @WithMockUser(roles = ["USER"])
     fun `authenticated user role admin request returns 403`() {
-        mockMvc.perform(post("/api/v1/admin/policy-sync-jobs"))
+        mockMvc.perform(post("/api/v1/admin/policies/sync-jobs"))
             .andExpect(status().isForbidden)
     }
 
@@ -71,7 +71,7 @@ class SecurityConfigAdminTest(
                 )
             )
 
-        mockMvc.perform(post("/api/v1/admin/policy-sync-jobs"))
+        mockMvc.perform(post("/api/v1/admin/policies/sync-jobs"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.jobId", equalTo(jobId.toString())))
     }

@@ -19,7 +19,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1/admin/policy-sync-jobs")
+@RequestMapping("/api/v1/admin/policies/sync-jobs")
 class AdminPolicySyncController(
     private val policySyncService: PolicySyncService,
     private val policySyncAsyncRunner: PolicySyncAsyncRunner

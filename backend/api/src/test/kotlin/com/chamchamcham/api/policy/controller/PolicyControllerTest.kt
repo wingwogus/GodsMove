@@ -75,7 +75,7 @@ class PolicyControllerTest(
             )
 
         mockMvc.perform(
-            get("/api/v1/policy-recommendations")
+            get("/api/v1/policies/recommendations")
                 .param("size", "20")
                 .with(authenticatedMember(memberId.toString()))
         )
@@ -114,7 +114,7 @@ class PolicyControllerTest(
         ).thenReturn(PolicyRecommendationResult.Page(emptyList(), null))
 
         mockMvc.perform(
-            get("/api/v1/policy-recommendations")
+            get("/api/v1/policies/recommendations")
                 .param("benefitCategory", "FINANCE")
                 .with(authenticatedMember(memberId.toString()))
         )
@@ -142,7 +142,7 @@ class PolicyControllerTest(
         ).thenReturn(PolicyRecommendationResult.Page(emptyList(), null))
 
         mockMvc.perform(
-            get("/api/v1/policy-recommendations")
+            get("/api/v1/policies/recommendations")
                 .param("sort", "LATEST")
                 .with(authenticatedMember(memberId.toString()))
         ).andExpect(status().isOk)
@@ -159,7 +159,7 @@ class PolicyControllerTest(
     @Test
     fun `list recommendations rejects unknown sort`() {
         mockMvc.perform(
-            get("/api/v1/policy-recommendations")
+            get("/api/v1/policies/recommendations")
                 .param("sort", "BAD")
                 .with(authenticatedMember(memberId.toString()))
         )
@@ -172,7 +172,7 @@ class PolicyControllerTest(
     @Test
     fun `list recommendations rejects unknown benefit category`() {
         mockMvc.perform(
-            get("/api/v1/policy-recommendations")
+            get("/api/v1/policies/recommendations")
                 .param("benefitCategory", "BAD")
                 .with(authenticatedMember(memberId.toString()))
         )
@@ -222,7 +222,7 @@ class PolicyControllerTest(
             )
 
         mockMvc.perform(
-            get("/api/v1/policy-programs/{policyProgramId}", policyProgramId)
+            get("/api/v1/policies/{policyProgramId}", policyProgramId)
                 .with(authenticatedMember(memberId.toString()))
         )
             .andExpect(status().isOk)

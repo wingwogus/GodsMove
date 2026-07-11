@@ -19,11 +19,11 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping("/api/v1/policies")
 class PolicyController(
     private val policyRecommendationService: PolicyRecommendationService
 ) {
-    @GetMapping("/policy-recommendations")
+    @GetMapping("/recommendations")
     fun listRecommendations(
         @AuthenticationPrincipal principal: Any?,
         @RequestParam(required = false) cursor: String?,
@@ -46,7 +46,7 @@ class PolicyController(
         return ResponseEntity.ok(ApiResponse.ok(PolicyRecommendationPageResponse.from(result)))
     }
 
-    @GetMapping("/policy-programs/{policyProgramId}")
+    @GetMapping("/{policyProgramId}")
     fun getProgramDetail(
         @AuthenticationPrincipal principal: Any?,
         @PathVariable policyProgramId: UUID
