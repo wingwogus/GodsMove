@@ -26,10 +26,20 @@ class RecordFeedbackPromptBuilderTest {
         assertThat(prompt.system).contains("불확실한 판단은 단정하지 않는다")
         assertThat(prompt.system).contains("수확 후 가공, 건조, 저장 조언은 보조 점검 수준")
         assertThat(prompt.system).contains("예보는 확정된 날씨처럼 단정하지 않는다")
-        assertThat(prompt.system).contains("forecastDays에 강우, 고온, 고습, 건조, 강풍 신호가 있으면 nextActions에 예보 기반 점검 행동을 포함한다")
-        assertThat(prompt.system).contains("summary, diagnosis, observations, recommendations, nextActions에는 chunkId나 UUID를 직접 쓰지 않는다")
-        assertThat(prompt.system).contains("summary는 상황 요약이 아니라 농부에게 건네는 코칭 한마디다")
-        assertThat(prompt.system).contains("summary에서는 가장 중요한 한 가지만 짚어")
+        assertThat(prompt.system).contains("잘한 점은 정확히 1개만 작성한다")
+        assertThat(prompt.system).contains("다음 행동은 2~3개만 작성한다")
+        assertThat(prompt.system).contains("각 text는 15~45자로 작성한다")
+        assertThat(prompt.system).contains("응답은 RecordFeedbackCoachingResult JSON schema만 따른다")
+        assertThat(prompt.system).contains("goodPoint", "nextActions", "basis", "text", "evidenceRefs")
+        assertThat(prompt.system).doesNotContain(
+            "summary",
+            "riskLevel",
+            "diagnosis",
+            "observations",
+            "recommendations",
+            "follow-up",
+            "follow up",
+        )
     }
 
     @Test
@@ -49,6 +59,8 @@ class RecordFeedbackPromptBuilderTest {
         assertThat(prompt.user).contains("현재 날씨: 구름많음, 30C")
         assertThat(prompt.user).contains("허용 citationIds:")
         assertThat(prompt.user).contains("record:10000000-0000-0000-0000-000000000004 : 대상 영농기록 context")
+        assertThat(prompt.user).contains("weather:current : 현재 날씨 context")
+        assertThat(prompt.user).contains("weather:2026-07-04 : 예보 날씨 context")
         assertThat(prompt.user).contains("[doc-1] 농업기술길잡이 007 약용작물 p.123")
         assertThat(prompt.user).contains("영농 경력: 1")
         assertThat(prompt.user).contains("경영 형태: NON_REGISTERED_FARMER")

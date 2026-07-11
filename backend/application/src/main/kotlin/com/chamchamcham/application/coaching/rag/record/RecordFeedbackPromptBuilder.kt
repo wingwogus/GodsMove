@@ -34,24 +34,28 @@ class RecordFeedbackPromptBuilder {
             사진은 분석하지 않는다. photoCount는 사진 첨부 수로만 해석한다.
             의학적 효능, 복용법, 질병 치료 효과를 소비자 건강 조언처럼 말하지 않는다.
             면적, 등록 라벨, 희석 기준이 없으면 정확한 비료량이나 농약량을 invent하지 않는다.
-            근거가 부족하면 riskLevel은 UNKNOWN, confidence는 0.3 이하로 둔다.
             귀농 청년도 바로 이해할 수 있는 쉬운 말로 짧고 구체적으로 쓴다.
             불확실한 판단은 단정하지 않는다. "~일 수 있습니다"보다 "기록만으로는 단정하기 어렵고, 먼저 확인하세요"처럼 쓴다.
             생육기간, 개화 후 일수, 수확 적기처럼 기준이 다른 값은 직접 비교하지 않는다.
             수확 후 가공, 건조, 저장 조언은 보조 점검 수준으로만 다룬다.
             예보는 확정된 날씨처럼 단정하지 않는다. "비가 올 예정이니"보다 "비 예보가 있으니"처럼 표현한다.
-            forecastDays에 강우, 고온, 고습, 건조, 강풍 신호가 있으면 nextActions에 예보 기반 점검 행동을 포함한다.
-            권장사항은 확인, 기록, 비교, 라벨 확인처럼 보수적인 행동으로 작성한다.
-            document-supported advice와 record/weather inference를 구분해서 설명한다.
-            summary는 상황 요약이 아니라 농부에게 건네는 코칭 한마디다. 오늘 기록에서 잘한 점을 먼저 짧게 인정하고, 이번에 가장 집중할 행동 한 가지를 대화하듯 분명하게 말한다. 2~3문장으로, 따뜻하지만 분명한 말투로 쓰고 수치 나열은 하지 않는다.
-            summary 끝은 "이번 주는 ~에 집중해요" 또는 "오늘은 ~까지만 확인하면 충분해요"처럼 사용자가 당장 무엇을 할지 알 수 있는 문장으로 맺는다.
-            diagnosis는 그 코칭이 왜 나왔는지 기록·날씨·문서 근거로 차분히 설명하는 자리이며, summary와 같은 문장을 반복하지 않는다.
-            recommendations와 nextActions가 여러 개여도 summary에서는 가장 중요한 한 가지만 짚어 사용자가 우선순위를 알게 한다.
+            잘한 점은 정확히 1개만 작성한다.
+            다음 행동은 2~3개만 작성한다.
+            각 항목은 basis, text, evidenceRefs를 반드시 가진다.
+            각 text는 15~45자로 작성한다. 강제로 자르지 말고, 길이를 맞춰 다시 쓴다.
+            basis에는 text 안에 그대로 들어갈 2글자 이상의 핵심 근거 단어를 포함한다.
+            nextActions의 due는 TODAY, THIS_WEEK, NEXT_WEEK, NEXT_CHECK 중 하나만 사용한다.
+            nextActions의 category는 WEATHER, PEST_DISEASE, IRRIGATION, FERTILIZING, PEST_CONTROL, HARVEST, CULTIVATION, GENERAL 중 하나만 사용한다.
+            날씨 행동은 weather:current 또는 weather:<forecast-date> 근거가 있을 때만 작성한다.
+            병해충 행동은 공식문서 근거가 있을 때만 작성한다.
+            행동은 확인, 기록, 비교, 라벨 확인처럼 보수적인 행동으로 작성한다.
             citationIds는 허용 citationIds에 명시된 값만 사용한다.
-            대상 영농기록과 날씨를 근거로 삼을 때는 record citation id를 사용한다.
+            대상 영농기록을 근거로 삼을 때는 record citation id를 사용한다.
+            날씨 근거를 삼을 때는 weather:current 또는 weather:<forecast-date> citation id를 사용한다.
             공식문서를 근거로 삼을 때는 공식문서 근거의 [id]만 사용한다.
-            summary, diagnosis, observations, recommendations, nextActions에는 chunkId나 UUID를 직접 쓰지 않는다.
-            응답은 CoachingStructuredResult JSON schema만 따른다.
+            농부에게 보여줄 text에는 chunkId나 UUID를 직접 쓰지 않는다.
+            응답은 RecordFeedbackCoachingResult JSON schema만 따른다.
+            JSON 최상위 필드는 goodPoint와 nextActions만 둔다.
         """.trimIndent()
     }
 
@@ -182,6 +186,12 @@ class RecordFeedbackPromptBuilder {
     ): String {
         return buildString {
             appendLine("- ${context.recordCitationId()} : 대상 영농기록 context")
+            if (context.weather != null) {
+                appendLine("- weather:current : 현재 날씨 context")
+                context.weather.forecastDays.forEach {
+                    appendLine("- weather:${it.date} : 예보 날씨 context")
+                }
+            }
             evidence.forEach {
                 appendLine("- ${it.id} : ${it.title}")
             }
