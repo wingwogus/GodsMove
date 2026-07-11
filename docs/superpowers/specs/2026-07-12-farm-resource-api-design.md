@@ -9,8 +9,7 @@ Status: Pending user review
 Separate farm management from member-profile editing so a member can add,
 edit, list, and delete farms without sending unrelated profile fields. A farm
 owns the member's current crop registrations and is referenced by farming
-records and farming-cycle reports; those relationships require explicit
-resource-level mutation rules.
+records; that relationship requires explicit resource-level mutation rules.
 
 ## Decisions
 
@@ -23,8 +22,10 @@ resource-level mutation rules.
 - Add authenticated, member-owned farm resource APIs.
 - Treat each farm request's `cropIds` as its complete current crop set.
   Create and update atomically synchronize `member_crop` links.
-- Block farm deletion and crop-link removal when historical farming records or
-  farming-cycle reports reference the affected scope.
+- Block farm deletion and crop-link removal when farming records reference the
+  affected scope.
+- Defer the equivalent farming-cycle-report guard until that module is merged
+  into `dev` and exposes its repository contract.
 - Preserve the existing profile read endpoint as a My Page projection. New
   farm-editing screens use the farm resource endpoints.
 
@@ -33,6 +34,8 @@ resource-level mutation rules.
 - Multi-farm onboarding.
 - Soft deletion or audit history for farms.
 - Editing historical farming records or reports as part of a farm change.
+- Farming-cycle-report reference checks; that module is not yet available on
+  the `dev` base for this feature.
 - Changing the `PUT /api/v1/members/me/profile` nickname rule; only
   onboarding has nickname fallback behavior.
 
@@ -140,8 +143,8 @@ DELETE /api/v1/farms/{farmId}
 ```
 
 Returns `204 No Content` only when no farming record (including soft-deleted
-records) and no farming-cycle report reference the farm. The service deletes
-its `member_crop` links before physically deleting the farm.
+records) references the farm. The service deletes its `member_crop` links
+before physically deleting the farm.
 
 ## Validation and Error Contract
 
@@ -164,8 +167,8 @@ Expected failures:
 | Missing/invalid request field, crop count, or duplicate crop ID | existing validation error | 400 |
 | Unknown crop ID | `CROP_NOT_FOUND` | 404 |
 | Missing or non-owned farm | `FARM_NOT_FOUND` | 404 |
-| Farm deletion has record/report references | new `FARM_IN_USE` | 409 |
-| Removing a crop linked to an existing record/report | new `FARM_CROP_IN_USE` | 409 |
+| Farm deletion has farming-record references | new `FARM_IN_USE` | 409 |
+| Removing a crop linked to an existing farming record | new `FARM_CROP_IN_USE` | 409 |
 
 Returning `FARM_NOT_FOUND` for another member's farm matches the current
 owner-scoped repository convention and does not reveal its existence.
@@ -180,13 +183,14 @@ validation, ownership checks, crop synchronization, and transactions.
 
 On `PUT`, the service loads the owned farm and its current member-crop links.
 Before removing a link, it checks whether the member/farm/crop scope has a
-farming record or cycle report. If it does, the whole request fails with
+farming record. If it does, the whole request fails with
 `FARM_CROP_IN_USE`; otherwise obsolete links are removed and newly requested
 links are inserted in the same transaction as the farm update.
 
-On `DELETE`, the service checks for any farm-scoped record or report before
-removing links and the farm. Soft-deleted records still count because their
-foreign key continues to reference the farm.
+On `DELETE`, the service checks for any farm-scoped record before removing
+links and the farm. Soft-deleted records still count because their foreign key
+continues to reference the farm. Add equivalent report-reference checks in a
+separate follow-up after the report module is available in `dev`.
 
 `MemberProfileService` loses its nested farm command and its
 upsert/synchronization helpers, but retains the farm and crop repositories
@@ -195,12 +199,14 @@ creating exactly one farm and its links, but gains the shared creation
 constraints and nickname fallback.
 
 No new tables or database migrations are required. Repository additions are
-read-only existence queries for farm and member/farm/crop references.
+read-only farming-record existence queries for farm and member/farm/crop
+references.
 
 ## Test Strategy
 
 - Create `FarmServiceTest` for create, full replacement, crop-link add/remove
-  synchronization, ownership, crop lookup failures, and both 409 guards.
+  synchronization, ownership, crop lookup failures, and both farming-record
+  409 guards.
 - Create `FarmControllerTest` for the `GET`, `POST`, `PUT`, and `DELETE`
   contracts, authentication, status codes, and bean-validation failures.
 - Update `OnboardingServiceTest` and auth controller tests for nickname
@@ -216,9 +222,10 @@ read-only existence queries for farm and member/farm/crop references.
 - Removing `farms` from the profile update is breaking. The frontend has not
   yet integrated the final API, and the Farm endpoints replace that mutation
   path in the same delivery.
-- Preventing removal of crops with history can require users to retain a crop
-  registration longer than expected. It protects existing report and record
+- Preventing removal of crops with record history can require users to retain
+  a crop registration longer than expected. It protects existing record
   queries, which validate the member/farm/crop relationship.
 - Physical farm deletion is deliberately narrow: farm boundary values and
-  member-crop links are removable only when no historical foreign-key
-  references remain.
+  member-crop links are removable only when no historical farming-record
+  foreign-key references remain. A follow-up must add the same restriction for
+  cycle reports after their module reaches `dev`.
