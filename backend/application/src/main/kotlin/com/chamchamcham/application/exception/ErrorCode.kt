@@ -33,6 +33,8 @@ enum class ErrorCode(
     FARMING_RECORD_INVALID_DETAIL("FARMING_003", "error.farming_record_invalid_detail", 400),
     FARMING_RECORD_FORBIDDEN("FARMING_004", "error.farming_record_forbidden", 403),
     FARMING_RECORD_TOO_MANY_IMAGES("FARMING_005", "error.farming_record_too_many_images", 400),
+    PESTICIDE_NOT_FOUND("PESTICIDE_001", "error.pesticide_not_found", 404),
+    PEST_NOT_FOUND("PESTICIDE_002", "error.pest_not_found", 404),
     WEATHER_LOCATION_REQUIRED("WEATHER_001", "error.weather_location_required", 400),
     WEATHER_PROVIDER_UNAVAILABLE("WEATHER_002", "error.weather_provider_unavailable", 503),
     VOICE_SESSION_NOT_FOUND("VOICE_001", "error.voice_session_not_found", 404),
