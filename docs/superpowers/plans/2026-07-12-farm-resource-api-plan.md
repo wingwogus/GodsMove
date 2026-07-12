@@ -27,7 +27,6 @@
 | --- | --- |
 | backend/application/src/main/kotlin/com/chamchamcham/application/farm/FarmCommand.kt | Farm draft와 create, replace, delete 명령 |
 | backend/application/src/main/kotlin/com/chamchamcham/application/farm/FarmResult.kt | 편집 가능한 전체 Farm 결과 |
-| backend/application/src/main/kotlin/com/chamchamcham/application/farm/FarmInputValidator.kt | 공유 Farm/crop 불변식 검증 |
 | backend/application/src/main/kotlin/com/chamchamcham/application/farm/FarmService.kt | list/create/replace/delete 트랜잭션 |
 | backend/application/src/test/kotlin/com/chamchamcham/application/farm/FarmServiceTest.kt | Farm 유스케이스 회귀 |
 | backend/domain/src/main/kotlin/com/chamchamcham/domain/crop/MemberCropRepository.kt | Farm별 crop link fetch |
@@ -44,10 +43,10 @@
 | backend/application/src/test/kotlin/com/chamchamcham/application/member/MemberProfileServiceTest.kt | profile-only unit regression |
 | backend/api/src/test/kotlin/com/chamchamcham/api/member/controller/MemberControllerTest.kt | profile-only MVC regression |
 | backend/application/src/main/kotlin/com/chamchamcham/application/auth/common/AuthCommand.kt | FarmCommand.Draft와 nullable nickname |
-| backend/application/src/main/kotlin/com/chamchamcham/application/auth/common/OnboardingService.kt | shared validation과 nickname fallback |
+| backend/application/src/main/kotlin/com/chamchamcham/application/auth/common/OnboardingService.kt | nickname fallback과 onboarding 트랜잭션 |
 | backend/api/src/main/kotlin/com/chamchamcham/api/auth/dto/AuthRequests.kt | shared nested Farm request와 crop bounds |
 | backend/api/src/main/kotlin/com/chamchamcham/api/auth/controller/AuthController.kt | onboarding Farm command mapping |
-| backend/application/src/test/kotlin/com/chamchamcham/application/auth/common/OnboardingServiceTest.kt | nickname/crop validation |
+| backend/application/src/test/kotlin/com/chamchamcham/application/auth/common/OnboardingServiceTest.kt | nickname fallback과 작물 존재 검증 |
 | backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerBusinessTest.kt | nickname response |
 | backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerValidationTest.kt | crop max/location validation |
 
@@ -59,7 +58,6 @@
 
 - Create: backend/application/src/main/kotlin/com/chamchamcham/application/farm/FarmCommand.kt
 - Create: backend/application/src/main/kotlin/com/chamchamcham/application/farm/FarmResult.kt
-- Create: backend/application/src/main/kotlin/com/chamchamcham/application/farm/FarmInputValidator.kt
 - Create: backend/application/src/main/kotlin/com/chamchamcham/application/farm/FarmService.kt
 - Create: backend/application/src/test/kotlin/com/chamchamcham/application/farm/FarmServiceTest.kt
 - Modify: backend/domain/src/main/kotlin/com/chamchamcham/domain/crop/MemberCropRepository.kt
@@ -70,7 +68,7 @@
 
 - [ ] **Step 1: Write failing FarmService tests**
 
-Cover: create stores Farm and links; list returns full draft/crops; zero/six/duplicate crop IDs fail INVALID_INPUT; unknown crop fails CROP_NOT_FOUND; non-owned Farm fails FARM_NOT_FOUND; replacing removes an unused link and adds a new link; replacing a recorded crop fails FARM_CROP_IN_USE; deleting a recorded Farm fails FARM_IN_USE; deleting an unreferenced Farm deletes links then Farm.
+Cover: create stores Farm and links; list returns full draft/crops; unknown crop fails CROP_NOT_FOUND; non-owned Farm fails FARM_NOT_FOUND; replacing removes an unused link and adds a new link; replacing a recorded crop fails FARM_CROP_IN_USE; deleting a recorded Farm fails FARM_IN_USE; deleting an unreferenced Farm deletes links then Farm. Request-shape failures for crop count and duplicates belong to MVC validation tests.
 
 ~~~kotlin
 @Test
@@ -127,7 +125,7 @@ FARM_CROP_IN_USE("FARM_003", "error.farm_crop_in_use", 409),
 
 The record queries intentionally do not include isDeleted in their method names.
 
-- [ ] **Step 4: Implement Farm commands, validation, result, and service**
+- [ ] **Step 4: Implement Farm commands, result, and service**
 
 ~~~kotlin
 object FarmCommand {
@@ -154,7 +152,7 @@ object FarmCommand {
 }
 ~~~
 
-FarmInputValidator.validate throws BusinessException(ErrorCode.INVALID_INPUT) for blank name/address, invalid Farm/boundary coordinates, non-positive area, crop count outside 1..5, and repeated crop IDs.
+`FarmRequests` owns blank name/address, Farm/boundary coordinate range, positive area, crop count, and repeated crop ID validation through Bean Validation and controller `@Valid`. `FarmService` owns only state-dependent rules such as crop existence, Farm ownership, and farming-record references.
 
 Implement the central helpers exactly:
 
@@ -390,7 +388,7 @@ Not-tested: onboarding regression"
 - Modify: backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerBusinessTest.kt
 - Modify: backend/api/src/test/kotlin/com/chamchamcham/api/auth/controller/AuthControllerValidationTest.kt
 
-**Interfaces:** Consumes Task 1 FarmCommand.Draft/FarmInputValidator and Task 2 FarmRequests.FarmDraftRequest. Produces the existing single-Farm onboarding response with validated draft and stored nickname fallback.
+**Interfaces:** Consumes Task 1 FarmCommand.Draft and Task 2 FarmRequests.FarmDraftRequest. Produces the existing single-Farm onboarding response with API-validated draft and stored nickname fallback.
 
 - [ ] **Step 1: Update onboarding tests first**
 
@@ -402,14 +400,13 @@ Replace duplicate de-duplication with INVALID_INPUT rejection. Add null and blan
 cd backend && ./gradlew :application:test --tests "com.chamchamcham.application.auth.common.OnboardingServiceTest" && ./gradlew :api:test --tests "com.chamchamcham.api.auth.controller.AuthControllerBusinessTest" --tests "com.chamchamcham.api.auth.controller.AuthControllerValidationTest"
 ~~~
 
-Expected: FAIL because nickname is mandatory and duplicate crop IDs are de-duplicated.
+Expected: FAIL because nickname is mandatory and the nested Farm request and crop selection lack the required Bean Validation constraints.
 
-- [ ] **Step 3: Reuse shared draft validation**
+- [ ] **Step 3: Reuse nested API request validation**
 
-Make AuthCommand.CompleteOnboarding.nickname a nullable String and farm a FarmCommand.Draft. OnboardingService receives FarmInputValidator and runs:
+Make AuthCommand.CompleteOnboarding.nickname a nullable String and farm a FarmCommand.Draft. The controller validates the nested `FarmDraftRequest` and crop IDs with `@Valid`; OnboardingService does not repeat request-shape validation and applies the nickname fallback plus domain-state checks:
 
 ~~~kotlin
-farmInputValidator.validate(command.farm, command.cropIds)
 val nickname = command.nickname?.trim().takeUnless { it.isNullOrBlank() } ?: command.name
 
 member.completeOnboarding(

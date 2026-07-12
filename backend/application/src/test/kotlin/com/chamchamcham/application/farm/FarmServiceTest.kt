@@ -69,8 +69,7 @@ class FarmServiceTest {
             farmRepository = farmRepository,
             cropRepository = cropRepository,
             memberCropRepository = memberCropRepository,
-            farmingRecordRepository = farmingRecordRepository,
-            farmInputValidator = FarmInputValidator()
+            farmingRecordRepository = farmingRecordRepository
         )
     }
 
@@ -85,28 +84,6 @@ class FarmServiceTest {
         assertEquals(farmId, result.farmId)
         assertThat(result.crops.map { it.id }).containsExactly(cropId)
         assertThat(capturedSavedMemberCrops().map { it.crop.id }).containsExactly(cropId)
-    }
-
-    @Test
-    fun `create rejects duplicate crop ids before repository access`() {
-        val exception = assertThrows(BusinessException::class.java) {
-            service.create(createCommand(cropIds = listOf(cropId, cropId)))
-        }
-
-        assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
-        verify(memberRepository, never()).findById(memberId)
-    }
-
-    @Test
-    fun `create rejects more than five crop ids`() {
-        val cropIds = List(6) { UUID.randomUUID() }
-
-        val exception = assertThrows(BusinessException::class.java) {
-            service.create(createCommand(cropIds = cropIds))
-        }
-
-        assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
-        verify(memberRepository, never()).findById(memberId)
     }
 
     @Test

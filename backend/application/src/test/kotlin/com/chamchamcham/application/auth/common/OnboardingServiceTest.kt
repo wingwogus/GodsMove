@@ -3,7 +3,6 @@ package com.chamchamcham.application.auth.common
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.farm.FarmCommand
-import com.chamchamcham.application.farm.FarmInputValidator
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
@@ -72,8 +71,7 @@ class OnboardingServiceTest {
             cropRepository = cropRepository,
             memberCropRepository = memberCropRepository,
             uploadedMediaRepository = uploadedMediaRepository,
-            onboardingStatusResolver = onboardingStatusResolver,
-            farmInputValidator = FarmInputValidator()
+            onboardingStatusResolver = onboardingStatusResolver
         )
     }
 
@@ -108,28 +106,6 @@ class OnboardingServiceTest {
     }
 
     @Test
-    fun `complete rejects duplicate crop ids before lookups or saves`() {
-        val exception = assertThrows(BusinessException::class.java) {
-            service.complete(completeOnboardingCommand(cropIds = listOf(cropId, secondCropId, cropId)))
-        }
-
-        assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
-        verifyNoInteractions(memberRepository, cropRepository, farmRepository, memberCropRepository)
-    }
-
-    @Test
-    fun `complete rejects more than five crop ids before lookups or saves`() {
-        val cropIds = List(6) { UUID.randomUUID() }
-
-        val exception = assertThrows(BusinessException::class.java) {
-            service.complete(completeOnboardingCommand(cropIds = cropIds))
-        }
-
-        assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
-        verifyNoInteractions(memberRepository, cropRepository, farmRepository, memberCropRepository)
-    }
-
-    @Test
     fun `complete uses name when nickname is null or blank`() {
         val member = member()
         val crop = crop(id = cropId, externalNo = 422, name = "참당귀")
@@ -159,18 +135,6 @@ class OnboardingServiceTest {
         }
 
         assertEquals(ErrorCode.CROP_NOT_FOUND, exception.errorCode)
-        verify(farmRepository, never()).save(any(Farm::class.java))
-        verifyNoInteractions(memberCropRepository)
-    }
-
-    @Test
-    fun `complete rejects empty crop ids before lookups or saves`() {
-        val exception = assertThrows(BusinessException::class.java) {
-            service.complete(completeOnboardingCommand(cropIds = emptyList()))
-        }
-
-        assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
-        verifyNoInteractions(memberRepository, cropRepository)
         verify(farmRepository, never()).save(any(Farm::class.java))
         verifyNoInteractions(memberCropRepository)
     }

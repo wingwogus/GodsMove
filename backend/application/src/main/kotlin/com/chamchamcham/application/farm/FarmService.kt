@@ -22,8 +22,7 @@ class FarmService(
     private val farmRepository: FarmRepository,
     private val cropRepository: CropRepository,
     private val memberCropRepository: MemberCropRepository,
-    private val farmingRecordRepository: FarmingRecordRepository,
-    private val farmInputValidator: FarmInputValidator
+    private val farmingRecordRepository: FarmingRecordRepository
 ) {
     @Transactional(readOnly = true)
     fun list(memberId: UUID): List<FarmResult.Detail> {
@@ -39,7 +38,6 @@ class FarmService(
     }
 
     fun create(command: FarmCommand.Create): FarmResult.Detail {
-        farmInputValidator.validate(command.draft, command.cropIds)
         val member = memberRepository.findById(command.memberId).orElseThrow {
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)
         }
@@ -54,7 +52,6 @@ class FarmService(
     }
 
     fun replace(command: FarmCommand.Replace): FarmResult.Detail {
-        farmInputValidator.validate(command.draft, command.cropIds)
         val farm = findOwnedFarm(command.memberId, command.farmId)
         val requestedCrops = loadCrops(command.cropIds)
         val currentLinks = memberCropRepository.findAllWithCropByMemberIdAndFarmId(command.memberId, command.farmId)

@@ -126,6 +126,22 @@ class FarmControllerTest(
     }
 
     @Test
+    fun `rejects more than five crop ids`() {
+        val extraCropIds = List(5) { UUID.randomUUID() }
+        val cropIds = (listOf(cropId) + extraCropIds).joinToString(",") { "\"$it\"" }
+
+        mockMvc.perform(
+            post("/api/v1/farms")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validFarmJson().replace("[\"$cropId\"]", "[$cropIds]"))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+            .andExpect(jsonPath("$.error.detail.field", equalTo("cropIds")))
+    }
+
+    @Test
     fun `maps farm in use to conflict`() {
         willThrow(BusinessException(ErrorCode.FARM_IN_USE))
             .given(farmService)

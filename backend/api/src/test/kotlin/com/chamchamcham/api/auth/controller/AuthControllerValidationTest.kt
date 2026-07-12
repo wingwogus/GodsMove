@@ -149,6 +149,19 @@ class AuthControllerValidationTest(
     }
 
     @Test
+    fun `complete onboarding rejects duplicate crop ids`() {
+        mockMvc.perform(
+            post("/api/v1/auth/onboarding/complete")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validOnboardingRequestBody(cropIdsJson = "[\"$cropId\",\"$cropId\"]"))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+            .andExpect(jsonPath("$.error.detail.field", equalTo("cropIds")))
+    }
+
+    @Test
     fun `complete onboarding rejects experience level below zero`() {
         mockMvc.perform(
             post("/api/v1/auth/onboarding/complete")
