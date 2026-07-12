@@ -8,6 +8,23 @@
 
 **Tech Stack:** SwiftUI, Swift 6 strict concurrency, Observation, Foundation `Codable`/`UserDefaults`, native `URLSession` through `APIClient`, Swift Testing.
 
+## Execution Notes
+
+- Tasks 1-4 were completed sequentially with RED/GREEN targeted tests.
+- During Task 4 review, the pending store was tightened from a global request
+  array to member-keyed queues. The sync worker now requires the current cached
+  member ID before draining, preventing cross-account farm submission on shared
+  devices while preserving other members' queued farms (BR-USER-005).
+- The ownership boundaries are covered by
+  `pending farms never sync into a different member account` and
+  `enqueueing another member never erases the owner's pending farms`.
+- Final verification used iPhone 16 Pro (iOS 18.6) because the iPhone 17
+  simulator repeatedly stalled before launching the test host. The replacement
+  completed 101 tests in 26 suites, and the app build succeeded.
+- Swagger check completed with hash
+  `c92cfa6e518ae661d386fd29fb94dbf9ec7e04eee3bae5dd55d9040ebc8643b3`;
+  `git diff --check` produced no output.
+
 ## Global Constraints
 
 - iOS 17+ minimum deployment target.
@@ -803,11 +820,11 @@ git commit -m "feat(onboarding): 추가 농장 생성 API 연결"
 - Records that the previously future standalone farm endpoint is now integrated.
 - Produces final build/test evidence without changing product scope.
 
-- [ ] **Step 1: Update the original onboarding plan status**
+- [x] **Step 1: Update the original onboarding plan status**
 
 Replace “future standalone farm-add endpoint” wording with a link to this plan and mark the backend limitation resolved by `POST /api/v1/farms`. Do not change already-completed Figma task history.
 
-- [ ] **Step 2: Verify Swagger has not drifted**
+- [x] **Step 2: Verify Swagger has not drifted**
 
 Run from `frontend/`:
 
@@ -817,7 +834,7 @@ python3 scripts/sync_swagger_spec.py --check
 
 Expected: exit 0 and hash `c92cfa6e518ae661d386fd29fb94dbf9ec7e04eee3bae5dd55d9040ebc8643b3`, unless the deployed backend changed again. If it changed, run `--write`, inspect the new farm diff, and update DTO tests before proceeding.
 
-- [ ] **Step 3: Run all tests**
+- [x] **Step 3: Run all tests**
 
 Run from `frontend/ChamChamCham/`:
 
@@ -827,7 +844,7 @@ xcodebuild -scheme ChamChamCham -destination 'platform=iOS Simulator,name=iPhone
 
 Expected: `** TEST SUCCEEDED **`. If the named simulator is unavailable, select an installed iOS 17+ iPhone simulator from `xcrun simctl list devices available` and record the exact replacement.
 
-- [ ] **Step 4: Build the app**
+- [x] **Step 4: Build the app**
 
 Run:
 
@@ -837,7 +854,7 @@ xcodebuild -scheme ChamChamCham -destination 'platform=iOS Simulator,name=iPhone
 
 Expected: `** BUILD SUCCEEDED **`.
 
-- [ ] **Step 5: Inspect the Swift diff for repository rules**
+- [x] **Step 5: Inspect the Swift diff for repository rules**
 
 Run from `frontend/`:
 
@@ -855,7 +872,7 @@ Confirm:
 - only intended farm, onboarding, app wiring, tests, and plan files changed;
 - `git diff --check` prints nothing.
 
-- [ ] **Step 6: Commit verification documentation**
+- [x] **Step 6: Commit verification documentation**
 
 ```bash
 git add docs/superpowers/plans/2026-07-11-onboarding-figma-implementation.md \
@@ -863,6 +880,6 @@ git add docs/superpowers/plans/2026-07-11-onboarding-figma-implementation.md \
 git commit -m "docs(onboarding): 추가 농장 연동 상태 기록"
 ```
 
-- [ ] **Step 7: Report exact evidence and residual risk**
+- [x] **Step 7: Report exact evidence and residual risk**
 
 Record the exact test/build commands and results. Disclose the remaining narrow crash window between a successful farm-create response and removal of that request from local storage; the backend contract currently has no idempotency key, so eliminating that window requires a backend contract change rather than speculative client deduplication.

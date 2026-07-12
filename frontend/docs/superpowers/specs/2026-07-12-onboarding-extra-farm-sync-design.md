@@ -125,6 +125,12 @@ flow. Pending extra farms move to a dedicated Codable pending store when the
 representative onboarding request succeeds. The pending store removes items one
 at a time only after server acknowledgement.
 
+Pending requests are partitioned into queues keyed by their owner `memberId`. A
+retry drains only the queue matching the currently cached authenticated member,
+without deleting queues owned by other accounts. This prevents a failed farm
+draft from one account being submitted after another account signs in on the
+same device (BR-USER-005).
+
 If an additional farm fails to upload:
 
 - onboarding stays complete;

@@ -4,7 +4,7 @@
 
 **Goal:** Apply the latest Figma onboarding flow to the SwiftUI frontend while preserving offline-first draft recovery and deferring server completion until the user taps `시작하기`.
 
-**Architecture:** Keep the single app target and existing feature-first onboarding module. Move draft state from single farm fields to a `farms[]` model with an active farm index, keep `POST /auth/onboarding/complete` mapped to the first representative farm, and isolate extra-farm persistence behind a future standalone farm-add endpoint.
+**Architecture:** Keep the single app target and existing feature-first onboarding module. Move draft state from single farm fields to a `farms[]` model with an active farm index, keep `POST /auth/onboarding/complete` mapped to the first representative farm, and persist extra farms through the standalone farm API implemented in [Onboarding Extra Farm Sync](2026-07-12-onboarding-extra-farm-sync.md).
 
 **Tech Stack:** SwiftUI, Swift 6 strict concurrency, Observation `@Observable`, Swift Testing, URLSession/async-await, SwiftData cache.
 
@@ -18,7 +18,7 @@
 - SPM only; no new dependencies.
 - Offline-first: draft writes must be local-first and recoverable.
 - Do not use Notion API specs.
-- Product decisions: support multi-farm onboarding draft in frontend; call onboarding completion only when `시작하기` is tapped; backend will add a standalone farm-add endpoint instead of expanding onboarding complete to `farms[]`.
+- Product decisions: support multi-farm onboarding draft in frontend; call onboarding completion only when `시작하기` is tapped; use `POST /api/v1/farms` for farms after the representative farm instead of expanding onboarding complete to `farms[]`.
 
 ---
 
@@ -32,7 +32,7 @@
 
 **Interfaces:**
 - Produces: `OnboardingFarmDraft`, `OnboardingDraft.farms`, `OnboardingDraft.activeFarmIndex`, `OnboardingDraft.activeFarm`
-- Produces: current backend-compatible DTO mapping using the first representative farm; additional farms wait for the standalone farm-add endpoint.
+- Produces: current backend-compatible DTO mapping using the first representative farm; additional farms are handed to the standalone farm sync implemented by the follow-up plan.
 
 - [x] Write failing tests for `farms[]`, nickname blank rejection, max five crops per farm, and current first-farm onboarding-complete wire compatibility.
 - [x] Run targeted tests and verify expected failures.
