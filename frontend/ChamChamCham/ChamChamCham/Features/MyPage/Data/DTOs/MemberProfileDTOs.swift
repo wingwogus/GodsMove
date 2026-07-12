@@ -56,7 +56,6 @@ struct UpdateMyProfileRequestDTO: Encodable, Sendable {
     let nickname: String
     let experienceLevel: Int
     let managementType: String
-    let farms: [FarmRequestDTO]
     let profileMediaId: UUID?
 }
 

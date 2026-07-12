@@ -40,8 +40,8 @@ struct OnboardingCompleteRequestDTOTests {
         #expect(farm["latitude"] as? Double == 35.8465)
         #expect(farm["longitude"] as? Double == 127.1292)
 
-        let farmCropIds = try #require(farm["cropIds"] as? [String])
-        #expect(farmCropIds == cropIds)
+        #expect(farm["cropIds"] == nil)
+        #expect(farm["farmId"] == nil)
 
         let dataSource = try #require(farm["dataSource"] as? [String: String])
         #expect(dataSource["address"] == "JUSO")
