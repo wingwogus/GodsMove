@@ -1,5 +1,8 @@
 package com.chamchamcham.application.coaching.rag.record
 
+import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
+
 data class RecordFeedbackContent(
     val goodPoint: RecordFeedbackGoodPoint,
     val nextActions: List<RecordFeedbackAction>,
@@ -18,21 +21,3 @@ data class RecordFeedbackAction(
     val text: String,
     val evidenceRefs: List<String>,
 )
-
-enum class RecordFeedbackActionDue {
-    TODAY,
-    THIS_WEEK,
-    NEXT_WEEK,
-    NEXT_CHECK,
-}
-
-enum class RecordFeedbackActionCategory {
-    WEATHER,
-    PEST_DISEASE,
-    IRRIGATION,
-    FERTILIZING,
-    PEST_CONTROL,
-    HARVEST,
-    CULTIVATION,
-    GENERAL,
-}

@@ -1,9 +1,8 @@
 package com.chamchamcham.application.coaching.feedback
 
-import com.chamchamcham.domain.coaching.CoachingFeedback
-import com.chamchamcham.domain.coaching.CoachingFeedbackRepository
-import com.chamchamcham.domain.coaching.CoachingFeedbackStatus
-import com.chamchamcham.domain.coaching.FeedbackType
+import com.chamchamcham.domain.coaching.RecordFeedback
+import com.chamchamcham.domain.coaching.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.RecordFeedbackStatus
 import com.chamchamcham.domain.farming.FarmingRecord
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
@@ -12,29 +11,22 @@ import java.util.UUID
 
 @Service
 class RecordFeedbackLifecycleService(
-    private val feedbackRepository: CoachingFeedbackRepository,
+    private val feedbackRepository: RecordFeedbackRepository,
     private val eventPublisher: ApplicationEventPublisher,
 ) {
     @Transactional
-    fun enqueue(record: FarmingRecord): CoachingFeedback {
+    fun enqueue(record: FarmingRecord): RecordFeedback {
         val recordId = requireNotNull(record.id) { "Persisted farming record id is required" }
-        val current = feedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
-            FeedbackType.RECORD,
-            recordId,
-            record.sourceRevision,
-        )
+        val current = feedbackRepository.findByRecord_IdAndSourceRevision(recordId, record.sourceRevision)
         if (current != null) {
             return current
         }
 
-        feedbackRepository.findAllByFeedbackTypeAndRecord_IdAndStatusIn(
-            FeedbackType.RECORD,
-            recordId,
-            ACTIVE_STATUSES,
-        ).forEach(CoachingFeedback::markStale)
+        feedbackRepository.findAllByRecord_IdAndStatusIn(recordId, ACTIVE_STATUSES)
+            .forEach(RecordFeedback::markStale)
 
         val saved = feedbackRepository.save(
-            CoachingFeedback.pendingRecord(
+            RecordFeedback.pending(
                 member = record.member,
                 record = record,
                 sourceRevision = record.sourceRevision,
@@ -46,26 +38,22 @@ class RecordFeedbackLifecycleService(
 
     @Transactional
     fun staleFor(recordId: UUID) {
-        feedbackRepository.findAllByFeedbackTypeAndRecord_IdAndStatusIn(
-            FeedbackType.RECORD,
-            recordId,
-            ACTIVE_STATUSES,
-        ).forEach(CoachingFeedback::markStale)
+        feedbackRepository.findAllByRecord_IdAndStatusIn(recordId, ACTIVE_STATUSES)
+            .forEach(RecordFeedback::markStale)
     }
 
     @Transactional
-    fun retry(feedback: CoachingFeedback): CoachingFeedback {
+    fun retry(feedback: RecordFeedback): RecordFeedback {
         feedback.retry()
         val saved = feedbackRepository.save(feedback)
         publishPreparation(saved)
         return saved
     }
 
-    private fun publishPreparation(feedback: CoachingFeedback) {
+    private fun publishPreparation(feedback: RecordFeedback) {
         val feedbackId = requireNotNull(feedback.id) { "Persisted feedback id is required" }
-        val record = requireNotNull(feedback.record) { "Record feedback requires a record" }
         val memberId = requireNotNull(feedback.member.id) { "Persisted member id is required" }
-        val recordId = requireNotNull(record.id) { "Persisted farming record id is required" }
+        val recordId = requireNotNull(feedback.record.id) { "Persisted farming record id is required" }
         eventPublisher.publishEvent(
             RecordFeedbackPreparationRequested(
                 feedbackId = feedbackId,
@@ -77,6 +65,6 @@ class RecordFeedbackLifecycleService(
     }
 
     private companion object {
-        val ACTIVE_STATUSES = listOf(CoachingFeedbackStatus.PENDING, CoachingFeedbackStatus.READY)
+        val ACTIVE_STATUSES = listOf(RecordFeedbackStatus.PENDING, RecordFeedbackStatus.READY)
     }
 }

@@ -1,10 +1,10 @@
 package com.chamchamcham.api.coaching.dto
 
 import com.chamchamcham.application.coaching.feedback.RecordFeedbackStatusResult
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionCategory
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionDue
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContent
-import com.chamchamcham.domain.coaching.CoachingFeedbackStatus
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackResultContent
+import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
+import com.chamchamcham.domain.coaching.RecordFeedbackStatus
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -12,7 +12,7 @@ object RecordFeedbackResponses {
     data class StatusResponse(
         val feedbackId: UUID,
         val recordId: UUID,
-        val status: CoachingFeedbackStatus,
+        val status: RecordFeedbackStatus,
         val sourceRevision: Long,
         val inputPrepared: Boolean,
         val failureCode: String?,
@@ -40,8 +40,8 @@ object RecordFeedbackResponses {
         val nextActions: List<NextActionResponse>,
     ) {
         companion object {
-            fun from(source: RecordFeedbackContent) = FeedbackResponse(
-                goodPoint = GoodPointResponse(text = source.goodPoint.text),
+            fun from(source: RecordFeedbackResultContent) = FeedbackResponse(
+                goodPoint = GoodPointResponse(text = source.goodPoint),
                 nextActions = source.nextActions.map { action ->
                     NextActionResponse(
                         text = action.text,

@@ -1,6 +1,6 @@
 package com.chamchamcham.domain.coaching
 
-enum class CoachingFeedbackStatus {
+enum class RecordFeedbackStatus {
     PENDING,
     READY,
     FAILED,

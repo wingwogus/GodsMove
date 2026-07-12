@@ -3,7 +3,7 @@ package com.chamchamcham.domain.coaching
 import com.chamchamcham.domain.common.BaseTimeEntity
 import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.member.Member
-import com.chamchamcham.domain.report.FarmingCycleReport
+import jakarta.persistence.CascadeType
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -14,14 +14,16 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
+import jakarta.persistence.OneToMany
+import jakarta.persistence.OrderBy
 import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.util.UUID
 
 @Entity
-@Table(name = "coaching_feedback")
-class CoachingFeedback(
+@Table(name = "record_feedback")
+class RecordFeedback(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(nullable = false, updatable = false, columnDefinition = "uuid")
@@ -31,28 +33,16 @@ class CoachingFeedback(
     @JoinColumn(name = "member_id", nullable = false)
     val member: Member,
 
-    @Enumerated(EnumType.STRING)
-    @Column(name = "feedback_type", nullable = false, length = 32)
-    val feedbackType: FeedbackType,
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "record_id", nullable = false)
+    val record: FarmingRecord,
 
-    status: CoachingFeedbackStatus,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "record_id")
-    val record: FarmingRecord? = null,
-
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "cycle_report_id")
-    val cycleReport: FarmingCycleReport? = null,
+    status: RecordFeedbackStatus,
 
     @Column(name = "source_revision", nullable = false)
     val sourceRevision: Long,
 
     inputSnapshot: Map<String, Any?>? = null,
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "structured_result", columnDefinition = "jsonb")
-    var structuredResult: Map<String, Any?>? = null,
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "jsonb")
@@ -75,7 +65,7 @@ class CoachingFeedback(
 ) : BaseTimeEntity() {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
-    var status: CoachingFeedbackStatus = status
+    var status: RecordFeedbackStatus = status
         private set
 
     @JdbcTypeCode(SqlTypes.JSON)
@@ -87,73 +77,105 @@ class CoachingFeedback(
     var failureCode: String? = failureCode
         private set
 
+    @Column(name = "good_point_basis", length = 255)
+    var goodPointBasis: String? = null
+        private set
+
+    @Column(name = "good_point_text", length = 255)
+    var goodPointText: String? = null
+        private set
+
+    @OneToMany(mappedBy = "recordFeedback", cascade = [CascadeType.ALL], orphanRemoval = true)
+    @OrderBy("displayOrder asc")
+    private val nextActionRows = mutableListOf<RecordFeedbackNextAction>()
+
     init {
         require(sourceRevision > 0) { "sourceRevision must be positive" }
-        require((record == null) != (cycleReport == null)) { "exactly one feedback target is required" }
-        require(feedbackType != FeedbackType.RECORD || record != null) { "record feedback requires a record target" }
-        require(feedbackType != FeedbackType.CYCLE_REPORT || cycleReport != null) {
-            "cycle report feedback requires a cycle report target"
-        }
     }
 
+    fun nextActions(): List<RecordFeedbackNextAction> = nextActionRows.toList()
+
     fun attachInputSnapshot(snapshot: Map<String, Any?>) {
-        check(status == CoachingFeedbackStatus.PENDING) { "input snapshot can only be attached while pending" }
+        check(status == RecordFeedbackStatus.PENDING) { "input snapshot can only be attached while pending" }
         inputSnapshot = snapshot
     }
 
     fun markFailed(code: String) {
-        check(status == CoachingFeedbackStatus.PENDING) { "only pending feedback can fail" }
-        status = CoachingFeedbackStatus.FAILED
+        check(status == RecordFeedbackStatus.PENDING) { "only pending feedback can fail" }
+        status = RecordFeedbackStatus.FAILED
         failureCode = code
     }
 
     fun markReady(
-        structuredResult: Map<String, Any?>,
+        goodPointBasis: String,
+        goodPointText: String,
+        nextActions: List<RecordFeedbackNextActionDraft>,
         citations: List<Map<String, Any?>>,
         auditStatus: String,
         auditWarnings: List<String>,
         modelName: String,
         embeddingModel: String,
     ) {
-        check(status == CoachingFeedbackStatus.PENDING) { "only pending feedback can become ready" }
-        this.structuredResult = structuredResult
+        check(status == RecordFeedbackStatus.PENDING) { "only pending feedback can become ready" }
+        require(goodPointBasis.isNotBlank()) { "good point basis is required" }
+        require(goodPointText.isNotBlank()) { "good point text is required" }
+        require(nextActions.size in MIN_NEXT_ACTIONS..MAX_NEXT_ACTIONS) { "next action count must be 2 or 3" }
+        require(nextActions.all { it.basis.isNotBlank() && it.text.isNotBlank() }) {
+            "next action basis and text are required"
+        }
+
+        this.goodPointBasis = goodPointBasis
+        this.goodPointText = goodPointText
+        nextActionRows.clear()
+        nextActions.forEachIndexed { index, action ->
+            nextActionRows += RecordFeedbackNextAction(
+                recordFeedback = this,
+                displayOrder = index,
+                due = action.due,
+                category = action.category,
+                basis = action.basis,
+                text = action.text,
+            )
+        }
         this.citations = citations
         this.auditStatus = auditStatus
         this.auditWarnings = auditWarnings
         this.modelName = modelName
         this.embeddingModel = embeddingModel
-        status = CoachingFeedbackStatus.READY
+        status = RecordFeedbackStatus.READY
         failureCode = null
     }
 
     fun retry() {
-        check(status == CoachingFeedbackStatus.FAILED) { "only failed feedback can retry" }
-        status = CoachingFeedbackStatus.PENDING
+        check(status == RecordFeedbackStatus.FAILED) { "only failed feedback can retry" }
+        status = RecordFeedbackStatus.PENDING
         failureCode = null
         inputSnapshot = null
     }
 
     fun markStale() {
-        if (status == CoachingFeedbackStatus.STALE) {
+        if (status == RecordFeedbackStatus.STALE) {
             return
         }
-        check(status == CoachingFeedbackStatus.PENDING || status == CoachingFeedbackStatus.READY) {
+        check(status == RecordFeedbackStatus.PENDING || status == RecordFeedbackStatus.READY) {
             "only pending or ready feedback can become stale"
         }
-        status = CoachingFeedbackStatus.STALE
+        status = RecordFeedbackStatus.STALE
     }
 
     companion object {
-        fun pendingRecord(
+        private const val MIN_NEXT_ACTIONS = 2
+        private const val MAX_NEXT_ACTIONS = 3
+
+        fun pending(
             member: Member,
             record: FarmingRecord,
             sourceRevision: Long,
-        ): CoachingFeedback {
-            return CoachingFeedback(
+        ): RecordFeedback {
+            return RecordFeedback(
                 member = member,
-                feedbackType = FeedbackType.RECORD,
-                status = CoachingFeedbackStatus.PENDING,
                 record = record,
+                status = RecordFeedbackStatus.PENDING,
                 sourceRevision = sourceRevision,
             )
         }
