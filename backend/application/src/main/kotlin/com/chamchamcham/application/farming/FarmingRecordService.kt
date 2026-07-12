@@ -56,7 +56,6 @@ class FarmingRecordService(
 ) {
     fun create(command: FarmingRecordCommand.Create): FarmingRecordResult.RecordId {
         detailValidator.validate(command)
-        validateImageCount(command.mediaIds)
 
         val member = findMember(command.memberId)
         val farm = findFarm(command.farmId, command.memberId)
@@ -131,7 +130,6 @@ class FarmingRecordService(
         val record = findRecord(command.recordId)
         assertOwner(record, command.memberId)
         detailValidator.validate(command)
-        validateImageCount(command.mediaIds)
 
         val farm = findFarm(command.farmId, command.memberId)
         val crop = findCrop(command.cropId)
@@ -361,12 +359,6 @@ class FarmingRecordService(
         )
     }
 
-    private fun validateImageCount(mediaIds: List<UUID>) {
-        if (mediaIds.size > MAX_IMAGE_COUNT) {
-            throw BusinessException(ErrorCode.FARMING_RECORD_TOO_MANY_IMAGES)
-        }
-    }
-
     private fun validateMedia(memberId: UUID, mediaIds: List<UUID>): List<UploadedMedia> {
         if (mediaIds.isEmpty()) {
             return emptyList()
@@ -454,7 +446,6 @@ class FarmingRecordService(
         }
 
     private companion object {
-        const val MAX_IMAGE_COUNT = 5
         const val MEMO_PREVIEW_LENGTH = 80
     }
 }

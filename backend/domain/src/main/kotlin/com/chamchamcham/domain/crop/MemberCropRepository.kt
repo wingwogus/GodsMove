@@ -21,5 +21,19 @@ interface MemberCropRepository : JpaRepository<MemberCrop, UUID> {
         @Param("memberId") memberId: UUID
     ): List<MemberCrop>
 
+    @Query(
+        """
+        select mc
+        from MemberCrop mc
+        join fetch mc.crop
+        where mc.member.id = :memberId
+          and mc.farm.id = :farmId
+        """
+    )
+    fun findAllWithCropByMemberIdAndFarmId(
+        @Param("memberId") memberId: UUID,
+        @Param("farmId") farmId: UUID
+    ): List<MemberCrop>
+
     fun deleteByMemberIdAndFarmId(memberId: UUID, farmId: UUID)
 }

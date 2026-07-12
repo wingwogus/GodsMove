@@ -25,6 +25,9 @@ Folder-specific instructions:
   files and logs.
 - Do not revert user changes unless the user explicitly asks.
 - Follow YAGNI: do not add code, dependencies, or abstractions before a concrete need exists.
+- Keep request-shape validation at the API boundary. Do not duplicate null, blank,
+  range, size, or uniqueness constraints in application services unless a real
+  non-HTTP command caller requires the same validation.
 - Prefer small, reviewable commits with focused scope.
 - Run the relevant test/build command before claiming implementation work is
   complete.

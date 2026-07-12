@@ -3,6 +3,7 @@ package com.chamchamcham.api.auth.controller
 import com.chamchamcham.api.common.ApiResponse
 import com.chamchamcham.api.auth.dto.AuthRequests
 import com.chamchamcham.api.auth.dto.AuthResponses
+import com.chamchamcham.api.farm.dto.toCommandDraft
 import com.chamchamcham.application.auth.common.AuthCommand
 import com.chamchamcham.application.auth.common.OnboardingService
 import com.chamchamcham.application.auth.local.AuthService
@@ -124,7 +125,7 @@ class AuthController(
                 nickname = request.nickname,
                 experienceLevel = requireNotNull(request.experienceLevel),
                 managementType = requireNotNull(request.managementType),
-                farm = request.farm.toCommand(),
+                farm = requireNotNull(request.farm).toCommandDraft(),
                 cropIds = request.cropIds,
                 profileMediaId = request.profileMediaId
             )
@@ -176,33 +177,6 @@ class AuthController(
         } catch (e: IllegalArgumentException) {
             throw BusinessException(ErrorCode.UNAUTHORIZED)
         }
-    }
-
-    private fun AuthRequests.FarmRequest?.toCommand(): AuthCommand.Farm {
-        val farm = requireNotNull(this)
-        return AuthCommand.Farm(
-            name = farm.name,
-            roadAddress = farm.roadAddress,
-            jibunAddress = farm.jibunAddress,
-            latitude = farm.latitude,
-            longitude = farm.longitude,
-            pnu = farm.pnu,
-            landCategory = farm.landCategory,
-            areaSqm = farm.areaSqm,
-            areaIsManualEntry = farm.areaIsManualEntry,
-            boundaryCoordinates = farm.boundaryCoordinates.map {
-                AuthCommand.FarmBoundaryCoordinate(
-                    latitude = requireNotNull(it.latitude),
-                    longitude = requireNotNull(it.longitude)
-                )
-            },
-            dataSource = AuthCommand.FarmDataSource(
-                address = farm.dataSource.address,
-                coordinate = farm.dataSource.coordinate,
-                parcel = farm.dataSource.parcel,
-                landCharacteristic = farm.dataSource.landCharacteristic
-            )
-        )
     }
 
     private fun clearRefreshTokenCookie(): ResponseCookie {

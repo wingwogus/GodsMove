@@ -3,7 +3,6 @@ package com.chamchamcham.api.auth.dto
 import com.chamchamcham.api.farm.dto.FarmRequests
 import com.chamchamcham.domain.member.ManagementType
 import jakarta.validation.Valid
-import jakarta.validation.constraints.DecimalMin
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -11,7 +10,7 @@ import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
-import java.math.BigDecimal
+import org.hibernate.validator.constraints.UniqueElements
 import java.time.LocalDate
 import java.util.UUID
 
@@ -77,8 +76,7 @@ object AuthRequests {
         val phone: String,
         @field:NotNull(message = "생년월일을 입력해주세요")
         val birthDate: LocalDate?,
-        @field:NotBlank(message = "닉네임을 입력해주세요")
-        val nickname: String,
+        val nickname: String? = null,
         @field:NotNull(message = "경험 수준을 입력해주세요")
         @field:Min(value = 0, message = "경험 수준은 0 이상이어야 합니다")
         @field:Max(value = 100, message = "경험 수준은 100 이하여야 합니다")
@@ -87,31 +85,12 @@ object AuthRequests {
         val managementType: ManagementType?,
         @field:Valid
         @field:NotNull(message = "농장 정보를 입력해주세요")
-        val farm: FarmRequest?,
+        val farm: FarmRequests.FarmDraftRequest?,
         @field:NotEmpty(message = "작물을 하나 이상 선택해주세요")
+        @field:Size(max = 5, message = "작물은 최대 5개까지 선택할 수 있습니다")
+        @field:UniqueElements(message = "작물은 중복해서 선택할 수 없습니다")
         val cropIds: List<UUID>,
         val profileMediaId: UUID? = null
-    )
-
-    data class FarmRequest(
-        @field:NotBlank(message = "농장 이름을 입력해주세요")
-        val name: String,
-        @field:NotBlank(message = "도로명 주소를 입력해주세요")
-        val roadAddress: String,
-        val jibunAddress: String? = null,
-        @field:NotNull(message = "위도를 입력해주세요")
-        val latitude: Double?,
-        @field:NotNull(message = "경도를 입력해주세요")
-        val longitude: Double?,
-        val pnu: String? = null,
-        val landCategory: String? = null,
-        @field:DecimalMin(value = "0.0", inclusive = false, message = "면적은 0보다 커야 합니다")
-        val areaSqm: BigDecimal? = null,
-        val areaIsManualEntry: Boolean = false,
-        @field:Valid
-        val boundaryCoordinates: List<FarmRequests.BoundaryCoordinateRequest> = emptyList(),
-        @field:Valid
-        val dataSource: FarmRequests.DataSourceRequest = FarmRequests.DataSourceRequest()
     )
 
     data class ReissueRequest(

@@ -282,17 +282,6 @@ class FarmingRecordServiceTest {
     }
 
     @Test
-    fun `create rejects more than five media`() {
-        val exception = assertThrows(BusinessException::class.java) {
-            service.create(baseCommand(workType = WorkType.PRUNING, mediaIds = List(6) { UUID.randomUUID() }))
-        }
-
-        assertEquals(ErrorCode.FARMING_RECORD_TOO_MANY_IMAGES, exception.errorCode)
-        verifyNoInteractions(uploadedMediaRepository)
-        verify(farmingRecordRepository, never()).save(any(FarmingRecord::class.java))
-    }
-
-    @Test
     fun `create saves harvest detail when workType is HARVEST`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
@@ -502,19 +491,6 @@ class FarmingRecordServiceTest {
 
         verify(farmingRecordMediaRepository).deleteByRecord(record)
         assertEquals(UploadedMediaStatus.ATTACHED, replacementMedia.status)
-    }
-
-    @Test
-    fun `update rejects more than five media`() {
-        val record = existingRecord(workType = WorkType.PRUNING)
-        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
-
-        val exception = assertThrows(BusinessException::class.java) {
-            service.update(updateCommand(workType = WorkType.PRUNING, mediaIds = List(6) { UUID.randomUUID() }))
-        }
-
-        assertEquals(ErrorCode.FARMING_RECORD_TOO_MANY_IMAGES, exception.errorCode)
-        verifyNoInteractions(farmingRecordMediaRepository)
     }
 
     @Test

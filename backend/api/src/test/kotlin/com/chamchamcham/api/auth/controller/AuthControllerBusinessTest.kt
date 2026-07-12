@@ -11,6 +11,7 @@ import com.chamchamcham.application.auth.social.NaverLoginService
 import com.chamchamcham.application.crop.CropResult
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.farm.FarmCommand
 import com.chamchamcham.application.security.TokenProvider
 import com.chamchamcham.domain.member.ManagementType
 import org.assertj.core.api.Assertions.assertThat
@@ -289,6 +290,39 @@ class AuthControllerBusinessTest(
     }
 
     @Test
+    fun `complete onboarding uses name when nickname is omitted`() {
+        `when`(
+            onboardingService.complete(
+                AuthCommand.CompleteOnboarding(
+                    memberId = memberId,
+                    name = "홍길동",
+                    phone = "010-1234-5678",
+                    birthDate = LocalDate.parse("1990-01-01"),
+                    nickname = null,
+                    experienceLevel = 3,
+                    managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
+                    farm = farmCommand(),
+                    cropIds = listOf(cropId),
+                    profileMediaId = UUID.fromString("00000000-0000-0000-0000-000000000501")
+                )
+            )
+        ).thenReturn(
+            onboardingCompleteResult().copy(
+                member = completedMemberProfile().copy(nickname = "홍길동")
+            )
+        )
+
+        mockMvc.perform(
+            post("/api/v1/auth/onboarding/complete")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validOnboardingRequestBodyWithoutNickname())
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.member.nickname", equalTo("홍길동")))
+    }
+
+    @Test
     fun `complete onboarding rejects malformed principal`() {
         mockMvc.perform(
             post("/api/v1/auth/onboarding/complete")
@@ -425,8 +459,11 @@ class AuthControllerBusinessTest(
         """.trimIndent()
     }
 
-    private fun farmCommand(): AuthCommand.Farm {
-        return AuthCommand.Farm(
+    private fun validOnboardingRequestBodyWithoutNickname(): String =
+        validOnboardingRequestBody().replace("\"nickname\":\"길동\",", "")
+
+    private fun farmCommand(): FarmCommand.Draft {
+        return FarmCommand.Draft(
             name = "길동농장",
             roadAddress = "서울시 강남구 테헤란로 1",
             jibunAddress = "서울시 강남구 역삼동 1",
@@ -437,10 +474,10 @@ class AuthControllerBusinessTest(
             areaSqm = BigDecimal("1200.5"),
             areaIsManualEntry = false,
             boundaryCoordinates = listOf(
-                AuthCommand.FarmBoundaryCoordinate(latitude = 35.8461, longitude = 127.1289),
-                AuthCommand.FarmBoundaryCoordinate(latitude = 35.8463, longitude = 127.1295)
+                FarmCommand.BoundaryCoordinate(latitude = 35.8461, longitude = 127.1289),
+                FarmCommand.BoundaryCoordinate(latitude = 35.8463, longitude = 127.1295)
             ),
-            dataSource = AuthCommand.FarmDataSource(
+            dataSource = FarmCommand.DataSource(
                 address = "JUSO",
                 coordinate = "V_WORLD_ADDRESS",
                 parcel = "V_WORLD_CADASTRAL",

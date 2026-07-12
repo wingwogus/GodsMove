@@ -114,7 +114,6 @@ class CommunityPostService(
     }
 
     fun create(command: CommunityPostCommand.Create): CommunityPostResult.PostId {
-        validateImageCount(command.mediaIds)
         val member = findMember(command.memberId)
         val crop = findCrop(command.cropId)
         val farmingRecord = resolveFarmingRecord(command.memberId, command.cropId, command.farmingRecordId)
@@ -136,7 +135,6 @@ class CommunityPostService(
     }
 
     fun update(command: CommunityPostCommand.Update): CommunityPostResult.PostId {
-        validateImageCount(command.mediaIds)
         val post = findPost(command.postId)
         assertAuthor(post, command.memberId)
         val crop = findCrop(command.cropId)
@@ -178,12 +176,6 @@ class CommunityPostService(
             liked = liked,
             likeCount = communityPostLikeRepository.countByPostId(command.postId)
         )
-    }
-
-    private fun validateImageCount(mediaIds: List<UUID>) {
-        if (mediaIds.size > MAX_IMAGE_COUNT) {
-            throw BusinessException(ErrorCode.COMMUNITY_TOO_MANY_IMAGES)
-        }
     }
 
     private fun validateNewMedia(memberId: UUID, mediaIds: List<UUID>): List<UploadedMedia> {
@@ -393,7 +385,6 @@ class CommunityPostService(
         )
 
     private companion object {
-        const val MAX_IMAGE_COUNT = 5
         const val BODY_PREVIEW_LENGTH = 80
     }
 }
