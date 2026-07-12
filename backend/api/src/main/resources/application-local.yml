@@ -66,6 +66,12 @@ weather:
     connect-timeout-millis: ${KMA_CONNECT_TIMEOUT_MILLIS:2000}
     read-timeout-millis: ${KMA_READ_TIMEOUT_MILLIS:2000}
 
+psis:
+  pesticide:
+    base-url: ${PSIS_PESTICIDE_BASE_URL:}
+    service-key: ${PSIS_PESTICIDE_SERVICE_KEY:}
+    timeout-millis: ${PSIS_PESTICIDE_TIMEOUT_MILLIS:10000}
+
 openai:
   realtime:
     api-key: ${OPENAI_API_KEY:test-openai-api-key}
