@@ -49,9 +49,23 @@ but it must not add farm-management UI before that UI has a concrete product
 requirement.
 
 `SaveFarmRequest` contains the farm draft fields plus `cropIds`. It does not
-contain `farmId`. `FarmResponse` identifies the farm with `farmId` and includes
-the resolved `crops` array. This differs from the previous frontend DTO, which
-expected `id` and did not decode crops.
+contain `farmId`. The standalone farm CRUD response identifies the farm with
+`farmId` and includes the resolved `crops` array.
+
+The current backend source has two nested classes with the same OpenAPI schema
+name, `FarmResponse`: `AuthResponses.FarmResponse` still returns `id` without a
+nested crop array for onboarding, while `FarmResponses.FarmResponse` returns
+`farmId` and `crops` for standalone CRUD. Springdoc currently collapses these
+into one Swagger component and therefore describes the onboarding `farm` with
+the standalone shape. This discrepancy is present after backend farm commit
+`44bffbc556551dc51b0a7d302b0f4b637e556c60` and current backend commit
+`8cf11b74d1c5e91ebf787bd2598a04e5536c0505`.
+
+The frontend keeps endpoint-specific response DTOs so adding standalone farm
+CRUD does not break the existing onboarding response decoder. The discrepancy
+must remain documented until the backend gives the schemas unique OpenAPI names;
+the frontend must not infer that the onboarding payload changed solely from the
+collided component.
 
 The frontend validates the constraints it already enforces in onboarding:
 
@@ -72,7 +86,9 @@ ambiguous request type:
 - `FarmDraftRequestDTO` maps the representative farm embedded in onboarding.
 - `SaveFarmRequestDTO` maps standalone farm create/replace and owns `cropIds`.
 - shared coordinate and data-source DTOs remain reusable.
-- `FarmResponseDTO` decodes `farmId` and `crops`.
+- `StandaloneFarmResponseDTO` decodes CRUD `farmId` and `crops`.
+- the existing onboarding farm response DTO retains `id` and its existing
+  fields until the backend payload itself changes.
 
 `FarmEndpoint` models the farm paths, methods, authentication requirement, and
 request bodies. `FarmRepository` provides typed list/create/replace/delete
