@@ -7,17 +7,17 @@ import com.chamchamcham.application.coaching.feedback.RecordFeedbackLifecycleSer
 import com.chamchamcham.application.coaching.feedback.RecordFeedbackQueryService
 import com.chamchamcham.application.coaching.rag.common.RagModelInfo
 import com.chamchamcham.application.coaching.rag.record.CommonFeedbackDetail
-import com.chamchamcham.application.coaching.rag.record.GeneratedRecordFeedback
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionCategory
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionDue
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackCoachingResult
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackAction
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContent
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContext
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackCropContext
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackFarmContext
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationService
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackItem
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationResult
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGoodPoint
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackMemberContext
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackNextAction
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackRecordContext
 import com.chamchamcham.application.farming.FarmingRecordCommand
 import com.chamchamcham.application.farming.FarmingRecordService
@@ -134,7 +134,7 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
         ) ?: error("record feedback must be created")
         val feedbackId = requireNotNull(feedback.id)
         val snapshot = requireNotNull(feedback.inputSnapshot)
-        val userOutput = queryService.get(requireNotNull(member.id), recordId)
+        val statusResult = queryService.get(requireNotNull(member.id), recordId)
 
         assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.READY)
         assertThat(snapshot).containsEntry("schemaVersion", "record-feedback-context.v2")
@@ -145,8 +145,8 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
             .containsEntry("sourceRevision", 1)
             .containsEntry("workType", "WATERING")
             .containsEntry("memo", "점적관수로 토양 수분을 보충했습니다.")
-        assertThat(userOutput.feedback?.goodPoint?.text).isEqualTo("관수 기록이 구체적입니다.")
-        val nextActions = userOutput.feedback?.nextActions.orEmpty()
+        assertThat(statusResult.content?.goodPoint?.text).isEqualTo("관수 기록이 구체적입니다.")
+        val nextActions = statusResult.content?.nextActions.orEmpty()
         assertThat(nextActions).hasSize(2)
         assertThat(nextActions.map { it.text }).containsExactly(
             "토양 수분을 다시 확인하세요.",
@@ -263,22 +263,22 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
         ),
     )
 
-    private fun generatedFeedback() = GeneratedRecordFeedback(
-        result = RecordFeedbackCoachingResult(
-            goodPoint = RecordFeedbackItem(
+    private fun generatedFeedback() = RecordFeedbackGenerationResult(
+        content = RecordFeedbackContent(
+            goodPoint = RecordFeedbackGoodPoint(
                 basis = "자동 생성 테스트 근거입니다.",
                 text = "관수 기록이 구체적입니다.",
                 evidenceRefs = listOf("doc-1"),
             ),
             nextActions = listOf(
-                RecordFeedbackNextAction(
+                RecordFeedbackAction(
                     due = RecordFeedbackActionDue.NEXT_CHECK,
                     category = RecordFeedbackActionCategory.CULTIVATION,
                     basis = "다음 점검이 필요합니다.",
                     text = "토양 수분을 다시 확인하세요.",
                     evidenceRefs = listOf("doc-1"),
                 ),
-                RecordFeedbackNextAction(
+                RecordFeedbackAction(
                     due = RecordFeedbackActionDue.THIS_WEEK,
                     category = RecordFeedbackActionCategory.IRRIGATION,
                     basis = "주간 관수량 추적이 필요합니다.",

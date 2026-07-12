@@ -1,6 +1,6 @@
 package com.chamchamcham.api.coaching.controller
 
-import com.chamchamcham.api.coaching.dto.FarmingRecordFeedbackResponses
+import com.chamchamcham.api.coaching.dto.RecordFeedbackResponses
 import com.chamchamcham.api.common.ApiResponse
 import com.chamchamcham.application.coaching.feedback.RecordFeedbackQueryService
 import com.chamchamcham.application.exception.ErrorCode
@@ -16,25 +16,25 @@ import java.util.UUID
 
 @RestController
 @RequestMapping("/api/v1/farming-records/{recordId}/coaching-feedback")
-class FarmingRecordFeedbackController(
+class RecordFeedbackController(
     private val queryService: RecordFeedbackQueryService,
 ) {
     @GetMapping
     fun getStatus(
         @AuthenticationPrincipal memberId: String?,
         @PathVariable recordId: UUID,
-    ): ResponseEntity<ApiResponse<FarmingRecordFeedbackResponses.StatusResponse>> {
+    ): ResponseEntity<ApiResponse<RecordFeedbackResponses.StatusResponse>> {
         val result = queryService.get(parseMemberId(memberId), recordId)
-        return ResponseEntity.ok(ApiResponse.ok(FarmingRecordFeedbackResponses.StatusResponse.from(result)))
+        return ResponseEntity.ok(ApiResponse.ok(RecordFeedbackResponses.StatusResponse.from(result)))
     }
 
     @PostMapping("/regenerate")
     fun regenerate(
         @AuthenticationPrincipal memberId: String?,
         @PathVariable recordId: UUID,
-    ): ResponseEntity<ApiResponse<FarmingRecordFeedbackResponses.StatusResponse>> {
+    ): ResponseEntity<ApiResponse<RecordFeedbackResponses.StatusResponse>> {
         val result = queryService.regenerate(parseMemberId(memberId), recordId)
-        return ResponseEntity.ok(ApiResponse.ok(FarmingRecordFeedbackResponses.StatusResponse.from(result)))
+        return ResponseEntity.ok(ApiResponse.ok(RecordFeedbackResponses.StatusResponse.from(result)))
     }
 
     private fun parseMemberId(memberId: String?): UUID {

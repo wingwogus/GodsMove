@@ -3,104 +3,78 @@ package com.chamchamcham.application.coaching.rag.record
 import com.chamchamcham.application.coaching.rag.common.RagModelInfo
 import com.chamchamcham.application.coaching.rag.common.RagProperties
 import com.chamchamcham.application.coaching.rag.common.RagSourceType
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackFailureCode
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackGenerationFailure
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.document.Document
 import org.springframework.ai.vectorstore.SearchRequest
 import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.stereotype.Service
 
-data class GeneratedRecordFeedback(
-    val result: RecordFeedbackCoachingResult,
-    val citations: List<Map<String, Any?>>,
-    val auditWarnings: List<String>,
-    val modelInfo: RagModelInfo,
-)
-
-enum class RecordFeedbackGenerationFailureCode {
-    INSUFFICIENT_EVIDENCE,
-    STRUCTURED_OUTPUT_INVALID,
-    GENERATION_FAILED,
-}
-
-class RecordFeedbackGenerationException(
-    val code: RecordFeedbackGenerationFailureCode,
-    cause: Throwable? = null,
-) : RuntimeException(code.name, cause)
-
 @Service
 class RecordFeedbackGenerationService(
     private val chatClient: ChatClient,
     private val vectorStore: VectorStore,
-    private val contextValidator: RecordFeedbackContextValidator,
     private val queryPlanner: RecordFeedbackRetrievalQueryPlanner,
     private val promptBuilder: RecordFeedbackPromptBuilder,
-    private val outputValidator: RecordFeedbackOutputValidator,
     private val ragProperties: RagProperties,
 ) {
-    fun generate(context: RecordFeedbackContext, topK: Int? = null): GeneratedRecordFeedback {
-        val contextValidation = try {
-            contextValidator.requireValid(context)
-        } catch (exception: RuntimeException) {
-            throw RecordFeedbackGenerationException(
-                RecordFeedbackGenerationFailureCode.GENERATION_FAILED,
-                exception,
-            )
-        }
+    fun generate(context: RecordFeedbackContext, topK: Int? = null): RecordFeedbackGenerationResult {
+        val contextWarnings = RecordFeedbackContextValidator.requireValid(context)
         val perQueryTopK = normalizeTopK(topK)
         val queries = queryPlanner.plan(context)
         val documents = retrieveDocuments(queries, perQueryTopK, context.crop.name.trim())
             .filter { it.isCitableOfficialEvidence() }
 
         if (documents.isEmpty()) {
-            throw RecordFeedbackGenerationException(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE)
+            throw RecordFeedbackGenerationFailure(RecordFeedbackFailureCode.INSUFFICIENT_EVIDENCE)
         }
 
         val evidence = documents.map { it.toRecordFeedbackEvidence() }
         val prompt = promptBuilder.build(context, queries, evidence)
-        val result = callForValidatedResult(prompt, context, evidence)
+        val content = callForValidatedContent(prompt, context, evidence)
 
-        return GeneratedRecordFeedback(
-            result = result,
-            citations = buildCitationMaps(result, context, documents),
-            auditWarnings = contextValidation.warnings,
+        return RecordFeedbackGenerationResult(
+            content = content,
+            citations = buildCitationMaps(content, context, documents),
+            auditWarnings = contextWarnings,
             modelInfo = modelInfo(),
         )
     }
 
-    private fun callForValidatedResult(
+    private fun callForValidatedContent(
         prompt: RecordFeedbackPrompt,
         context: RecordFeedbackContext,
         evidence: List<RecordFeedbackEvidence>,
-    ): RecordFeedbackCoachingResult {
+    ): RecordFeedbackContent {
         var lastFailure: Throwable? = null
         repeat(MAX_STRUCTURED_OUTPUT_ATTEMPTS) {
-            val result = try {
-                requestStructuredResult(prompt)
+            val content = try {
+                requestStructuredContent(prompt)
             } catch (exception: StructuredOutputFailure) {
                 lastFailure = exception
                 return@repeat
             } catch (exception: ChatRuntimeFailure) {
-                throw RecordFeedbackGenerationException(
-                    RecordFeedbackGenerationFailureCode.GENERATION_FAILED,
+                throw RecordFeedbackGenerationFailure(
+                    RecordFeedbackFailureCode.CHAT_UNAVAILABLE,
                     exception.cause,
                 )
             }
 
-            val allowedEvidenceRefs = outputValidator.allowedEvidenceRefs(context, evidence)
-            val validation = outputValidator.validate(result, allowedEvidenceRefs)
-            if (validation.isValid) {
-                return result
+            val validationWarnings = RecordFeedbackOutputValidator.validate(content, context, evidence)
+            if (validationWarnings.isEmpty()) {
+                return content
             }
-            lastFailure = StructuredOutputFailure("invalid product output: ${validation.warnings.joinToString(",")}")
+            lastFailure = StructuredOutputFailure("invalid product output: ${validationWarnings.joinToString(",")}")
         }
 
-        throw RecordFeedbackGenerationException(
-            RecordFeedbackGenerationFailureCode.STRUCTURED_OUTPUT_INVALID,
+        throw RecordFeedbackGenerationFailure(
+            RecordFeedbackFailureCode.STRUCTURED_OUTPUT_INVALID,
             lastFailure,
         )
     }
 
-    private fun requestStructuredResult(prompt: RecordFeedbackPrompt): RecordFeedbackCoachingResult {
+    private fun requestStructuredContent(prompt: RecordFeedbackPrompt): RecordFeedbackContent {
         val callResponse = try {
             chatClient.prompt()
                 .system(prompt.system)
@@ -111,7 +85,7 @@ class RecordFeedbackGenerationService(
         }
 
         return try {
-            callResponse.entity(RecordFeedbackCoachingResult::class.java)
+            callResponse.entity(RecordFeedbackContent::class.java)
                 ?: throw StructuredOutputFailure("empty structured output")
         } catch (exception: StructuredOutputFailure) {
             throw exception
@@ -123,7 +97,7 @@ class RecordFeedbackGenerationService(
     private fun normalizeTopK(topK: Int?): Int {
         val value = topK ?: ragProperties.retrieval.topKDefault
         if (value !in 1..ragProperties.retrieval.topKMax) {
-            throw RecordFeedbackGenerationException(RecordFeedbackGenerationFailureCode.GENERATION_FAILED)
+            throw RecordFeedbackGenerationFailure(RecordFeedbackFailureCode.INVALID_GENERATION_REQUEST)
         }
         return value
     }
@@ -152,8 +126,8 @@ class RecordFeedbackGenerationService(
                 .filter { it.metadata["sourceType"] == RagSourceType.TECH_DOCUMENT.name }
                 .distinctBy { it.id }
         } catch (exception: RuntimeException) {
-            throw RecordFeedbackGenerationException(
-                RecordFeedbackGenerationFailureCode.GENERATION_FAILED,
+            throw RecordFeedbackGenerationFailure(
+                RecordFeedbackFailureCode.RETRIEVAL_FAILED,
                 exception,
             )
         }
@@ -175,12 +149,12 @@ class RecordFeedbackGenerationService(
     }
 
     private fun buildCitationMaps(
-        result: RecordFeedbackCoachingResult,
+        content: RecordFeedbackContent,
         context: RecordFeedbackContext,
         documents: List<Document>,
     ): List<Map<String, Any?>> {
         val documentsById = documents.associateBy { it.id }
-        return result.evidenceRefsInOrder()
+        return content.evidenceRefsInOrder()
             .mapNotNull { citationId ->
                 when {
                     citationId == context.recordCitationId() -> recordCitationMap(citationId)
@@ -191,7 +165,7 @@ class RecordFeedbackGenerationService(
             }
     }
 
-    private fun RecordFeedbackCoachingResult.evidenceRefsInOrder(): List<String> {
+    private fun RecordFeedbackContent.evidenceRefsInOrder(): List<String> {
         return buildList {
             addAll(goodPoint.evidenceRefs)
             nextActions.forEach { addAll(it.evidenceRefs) }

@@ -1,17 +1,17 @@
 package com.chamchamcham.application.coaching.rag.record
 
-data class RecordFeedbackCoachingResult(
-    val goodPoint: RecordFeedbackItem,
-    val nextActions: List<RecordFeedbackNextAction>,
+data class RecordFeedbackContent(
+    val goodPoint: RecordFeedbackGoodPoint,
+    val nextActions: List<RecordFeedbackAction>,
 )
 
-data class RecordFeedbackItem(
+data class RecordFeedbackGoodPoint(
     val basis: String,
     val text: String,
     val evidenceRefs: List<String>,
 )
 
-data class RecordFeedbackNextAction(
+data class RecordFeedbackAction(
     val due: RecordFeedbackActionDue,
     val category: RecordFeedbackActionCategory,
     val basis: String,

@@ -54,7 +54,7 @@ class RecordFeedbackPromptBuilder {
             날씨 근거를 삼을 때는 weather:current 또는 weather:<forecast-date> citation id를 사용한다.
             공식문서를 근거로 삼을 때는 공식문서 근거의 [id]만 사용한다.
             농부에게 보여줄 text에는 chunkId나 UUID를 직접 쓰지 않는다.
-            응답은 RecordFeedbackCoachingResult JSON schema만 따른다.
+            응답은 RecordFeedbackContent JSON schema만 따른다.
             JSON 최상위 필드는 goodPoint와 nextActions만 둔다.
         """.trimIndent()
     }

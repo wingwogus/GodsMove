@@ -2,12 +2,12 @@ package com.chamchamcham.api.coaching.controller
 
 import com.chamchamcham.api.exception.GlobalExceptionHandler
 import com.chamchamcham.application.coaching.feedback.RecordFeedbackQueryService
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackResult
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackUserGoodPoint
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackUserNextAction
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackUserResponse
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackStatusResult
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionCategory
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionDue
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackAction
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContent
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGoodPoint
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.security.TokenProvider
@@ -32,10 +32,10 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.time.LocalDateTime
 import java.util.UUID
 
-@WebMvcTest(FarmingRecordFeedbackController::class)
+@WebMvcTest(RecordFeedbackController::class)
 @AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandler::class)
-class FarmingRecordFeedbackControllerTest(
+class RecordFeedbackControllerTest(
     @Autowired private val mockMvc: MockMvc,
 ) {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
@@ -70,18 +70,24 @@ class FarmingRecordFeedbackControllerTest(
         `when`(queryService.get(memberId, recordId)).thenReturn(
             result(
                 status = CoachingFeedbackStatus.READY,
-                feedback = RecordFeedbackUserResponse(
-                    goodPoint = RecordFeedbackUserGoodPoint(
+                content = RecordFeedbackContent(
+                    goodPoint = RecordFeedbackGoodPoint(
+                        basis = "점적관수",
                         text = "점적관수로 토양 수분을 확인한 점이 좋았어요.",
+                        evidenceRefs = listOf("record:$recordId"),
                     ),
                     nextActions = listOf(
-                        RecordFeedbackUserNextAction(
+                        RecordFeedbackAction(
+                            basis = "토양 표면",
                             text = "오후에 토양 표면이 마르는지 한 번 더 확인하세요.",
+                            evidenceRefs = listOf("record:$recordId"),
                             due = RecordFeedbackActionDue.TODAY,
                             category = RecordFeedbackActionCategory.IRRIGATION,
                         ),
-                        RecordFeedbackUserNextAction(
+                        RecordFeedbackAction(
+                            basis = "배수로",
                             text = "이번 주 안에 배수로 주변의 막힌 흙을 정리하세요.",
+                            evidenceRefs = listOf("doc-1"),
                             due = RecordFeedbackActionDue.THIS_WEEK,
                             category = RecordFeedbackActionCategory.CULTIVATION,
                         ),
@@ -182,15 +188,15 @@ class FarmingRecordFeedbackControllerTest(
         status: CoachingFeedbackStatus,
         inputPrepared: Boolean = false,
         failureCode: String? = null,
-        feedback: RecordFeedbackUserResponse? = null,
-    ) = RecordFeedbackResult(
+        content: RecordFeedbackContent? = null,
+    ) = RecordFeedbackStatusResult(
         feedbackId = feedbackId,
         recordId = recordId,
         status = status,
         sourceRevision = 3,
         inputPrepared = inputPrepared,
         failureCode = failureCode,
-        feedback = feedback,
+        content = content,
         createdAt = LocalDateTime.of(2026, 7, 11, 10, 0),
         updatedAt = LocalDateTime.of(2026, 7, 11, 10, 1),
     )

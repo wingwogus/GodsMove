@@ -29,7 +29,7 @@ class RecordFeedbackPromptBuilderTest {
         assertThat(prompt.system).contains("잘한 점은 정확히 1개만 작성한다")
         assertThat(prompt.system).contains("다음 행동은 2~3개만 작성한다")
         assertThat(prompt.system).contains("각 text는 15~45자로 작성한다")
-        assertThat(prompt.system).contains("응답은 RecordFeedbackCoachingResult JSON schema만 따른다")
+        assertThat(prompt.system).contains("응답은 RecordFeedbackContent JSON schema만 따른다")
         assertThat(prompt.system).contains("goodPoint", "nextActions", "basis", "text", "evidenceRefs")
         assertThat(prompt.system).doesNotContain(
             "summary",

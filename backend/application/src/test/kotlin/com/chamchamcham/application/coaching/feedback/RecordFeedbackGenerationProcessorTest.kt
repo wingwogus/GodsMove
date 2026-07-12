@@ -2,19 +2,17 @@ package com.chamchamcham.application.coaching.feedback
 
 import com.chamchamcham.application.coaching.rag.common.RagModelInfo
 import com.chamchamcham.application.coaching.rag.record.CommonFeedbackDetail
-import com.chamchamcham.application.coaching.rag.record.GeneratedRecordFeedback
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionCategory
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionDue
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackCoachingResult
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackAction
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContent
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContext
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackCropContext
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackFarmContext
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationException
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationFailureCode
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationResult
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationService
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackItem
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGoodPoint
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackMemberContext
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackNextAction
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackRecordContext
 import com.chamchamcham.domain.coaching.CoachingFeedback
 import com.chamchamcham.domain.coaching.CoachingFeedbackRepository
@@ -101,7 +99,7 @@ class RecordFeedbackGenerationProcessorTest {
         val feedback = feedback(inputSnapshot = snapshot())
         val event = event(feedback)
         stubInitialAndFinalFeedback(event, feedback)
-        `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenReturn(generatedFeedback())
+        `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenReturn(generationResult())
 
         processor.generate(event)
 
@@ -125,7 +123,7 @@ class RecordFeedbackGenerationProcessorTest {
         val event = event(feedback)
         stubInitialAndFinalFeedback(event, feedback)
         `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenThrow(
-            RecordFeedbackGenerationException(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE),
+            RecordFeedbackGenerationFailure(RecordFeedbackFailureCode.INSUFFICIENT_EVIDENCE),
         )
 
         processor.generate(event)
@@ -135,7 +133,7 @@ class RecordFeedbackGenerationProcessorTest {
     }
 
     @Test
-    fun `processor maps malformed snapshot to structured output invalid failure`() {
+    fun `processor maps malformed snapshot to invalid context snapshot failure`() {
         val feedback = feedback(inputSnapshot = mapOf("schemaVersion" to "record-feedback-context/v1"))
         val event = event(feedback)
         stubInitialAndFinalFeedback(event, feedback)
@@ -143,8 +141,22 @@ class RecordFeedbackGenerationProcessorTest {
         processor.generate(event)
 
         assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.FAILED)
-        assertThat(feedback.failureCode).isEqualTo("STRUCTURED_OUTPUT_INVALID")
+        assertThat(feedback.failureCode).isEqualTo("INVALID_CONTEXT_SNAPSHOT")
         verifyNoInteractions(generationService)
+    }
+
+    @Test
+    fun `processor marks an unexpected generation runtime failure as terminal`() {
+        val feedback = feedback(inputSnapshot = snapshot())
+        val event = event(feedback)
+        stubInitialAndFinalFeedback(event, feedback)
+        `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull()))
+            .thenThrow(IllegalStateException("unexpected generation failure"))
+
+        processor.generate(event)
+
+        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.FAILED)
+        assertThat(feedback.failureCode).isEqualTo("UNEXPECTED")
     }
 
     @Test
@@ -154,7 +166,7 @@ class RecordFeedbackGenerationProcessorTest {
         stubInitialAndFinalFeedback(event, feedback)
         `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenAnswer {
             feedback.markStale()
-            generatedFeedback()
+            generationResult()
         }
 
         assertDoesNotThrow { processor.generate(event) }
@@ -170,7 +182,7 @@ class RecordFeedbackGenerationProcessorTest {
         stubInitialAndFinalFeedback(event, feedback)
         `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenAnswer {
             feedback.markStale()
-            throw RecordFeedbackGenerationException(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE)
+            throw RecordFeedbackGenerationFailure(RecordFeedbackFailureCode.INSUFFICIENT_EVIDENCE)
         }
 
         assertDoesNotThrow { processor.generate(event) }
@@ -223,15 +235,15 @@ class RecordFeedbackGenerationProcessorTest {
         weather = null,
     )
 
-    private fun generatedFeedback() = GeneratedRecordFeedback(
-        result = RecordFeedbackCoachingResult(
-            goodPoint = RecordFeedbackItem(
+    private fun generationResult() = RecordFeedbackGenerationResult(
+        content = RecordFeedbackContent(
+            goodPoint = RecordFeedbackGoodPoint(
                 basis = "기록된 작업과 공식문서 근거가 일치합니다.",
                 text = "가지 정리 시점이 적절합니다.",
                 evidenceRefs = listOf("doc-1"),
             ),
             nextActions = listOf(
-                RecordFeedbackNextAction(
+                RecordFeedbackAction(
                     due = RecordFeedbackActionDue.NEXT_CHECK,
                     category = RecordFeedbackActionCategory.CULTIVATION,
                     basis = "다음 생육 확인이 필요합니다.",

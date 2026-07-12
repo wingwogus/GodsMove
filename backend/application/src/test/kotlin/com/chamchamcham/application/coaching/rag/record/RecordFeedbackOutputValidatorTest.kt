@@ -7,7 +7,6 @@ import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
 
 class RecordFeedbackOutputValidatorTest {
     private val objectMapper: ObjectMapper = Jackson2ObjectMapperBuilder.json().build()
-    private val validator = RecordFeedbackOutputValidator()
     private val context = readFixture("today-record-feedback-watering.json")
     private val documents = listOf(
         RecordFeedbackEvidence("doc-1", "농업기술길잡이 007 약용작물", 123, "관수 후 토양 상태를 확인한다.")
@@ -15,10 +14,9 @@ class RecordFeedbackOutputValidatorTest {
 
     @Test
     fun `validates exactly one good point and two to three cited actions`() {
-        val validation = validator.validate(validResult(), validator.allowedEvidenceRefs(context, documents))
+        val warnings = RecordFeedbackOutputValidator.validate(validResult(), context, documents)
 
-        assertThat(validation.isValid).isTrue()
-        assertThat(validation.warnings).isEmpty()
+        assertThat(warnings).isEmpty()
     }
 
     @Test
@@ -27,7 +25,7 @@ class RecordFeedbackOutputValidatorTest {
             goodPoint = validItem(text = "짧음", refs = listOf("unknown")),
         )
 
-        assertThat(validator.validate(invalid, validator.allowedEvidenceRefs(context, documents)).warnings)
+        assertThat(RecordFeedbackOutputValidator.validate(invalid, context, documents))
             .contains("good_point_text_length", "unknown_evidence:unknown")
     }
 
@@ -38,13 +36,13 @@ class RecordFeedbackOutputValidatorTest {
             refs = listOf(context.recordCitationId()),
         )
 
-        assertThat(validator.validate(invalid, validator.allowedEvidenceRefs(context, documents)).warnings)
+        assertThat(RecordFeedbackOutputValidator.validate(invalid, context, documents))
             .contains("weather_action_without_weather_evidence")
     }
 
     @Test
     fun `rejects blank fields wrong action count and missing basis token`() {
-        val invalid = RecordFeedbackCoachingResult(
+        val invalid = RecordFeedbackContent(
             goodPoint = validItem(basis = " ", text = "점적관수로 토양 상태를 확인한 점이 좋았어요."),
             nextActions = listOf(
                 validAction(
@@ -55,7 +53,7 @@ class RecordFeedbackOutputValidatorTest {
             ),
         )
 
-        assertThat(validator.validate(invalid, validator.allowedEvidenceRefs(context, documents)).warnings)
+        assertThat(RecordFeedbackOutputValidator.validate(invalid, context, documents))
             .contains(
                 "good_point_basis_blank",
                 "action_count",
@@ -79,14 +77,14 @@ class RecordFeedbackOutputValidatorTest {
             ),
         )
 
-        val validation = validator.validate(valid, validator.allowedEvidenceRefs(context, documents))
+        val warnings = RecordFeedbackOutputValidator.validate(valid, context, documents)
 
-        assertThat(validation.warnings).doesNotContain(
+        assertThat(warnings).doesNotContain(
             "good_point_text_length",
             "next_action_0_text_length",
             "next_action_1_text_length",
         )
-        assertThat(validation.isValid).isTrue()
+        assertThat(warnings).isEmpty()
     }
 
     @Test
@@ -105,7 +103,7 @@ class RecordFeedbackOutputValidatorTest {
             ),
         )
 
-        assertThat(validator.validate(invalid, validator.allowedEvidenceRefs(context, documents)).warnings)
+        assertThat(RecordFeedbackOutputValidator.validate(invalid, context, documents))
             .contains("good_point_text_length", "next_action_0_text_length")
     }
 
@@ -132,8 +130,8 @@ class RecordFeedbackOutputValidatorTest {
         )
         val fourActions = threeActions.copy(nextActions = threeActions.nextActions + validAction())
 
-        assertThat(validator.validate(threeActions, validator.allowedEvidenceRefs(context, documents)).isValid).isTrue()
-        assertThat(validator.validate(fourActions, validator.allowedEvidenceRefs(context, documents)).warnings)
+        assertThat(RecordFeedbackOutputValidator.validate(threeActions, context, documents)).isEmpty()
+        assertThat(RecordFeedbackOutputValidator.validate(fourActions, context, documents))
             .contains("action_count")
     }
 
@@ -143,21 +141,18 @@ class RecordFeedbackOutputValidatorTest {
             goodPoint = validItem(text = " ", refs = listOf(" ")),
         )
 
-        assertThat(validator.validate(invalid, validator.allowedEvidenceRefs(context, documents)).warnings)
+        assertThat(RecordFeedbackOutputValidator.validate(invalid, context, documents))
             .contains("good_point_text_blank", "good_point_evidence_ref_blank")
     }
 
     @Test
     fun `does not allow blank document ids as evidence refs`() {
         val blankDocument = RecordFeedbackEvidence(" ", "빈 문서", null, "빈 문서 ID는 근거가 될 수 없다.")
-        val allowedEvidenceRefs = validator.allowedEvidenceRefs(context, documents + blankDocument)
         val invalid = validResult().copy(
             goodPoint = validItem(refs = listOf(" ")),
         )
 
-        assertThat(allowedEvidenceRefs.ids).doesNotContain(" ")
-        assertThat(allowedEvidenceRefs.documentIds).doesNotContain(" ")
-        assertThat(validator.validate(invalid, allowedEvidenceRefs).warnings)
+        assertThat(RecordFeedbackOutputValidator.validate(invalid, context, documents + blankDocument))
             .contains("good_point_evidence_ref_blank")
     }
 
@@ -168,15 +163,15 @@ class RecordFeedbackOutputValidatorTest {
             refs = listOf(context.recordCitationId()),
         )
 
-        assertThat(validator.validate(invalid, validator.allowedEvidenceRefs(context, documents)).warnings)
+        assertThat(RecordFeedbackOutputValidator.validate(invalid, context, documents))
             .contains("pest_disease_action_without_document_evidence")
     }
 
     private fun validResult(
         category: RecordFeedbackActionCategory = RecordFeedbackActionCategory.IRRIGATION,
         refs: List<String> = listOf(context.recordCitationId(), "doc-1"),
-    ): RecordFeedbackCoachingResult {
-        return RecordFeedbackCoachingResult(
+    ): RecordFeedbackContent {
+        return RecordFeedbackContent(
             goodPoint = validItem(),
             nextActions = listOf(
                 validAction(
@@ -201,8 +196,8 @@ class RecordFeedbackOutputValidatorTest {
         basis: String = "점적관수",
         text: String = "점적관수로 토양 상태를 확인한 점이 좋았어요.",
         refs: List<String> = listOf(context.recordCitationId()),
-    ): RecordFeedbackItem {
-        return RecordFeedbackItem(
+    ): RecordFeedbackGoodPoint {
+        return RecordFeedbackGoodPoint(
             basis = basis,
             text = text,
             evidenceRefs = refs,
@@ -215,8 +210,8 @@ class RecordFeedbackOutputValidatorTest {
         basis: String = "토양 상태",
         text: String = "다음 점검 때 토양 상태를 다시 살펴보세요.",
         refs: List<String> = listOf(context.recordCitationId(), "doc-1"),
-    ): RecordFeedbackNextAction {
-        return RecordFeedbackNextAction(
+    ): RecordFeedbackAction {
+        return RecordFeedbackAction(
             due = due,
             category = category,
             basis = basis,

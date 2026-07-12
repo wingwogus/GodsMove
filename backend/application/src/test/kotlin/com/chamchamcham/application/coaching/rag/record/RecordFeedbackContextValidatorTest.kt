@@ -1,41 +1,37 @@
 package com.chamchamcham.application.coaching.rag.record
 
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackFailureCode
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackGenerationFailure
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.ManagementType
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
 import java.time.LocalDateTime
 import java.util.UUID
 
 class RecordFeedbackContextValidatorTest {
-    private val validator = RecordFeedbackContextValidator()
-
     @Test
-    fun `valid context has no errors`() {
-        val result = validator.validate(validContext())
+    fun `valid context passes through deduplicated warnings`() {
+        val warnings = RecordFeedbackContextValidator.requireValid(
+            validContext().copy(warnings = listOf("weather_location_unavailable", "weather_location_unavailable")),
+        )
 
-        assertThat(result.errors).isEmpty()
-        assertThat(result.warnings).isEmpty()
-        assertThat(result.isValid).isTrue()
+        assertThat(warnings).containsExactly("weather_location_unavailable")
     }
 
     @Test
-    fun `invalid schema version is an error`() {
-        val result = validator.validate(validContext().copy(schemaVersion = "record-feedback-context.v1"))
-
-        assertThat(result.isValid).isFalse()
-        assertThat(result.errors).containsExactly("invalid_schema_version")
-    }
-
-    @Test
-    fun `assembler warnings pass through validation warnings`() {
-        val result = validator.validate(validContext().copy(warnings = listOf("weather_location_unavailable")))
-
-        assertThat(result.isValid).isTrue()
-        assertThat(result.warnings).containsExactly("weather_location_unavailable")
+    fun `invalid schema version fails as invalid context`() {
+        assertThatThrownBy {
+            RecordFeedbackContextValidator.requireValid(
+                validContext().copy(schemaVersion = "record-feedback-context.v1"),
+            )
+        }.isInstanceOfSatisfying(RecordFeedbackGenerationFailure::class.java) {
+            assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.INVALID_CONTEXT)
+        }
     }
 
     @Test
@@ -44,10 +40,10 @@ class RecordFeedbackContextValidatorTest {
             record = validContext().record.copy(memo = " ")
         )
 
-        val result = validator.validate(context)
-
-        assertThat(result.isValid).isFalse()
-        assertThat(result.errors).contains("record_memo_blank")
+        assertThatThrownBy { RecordFeedbackContextValidator.requireValid(context) }
+            .isInstanceOfSatisfying(RecordFeedbackGenerationFailure::class.java) {
+                assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.INVALID_CONTEXT)
+            }
     }
 
     private fun validContext(): RecordFeedbackContext {

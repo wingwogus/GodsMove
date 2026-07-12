@@ -1,14 +1,14 @@
 package com.chamchamcham.api.coaching.dto
 
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackResult
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackUserResponse
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackStatusResult
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionCategory
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionDue
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContent
 import com.chamchamcham.domain.coaching.CoachingFeedbackStatus
 import java.time.LocalDateTime
 import java.util.UUID
 
-object FarmingRecordFeedbackResponses {
+object RecordFeedbackResponses {
     data class StatusResponse(
         val feedbackId: UUID,
         val recordId: UUID,
@@ -21,14 +21,14 @@ object FarmingRecordFeedbackResponses {
         val updatedAt: LocalDateTime,
     ) {
         companion object {
-            fun from(source: RecordFeedbackResult) = StatusResponse(
+            fun from(source: RecordFeedbackStatusResult) = StatusResponse(
                 feedbackId = source.feedbackId,
                 recordId = source.recordId,
                 status = source.status,
                 sourceRevision = source.sourceRevision,
                 inputPrepared = source.inputPrepared,
                 failureCode = source.failureCode,
-                feedback = source.feedback?.let(FeedbackResponse::from),
+                feedback = source.content?.let(FeedbackResponse::from),
                 createdAt = source.createdAt,
                 updatedAt = source.updatedAt,
             )
@@ -40,7 +40,7 @@ object FarmingRecordFeedbackResponses {
         val nextActions: List<NextActionResponse>,
     ) {
         companion object {
-            fun from(source: RecordFeedbackUserResponse) = FeedbackResponse(
+            fun from(source: RecordFeedbackContent) = FeedbackResponse(
                 goodPoint = GoodPointResponse(text = source.goodPoint.text),
                 nextActions = source.nextActions.map { action ->
                     NextActionResponse(

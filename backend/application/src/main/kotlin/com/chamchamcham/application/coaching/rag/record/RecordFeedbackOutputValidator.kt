@@ -1,32 +1,30 @@
 package com.chamchamcham.application.coaching.rag.record
 
-import org.springframework.stereotype.Component
-
-data class RecordFeedbackAllowedEvidenceRefs(
-    val ids: Set<String>,
-    val weatherIds: Set<String>,
-    val documentIds: Set<String>,
-)
-
-data class RecordFeedbackOutputValidation(
-    val status: RecordFeedbackOutputValidationStatus,
-    val warnings: List<String>,
-) {
-    val isValid: Boolean
-        get() = status == RecordFeedbackOutputValidationStatus.PASS
-}
-
-enum class RecordFeedbackOutputValidationStatus {
-    PASS,
-    FAIL,
-}
-
-@Component
-class RecordFeedbackOutputValidator {
-    fun allowedEvidenceRefs(
+object RecordFeedbackOutputValidator {
+    fun validate(
+        content: RecordFeedbackContent,
         context: RecordFeedbackContext,
         evidence: List<RecordFeedbackEvidence>,
-    ): RecordFeedbackAllowedEvidenceRefs {
+    ): List<String> {
+        val allowedEvidenceRefs = allowedEvidenceRefs(context, evidence)
+        val warnings = mutableListOf<String>()
+
+        validateItem("good_point", content.goodPoint, allowedEvidenceRefs, warnings)
+
+        if (content.nextActions.size !in MIN_ACTION_COUNT..MAX_ACTION_COUNT) {
+            warnings += "action_count"
+        }
+        content.nextActions.forEachIndexed { index, action ->
+            validateAction(index, action, allowedEvidenceRefs, warnings)
+        }
+
+        return warnings.distinct()
+    }
+
+    private fun allowedEvidenceRefs(
+        context: RecordFeedbackContext,
+        evidence: List<RecordFeedbackEvidence>,
+    ): AllowedEvidenceRefs {
         val weatherIds = buildSet {
             if (context.weather != null) {
                 add(WEATHER_CURRENT_ID)
@@ -38,45 +36,20 @@ class RecordFeedbackOutputValidator {
             .filter { it.isNotBlank() }
             .toCollection(linkedSetOf())
 
-        return RecordFeedbackAllowedEvidenceRefs(
+        return AllowedEvidenceRefs(
             ids = linkedSetOf(context.recordCitationId()) + weatherIds + documentIds,
             weatherIds = weatherIds,
             documentIds = documentIds,
         )
     }
 
-    fun validate(
-        result: RecordFeedbackCoachingResult,
-        allowedEvidenceRefs: RecordFeedbackAllowedEvidenceRefs,
-    ): RecordFeedbackOutputValidation {
-        val warnings = mutableListOf<String>()
-
-        validateItem("good_point", result.goodPoint, allowedEvidenceRefs, warnings)
-
-        if (result.nextActions.size !in MIN_ACTION_COUNT..MAX_ACTION_COUNT) {
-            warnings += "action_count"
-        }
-        result.nextActions.forEachIndexed { index, action ->
-            validateAction(index, action, allowedEvidenceRefs, warnings)
-        }
-
-        return RecordFeedbackOutputValidation(
-            status = if (warnings.isEmpty()) {
-                RecordFeedbackOutputValidationStatus.PASS
-            } else {
-                RecordFeedbackOutputValidationStatus.FAIL
-            },
-            warnings = warnings.distinct(),
-        )
-    }
-
     private fun validateAction(
         index: Int,
-        action: RecordFeedbackNextAction,
-        allowedEvidenceRefs: RecordFeedbackAllowedEvidenceRefs,
+        action: RecordFeedbackAction,
+        allowedEvidenceRefs: AllowedEvidenceRefs,
         warnings: MutableList<String>,
     ) {
-        validateItem("next_action_$index", action.asItem(), allowedEvidenceRefs, warnings)
+        validateItem("next_action_$index", action.asGoodPoint(), allowedEvidenceRefs, warnings)
 
         if (
             action.category == RecordFeedbackActionCategory.WEATHER &&
@@ -94,8 +67,8 @@ class RecordFeedbackOutputValidator {
 
     private fun validateItem(
         prefix: String,
-        item: RecordFeedbackItem,
-        allowedEvidenceRefs: RecordFeedbackAllowedEvidenceRefs,
+        item: RecordFeedbackGoodPoint,
+        allowedEvidenceRefs: AllowedEvidenceRefs,
         warnings: MutableList<String>,
     ) {
         if (item.basis.isBlank()) {
@@ -123,8 +96,8 @@ class RecordFeedbackOutputValidator {
         }
     }
 
-    private fun RecordFeedbackNextAction.asItem(): RecordFeedbackItem {
-        return RecordFeedbackItem(
+    private fun RecordFeedbackAction.asGoodPoint(): RecordFeedbackGoodPoint {
+        return RecordFeedbackGoodPoint(
             basis = basis,
             text = text,
             evidenceRefs = evidenceRefs,
@@ -143,13 +116,17 @@ class RecordFeedbackOutputValidator {
         return value.lowercase().filter { it.isLetterOrDigit() }
     }
 
-    private companion object {
-        const val WEATHER_CURRENT_ID = "weather:current"
-        const val MIN_ACTION_COUNT = 2
-        const val MAX_ACTION_COUNT = 3
-        const val MIN_TEXT_LENGTH = 15
-        const val MAX_TEXT_LENGTH = 45
-        const val MIN_BASIS_TOKEN_LENGTH = 2
-        val BASIS_TOKEN_REGEX = Regex("[\\p{L}\\p{N}]+")
-    }
+    private data class AllowedEvidenceRefs(
+        val ids: Set<String>,
+        val weatherIds: Set<String>,
+        val documentIds: Set<String>,
+    )
+
+    private const val WEATHER_CURRENT_ID = "weather:current"
+    private const val MIN_ACTION_COUNT = 2
+    private const val MAX_ACTION_COUNT = 3
+    private const val MIN_TEXT_LENGTH = 15
+    private const val MAX_TEXT_LENGTH = 45
+    private const val MIN_BASIS_TOKEN_LENGTH = 2
+    private val BASIS_TOKEN_REGEX = Regex("[\\p{L}\\p{N}]+")
 }

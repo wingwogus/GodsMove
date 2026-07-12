@@ -2,6 +2,8 @@ package com.chamchamcham.application.coaching.rag.record
 
 import com.chamchamcham.application.coaching.rag.common.RagProperties
 import com.chamchamcham.application.coaching.rag.common.RagSourceType
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackFailureCode
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackGenerationFailure
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -37,11 +39,11 @@ class RecordFeedbackGenerationServiceTest {
         val chatClient = FakeChatClient(validResult("doc-1", context.recordCitationId()))
         val vectorStore = FakeVectorStore(listOf(officialDocument("doc-1")))
 
-        val generated = service(vectorStore = vectorStore, chatClient = chatClient)
+        val generationResult = service(vectorStore = vectorStore, chatClient = chatClient)
             .generate(context, topK = 2)
 
-        assertThat(generated.result.nextActions).hasSize(2)
-        assertThat(generated.citations.map { it["id"] })
+        assertThat(generationResult.content.nextActions).hasSize(2)
+        assertThat(generationResult.citations.map { it["id"] })
             .contains("doc-1", context.recordCitationId())
         assertThat(chatClient.requestSpec.advisorUseCount).isZero()
         assertThat(chatClient.requestSpec.userText).contains(context.recordCitationId())
@@ -94,8 +96,8 @@ class RecordFeedbackGenerationServiceTest {
         assertThatThrownBy {
             service(documents = listOf(officialDocument("doc-1")), chatClient = chatClient)
                 .generate(context)
-        }.isInstanceOfSatisfying(RecordFeedbackGenerationException::class.java) {
-            assertThat(it.code).isEqualTo(RecordFeedbackGenerationFailureCode.STRUCTURED_OUTPUT_INVALID)
+        }.isInstanceOfSatisfying(RecordFeedbackGenerationFailure::class.java) {
+            assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.STRUCTURED_OUTPUT_INVALID)
         }
         assertThat(chatClient.attempts).isEqualTo(2)
     }
@@ -103,8 +105,8 @@ class RecordFeedbackGenerationServiceTest {
     @Test
     fun `fails with insufficient evidence when no official document is retrieved`() {
         assertThatThrownBy { service(documents = emptyList()).generate(context) }
-            .isInstanceOfSatisfying(RecordFeedbackGenerationException::class.java) {
-                assertThat(it.code).isEqualTo(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE)
+            .isInstanceOfSatisfying(RecordFeedbackGenerationFailure::class.java) {
+                assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.INSUFFICIENT_EVIDENCE)
             }
     }
 
@@ -112,8 +114,8 @@ class RecordFeedbackGenerationServiceTest {
     fun `context only retrieved documents are insufficient evidence`() {
         assertThatThrownBy {
             service(documents = listOf(contextOnlyDocument("record-doc"))).generate(context)
-        }.isInstanceOfSatisfying(RecordFeedbackGenerationException::class.java) {
-            assertThat(it.code).isEqualTo(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE)
+        }.isInstanceOfSatisfying(RecordFeedbackGenerationFailure::class.java) {
+            assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.INSUFFICIENT_EVIDENCE)
         }
     }
 
@@ -124,8 +126,8 @@ class RecordFeedbackGenerationServiceTest {
         assertThatThrownBy {
             service(documents = listOf(officialDocument(id = " ")), chatClient = chatClient)
                 .generate(context)
-        }.isInstanceOfSatisfying(RecordFeedbackGenerationException::class.java) {
-            assertThat(it.code).isEqualTo(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE)
+        }.isInstanceOfSatisfying(RecordFeedbackGenerationFailure::class.java) {
+            assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.INSUFFICIENT_EVIDENCE)
         }
         assertThat(chatClient.attempts).isZero()
     }
@@ -137,8 +139,8 @@ class RecordFeedbackGenerationServiceTest {
         assertThatThrownBy {
             service(documents = listOf(officialDocument(text = " ")), chatClient = chatClient)
                 .generate(context)
-        }.isInstanceOfSatisfying(RecordFeedbackGenerationException::class.java) {
-            assertThat(it.code).isEqualTo(RecordFeedbackGenerationFailureCode.INSUFFICIENT_EVIDENCE)
+        }.isInstanceOfSatisfying(RecordFeedbackGenerationFailure::class.java) {
+            assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.INSUFFICIENT_EVIDENCE)
         }
         assertThat(chatClient.attempts).isZero()
     }
@@ -160,17 +162,17 @@ class RecordFeedbackGenerationServiceTest {
     }
 
     @Test
-    fun `maps vector store runtime failures to generation failed`() {
+    fun `maps vector store runtime failures to retrieval failed`() {
         assertThatThrownBy {
             service(vectorStore = FakeVectorStore(exception = IllegalStateException("vector unavailable")))
                 .generate(context)
-        }.isInstanceOfSatisfying(RecordFeedbackGenerationException::class.java) {
-            assertThat(it.code).isEqualTo(RecordFeedbackGenerationFailureCode.GENERATION_FAILED)
+        }.isInstanceOfSatisfying(RecordFeedbackGenerationFailure::class.java) {
+            assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.RETRIEVAL_FAILED)
         }
     }
 
     @Test
-    fun `maps chat runtime failures to generation failed without structured output retry`() {
+    fun `maps chat runtime failures to chat unavailable without structured output retry`() {
         val chatClient = FakeChatClient(
             validResult("doc-1", context.recordCitationId()),
             callException = IllegalStateException("chat unavailable"),
@@ -179,8 +181,8 @@ class RecordFeedbackGenerationServiceTest {
         assertThatThrownBy {
             service(documents = listOf(officialDocument("doc-1")), chatClient = chatClient)
                 .generate(context)
-        }.isInstanceOfSatisfying(RecordFeedbackGenerationException::class.java) {
-            assertThat(it.code).isEqualTo(RecordFeedbackGenerationFailureCode.GENERATION_FAILED)
+        }.isInstanceOfSatisfying(RecordFeedbackGenerationFailure::class.java) {
+            assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.CHAT_UNAVAILABLE)
         }
         assertThat(chatClient.attempts).isZero()
     }
@@ -199,10 +201,8 @@ class RecordFeedbackGenerationServiceTest {
         return RecordFeedbackGenerationService(
             chatClient = chatClient,
             vectorStore = vectorStore,
-            contextValidator = RecordFeedbackContextValidator(),
             queryPlanner = RecordFeedbackRetrievalQueryPlanner(),
             promptBuilder = RecordFeedbackPromptBuilder(),
-            outputValidator = RecordFeedbackOutputValidator(),
             ragProperties = RagProperties(
                 chat = RagProperties.Chat(model = "test-chat"),
                 embedding = RagProperties.Embedding(model = "test-embedding"),
@@ -250,8 +250,8 @@ class RecordFeedbackGenerationServiceTest {
     private fun validResult(
         documentCitationId: String,
         recordCitationId: String,
-    ): RecordFeedbackCoachingResult {
-        return RecordFeedbackCoachingResult(
+    ): RecordFeedbackContent {
+        return RecordFeedbackContent(
             goodPoint = validItem(
                 basis = "점적관수",
                 text = "점적관수로 토양 상태를 확인한 점이 좋았어요.",
@@ -280,8 +280,8 @@ class RecordFeedbackGenerationServiceTest {
         basis: String = "점적관수",
         text: String = "점적관수로 토양 상태를 확인한 점이 좋았어요.",
         refs: List<String> = listOf(context.recordCitationId()),
-    ): RecordFeedbackItem {
-        return RecordFeedbackItem(
+    ): RecordFeedbackGoodPoint {
+        return RecordFeedbackGoodPoint(
             basis = basis,
             text = text,
             evidenceRefs = refs,
@@ -294,8 +294,8 @@ class RecordFeedbackGenerationServiceTest {
         basis: String = "토양 상태",
         text: String = "다음 점검 때 토양 상태를 다시 살펴보세요.",
         refs: List<String> = listOf(context.recordCitationId(), "doc-1"),
-    ): RecordFeedbackNextAction {
-        return RecordFeedbackNextAction(
+    ): RecordFeedbackAction {
+        return RecordFeedbackAction(
             due = due,
             category = category,
             basis = basis,

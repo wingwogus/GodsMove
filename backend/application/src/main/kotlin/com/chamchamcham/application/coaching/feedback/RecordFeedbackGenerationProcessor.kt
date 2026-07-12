@@ -1,10 +1,8 @@
 package com.chamchamcham.application.coaching.feedback
 
 import com.chamchamcham.application.coaching.rag.common.RagAuditStatus
-import com.chamchamcham.application.coaching.rag.record.GeneratedRecordFeedback
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContext
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationException
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationFailureCode
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationResult
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationService
 import com.chamchamcham.domain.coaching.CoachingFeedbackRepository
 import com.chamchamcham.domain.coaching.CoachingFeedbackStatus
@@ -14,6 +12,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.TransactionTemplate
+import mu.KotlinLogging
 
 @Service
 class RecordFeedbackGenerationProcessor(
@@ -27,14 +26,17 @@ class RecordFeedbackGenerationProcessor(
     }
 
     fun generate(event: RecordFeedbackGenerationRequested) {
-        val pending = loadPendingGeneration(event) ?: return
-        val generated = try {
-            generationService.generate(pending.context)
-        } catch (exception: RecordFeedbackGenerationException) {
-            return finalizeFailure(event, pending.snapshot, exception.code.name)
+        val pendingGeneration = loadPendingGeneration(event) ?: return
+        val generationResult = try {
+            generationService.generate(pendingGeneration.context)
+        } catch (failure: RecordFeedbackGenerationFailure) {
+            return finalizeFailure(event, pendingGeneration.snapshot, failure.code)
+        } catch (exception: RuntimeException) {
+            logger.error(exception) { "unexpected record feedback generation failure" }
+            return finalizeFailure(event, pendingGeneration.snapshot, RecordFeedbackFailureCode.UNEXPECTED)
         }
 
-        finalizeReady(event, pending.snapshot, generated)
+        finalizeReady(event, pendingGeneration.snapshot, generationResult)
     }
 
     private fun loadPendingGeneration(event: RecordFeedbackGenerationRequested): ValidGeneration? {
@@ -54,7 +56,7 @@ class RecordFeedbackGenerationProcessor(
                     finalizeFailure(
                         event = event,
                         snapshot = generation.snapshot,
-                        failureCode = RecordFeedbackGenerationFailureCode.STRUCTURED_OUTPUT_INVALID.name,
+                        failureCode = RecordFeedbackFailureCode.INVALID_CONTEXT_SNAPSHOT,
                     )
                     null
                 }
@@ -65,7 +67,7 @@ class RecordFeedbackGenerationProcessor(
     private fun finalizeReady(
         event: RecordFeedbackGenerationRequested,
         snapshot: Map<String, Any?>,
-        generated: GeneratedRecordFeedback,
+        generationResult: RecordFeedbackGenerationResult,
     ) {
         writeTransaction.executeWithoutResult {
             val feedback = feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId) ?: return@executeWithoutResult
@@ -74,12 +76,12 @@ class RecordFeedbackGenerationProcessor(
             }
 
             feedback.markReady(
-                structuredResult = objectMapper.convertValue(generated.result, RESULT_TYPE),
-                citations = generated.citations,
-                auditStatus = generated.auditStatus(),
-                auditWarnings = generated.auditWarnings,
-                modelName = generated.modelInfo.chat,
-                embeddingModel = generated.modelInfo.embedding,
+                structuredResult = objectMapper.convertValue(generationResult.content, RESULT_TYPE),
+                citations = generationResult.citations,
+                auditStatus = generationResult.auditStatus(),
+                auditWarnings = generationResult.auditWarnings,
+                modelName = generationResult.modelInfo.chat,
+                embeddingModel = generationResult.modelInfo.embedding,
             )
         }
     }
@@ -87,7 +89,7 @@ class RecordFeedbackGenerationProcessor(
     private fun finalizeFailure(
         event: RecordFeedbackGenerationRequested,
         snapshot: Map<String, Any?>,
-        failureCode: String,
+        failureCode: RecordFeedbackFailureCode,
     ) {
         writeTransaction.executeWithoutResult {
             val feedback = feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId) ?: return@executeWithoutResult
@@ -95,7 +97,7 @@ class RecordFeedbackGenerationProcessor(
                 return@executeWithoutResult
             }
 
-            feedback.markFailed(failureCode)
+            feedback.markFailed(failureCode.name)
         }
     }
 
@@ -118,7 +120,7 @@ class RecordFeedbackGenerationProcessor(
         }
     }
 
-    private fun GeneratedRecordFeedback.auditStatus(): String {
+    private fun RecordFeedbackGenerationResult.auditStatus(): String {
         return if (auditWarnings.isEmpty()) {
             RagAuditStatus.PASS.name
         } else {
@@ -138,6 +140,7 @@ class RecordFeedbackGenerationProcessor(
     ) : GenerationRead
 
     private companion object {
+        val logger = KotlinLogging.logger {}
         val RESULT_TYPE = object : TypeReference<Map<String, Any?>>() {}
     }
 }

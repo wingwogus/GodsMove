@@ -84,7 +84,7 @@ class RecordFeedbackQueryServiceTest {
         assertThat(result.sourceRevision).isEqualTo(3)
         assertThat(result.inputPrepared).isTrue()
         assertThat(result.failureCode).isNull()
-        assertThat(result.feedback).isNull()
+        assertThat(result.content).isNull()
     }
 
     @Test
@@ -105,7 +105,7 @@ class RecordFeedbackQueryServiceTest {
         assertThat(result.status).isEqualTo(CoachingFeedbackStatus.FAILED)
         assertThat(result.inputPrepared).isFalse()
         assertThat(result.failureCode).isEqualTo("CONTEXT_ASSEMBLY_FAILED")
-        assertThat(result.feedback).isNull()
+        assertThat(result.content).isNull()
     }
 
     @Test
@@ -123,17 +123,17 @@ class RecordFeedbackQueryServiceTest {
 
         val result = service.get(member.id!!, record.id!!)
 
-        assertThat(result.feedback?.goodPoint?.text).contains("점적관수")
-        assertThat(result.feedback?.nextActions).hasSize(2)
-        assertThat(result.feedback?.nextActions?.map { it.text }).containsExactly(
+        assertThat(result.content?.goodPoint?.text).contains("점적관수")
+        assertThat(result.content?.nextActions).hasSize(2)
+        assertThat(result.content?.nextActions?.map { it.text }).containsExactly(
             "오후에 토양 표면이 마르는지 한 번 더 확인하세요.",
             "이번 주 안에 배수로 주변의 막힌 흙을 정리하세요.",
         )
-        assertThat(result.feedback?.nextActions?.map { it.due }).containsExactly(
+        assertThat(result.content?.nextActions?.map { it.due }).containsExactly(
             RecordFeedbackActionDue.TODAY,
             RecordFeedbackActionDue.THIS_WEEK,
         )
-        assertThat(result.feedback?.nextActions?.map { it.category }).containsExactly(
+        assertThat(result.content?.nextActions?.map { it.category }).containsExactly(
             RecordFeedbackActionCategory.IRRIGATION,
             RecordFeedbackActionCategory.CULTIVATION,
         )

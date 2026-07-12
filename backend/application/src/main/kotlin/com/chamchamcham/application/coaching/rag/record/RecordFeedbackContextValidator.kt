@@ -1,22 +1,11 @@
 package com.chamchamcham.application.coaching.rag.record
 
-import com.chamchamcham.application.exception.ErrorCode
-import com.chamchamcham.application.exception.business.BusinessException
-import org.springframework.stereotype.Component
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackFailureCode
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackGenerationFailure
 
-data class RecordFeedbackContextValidationResult(
-    val errors: List<String>,
-    val warnings: List<String>,
-) {
-    val isValid: Boolean
-        get() = errors.isEmpty()
-}
-
-@Component
-class RecordFeedbackContextValidator {
-    fun validate(context: RecordFeedbackContext): RecordFeedbackContextValidationResult {
+object RecordFeedbackContextValidator {
+    fun requireValid(context: RecordFeedbackContext): List<String> {
         val errors = mutableListOf<String>()
-        val warnings = mutableListOf<String>()
 
         if (context.schemaVersion != RECORD_FEEDBACK_CONTEXT_SCHEMA_VERSION) {
             errors += "invalid_schema_version"
@@ -36,19 +25,10 @@ class RecordFeedbackContextValidator {
         if (context.record.photoCount < 0) {
             errors += "photo_count_negative"
         }
-        warnings += context.warnings
 
-        return RecordFeedbackContextValidationResult(
-            errors = errors.distinct(),
-            warnings = warnings.distinct(),
-        )
-    }
-
-    fun requireValid(context: RecordFeedbackContext): RecordFeedbackContextValidationResult {
-        val result = validate(context)
-        if (!result.isValid) {
-            throw BusinessException(ErrorCode.RAG_INVALID_REQUEST)
+        if (errors.isNotEmpty()) {
+            throw RecordFeedbackGenerationFailure(RecordFeedbackFailureCode.INVALID_CONTEXT)
         }
-        return result
+        return context.warnings.distinct()
     }
 }

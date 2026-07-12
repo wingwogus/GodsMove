@@ -19,6 +19,7 @@ import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.Member
 import org.assertj.core.api.Assertions.assertThat
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -30,6 +31,9 @@ import org.mockito.Mockito.verify
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
+import org.springframework.transaction.TransactionDefinition
+import org.springframework.transaction.support.AbstractPlatformTransactionManager
+import org.springframework.transaction.support.DefaultTransactionStatus
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -69,6 +73,7 @@ class RecordFeedbackPreparationServiceTest {
             contextAssembler = contextAssembler,
             objectMapper = Jackson2ObjectMapperBuilder.json().build(),
             eventPublisher = eventPublisher,
+            transactionManager = NoOpTransactionManager(),
         )
     }
 
@@ -76,7 +81,7 @@ class RecordFeedbackPreparationServiceTest {
     fun `prepare stores the assembled context as an immutable input snapshot`() {
         val feedback = feedback()
         val event = event(feedback)
-        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        stubCurrentAndLockedFeedback(event, feedback)
         `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenReturn(context())
 
         service.prepare(event)
@@ -92,7 +97,7 @@ class RecordFeedbackPreparationServiceTest {
     fun `preparation publishes generation request only after snapshot is attached`() {
         val feedback = feedback()
         val event = event(feedback)
-        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        stubCurrentAndLockedFeedback(event, feedback)
         `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenReturn(context())
 
         service.prepare(event)
@@ -112,13 +117,63 @@ class RecordFeedbackPreparationServiceTest {
     fun `prepare marks pending feedback failed when context assembly fails`() {
         val feedback = feedback()
         val event = event(feedback)
-        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        stubCurrentAndLockedFeedback(event, feedback)
         `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenThrow(IllegalStateException("unavailable"))
 
         service.prepare(event)
 
         assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.FAILED)
         assertThat(feedback.failureCode).isEqualTo("CONTEXT_ASSEMBLY_FAILED")
+        verifyNoMoreInteractions(eventPublisher)
+    }
+
+    @Test
+    fun `prepare propagates fatal errors from context assembly`() {
+        val feedback = feedback()
+        val event = event(feedback)
+        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenThrow(AssertionError("fatal"))
+
+        assertThrows<AssertionError> { service.prepare(event) }
+
+        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.PENDING)
+        assertThat(feedback.failureCode).isNull()
+        verifyNoMoreInteractions(eventPublisher)
+    }
+
+    @Test
+    fun `prepare leaves stale feedback unchanged when context assembly completes late`() {
+        val feedback = feedback()
+        val event = event(feedback)
+        stubCurrentAndLockedFeedback(event, feedback)
+        `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenAnswer {
+            feedback.markStale()
+            context()
+        }
+
+        service.prepare(event)
+
+        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.STALE)
+        assertThat(feedback.inputSnapshot).isNull()
+        assertThat(feedback.failureCode).isNull()
+        verifyNoMoreInteractions(eventPublisher)
+    }
+
+    @Test
+    fun `prepare leaves stale feedback unchanged when context assembly fails late`() {
+        val feedback = feedback()
+        val event = event(feedback)
+        stubCurrentAndLockedFeedback(event, feedback)
+        `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenAnswer {
+            feedback.markStale()
+            throw IllegalStateException("unavailable")
+        }
+
+        service.prepare(event)
+
+        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.STALE)
+        assertThat(feedback.inputSnapshot).isNull()
+        assertThat(feedback.failureCode).isNull()
         verifyNoMoreInteractions(eventPublisher)
     }
 
@@ -153,6 +208,14 @@ class RecordFeedbackPreparationServiceTest {
         sourceRevision = sourceRevision,
     )
 
+    private fun stubCurrentAndLockedFeedback(
+        event: RecordFeedbackPreparationRequested,
+        feedback: CoachingFeedback,
+    ) {
+        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        `when`(feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)).thenReturn(feedback)
+    }
+
     private fun context() = RecordFeedbackContext(
         member = RecordFeedbackMemberContext(member.id!!, null, null),
         farm = RecordFeedbackFarmContext(farm.id!!, farm.name, farm.roadAddress, null, null),
@@ -170,4 +233,14 @@ class RecordFeedbackPreparationServiceTest {
         ),
         weather = null,
     )
+
+    private class NoOpTransactionManager : AbstractPlatformTransactionManager() {
+        override fun doGetTransaction(): Any = Any()
+
+        override fun doBegin(transaction: Any, definition: TransactionDefinition) = Unit
+
+        override fun doCommit(status: DefaultTransactionStatus) = Unit
+
+        override fun doRollback(status: DefaultTransactionStatus) = Unit
+    }
 }

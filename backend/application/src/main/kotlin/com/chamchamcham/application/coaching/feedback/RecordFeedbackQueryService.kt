@@ -1,6 +1,6 @@
 package com.chamchamcham.application.coaching.feedback
 
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackCoachingResult
+import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContent
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.coaching.CoachingFeedback
@@ -22,13 +22,13 @@ class RecordFeedbackQueryService(
     private val objectMapper: ObjectMapper,
 ) {
     @Transactional(readOnly = true)
-    fun get(memberId: UUID, recordId: UUID): RecordFeedbackResult {
+    fun get(memberId: UUID, recordId: UUID): RecordFeedbackStatusResult {
         val record = findOwnedActiveRecord(memberId, recordId)
-        return findCurrentOrStale(record).toResult()
+        return findCurrentOrStale(record).toStatusResult()
     }
 
     @Transactional
-    fun regenerate(memberId: UUID, recordId: UUID): RecordFeedbackResult {
+    fun regenerate(memberId: UUID, recordId: UUID): RecordFeedbackStatusResult {
         val record = findOwnedActiveRecord(memberId, recordId)
         val current = findCurrent(record)
 
@@ -43,7 +43,7 @@ class RecordFeedbackQueryService(
             throw BusinessException(ErrorCode.RECORD_FEEDBACK_REGENERATION_NOT_ALLOWED)
         }
 
-        return lifecycleService.retry(current).toResult()
+        return lifecycleService.retry(current).toStatusResult()
     }
 
     private fun findOwnedActiveRecord(memberId: UUID, recordId: UUID): FarmingRecord =
@@ -69,19 +69,19 @@ class RecordFeedbackQueryService(
             CoachingFeedbackStatus.STALE,
         )
 
-    private fun CoachingFeedback.toResult(): RecordFeedbackResult = RecordFeedbackResult(
+    private fun CoachingFeedback.toStatusResult(): RecordFeedbackStatusResult = RecordFeedbackStatusResult(
         feedbackId = requireNotNull(id),
         recordId = requireNotNull(record?.id),
         status = status,
         sourceRevision = sourceRevision,
         inputPrepared = inputSnapshot != null,
         failureCode = failureCode,
-        feedback = toUserFeedback(),
+        content = toContent(),
         createdAt = createdAt,
         updatedAt = updatedAt,
     )
 
-    private fun CoachingFeedback.toUserFeedback(): RecordFeedbackUserResponse? {
+    private fun CoachingFeedback.toContent(): RecordFeedbackContent? {
         if (status != CoachingFeedbackStatus.READY) {
             return null
         }
@@ -89,7 +89,7 @@ class RecordFeedbackQueryService(
         val result = try {
             objectMapper.convertValue(
                 structuredResult ?: throw IllegalStateException("READY record feedback has no structured result"),
-                RecordFeedbackCoachingResult::class.java,
+                RecordFeedbackContent::class.java,
             )
         } catch (exception: IllegalStateException) {
             throw exception
@@ -97,15 +97,6 @@ class RecordFeedbackQueryService(
             throw IllegalStateException("READY record feedback has malformed structured result", exception)
         }
 
-        return RecordFeedbackUserResponse(
-            goodPoint = RecordFeedbackUserGoodPoint(text = result.goodPoint.text),
-            nextActions = result.nextActions.map { action ->
-                RecordFeedbackUserNextAction(
-                    text = action.text,
-                    due = action.due,
-                    category = action.category,
-                )
-            },
-        )
+        return result
     }
 }
