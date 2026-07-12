@@ -5,6 +5,8 @@
 //  Created by iyungui on 7/12/26.
 //
 
+import Foundation
+
 actor PendingFarmSyncService {
     private let store: PendingFarmStore
     private let repository: any FarmRepository
@@ -15,19 +17,19 @@ actor PendingFarmSyncService {
         self.repository = repository
     }
 
-    func enqueue(_ requests: [SaveFarmRequestDTO]) async {
-        await store.replace(with: requests)
+    func enqueue(_ requests: [SaveFarmRequestDTO], memberId: UUID) async {
+        await store.replace(with: requests, memberId: memberId)
     }
 
-    func syncPending() async {
+    func syncPending(memberId: UUID) async {
         guard !isSyncing else { return }
         isSyncing = true
         defer { isSyncing = false }
 
-        while let request = await store.load().first {
+        while let request = await store.load(memberId: memberId).first {
             do {
                 _ = try await repository.createFarm(request)
-                await store.removeFirst()
+                await store.removeFirst(memberId: memberId)
             } catch {
                 return
             }

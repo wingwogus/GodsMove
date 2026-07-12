@@ -13,14 +13,15 @@ import Testing
 struct PendingFarmSyncServiceTests {
     @Test("sync removes successful requests in FIFO order")
     func successfulFIFO() async throws {
+        let memberId = UUID()
         let defaults = isolatedDefaults()
         let store = PendingFarmStore(defaults: defaults)
         let repository = RecordingFarmRepository()
         let requests = try farmRequests(count: 2)
         let service = PendingFarmSyncService(store: store, repository: repository)
 
-        await service.enqueue(requests)
-        await service.syncPending()
+        await service.enqueue(requests, memberId: memberId)
+        await service.syncPending(memberId: memberId)
 
         let createdNames = await repository.createdNames
         let pending = await store.load()
@@ -30,14 +31,15 @@ struct PendingFarmSyncServiceTests {
 
     @Test("sync keeps failed and unattempted requests")
     func partialFailure() async throws {
+        let memberId = UUID()
         let defaults = isolatedDefaults()
         let store = PendingFarmStore(defaults: defaults)
         let repository = RecordingFarmRepository(failAtCall: 2)
         let requests = try farmRequests(count: 3)
         let service = PendingFarmSyncService(store: store, repository: repository)
 
-        await service.enqueue(requests)
-        await service.syncPending()
+        await service.enqueue(requests, memberId: memberId)
+        await service.syncPending(memberId: memberId)
 
         let createdNames = await repository.createdNames
         let pendingNames = await store.load().map(\.name)
@@ -47,22 +49,48 @@ struct PendingFarmSyncServiceTests {
 
     @Test("a later retry drains the retained queue without replaying success")
     func retryAfterFailure() async throws {
+        let memberId = UUID()
         let defaults = isolatedDefaults()
         let store = PendingFarmStore(defaults: defaults)
         let failingRepository = RecordingFarmRepository(failAtCall: 2)
         let requests = try farmRequests(count: 3)
         let firstService = PendingFarmSyncService(store: store, repository: failingRepository)
 
-        await firstService.enqueue(requests)
-        await firstService.syncPending()
+        await firstService.enqueue(requests, memberId: memberId)
+        await firstService.syncPending(memberId: memberId)
 
         let retryRepository = RecordingFarmRepository()
         let retryService = PendingFarmSyncService(store: store, repository: retryRepository)
-        await retryService.syncPending()
+        await retryService.syncPending(memberId: memberId)
 
         let retriedNames = await retryRepository.createdNames
         let pending = await store.load()
         #expect(retriedNames == Array(requests.dropFirst()).map(\.name))
+        #expect(pending.isEmpty)
+    }
+
+    @Test("pending farms never sync into a different member account")
+    func isolatesQueueByMember() async throws {
+        let ownerMemberId = UUID()
+        let otherMemberId = UUID()
+        let store = PendingFarmStore(defaults: isolatedDefaults())
+        let repository = RecordingFarmRepository()
+        let requests = try farmRequests(count: 2)
+        let service = PendingFarmSyncService(store: store, repository: repository)
+
+        await service.enqueue(requests, memberId: ownerMemberId)
+        await service.syncPending(memberId: otherMemberId)
+
+        let wrongMemberCreates = await repository.createdNames
+        let retained = await store.load()
+        #expect(wrongMemberCreates.isEmpty)
+        #expect(retained == requests)
+
+        await service.syncPending(memberId: ownerMemberId)
+
+        let ownerCreates = await repository.createdNames
+        let pending = await store.load()
+        #expect(ownerCreates == requests.map(\.name))
         #expect(pending.isEmpty)
     }
 

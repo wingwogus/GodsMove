@@ -18,6 +18,8 @@ struct OnboardingViewModelSubmitTests {
         let store: OnboardingDraftStore
         let media: FakeMediaUploadRepository
         let onboarding: FakeOnboardingRepository
+        let farm: FakeFarmRepository
+        let pendingStore: PendingFarmStore
         let appState: AppState
     }
 
@@ -27,10 +29,27 @@ struct OnboardingViewModelSubmitTests {
         withPhoto: Bool,
         uploadMediaId: UUID = UUID(),
         uploadFails: Bool = false,
-        completionFailFirst: Int = 0
+        completionFailFirst: Int = 0,
+        farmCount: Int = 1,
+        farmFailAtCall: Int? = nil
     ) -> Harness {
         let store = OnboardingTestFactory.isolatedStore()
         var draft = OnboardingTestFactory.validDraft()
+        if farmCount > 1 {
+            let representativeFarm = draft.representativeFarm
+            let extraFarms = (1..<farmCount).map { index in
+                OnboardingFarmDraft(
+                    cropIDs: [UUID()],
+                    farmName: "추가농장\(index)",
+                    farmRoadAddress: "전북 전주시 추가로 \(index)",
+                    farmJibunAddress: "전북 전주시 추가동 \(index)",
+                    farmLatitude: 35.8 + Double(index) / 100,
+                    farmLongitude: 127.1 + Double(index) / 100
+                )
+            }
+            draft.farms = [representativeFarm] + extraFarms
+            draft.activeFarmIndex = draft.farms.count - 1
+        }
         if withPhoto {
             draft.profileImageFileName = store.saveProfileImage(Data("fake-image".utf8))
         }
@@ -38,15 +57,27 @@ struct OnboardingViewModelSubmitTests {
 
         let media = FakeMediaUploadRepository(successMediaId: uploadMediaId, fails: uploadFails)
         let onboarding = FakeOnboardingRepository(failFirst: completionFailFirst)
+        let farm = FakeFarmRepository(failAtCall: farmFailAtCall)
+        let pendingStore = OnboardingTestFactory.isolatedPendingFarmStore()
+        let pendingFarmSyncService = PendingFarmSyncService(store: pendingStore, repository: farm)
         let viewModel = OnboardingViewModel(
             store: store,
             onboardingRepository: onboarding,
             mediaUploadRepository: media,
             cropCatalogService: StubCropCatalogService(),
-            memberProfileCache: StubMemberProfileCache()
+            memberProfileCache: StubMemberProfileCache(),
+            pendingFarmSyncService: pendingFarmSyncService
         )
         viewModel.resumeSavedDraft()
-        return Harness(viewModel: viewModel, store: store, media: media, onboarding: onboarding, appState: AppState())
+        return Harness(
+            viewModel: viewModel,
+            store: store,
+            media: media,
+            onboarding: onboarding,
+            farm: farm,
+            pendingStore: pendingStore,
+            appState: AppState()
+        )
     }
 
     @Test("no photo: completes without touching the media upload API")
@@ -130,5 +161,43 @@ struct OnboardingViewModelSubmitTests {
         #expect(onboardingCalls == 2)
         #expect(sentDraft?.profileMediaId == mediaId)
         #expect(harness.appState.isOnboarded)
+    }
+
+    @Test("one farm completes onboarding without standalone farm creation")
+    func representativeOnly() async {
+        let harness = makeHarness(withPhoto: false, farmCount: 1)
+
+        await harness.viewModel.submit(appState: harness.appState)
+
+        let onboardingCalls = await harness.onboarding.callCount
+        let createdNames = await harness.farm.createdNames
+        #expect(onboardingCalls == 1)
+        #expect(createdNames.isEmpty)
+    }
+
+    @Test("additional farms are created after onboarding in draft order")
+    func createsAdditionalFarms() async {
+        let harness = makeHarness(withPhoto: false, farmCount: 3)
+
+        await harness.viewModel.submit(appState: harness.appState)
+
+        let onboardingCalls = await harness.onboarding.callCount
+        let createdNames = await harness.farm.createdNames
+        #expect(onboardingCalls == 1)
+        #expect(createdNames == ["추가농장1", "추가농장2"])
+        #expect(harness.appState.isOnboarded)
+    }
+
+    @Test("extra farm failure still completes onboarding and retains pending requests")
+    func extraFarmFailureIsRecoverable() async {
+        let harness = makeHarness(withPhoto: false, farmCount: 3, farmFailAtCall: 1)
+
+        await harness.viewModel.submit(appState: harness.appState)
+
+        let onboardingCalls = await harness.onboarding.callCount
+        let pendingNames = await harness.pendingStore.load().map(\.name)
+        #expect(onboardingCalls == 1)
+        #expect(harness.appState.isOnboarded)
+        #expect(pendingNames == ["추가농장1", "추가농장2"])
     }
 }

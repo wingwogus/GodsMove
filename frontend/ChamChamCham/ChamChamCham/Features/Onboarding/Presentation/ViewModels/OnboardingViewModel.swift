@@ -86,19 +86,22 @@ final class OnboardingViewModel {
     private let mediaUploadRepository: MediaUploadRepository
     private let cropCatalogService: CropCatalogService
     private let memberProfileCache: MemberProfileCache
+    private let pendingFarmSyncService: PendingFarmSyncService
 
     init(
         store: OnboardingDraftStore = OnboardingDraftStore(),
         onboardingRepository: OnboardingRepository,
         mediaUploadRepository: MediaUploadRepository,
         cropCatalogService: CropCatalogService,
-        memberProfileCache: MemberProfileCache
+        memberProfileCache: MemberProfileCache,
+        pendingFarmSyncService: PendingFarmSyncService
     ) {
         self.store = store
         self.onboardingRepository = onboardingRepository
         self.mediaUploadRepository = mediaUploadRepository
         self.cropCatalogService = cropCatalogService
         self.memberProfileCache = memberProfileCache
+        self.pendingFarmSyncService = pendingFarmSyncService
         if let snapshot = store.load(), snapshot.isRestorable {
             self.pendingResumeSnapshot = snapshot
             self.currentStep = .landing
@@ -240,11 +243,14 @@ final class OnboardingViewModel {
     private func complete(appState: AppState) async {
         submissionState = .submitting
         do {
+            let extraFarmRequests = try draft.farms.dropFirst().map(SaveFarmRequestDTO.init(farm:))
             let response = try await onboardingRepository.completeOnboarding(draft)
             memberProfileCache.save(member: response.member, onboarding: response.onboarding)
+            await pendingFarmSyncService.enqueue(extraFarmRequests, memberId: response.member.id)
             store.clear()
             appState.isOnboarded = true
             submissionState = .idle
+            await pendingFarmSyncService.syncPending(memberId: response.member.id)
         } catch {
             submissionState = .failed("제출에 실패했어요. 잠시 후 다시 시도해주세요.")
         }

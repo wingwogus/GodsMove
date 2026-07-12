@@ -65,6 +65,25 @@ actor FakeOnboardingRepository: OnboardingRepository {
     }
 }
 
+actor FakeFarmRepository: FarmRepository {
+    private(set) var createdNames: [String] = []
+    private var callCount = 0
+    private let failAtCall: Int?
+
+    init(failAtCall: Int? = nil) {
+        self.failAtCall = failAtCall
+    }
+
+    func listFarms() async throws -> [StandaloneFarmResponseDTO] { [] }
+
+    func createFarm(_ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO {
+        callCount += 1
+        createdNames.append(request.name)
+        if callCount == failAtCall { throw FakeUploadError() }
+        return OnboardingTestFactory.standaloneFarmResponse(name: request.name)
+    }
+}
+
 @MainActor
 struct StubCropCatalogService: CropCatalogService {
     func fetchCrops() async throws -> [Crop] { [] }
@@ -155,6 +174,24 @@ enum OnboardingTestFactory {
         UploadedImageResponseDTO(mediaId: mediaId, imageUrl: "https://res.cloudinary.com/\(mediaId).jpg", status: "TEMP")
     }
 
+    static func standaloneFarmResponse(name: String) -> StandaloneFarmResponseDTO {
+        StandaloneFarmResponseDTO(
+            farmId: UUID(),
+            name: name,
+            roadAddress: "전북 전주시 예시로 1",
+            jibunAddress: nil,
+            latitude: 35.8,
+            longitude: 127.1,
+            pnu: nil,
+            landCategory: nil,
+            areaSqm: nil,
+            areaIsManualEntry: false,
+            boundaryCoordinates: [],
+            dataSource: .onboardingJusoVWorld,
+            crops: []
+        )
+    }
+
     /// A store rooted in a unique temp directory + UserDefaults suite, so parallel tests never share saved images
     /// or `clear()` each other's state.
     @MainActor
@@ -162,5 +199,10 @@ enum OnboardingTestFactory {
         let dir = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString, isDirectory: true)
         let defaults = UserDefaults(suiteName: "test-\(UUID().uuidString)")!
         return OnboardingDraftStore(defaults: defaults, baseDirectory: dir)
+    }
+
+    static func isolatedPendingFarmStore() -> PendingFarmStore {
+        let defaults = UserDefaults(suiteName: "pending-farm-test-\(UUID().uuidString)")!
+        return PendingFarmStore(defaults: defaults)
     }
 }

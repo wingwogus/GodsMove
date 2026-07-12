@@ -20,7 +20,8 @@ struct OnboardingViewModelNavigationTests {
             onboardingRepository: FakeOnboardingRepository(),
             mediaUploadRepository: FakeMediaUploadRepository(),
             cropCatalogService: StubCropCatalogService(),
-            memberProfileCache: StubMemberProfileCache()
+            memberProfileCache: StubMemberProfileCache(),
+            pendingFarmSyncService: makePendingFarmSyncService()
         )
         viewModel.draft = draft
         viewModel.jump(to: step)
@@ -33,7 +34,15 @@ struct OnboardingViewModelNavigationTests {
             onboardingRepository: FakeOnboardingRepository(),
             mediaUploadRepository: FakeMediaUploadRepository(),
             cropCatalogService: StubCropCatalogService(),
-            memberProfileCache: StubMemberProfileCache()
+            memberProfileCache: StubMemberProfileCache(),
+            pendingFarmSyncService: makePendingFarmSyncService()
+        )
+    }
+
+    private func makePendingFarmSyncService() -> PendingFarmSyncService {
+        PendingFarmSyncService(
+            store: OnboardingTestFactory.isolatedPendingFarmStore(),
+            repository: FakeFarmRepository()
         )
     }
 

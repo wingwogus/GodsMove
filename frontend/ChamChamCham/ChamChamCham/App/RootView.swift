@@ -23,6 +23,12 @@ struct RootView: View {
         }
         .task { await bootstrap() }
         .task { await observeSessionExpiry() }
+        .task(id: appState.isAuthenticated && appState.isOnboarded) {
+            guard appState.isAuthenticated,
+                  appState.isOnboarded,
+                  let memberId = CachedMemberProfile.fetchCached(in: modelContext)?.id else { return }
+            await container.pendingFarmSyncService.syncPending(memberId: memberId)
+        }
     }
 
     /// Cold-launch auto-login: routes off the local cache immediately (offline-first, no network wait),

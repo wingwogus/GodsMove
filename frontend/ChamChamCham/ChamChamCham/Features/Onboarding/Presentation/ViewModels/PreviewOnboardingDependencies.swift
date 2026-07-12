@@ -100,13 +100,28 @@ struct PreviewMemberProfileCache: MemberProfileCache {
     }
 }
 
+struct PreviewFarmRepository: FarmRepository {
+    func listFarms() async throws -> [StandaloneFarmResponseDTO] { [] }
+
+    func createFarm(_ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO {
+        throw OnboardingSubmissionError.missingRequiredField("preview")
+    }
+}
+
 extension OnboardingViewModel {
     static func preview() -> OnboardingViewModel {
-        OnboardingViewModel(
+        let pendingStore = PendingFarmStore(
+            defaults: UserDefaults(suiteName: "preview-pending-farms")!
+        )
+        return OnboardingViewModel(
             onboardingRepository: PreviewOnboardingRepository(),
             mediaUploadRepository: PreviewMediaUploadRepository(),
             cropCatalogService: PreviewCropCatalogService(),
-            memberProfileCache: PreviewMemberProfileCache()
+            memberProfileCache: PreviewMemberProfileCache(),
+            pendingFarmSyncService: PendingFarmSyncService(
+                store: pendingStore,
+                repository: PreviewFarmRepository()
+            )
         )
     }
 }

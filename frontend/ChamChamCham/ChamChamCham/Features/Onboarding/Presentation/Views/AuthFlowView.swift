@@ -21,7 +21,8 @@ struct AuthFlowView: View {
                 onboardingRepository: container.makeOnboardingRepository(),
                 mediaUploadRepository: container.makeMediaUploadRepository(),
                 cropCatalogService: container.makeCropCatalogService(),
-                memberProfileCache: container.memberProfileCache
+                memberProfileCache: container.memberProfileCache,
+                pendingFarmSyncService: container.pendingFarmSyncService
             )
         )
         _authViewModel = State(

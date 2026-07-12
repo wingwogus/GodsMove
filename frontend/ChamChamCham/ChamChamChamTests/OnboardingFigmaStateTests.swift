@@ -83,7 +83,11 @@ struct OnboardingFigmaStateTests {
             onboardingRepository: FakeOnboardingRepository(),
             mediaUploadRepository: FakeMediaUploadRepository(),
             cropCatalogService: StubCropCatalogService(),
-            memberProfileCache: StubMemberProfileCache()
+            memberProfileCache: StubMemberProfileCache(),
+            pendingFarmSyncService: PendingFarmSyncService(
+                store: OnboardingTestFactory.isolatedPendingFarmStore(),
+                repository: FakeFarmRepository()
+            )
         )
     }
 }
