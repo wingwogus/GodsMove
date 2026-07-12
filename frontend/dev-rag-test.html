@@ -426,11 +426,227 @@
       align-items: start;
     }
 
-    .report-tabs,
-    .work-tabs {
+    .report-tabs {
       display: flex;
       flex-wrap: wrap;
       gap: 6px;
+    }
+
+    .report-control-panel {
+      display: grid;
+      gap: 10px;
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .report-context {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 12px;
+      padding: 16px;
+      border-radius: 18px;
+      background: #e4f8e3;
+      color: #1b5d3f;
+    }
+
+    .report-context strong {
+      display: block;
+      margin-top: 4px;
+      color: #1a1a1a;
+      font-size: 20px;
+      line-height: 1.2;
+    }
+
+    .report-context span,
+    .report-context small {
+      display: block;
+      color: #27865c;
+      font-size: 11px;
+      font-weight: 800;
+      line-height: 1.4;
+    }
+
+    .report-context small {
+      margin-top: 5px;
+      color: #587911;
+      font-weight: 700;
+    }
+
+    .report-work-tabs {
+      display: flex;
+      gap: 7px;
+      overflow-x: auto;
+      padding: 2px 0 6px;
+      scrollbar-width: none;
+    }
+
+    .report-work-tabs::-webkit-scrollbar {
+      display: none;
+    }
+
+    .report-work-tab {
+      flex: 0 0 auto;
+      min-height: 34px;
+      border: 1px solid #e0e0e0;
+      border-radius: 999px;
+      padding: 0 11px;
+      background: #ffffff;
+      color: #686868;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .report-work-tab.active {
+      border-color: #27865c;
+      background: #27865c;
+      color: #ffffff;
+    }
+
+    .report-dashboard {
+      display: grid;
+      gap: 12px;
+    }
+
+    .report-hero {
+      display: grid;
+      gap: 7px;
+      padding: 18px;
+      border-radius: 20px;
+      background: linear-gradient(135deg, #1b5d3f 0%, #38c284 100%);
+      color: #ffffff;
+    }
+
+    .report-hero strong {
+      font-size: 30px;
+      line-height: 1.15;
+      letter-spacing: -0.04em;
+    }
+
+    .report-hero p,
+    .report-hero span {
+      margin: 0;
+      color: #ffffff;
+      font-size: 12px;
+      line-height: 1.45;
+      opacity: 0.9;
+    }
+
+    .report-metric-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(118px, 1fr));
+      gap: 8px;
+    }
+
+    .report-metric {
+      padding: 13px 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 15px;
+      background: #ffffff;
+    }
+
+    .report-metric strong {
+      display: block;
+      color: #1a1a1a;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+    }
+
+    .report-metric span {
+      display: block;
+      margin-top: 4px;
+      color: #686868;
+      font-size: 11px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+
+    .report-section {
+      display: grid;
+      gap: 9px;
+    }
+
+    .report-section h3 {
+      margin: 0 2px;
+      color: #1a1a1a;
+      font-size: 15px;
+    }
+
+    .distribution-card,
+    .harvest-card {
+      display: grid;
+      gap: 11px;
+      padding: 14px;
+      border: 1px solid #e0e0e0;
+      border-radius: 17px;
+      background: #ffffff;
+    }
+
+    .distribution-row {
+      display: grid;
+      grid-template-columns: minmax(62px, 0.8fr) minmax(80px, 2fr) auto;
+      gap: 9px;
+      align-items: center;
+      color: #4f4f4f;
+      font-size: 12px;
+    }
+
+    .distribution-track {
+      height: 8px;
+      overflow: hidden;
+      border-radius: 999px;
+      background: #e4f8e3;
+    }
+
+    .distribution-fill {
+      height: 100%;
+      border-radius: inherit;
+      background: #38c284;
+    }
+
+    .distribution-row strong {
+      color: #1a1a1a;
+      font-size: 11px;
+      white-space: nowrap;
+    }
+
+    .harvest-card {
+      grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+      background: #f2fae1;
+    }
+
+    .harvest-card strong {
+      display: block;
+      color: #27865c;
+      font-size: 18px;
+    }
+
+    .harvest-card span {
+      display: block;
+      margin-top: 4px;
+      color: #587911;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .report-diagnostics {
+      padding: 12px;
+      border: 1px solid #e0e0e0;
+      border-radius: 14px;
+      background: #ffffff;
+    }
+
+    .report-diagnostics summary {
+      cursor: pointer;
+      color: #4f4f4f;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .report-diagnostics[open] summary {
+      margin-bottom: 12px;
+      color: #27865c;
     }
 
     .hidden {
@@ -625,40 +841,45 @@
             <span id="reportStatusBadge" class="badge">리포트 없음</span>
           </div>
 
-          <div class="row three">
-            <label>
-              Cursor
-              <input id="reportCursor" autocomplete="off" placeholder="목록 nextCursor">
-            </label>
-            <label>
-              Size
-              <input id="reportSize" type="number" min="1" max="100" value="20">
-            </label>
-            <label>
-              Report ID
-              <input id="reportId" autocomplete="off" placeholder="상세 조회">
-            </label>
-          </div>
+          <div class="report-control-panel">
+            <div class="row three">
+              <label>
+                Cursor
+                <input id="reportCursor" autocomplete="off" placeholder="목록 nextCursor">
+              </label>
+              <label>
+                Size
+                <input id="reportSize" type="number" min="1" max="100" value="20">
+              </label>
+              <label>
+                Report ID
+                <input id="reportId" autocomplete="off" placeholder="상세 조회">
+              </label>
+            </div>
 
-          <div class="button-row">
-            <button id="loadCurrentReport" type="button">현재/직전 조회</button>
-            <button id="loadReportList" class="secondary" type="button">완료 목록 조회</button>
-            <button id="loadReportDetail" class="secondary" type="button">상세 조회</button>
-          </div>
+            <div class="button-row">
+              <button id="loadCurrentReport" type="button">현재/직전 조회</button>
+              <button id="loadReportList" class="secondary" type="button">완료 목록 조회</button>
+              <button id="loadReportDetail" class="secondary" type="button">상세 조회</button>
+            </div>
 
-          <div class="report-tabs" role="tablist" aria-label="스냅샷 선택">
-            <button id="currentReportTab" class="tab active" role="tab" aria-controls="reportSnapshotContent" aria-selected="true" data-report-scope="current" type="button">현재</button>
-            <button id="previousReportTab" class="tab" role="tab" aria-controls="reportSnapshotContent" aria-selected="false" data-report-scope="previous" type="button">직전</button>
-            <button id="selectedReportTab" class="tab" role="tab" aria-controls="reportSnapshotContent" aria-selected="false" data-report-scope="selected" type="button">상세</button>
+            <div class="report-tabs" role="tablist" aria-label="스냅샷 선택">
+              <button id="currentReportTab" class="tab active" role="tab" aria-controls="reportSnapshotContent" aria-selected="true" data-report-scope="current" type="button">현재</button>
+              <button id="previousReportTab" class="tab" role="tab" aria-controls="reportSnapshotContent" aria-selected="false" data-report-scope="previous" type="button">직전</button>
+              <button id="selectedReportTab" class="tab" role="tab" aria-controls="reportSnapshotContent" aria-selected="false" data-report-scope="selected" type="button">상세</button>
+            </div>
           </div>
 
           <div id="reportSnapshotContent" class="stack compact" role="tabpanel" aria-labelledby="currentReportTab">
-            <div id="reportSummary" class="metrics"></div>
-            <div id="reportList" class="panel compact"></div>
-
-            <div class="work-tabs" role="tablist" aria-label="작업 유형"></div>
-            <div id="workStats" class="panel compact" role="tabpanel"></div>
+            <div id="reportContext" class="report-context"></div>
+            <div id="reportWorkTabs" class="report-work-tabs" role="tablist" aria-label="작업 유형"></div>
+            <div id="reportDashboard" class="report-dashboard" role="tabpanel"></div>
           </div>
+
+          <details class="report-diagnostics">
+            <summary>API 응답 · 완료 리포트 · 요청 로그</summary>
+            <div id="reportList" class="stack compact"></div>
+          </details>
         </section>
       </div>
 
@@ -683,19 +904,9 @@
     };
 
     const terminalFeedbackStatuses = ["READY", "FAILED", "STALE"];
-    const workTypeOrder = ["planting", "watering", "fertilizing", "pestControl", "weeding", "pruning", "harvest", "etc"];
-    const commonStatisticKeys = [
-      "recordCount",
-      "firstWorkedOn",
-      "lastWorkedOn",
-      "workedDayCount",
-      "averageIntervalDays",
-      "photoAttachedRecordCount",
-      "photoAttachmentRatePct",
-      "averageTemperatureC"
-    ];
-
+    const workTypeOrder = ["all", "planting", "watering", "fertilizing", "pestControl", "weeding", "pruning", "harvest", "etc"];
     const workTypeLabels = {
+      all: "전체",
       planting: "파종",
       watering: "관수",
       fertilizing: "시비",
@@ -719,7 +930,8 @@
         selected: null
       },
       reportScope: "current",
-      workType: "planting",
+      workType: "all",
+      reportWorkSnapshotId: null,
       requestLog: []
     };
 
@@ -1146,17 +1358,6 @@
       renderFeedback(fixtures[selected], "preview");
     }
 
-    function metric(label, value) {
-      const box = document.createElement("div");
-      box.className = "metric";
-      const strong = document.createElement("strong");
-      strong.textContent = value == null || value === "" ? "-" : String(value);
-      const span = document.createElement("span");
-      span.textContent = label;
-      box.append(strong, span);
-      return box;
-    }
-
     function snapshotForScope(scope = state.reportScope) {
       return state.report[scope] || null;
     }
@@ -1185,35 +1386,34 @@
       $("reportStatusBadge").className = `badge${selected ? " ready" : ""}`;
 
       if (!selected) {
-        $("reportSummary").replaceChildren(metric("선택된 스냅샷", "없음"));
-        $("workStats").replaceChildren(emptyNode("선택된 리포트가 없습니다."));
-        renderWorkTabs();
+        $("reportContext").replaceChildren(emptyNode("현재·직전·상세 리포트 중 하나를 조회하세요."));
+        $("reportWorkTabs").replaceChildren();
+        $("reportDashboard").replaceChildren(emptyDashboard("선택된 리포트가 없습니다."));
         return;
       }
 
-      $("reportSummary").replaceChildren(
-        metric("Report ID", selected.id),
-        metric("Farm", selected.farmName || selected.farmId),
-        metric("Crop", selected.cropName || selected.cropId),
-        metric("Period", `${formatDate(selected.startsAt)} - ${formatDate(selected.endsAt)}`)
-      );
-      renderWorkTabs();
-      renderWorkStats(selected.statistics?.[state.workType] || null);
+      selectInitialWorkType(selected);
+      renderReportContext(selected);
+      renderWorkTabs(selected.statistics || {});
+      renderReportDashboard(selected);
     }
 
-    function renderWorkTabs() {
-      const container = document.querySelector(".work-tabs");
+    function renderWorkTabs(statistics) {
+      const container = $("reportWorkTabs");
       container.replaceChildren(
         ...workTypeOrder.map((type) => {
           const button = document.createElement("button");
           button.type = "button";
           button.id = `workTypeTab-${type}`;
-          button.className = `tab${state.workType === type ? " active" : ""}`;
+          button.className = `report-work-tab${state.workType === type ? " active" : ""}`;
           button.setAttribute("role", "tab");
-          button.setAttribute("aria-controls", "workStats");
+          button.setAttribute("aria-controls", "reportDashboard");
           button.setAttribute("aria-selected", String(state.workType === type));
           button.dataset.workType = type;
-          button.textContent = workTypeLabels[type];
+          const count = type === "all"
+            ? totalRecordCount(statistics)
+            : recordCount(statistics?.[type]);
+          button.textContent = type === "all" ? workTypeLabels[type] : `${workTypeLabels[type]} ${count}`;
           button.addEventListener("click", () => {
             state.workType = type;
             renderReport();
@@ -1221,74 +1421,307 @@
           return button;
         })
       );
-      $("workStats").setAttribute("aria-labelledby", `workTypeTab-${state.workType}`);
+      $("reportDashboard").setAttribute("aria-labelledby", `workTypeTab-${state.workType}`);
     }
 
-    function renderWorkStats(stats) {
-      const container = $("workStats");
-      if (!stats) {
-        container.replaceChildren(emptyNode(`${workTypeLabels[state.workType]} 통계가 없습니다.`));
+    function selectInitialWorkType(snapshot) {
+      if (state.reportWorkSnapshotId === snapshot.id) return;
+
+      state.reportWorkSnapshotId = snapshot.id;
+      state.workType = workTypeOrder.find((type) => type !== "all" && recordCount(snapshot.statistics?.[type]) > 0) || "all";
+    }
+
+    function renderReportContext(snapshot) {
+      const details = document.createElement("div");
+      const scope = document.createElement("span");
+      scope.textContent = `${snapshot.status || "-"} · ${snapshot.startBasis || "-"}`;
+      const title = document.createElement("strong");
+      title.textContent = `${snapshot.cropName || snapshot.cropId || "작물"} 영농 통계`;
+      const period = document.createElement("small");
+      period.textContent = `${snapshot.farmName || snapshot.farmId || "재배지"} · ${formatDate(snapshot.startsAt)} ~ ${formatDate(snapshot.endsAt)}`;
+      details.append(scope, title, period);
+
+      const revision = document.createElement("small");
+      revision.textContent = `revision ${snapshot.sourceRevision ?? "-"}`;
+      $("reportContext").replaceChildren(details, revision);
+    }
+
+    function renderReportDashboard(snapshot) {
+      const container = $("reportDashboard");
+      const statistics = snapshot.statistics || {};
+
+      if (state.workType === "all") {
+        container.replaceChildren(...renderAllWorkDashboard(statistics));
         return;
       }
 
-      const common = document.createElement("div");
-      common.className = "metrics";
-      common.replaceChildren(
-        ...commonStatisticKeys.map((key) => metric(labelize(key), formatValue(stats[key])))
-      );
-
-      const weatherTable = keyValueTable("weatherDistribution", stats.weatherDistribution || []);
-      const restRows = Object.entries(stats)
-        .filter(([key]) => !commonStatisticKeys.includes(key) && key !== "weatherDistribution")
-        .map(([key, entry]) => [labelize(key), formatValue(entry)]);
-
-      const rest = document.createElement("div");
-      rest.className = "stack compact";
-      const restTitle = document.createElement("h3");
-      restTitle.textContent = "유형별 분포/합계";
-      rest.append(restTitle, keyValueTable("typed", restRows));
-
-      container.replaceChildren(common, weatherTable, rest);
-    }
-
-    function keyValueTable(title, input) {
-      const wrap = document.createElement("div");
-      wrap.className = "stack compact";
-      const heading = document.createElement("h3");
-      heading.textContent = labelize(title);
-
-      const table = document.createElement("table");
-      table.className = "table";
-      const body = document.createElement("tbody");
-
-      const rows = Array.isArray(input)
-        ? input.map((entry, index) => Array.isArray(entry) ? entry : [`#${index + 1}`, formatValue(entry)])
-        : Object.entries(input || {}).map(([key, entry]) => [labelize(key), formatValue(entry)]);
-
-      if (rows.length === 0) {
-        const tr = document.createElement("tr");
-        const td = document.createElement("td");
-        td.colSpan = 2;
-        td.className = "empty";
-        td.textContent = "데이터 없음";
-        tr.append(td);
-        body.append(tr);
-      } else {
-        rows.forEach(([key, entry]) => {
-          const tr = document.createElement("tr");
-          const th = document.createElement("th");
-          const td = document.createElement("td");
-          th.scope = "row";
-          th.textContent = key;
-          td.textContent = entry;
-          tr.append(th, td);
-          body.append(tr);
-        });
+      const stats = statistics[state.workType];
+      if (!stats || recordCount(stats) === 0) {
+        container.replaceChildren(emptyDashboard(`${workTypeLabels[state.workType]} 기록이 없습니다.`));
+        return;
       }
 
-      table.append(body);
-      wrap.append(heading, table);
-      return wrap;
+      const nodes = [
+        reportHero(workTypeLabels[state.workType], recordCount(stats), stats.lastWorkedOn, stats.averageIntervalDays)
+      ];
+      const commonMetrics = commonMetricGrid(stats);
+      if (commonMetrics) nodes.push(commonMetrics);
+      if (state.workType === "harvest") {
+        const harvestSummary = harvestSummaryCard(stats);
+        if (harvestSummary) nodes.push(harvestSummary);
+      }
+      appendWorkDistributions(nodes, stats, state.workType);
+      container.replaceChildren(...nodes);
+    }
+
+    function renderAllWorkDashboard(statistics) {
+      const entries = workTypeOrder
+        .filter((type) => type !== "all")
+        .map((type) => ({
+          label: workTypeLabels[type],
+          value: recordCount(statistics?.[type]),
+          detail: `${recordCount(statistics?.[type])}건`
+        }));
+      const activeWorkTypes = entries.filter((entry) => entry.value > 0).length;
+      const total = totalRecordCount(statistics);
+      return [
+        reportHero("전체 작업", total, null, null),
+        reportMetricGrid([
+          ["기록한 작업", `${total}건`],
+          ["활동 작업 유형", `${activeWorkTypes}개`]
+        ]),
+        distributionSection("작업별 기록", entries)
+      ];
+    }
+
+    function reportHero(label, count, lastWorkedOn, averageIntervalDays) {
+      const hero = document.createElement("div");
+      hero.className = "report-hero";
+      const eyebrow = document.createElement("span");
+      eyebrow.textContent = `${label} 리포트`;
+      const title = document.createElement("strong");
+      title.textContent = `${count}건 기록했어요`;
+      const caption = document.createElement("p");
+      const details = [];
+      if (lastWorkedOn) details.push(`최근 작업 ${formatDate(lastWorkedOn)}`);
+      if (isPresent(averageIntervalDays)) details.push(`평균 ${formatNumber(averageIntervalDays)}일 간격`);
+      caption.textContent = details.join(" · ") || "기록된 작업의 통계를 보여드려요.";
+      hero.append(eyebrow, title, caption);
+      return hero;
+    }
+
+    function commonMetricGrid(stats) {
+      const values = [
+        ["작업한 날", isPresent(stats.workedDayCount) ? `${stats.workedDayCount}일` : null],
+        ["평균 작업 간격", isPresent(stats.averageIntervalDays) ? `${formatNumber(stats.averageIntervalDays)}일` : null],
+        ["사진 첨부", isPresent(stats.photoAttachedRecordCount) ? `${stats.photoAttachedRecordCount}건` : null],
+        ["사진 첨부율", isPresent(stats.photoAttachmentRatePct) ? `${formatNumber(stats.photoAttachmentRatePct)}%` : null],
+        ["평균 기온", isPresent(stats.averageTemperatureC) ? `${formatNumber(stats.averageTemperatureC)}°C` : null]
+      ].filter(([, value]) => value !== null);
+
+      return values.length > 0 ? reportMetricGrid(values) : null;
+    }
+
+    function reportMetricGrid(values) {
+      const grid = document.createElement("div");
+      grid.className = "report-metric-grid";
+      grid.replaceChildren(...values.map(([label, value]) => {
+        const card = document.createElement("div");
+        card.className = "report-metric";
+        const strong = document.createElement("strong");
+        strong.textContent = value;
+        const caption = document.createElement("span");
+        caption.textContent = label;
+        card.append(strong, caption);
+        return card;
+      }));
+      return grid;
+    }
+
+    function appendWorkDistributions(nodes, stats, type) {
+      const countEntries = (items, label, count = (item) => item.count, detail = (item) => `${count(item) || 0}건`) =>
+        (items || []).map((item) => ({
+          label: label(item) || "-",
+          value: numericValue(count(item)),
+          detail: detail(item)
+        }));
+      const amountEntries = (items, label, amount = (item) => item.amount, detail = (item) => `${formatNumber(amount(item))}`) =>
+        (items || []).map((item) => ({
+          label: label(item) || "-",
+          value: numericValue(amount(item)),
+          detail: detail(item)
+        }));
+
+      if (type === "planting") {
+        appendDistribution(nodes, "번식 방식", countEntries(
+          stats.propagationMethods,
+          (item) => item.label || item.code,
+          (item) => item.recordCount,
+          (item) => `${item.recordCount || 0}건${isPresent(item.totalQuantity) ? ` · ${formatNumber(item.totalQuantity)} ${item.quantityUnit || ""}` : ""}`
+        ));
+      }
+      if (type === "watering") {
+        appendDistribution(nodes, "관수 방식", countEntries(stats.methodDistribution, (item) => item.label || item.code));
+        appendDistribution(nodes, "관수량 분포", countEntries(stats.amountDistribution, (item) => item.label || item.code));
+      }
+      if (type === "fertilizing") {
+        const amountSummary = quantitySummaryCard("시비량", [
+          ["총 시비량", isPresent(stats.totalAmountKg) ? `${formatNumber(stats.totalAmountKg)}kg` : null],
+          ["평균 시비량", isPresent(stats.averageAmountKg) ? `${formatNumber(stats.averageAmountKg)}kg` : null],
+          ["시비량 기록", coverageValue(stats.amountCoverage)]
+        ]);
+        if (amountSummary) nodes.push(amountSummary);
+        appendDistribution(nodes, "자재 종류", countEntries(
+          stats.materialCategories,
+          (item) => item.label || item.code,
+          (item) => item.recordCount,
+          (item) => `${item.recordCount || 0}건 · ${formatNumber(item.amountKg)}kg`
+        ));
+        appendDistribution(nodes, "시비 방식", countEntries(stats.methodDistribution, (item) => item.label || item.code));
+        appendDistribution(nodes, "자재별 시비 방식", countEntries(
+          stats.categoryMethods,
+          (item) => `${item.categoryLabel || item.categoryCode || "-"} · ${item.methodLabel || item.methodCode || "-"}`,
+          (item) => item.recordCount
+        ));
+      }
+      if (type === "pestControl") {
+        const amountSummary = quantitySummaryCard("살포량", [
+          ["총 살포량", isPresent(stats.totalSprayAmountLiters) ? `${formatNumber(stats.totalSprayAmountLiters)}L` : null],
+          ["살포량 기록", coverageValue(stats.sprayAmountCoverage)]
+        ]);
+        if (amountSummary) nodes.push(amountSummary);
+        appendDistribution(nodes, "방제 분류", countEntries(stats.categoryDistribution, (item) => item.label || item.code));
+        appendDistribution(nodes, "방제 대상", countEntries(stats.targets, (item) => item.target, (item) => item.count));
+        appendDistribution(nodes, "농약 사용량", amountEntries(
+          stats.pesticideAmounts,
+          (item) => item.unit || "-",
+          (item) => item.amount,
+          (item) => `${formatNumber(item.amount)} ${item.unit || ""} · ${coverageValue(item.coverage) || "기록 없음"}`
+        ));
+        appendDistribution(nodes, "분류별 사용량", amountEntries(
+          stats.categoryAmounts,
+          (item) => item.categoryLabel || item.categoryCode || "-",
+          (item) => item.amount,
+          (item) => `${formatNumber(item.amount)} ${item.unit || ""} · ${item.recordCount || 0}건`
+        ));
+      }
+      if (type === "weeding") {
+        appendDistribution(nodes, "제초 방식", countEntries(stats.methodDistribution, (item) => item.label || item.code));
+      }
+      if (type === "harvest") {
+        appendDistribution(nodes, "수확 부위", countEntries(
+          stats.medicinalParts,
+          (item) => item.label || item.code,
+          (item) => item.recordCount,
+          (item) => `${item.recordCount || 0}건${isPresent(item.knownAmountKg) ? ` · ${formatNumber(item.knownAmountKg)}kg` : ""}`
+        ));
+      }
+      appendDistribution(nodes, "날씨 분포", countEntries(stats.weatherDistribution, (item) => item.label || item.code));
+    }
+
+    function appendDistribution(nodes, title, entries) {
+      if (entries.length > 0) nodes.push(distributionSection(title, entries));
+    }
+
+    function distributionSection(title, entries) {
+      const section = document.createElement("section");
+      section.className = "report-section";
+      const heading = document.createElement("h3");
+      heading.textContent = title;
+      const card = document.createElement("div");
+      card.className = "distribution-card";
+      const maximum = Math.max(...entries.map((entry) => entry.value), 1);
+      card.replaceChildren(...entries.map((entry) => {
+        const row = document.createElement("div");
+        row.className = "distribution-row";
+        const label = document.createElement("span");
+        label.textContent = entry.label;
+        const track = document.createElement("div");
+        track.className = "distribution-track";
+        const fill = document.createElement("div");
+        fill.className = "distribution-fill";
+        fill.style.width = `${Math.round((entry.value / maximum) * 100)}%`;
+        track.append(fill);
+        const detail = document.createElement("strong");
+        detail.textContent = entry.detail;
+        row.append(label, track, detail);
+        return row;
+      }));
+      section.append(heading, card);
+      return section;
+    }
+
+    function harvestSummaryCard(stats) {
+      return quantitySummaryCard("수확 현황", [
+        ["총 수확량", isPresent(stats.totalAmountKg) ? `${formatNumber(stats.totalAmountKg)}kg` : null],
+        ["평균 수확량", isPresent(stats.averageAmountKg) ? `${formatNumber(stats.averageAmountKg)}kg` : null],
+        ["수확량 기록", coverageValue(stats.amountCoverage)],
+        ["최종 생육 기간", isPresent(stats.finalGrowthPeriodMonths) ? `${stats.finalGrowthPeriodMonths}개월` : null],
+        ["예상 생육 기간", growthPeriodRangeValue(stats.growthPeriodRangeMonths)]
+      ]);
+    }
+
+    function quantitySummaryCard(title, values) {
+      const visibleValues = values.filter(([, value]) => value !== null && value !== undefined);
+      if (visibleValues.length === 0) return null;
+
+      const section = document.createElement("section");
+      section.className = "report-section";
+      const heading = document.createElement("h3");
+      heading.textContent = title;
+      const card = document.createElement("div");
+      card.className = "harvest-card";
+      card.replaceChildren(...visibleValues.map(([label, value]) => {
+        const item = document.createElement("div");
+        const strong = document.createElement("strong");
+        strong.textContent = value;
+        const caption = document.createElement("span");
+        caption.textContent = label;
+        item.append(strong, caption);
+        return item;
+      }));
+      section.append(heading, card);
+      return section;
+    }
+
+    function coverageValue(coverage) {
+      return coverage ? `${coverage.recordedCount || 0}/${coverage.targetCount || 0}` : null;
+    }
+
+    function growthPeriodRangeValue(range) {
+      if (!range || !isPresent(range.minMonths) || !isPresent(range.maxMonths)) return null;
+      return `${range.minMonths}~${range.maxMonths}개월`;
+    }
+
+    function emptyDashboard(message) {
+      const panel = document.createElement("div");
+      panel.className = "panel compact";
+      panel.append(emptyNode(message));
+      return panel;
+    }
+
+    function recordCount(stats) {
+      return numericValue(stats?.recordCount);
+    }
+
+    function totalRecordCount(statistics) {
+      return workTypeOrder
+        .filter((type) => type !== "all")
+        .reduce((total, type) => total + recordCount(statistics?.[type]), 0);
+    }
+
+    function numericValue(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function isPresent(value) {
+      return value !== null && value !== undefined && value !== "";
+    }
+
+    function formatNumber(value) {
+      const number = Number(value);
+      return Number.isFinite(number) ? number.toLocaleString("ko-KR", { maximumFractionDigits: 1 }) : "-";
     }
 
     function renderReportList(items, nextCursor) {
@@ -1369,26 +1802,6 @@
     function formatDate(value) {
       if (!value) return "-";
       return String(value).replace("T", " ").slice(0, 16);
-    }
-
-    function formatValue(value) {
-      if (value == null || value === "") return "-";
-      if (Array.isArray(value)) {
-        if (value.length === 0) return "[]";
-        return value.map((entry, index) => `${index + 1}. ${formatValue(entry)}`).join("\n");
-      }
-      if (typeof value === "object") {
-        return Object.entries(value)
-          .map(([key, entry]) => `${labelize(key)}: ${formatValue(entry)}`)
-          .join(", ");
-      }
-      return String(value);
-    }
-
-    function labelize(key) {
-      return String(key)
-        .replace(/([A-Z])/g, " $1")
-        .replace(/^./, (char) => char.toUpperCase());
     }
 
     function emptyNode(message) {
