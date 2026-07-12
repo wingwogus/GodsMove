@@ -3,9 +3,9 @@ package com.chamchamcham.api.coaching
 import com.chamchamcham.ApiApplication
 import com.chamchamcham.application.coaching.rag.common.RagProperties
 import com.chamchamcham.application.coaching.rag.common.RagSourceType
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContext
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationService
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackRetrievalQueryPlanner
+import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackContext
+import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackGenerationService
+import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackRetrievalQueryPlanner
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Tag

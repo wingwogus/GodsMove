@@ -2,7 +2,7 @@ package com.chamchamcham.api.coaching.controller
 
 import com.chamchamcham.api.coaching.dto.RecordFeedbackResponses
 import com.chamchamcham.api.common.ApiResponse
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackQueryService
+import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackQueryService
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import org.springframework.http.ResponseEntity

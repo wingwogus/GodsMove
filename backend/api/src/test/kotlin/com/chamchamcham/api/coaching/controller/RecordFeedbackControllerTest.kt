@@ -1,10 +1,10 @@
 package com.chamchamcham.api.coaching.controller
 
 import com.chamchamcham.api.exception.GlobalExceptionHandler
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackQueryService
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackNextActionResult
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackResultContent
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackStatusResult
+import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackQueryService
+import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackNextActionResult
+import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackResultContent
+import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackStatusResult
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.security.TokenProvider

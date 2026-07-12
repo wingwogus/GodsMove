@@ -1,7 +1,7 @@
 package com.chamchamcham.application.farming
 
 import com.chamchamcham.application.common.OpaqueCursorCodec
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackLifecycleService
+import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackLifecycleService
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.report.FarmingCycleReportProjectionService

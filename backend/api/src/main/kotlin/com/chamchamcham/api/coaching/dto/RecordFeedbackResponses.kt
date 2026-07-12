@@ -1,7 +1,7 @@
 package com.chamchamcham.api.coaching.dto
 
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackStatusResult
-import com.chamchamcham.application.coaching.feedback.RecordFeedbackResultContent
+import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackStatusResult
+import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackResultContent
 import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
 import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
 import com.chamchamcham.domain.coaching.RecordFeedbackStatus

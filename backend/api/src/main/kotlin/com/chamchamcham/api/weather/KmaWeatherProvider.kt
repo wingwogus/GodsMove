@@ -2,10 +2,10 @@ package com.chamchamcham.api.weather
 
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackCurrentWeather
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackForecastDay
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackLiveWeather
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackWeatherPort
+import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackCurrentWeather
+import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackForecastDay
+import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackLiveWeather
+import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackWeatherPort
 import com.chamchamcham.application.weather.WeatherProvider
 import com.chamchamcham.application.weather.WeatherSnapshot
 import com.fasterxml.jackson.annotation.JsonProperty
