@@ -96,7 +96,7 @@ struct BasicProfileView: View {
                     }
                 }
                 .padding(.horizontal, 20)
-                .padding(.bottom, 124)
+                .padding(.bottom, 40)
             }
         }
         .background(Color.Background.default)

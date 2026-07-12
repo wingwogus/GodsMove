@@ -33,9 +33,7 @@ struct AuthFlowView: View {
     }
 
     var body: some View {
-        NavigationStack {
-            content
-        }
+        content
         .environment(viewModel)
         .environment(authViewModel)
         .onChange(of: scenePhase) { _, newPhase in

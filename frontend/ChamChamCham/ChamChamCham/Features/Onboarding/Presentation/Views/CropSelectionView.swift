@@ -40,6 +40,21 @@ struct CropSelectionView: View {
         return viewModel.cropCategories.first
     }
 
+    private var selectedCategoryIndex: Int {
+        guard let selectedCategory else { return 0 }
+        return viewModel.cropCategories.firstIndex { $0.code == selectedCategory.code } ?? 0
+    }
+
+    private var selectedCategoryBinding: Binding<Int> {
+        Binding {
+            selectedCategoryIndex
+        } set: { index in
+            guard viewModel.cropCategories.indices.contains(index) else { return }
+            selectedCategoryCode = viewModel.cropCategories[index].code
+            selectionLimitMessage = nil
+        }
+    }
+
     private var selectedCropChips: [SelectedCropChip] {
         viewModel.draft.cropIDs.map { cropID in
             let cropName = viewModel.availableCrops.first(where: { $0.id == cropID })?.name ?? "선택 작물"
@@ -47,36 +62,44 @@ struct CropSelectionView: View {
         }
     }
 
-    private let chipColumns = [
-        GridItem(.adaptive(minimum: 92), spacing: Spacing.sm, alignment: .leading)
-    ]
+    private var selectedCropRows: [[SelectedCropChip]] {
+        stride(from: 0, to: selectedCropChips.count, by: 3).map { startIndex in
+            Array(selectedCropChips[startIndex..<min(startIndex + 3, selectedCropChips.count)])
+        }
+    }
 
     var body: some View {
-        VStack(spacing: 0) {
-            topAppBar
+        GeometryReader { proxy in
+            VStack(spacing: 0) {
+                topAppBar
 
-            OnboardingProgressBar(currentStep: viewModel.currentStep)
-                .padding(.horizontal, 20)
-                .padding(.bottom, Spacing.md)
+                OnboardingProgressBar(currentStep: viewModel.currentStep)
+                    .padding(.horizontal, 20)
+                    .padding(.top, 8)
+                    .padding(.bottom, 32)
 
-            ScrollView {
-                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
-                    titleHeader
-                        .padding(.horizontal, 20)
-                        .padding(.bottom, Spacing.md)
+                ScrollView {
+                    LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                        titleHeader
+                            .padding(.horizontal, 20)
+                            .padding(.bottom, 8)
 
-                    Section {
-                        cropList
-                            .padding(.bottom, selectedCount == 0 ? 132 : 224)
-                    } header: {
-                        stickyControls
+                        Section {
+                            cropList
+                                .padding(.bottom, selectedCount == 0 ? 132 : 224)
+                        } header: {
+                            stickyControls
+                        }
                     }
                 }
             }
-        }
-        .background(Color.Background.default)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            bottomTray
+            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+            .background(Color.Background.default)
+            .ignoresSafeArea(.container, edges: .bottom)
+            .overlay(alignment: .bottom) {
+                bottomTray
+                    .padding(.bottom, -proxy.safeAreaInsets.bottom)
+            }
         }
         .task {
             await viewModel.loadCropsIfNeeded()
@@ -122,11 +145,13 @@ struct CropSelectionView: View {
             .padding(.vertical, 64)
         } else {
             VStack(spacing: 0) {
-                ForEach(filteredCrops) { crop in
+                ForEach(Array(filteredCrops.enumerated()), id: \.element.id) { index, crop in
                     cropRow(crop)
-                    Divider()
-                        .background(Color.Border.subtle)
-                        .padding(.leading, 20)
+                    if index < filteredCrops.count - 1 {
+                        Divider()
+                            .background(Color.Border.default)
+                            .padding(.leading, 20)
+                    }
                 }
             }
         }
@@ -152,14 +177,14 @@ struct CropSelectionView: View {
     }
 
     private var titleHeader: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
+        VStack(alignment: .leading, spacing: 4) {
             Text("재배 중인 작물 설정하기")
-                .font(AppTypography.titleLargeEmphasized.font)
+                .appTypography(.headlineMediumEmphasized)
                 .foregroundStyle(Color.Text.default)
 
             Text("대표 재배지의 작물을 입력해주세요.\n작물은 최대 5개까지 선택 가능합니다.")
-                .font(AppTypography.bodyMedium.font)
-                .foregroundStyle(Color.Text.subtle)
+                .appTypography(.bodyLarge)
+                .foregroundStyle(Color.Text.muted)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -180,67 +205,27 @@ struct CropSelectionView: View {
     }
 
     private var searchField: some View {
-        HStack(spacing: Spacing.sm) {
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 20, weight: .medium))
-                .foregroundStyle(Color.Icon.default)
-            TextField("작물명을 입력해주세요.", text: $searchText)
-                .font(AppTypography.bodyMedium.font)
-                .textInputAutocapitalization(.never)
-        }
-        .padding(.horizontal, Spacing.md)
-        .frame(height: 56)
-        .background(Color.Object.default)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
-        .overlay {
-            RoundedRectangle(cornerRadius: 12)
-                .stroke(Color.Border.subtle, lineWidth: 1)
-        }
+        AppSearchBar(text: $searchText, placeholder: "작물명을 입력해주세요.")
+            .frame(height: 56)
     }
 
     @ViewBuilder
     private var categoryTabs: some View {
         if viewModel.cropCategories.isEmpty {
             Text("카테고리를 불러오는 중...")
-                .font(AppTypography.labelMedium.font)
+                .appTypography(.labelMedium)
                 .foregroundStyle(Color.Text.muted)
                 .frame(height: 56)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.horizontal, 20)
         } else {
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 0) {
-                    ForEach(viewModel.cropCategories) { category in
-                        categoryTab(category)
-                    }
-                }
-                .padding(.horizontal, 10)
-            }
+            AppTabBar(
+                titles: viewModel.cropCategories.map(\.label),
+                selection: selectedCategoryBinding,
+                scrollable: true
+            )
             .frame(height: 56)
         }
-    }
-
-    private func categoryTab(_ category: CropCategory) -> some View {
-        let isSelected = category.code == selectedCategory?.code
-        return Button {
-            selectedCategoryCode = category.code
-            selectionLimitMessage = nil
-        } label: {
-            VStack(spacing: 0) {
-                Text(category.label)
-                    .font(AppTypography.titleMediumEmphasized.font)
-                    .foregroundStyle(isSelected ? Color.Text.primary : Color.Text.subtle)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-
-                Rectangle()
-                    .fill(isSelected ? Color.Object.primary : Color.clear)
-                    .frame(height: 2)
-            }
-            .frame(width: 104, height: 56)
-        }
-        .buttonStyle(.plain)
     }
 
     private func cropRow(_ crop: Crop) -> some View {
@@ -250,8 +235,8 @@ struct CropSelectionView: View {
         } label: {
             HStack(spacing: Spacing.md) {
                 Text(crop.name)
-                    .font(AppTypography.bodyLarge.font)
-                    .foregroundStyle(isSelected ? Color.Text.primary : Color.Text.default)
+                    .appTypography(.titleMediumEmphasized)
+                    .foregroundStyle(isSelected ? Color.Text.primary : Color.Text.subtle)
                     .lineLimit(1)
 
                 Spacer()
@@ -273,9 +258,13 @@ struct CropSelectionView: View {
     private var bottomTray: some View {
         VStack(spacing: Spacing.md) {
             if !selectedCropChips.isEmpty {
-                LazyVGrid(columns: chipColumns, alignment: .leading, spacing: Spacing.sm) {
-                    ForEach(selectedCropChips) { crop in
-                        selectedCropChip(crop)
+                VStack(alignment: .leading, spacing: 8) {
+                    ForEach(Array(selectedCropRows.enumerated()), id: \.offset) { _, row in
+                        HStack(spacing: 8) {
+                            ForEach(row) { crop in
+                                selectedCropChip(crop)
+                            }
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -294,8 +283,8 @@ struct CropSelectionView: View {
             }
         }
         .padding(.horizontal, 20)
-        .padding(.top, selectedCropChips.isEmpty ? 16 : 24)
-        .padding(.bottom, selectedCropChips.isEmpty ? 28 : 16)
+        .padding(.top, selectedCropChips.isEmpty ? 12 : 16)
+        .padding(.bottom, 32)
         .background {
             if selectedCropChips.isEmpty {
                 Color.Background.default
@@ -305,29 +294,17 @@ struct CropSelectionView: View {
                     .shadow(color: .black.opacity(0.08), radius: 16, y: -4)
             }
         }
+        .overlay(alignment: .top) {
+            if selectedCropChips.isEmpty {
+                Rectangle()
+                    .fill(Color.Border.subtle)
+                    .frame(height: 1)
+            }
+        }
     }
 
     private func selectedCropChip(_ crop: SelectedCropChip) -> some View {
-        HStack(spacing: Spacing.xs) {
-            Text(crop.name)
-                .font(AppTypography.labelMedium.font)
-                .foregroundStyle(Color.Text.primary)
-                .lineLimit(1)
-
-            Image(systemName: "xmark")
-                .font(.system(size: 12, weight: .bold))
-                .foregroundStyle(Color.Icon.primary)
-        }
-        .padding(.leading, Spacing.md)
-        .padding(.trailing, Spacing.sm)
-        .frame(height: 32)
-        .background(Color.Object.primarySubtle)
-        .clipShape(Capsule())
-        .overlay {
-            Capsule()
-                .stroke(Color.Border.primary, lineWidth: 1)
-        }
-        .onTapGesture {
+        AppChip(label: crop.name, isSelected: true, style: .solidPastel, trailingSystemImage: "xmark") {
             _ = viewModel.toggleCropSelection(crop.id)
             selectionLimitMessage = nil
         }

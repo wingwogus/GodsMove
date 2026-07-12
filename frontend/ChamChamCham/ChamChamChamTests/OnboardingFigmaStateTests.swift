@@ -69,7 +69,7 @@ struct OnboardingFigmaStateTests {
         #expect(AppDateField.formatter.string(from: date) == "1996.07.12")
     }
 
-    @Test("onboarding progress maps user-input steps to one continuous Figma bar")
+    @Test("onboarding progress maps to the product flow steps")
     func onboardingProgressFractions() {
         #expect(OnboardingProgressBar.progressFraction(for: .basicProfile) == 0.25)
         #expect(OnboardingProgressBar.progressFraction(for: .farmLocation) == 0.5)

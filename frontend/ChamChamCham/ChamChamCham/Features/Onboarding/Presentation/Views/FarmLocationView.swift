@@ -37,18 +37,15 @@ struct FarmLocationView: View {
                 .padding(.top, 8)
                 .padding(.bottom, 36)
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: 20) {
-                    header
-                        .padding(.horizontal, 20)
+            header
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
 
-                    mapOverlaySection
-                }
-                .padding(.bottom, 116)
-            }
+            mapOverlaySection
+                .ignoresSafeArea(.container, edges: .bottom)
         }
         .background(Color.Background.default)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
+        .overlay(alignment: .bottom) {
             bottomCTA
         }
         .sheet(isPresented: $isSearchSheetPresented) {
@@ -127,10 +124,10 @@ struct FarmLocationView: View {
                 parcelInfoSection
             }
             .padding(.horizontal, 20)
-            .padding(.bottom, 20)
+            .padding(.bottom, 116)
         }
-        .frame(height: 590)
         .frame(maxWidth: .infinity)
+        .frame(maxHeight: .infinity)
         .background(Color.Object.muted)
     }
 
@@ -325,8 +322,6 @@ struct FarmLocationView: View {
 
     private var bottomCTA: some View {
         VStack(spacing: 0) {
-            Divider()
-                .background(Color.Border.subtle)
             OnboardingCTAButton(title: "다음", isVisuallyEnabled: isValid) {
                 hasAttemptedNext = true
                 guard isValid else { return }
@@ -336,7 +331,6 @@ struct FarmLocationView: View {
             .padding(.horizontal, 20)
             .padding(.top, 16)
             .padding(.bottom, 28)
-            .background(Color.Background.default)
         }
     }
 

@@ -14,6 +14,7 @@ enum AppTypography {
     case headlineLarge
     case headlineLargeEmphasized
     case headlineMedium
+    case headlineMediumEmphasized
     case titleLarge
     case titleLargeEmphasized
     case titleMedium
@@ -28,7 +29,7 @@ enum AppTypography {
     var size: CGFloat {
         switch self {
         case .headlineLarge, .headlineLargeEmphasized: 32
-        case .headlineMedium: 28
+        case .headlineMedium, .headlineMediumEmphasized: 28
         case .titleLarge, .titleLargeEmphasized: 24
         case .titleMedium, .titleMediumEmphasized: 20
         case .bodyLarge, .bodyLargeEmphasized: 18
@@ -70,8 +71,8 @@ enum AppTypography {
         switch self {
         case .headlineLargeEmphasized:
             .bold
-        case .headlineLarge, .headlineMedium, .titleLargeEmphasized, .titleMediumEmphasized,
-             .bodyLargeEmphasized, .bodyMediumEmphasized:
+        case .headlineLarge, .headlineMedium, .headlineMediumEmphasized, .titleLargeEmphasized,
+             .titleMediumEmphasized, .bodyLargeEmphasized, .bodyMediumEmphasized:
             .semibold
         default:
             .medium
