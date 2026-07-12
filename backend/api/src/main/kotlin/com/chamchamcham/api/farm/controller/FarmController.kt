@@ -30,10 +30,10 @@ class FarmController(
     @GetMapping
     fun list(
         @AuthenticationPrincipal memberId: String?
-    ): ResponseEntity<ApiResponse<FarmResponses.FarmListResponse>> =
+    ): ResponseEntity<ApiResponse<List<FarmResponses.FarmResponse>>> =
         ResponseEntity.ok(
             ApiResponse.ok(
-                FarmResponses.FarmListResponse.from(farmService.list(parseMemberId(memberId)))
+                farmService.list(parseMemberId(memberId)).map(FarmResponses.FarmResponse::from)
             )
         )
 

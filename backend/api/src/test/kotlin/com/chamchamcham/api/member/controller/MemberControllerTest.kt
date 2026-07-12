@@ -12,6 +12,7 @@ import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.BDDMockito.given
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -86,6 +87,21 @@ class MemberControllerTest(
             .andExpect(jsonPath("$.data.name", equalTo("이황기")))
 
         verify(memberProfileService).updateMyProfile(updateCommand())
+    }
+
+    @Test
+    fun `update profile rejects blank name before service invocation`() {
+        mockMvc.perform(
+            put("/api/v1/members/me/profile")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(profileJson().replace("\"name\":\"이황기\"", "\"name\":\"\""))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+            .andExpect(jsonPath("$.error.detail.field", equalTo("name")))
+
+        verifyNoInteractions(memberProfileService)
     }
 
     @Test

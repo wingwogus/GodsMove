@@ -52,10 +52,10 @@ class FarmControllerTest(
 
         mockMvc.perform(get("/api/v1/farms").with(authenticatedMember(memberId.toString())))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.farms[0].farmId", equalTo(farmId.toString())))
-            .andExpect(jsonPath("$.data.farms[0].roadAddress", equalTo("강원특별자치도 횡성군 둔내면 1")))
-            .andExpect(jsonPath("$.data.farms[0].boundaryCoordinates[0].latitude", equalTo(37.5)))
-            .andExpect(jsonPath("$.data.farms[0].crops[0].id", equalTo(cropId.toString())))
+            .andExpect(jsonPath("$.data[0].farmId", equalTo(farmId.toString())))
+            .andExpect(jsonPath("$.data[0].roadAddress", equalTo("강원특별자치도 횡성군 둔내면 1")))
+            .andExpect(jsonPath("$.data[0].boundaryCoordinates[0].latitude", equalTo(37.5)))
+            .andExpect(jsonPath("$.data[0].crops[0].id", equalTo(cropId.toString())))
     }
 
     @Test

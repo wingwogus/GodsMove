@@ -6,15 +6,6 @@ import java.math.BigDecimal
 import java.util.UUID
 
 object FarmResponses {
-    data class FarmListResponse(
-        val farms: List<FarmResponse>
-    ) {
-        companion object {
-            fun from(results: List<FarmResult.Detail>): FarmListResponse =
-                FarmListResponse(results.map(FarmResponse::from))
-        }
-    }
-
     data class FarmResponse(
         val farmId: UUID,
         val name: String,

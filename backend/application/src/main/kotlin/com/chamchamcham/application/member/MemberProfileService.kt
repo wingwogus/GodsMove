@@ -78,7 +78,6 @@ class MemberProfileService(
     }
 
     fun updateMyProfile(command: MemberProfileCommand.UpdateMyProfile): MemberProfileResult.MyProfile {
-        validateUpdateCommand(command)
         val member = findMember(command.memberId)
 
         member.completeOnboarding(
@@ -98,15 +97,6 @@ class MemberProfileService(
         memberRepository.findById(memberId).orElseThrow {
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)
         }
-
-    private fun validateUpdateCommand(command: MemberProfileCommand.UpdateMyProfile) {
-        if (command.name.isBlank() || command.phone.isBlank() || command.nickname.isBlank()) {
-            throw BusinessException(ErrorCode.INVALID_INPUT)
-        }
-        if (command.experienceLevel !in 0..100) {
-            throw BusinessException(ErrorCode.INVALID_INPUT)
-        }
-    }
 
     private fun syncProfileImage(member: Member, profileMediaId: UUID?) {
         val currentMedia = member.profileMedia
