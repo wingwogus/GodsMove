@@ -17,7 +17,7 @@ struct CommunityComposeViewModelValidationTests {
     func figmaComposeLimits() {
         #expect(CommunityComposeViewModel.titleLimit == 30)
         #expect(CommunityComposeViewModel.bodyLimit == 500)
-        #expect(CommunityComposeViewModel.maxImages == 10)
+        #expect(CommunityComposeViewModel.maxImages == 5)
     }
 
     @Test("submit requires selected crop and title/body within their limits")
@@ -41,6 +41,33 @@ struct CommunityComposeViewModelValidationTests {
         #expect(!viewModel.isTitleOverLimit)
         #expect(viewModel.isBodyOverLimit)
         #expect(!viewModel.canSubmit)
+    }
+
+    @Test("compose exposes the captured validation copy with title priority")
+    func inputValidationMessage() {
+        let viewModel = makeViewModel()
+        #expect(viewModel.inputValidationMessage == nil)
+
+        viewModel.title = String(repeating: "가", count: 31)
+        #expect(viewModel.inputValidationMessage == "제목은 최대 30자까지 입력 가능합니다.")
+
+        viewModel.body = String(repeating: "나", count: 501)
+        #expect(viewModel.inputValidationMessage == "제목은 최대 30자까지 입력 가능합니다.")
+
+        viewModel.title = String(repeating: "가", count: 30)
+        #expect(viewModel.inputValidationMessage == "내용은 최대 500자까지 입력 가능합니다.")
+    }
+
+    @Test("compose accepts at most five image attachments")
+    func imageAttachmentLimit() async {
+        let viewModel = makeViewModel()
+
+        for byte in UInt8(0)..<UInt8(6) {
+            await viewModel.addImage(Data([byte]))
+        }
+
+        #expect(viewModel.attachments.count == 5)
+        #expect(!viewModel.canAddImage)
     }
 
     private func makeViewModel() -> CommunityComposeViewModel {

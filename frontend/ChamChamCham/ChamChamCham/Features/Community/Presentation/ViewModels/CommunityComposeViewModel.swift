@@ -23,7 +23,7 @@ final class CommunityComposeViewModel {
 
     static let titleLimit = 30
     static let bodyLimit = 500
-    static let maxImages = 10
+    static let maxImages = 5
 
     /// Crop boards offered as chips. Seeded from the member's boards; the picker can add more.
     private(set) var boards: [CommunityBoard] = []
@@ -61,6 +61,16 @@ final class CommunityComposeViewModel {
 
     var isBodyOverLimit: Bool {
         body.count > Self.bodyLimit
+    }
+
+    var inputValidationMessage: String? {
+        if isTitleOverLimit {
+            return "제목은 최대 30자까지 입력 가능합니다."
+        }
+        if isBodyOverLimit {
+            return "내용은 최대 500자까지 입력 가능합니다."
+        }
+        return nil
     }
 
     var canSubmit: Bool {
