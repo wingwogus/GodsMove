@@ -86,6 +86,25 @@ Every Figma-backed screen should include the relevant runtime states, not only
 the happy-path frame: loading, empty, error, disabled, submitting, and retry
 where applicable.
 
+## Design-System Source of Truth (Strict)
+
+Before implementing or modifying UI, inspect all relevant files under
+`Core/DesignSystem/`; never bypass that folder or recreate something it already
+provides.
+
+- Reuse `Components/` and `Modifiers/` before writing feature-local UI.
+- Use `Foundation/Color+App.swift`, `Font+App.swift`, and `Spacing.swift` for
+  color, text typography, and spacing. Do not introduce an equivalent raw value
+  or duplicate token when the design system already defines it.
+- Outside the foundation, do not add raw app colors, raw text-font styling, or
+  component-specific overrides merely to chase a Figma value. System icon glyph
+  sizing and genuinely missing one-off layout measurements are the exceptions.
+- If Figma conflicts with the design system, keep the existing design-system
+  value and report the mismatch. Do not modify foundations, component token
+  mappings, or public component APIs without explicit user authorization.
+- Before completion, inspect the Swift diff for duplicated components, raw
+  foundation values, and unapproved design-system changes.
+
 ## Product Source of Truth
 
 Do not duplicate product behavior into this file. Read from:

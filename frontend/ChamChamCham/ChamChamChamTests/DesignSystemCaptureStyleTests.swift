@@ -31,6 +31,21 @@ struct DesignSystemCaptureStyleTests {
         #expect(hex(AppChip.borderColor(style: .solidPastel, isSelected: false)) == hex(Color.Border.subtle))
     }
 
+    @Test("community chips reuse the captured solid and solid-pastel variants")
+    @MainActor
+    func communityChipStyles() {
+        #expect(hex(AppChip.fillColor(style: .solid, isSelected: true)) == 0x343434)
+        #expect(hex(AppChip.fillColor(style: .solidPastel, isSelected: false)) == 0xFFFFFF)
+        #expect(hex(AppChip.borderColor(style: .solid, isSelected: true)) == nil)
+        #expect(hex(AppChip.borderColor(style: .solidPastel, isSelected: false)) == 0xF3F3F3)
+    }
+
+    @Test("community post row preserves the captured vertical geometry")
+    func communityPostRowGeometry() {
+        #expect(AppListItem<EmptyView>.Size.medium.canvasSize.height == 160)
+        #expect(CommunityPostRow.Layout.interRowSpacing == 20)
+    }
+
     @Test("toggle uses the captured dimensions and off-state color")
     @MainActor
     func toggleStyles() {

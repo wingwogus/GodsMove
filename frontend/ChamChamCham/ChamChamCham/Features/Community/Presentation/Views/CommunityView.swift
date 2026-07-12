@@ -14,6 +14,7 @@ struct CommunityView: View {
     @State private var viewModel: CommunityFeedViewModel
     @State private var showCompose = false
     @State private var showCropPicker = false
+    @State private var showSortOptions = false
     private let horizontalInset: CGFloat = 20
 
     init(container: DIContainer) {
@@ -33,7 +34,7 @@ struct CommunityView: View {
                     AppTopAppBar(
                         title: "커뮤니티",
                         showBorder: false,
-                        trailing: [.init("magnifyingglass"), .init("bell")]
+                        trailing: [.init("magnifyingglass"), .init("bell.fill")]
                     )
                     postTypeTabs
                     cropChipRow
@@ -62,41 +63,18 @@ struct CommunityView: View {
     // MARK: - Post type tabs (자유 이야기 / Q&A)
 
     private var postTypeTabs: some View {
-        HStack(spacing: 0) {
-            tab(title: "일반 게시물", type: .general)
-            tab(title: "Q&A 게시물", type: .question)
-        }
-        .frame(height: 56)
-        .background(Color.Background.default)
-        .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Color.Border.subtle)
-                .frame(height: 1)
-        }
-    }
-
-    private func tab(title: String, type: CommunityPostType) -> some View {
-        let isSelected = viewModel.postType == type
-        return Button {
-            Task { await viewModel.selectPostType(type) }
-        } label: {
-            Text(title)
-                .appTypography(isSelected ? .titleMediumEmphasized : .titleMedium)
-                .foregroundStyle(isSelected ? Color.Text.default : Color.Text.muted)
-                .lineLimit(1)
-                .minimumScaleFactor(0.86)
-                .frame(maxWidth: .infinity)
-                .frame(height: 56)
-                .overlay(alignment: .bottom) {
-                    if isSelected {
-                        Rectangle()
-                            .fill(Color.Border.primary)
-                            .frame(height: 3)
+        AppTabBar(
+            titles: ["일반 게시물", "Q&A 게시물"],
+            selection: Binding(
+                get: { viewModel.postType == .general ? 0 : 1 },
+                set: { index in
+                    Task {
+                        await viewModel.selectPostType(index == 0 ? .general : .question)
                     }
                 }
-            .frame(maxWidth: .infinity)
-        }
-        .buttonStyle(.plain)
+            )
+        )
+        .frame(height: 56)
     }
 
     // MARK: - Crop board chips
@@ -124,11 +102,21 @@ struct CommunityView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.sm) {
-                    AppChip(label: "전체", isSelected: viewModel.selectedCropId == nil, style: .solid) {
+                    let isAllSelected = viewModel.selectedCropId == nil
+                    AppChip(
+                        label: "전체",
+                        isSelected: isAllSelected,
+                        style: isAllSelected ? .solid : .solidPastel
+                    ) {
                         Task { await viewModel.selectCrop(nil) }
                     }
                     ForEach(viewModel.boards) { board in
-                        AppChip(label: board.cropName, isSelected: viewModel.selectedCropId == board.cropId, style: .solid) {
+                        let isSelected = viewModel.selectedCropId == board.cropId
+                        AppChip(
+                            label: board.cropName,
+                            isSelected: isSelected,
+                            style: isSelected ? .solid : .solidPastel
+                        ) {
                             Task { await viewModel.selectCrop(board.cropId) }
                         }
                     }
@@ -156,7 +144,7 @@ struct CommunityView: View {
             } else if viewModel.posts.isEmpty {
                 emptyState(text: "아직 게시글이 없어요.", systemImage: "square.stack.3d.up.slash")
             } else {
-                LazyVStack(spacing: 0) {
+                LazyVStack(spacing: CommunityPostRow.Layout.interRowSpacing) {
                     ForEach(viewModel.posts) { post in
                         NavigationLink(value: post) {
                             CommunityPostRow(post: post) {
@@ -179,21 +167,20 @@ struct CommunityView: View {
     private var sortRow: some View {
         HStack {
             Spacer()
-            Menu {
-                Button("최신순") { Task { await viewModel.selectSort(.latest) } }
-                Button("인기순") { Task { await viewModel.selectSort(.popular) } }
-            } label: {
-                HStack(spacing: Spacing.xs) {
-                    Text(viewModel.sort == .popular ? "인기순" : "최신순")
-                    Image(systemName: "chevron.down")
-                }
-                .appTypography(.labelMedium)
-                .foregroundStyle(Color.Text.subtle)
+            AppSortButton(
+                title: viewModel.sort == .popular ? "인기순" : "최신순",
+                isExpanded: showSortOptions
+            ) {
+                showSortOptions = true
             }
         }
         .frame(height: 48)
         .padding(.horizontal, horizontalInset)
         .background(Color.Background.default)
+        .confirmationDialog("정렬", isPresented: $showSortOptions, titleVisibility: .hidden) {
+            Button("최신순") { Task { await viewModel.selectSort(.latest) } }
+            Button("인기순") { Task { await viewModel.selectSort(.popular) } }
+        }
     }
 
     private func emptyState(text: String, systemImage: String) -> some View {
@@ -210,16 +197,12 @@ struct CommunityView: View {
     }
 
     private var writeButton: some View {
-        Button {
+        AppButton(
+            systemImage: "pencil",
+            variant: .primary,
+            size: .xlarge
+        ) {
             showCompose = true
-        } label: {
-            Image(systemName: "pencil")
-                .font(.system(size: 40))
-                .foregroundStyle(Color.Icon.inverse)
-                .frame(width: 72, height: 72)
-                .background(Color.Object.primary)
-                .clipShape(Circle())
-                .shadow(color: .black.opacity(0.15), radius: 8, y: 4)
         }
         .padding(.trailing, horizontalInset)
         .padding(.bottom, Spacing.xl)
@@ -230,92 +213,39 @@ struct CommunityView: View {
 /// One row in the community list: badges/date header, title, one-line preview, reactions, and a
 /// fixed thumbnail slot.
 struct CommunityPostRow: View {
+    enum Layout {
+        static let interRowSpacing: CGFloat = 20
+    }
+
     let post: CommunityPostSummary
     var onTapLike: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            header
-            HStack(alignment: .top, spacing: 12) {
-                VStack(alignment: .leading, spacing: 0) {
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(post.title)
-                            .appTypography(.titleLargeEmphasized)
-                            .foregroundStyle(Color.Text.subtle)
-                            .lineLimit(1)
-                            .minimumScaleFactor(0.86)
-                            .multilineTextAlignment(.leading)
-
-                        if !post.bodyPreview.isEmpty {
-                            Text(post.bodyPreview)
-                                .appTypography(.bodyLarge)
-                                .foregroundStyle(Color.Text.muted)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.9)
-                                .multilineTextAlignment(.leading)
-                        }
-                    }
-
-                    Spacer(minLength: 0)
-
-                    reactionRow
-                }
-                .frame(maxWidth: .infinity, minHeight: 96, maxHeight: 96, alignment: .topLeading)
-
-                CommunityRemoteImage(url: post.thumbnailUrl)
-                    .frame(width: 96, height: 96)
-            }
+        AppListItem(
+            size: .medium,
+            title: post.title,
+            caption: post.bodyPreview,
+            badges: badges,
+            dateText: rowDateText(post.createdAt),
+            likeText: "\(post.likeCount)",
+            commentText: "\(post.commentCount)"
+        ) {
+            CommunityRemoteImage(url: post.thumbnailUrl)
         }
-        .padding(.horizontal, 20)
-        .frame(height: 160, alignment: .top)
-        .overlay {
-            Rectangle()
-                .stroke(Color.Border.default, lineWidth: 1)
-        }
-        .contentShape(Rectangle())
-    }
-
-    private var header: some View {
-        HStack(alignment: .center, spacing: Spacing.sm) {
-            HStack(spacing: Spacing.sm) {
-                AppBadge(label: post.cropName, size: .medium, style: .solidPastel, variant: .secondary)
-                if post.postType == .question {
-                    AppBadge(label: "Q&A", size: .medium, style: .solidPastel, variant: .secondary)
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-
-            Text(rowDateText(post.createdAt))
-                .appTypography(.labelMedium)
-                .foregroundStyle(Color.Text.muted)
-                .lineLimit(1)
-        }
-        .frame(height: 32)
-    }
-
-    private var reactionRow: some View {
-        HStack(spacing: 12) {
-            Button {
-                onTapLike()
-            } label: {
-                reaction(systemName: post.likedByMe ? "heart.fill" : "heart", text: "\(post.likeCount)")
-                    .foregroundStyle(post.likedByMe ? Color.Icon.red : Color.Text.muted)
+        .overlay(alignment: .topLeading) {
+            Button(action: onTapLike) {
+                Color.clear
+                    .frame(width: 48, height: 44)
+                    .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
-
-            reaction(systemName: "bubble.left", text: "\(post.commentCount)")
-                .foregroundStyle(Color.Text.muted)
+            .offset(x: 18, y: 106)
+            .accessibilityLabel(post.likedByMe ? "좋아요 취소" : "좋아요")
         }
     }
 
-    private func reaction(systemName: String, text: String) -> some View {
-        HStack(spacing: 2) {
-            Image(systemName: systemName)
-                .font(.system(size: 22))
-                .frame(width: 24, height: 24)
-            Text(text)
-                .appTypography(.bodyMedium)
-        }
+    private var badges: [String] {
+        post.postType == .question ? [post.cropName, "Q&A"] : [post.cropName]
     }
 
     private func rowDateText(_ date: Date) -> String {

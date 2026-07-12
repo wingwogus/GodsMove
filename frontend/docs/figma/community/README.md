@@ -3,8 +3,16 @@
 This folder stores TalkToFigma MCP captures for the community presentation
 layer. Capture first, implement after the full community screen set is collected.
 
+## MCP Connection
+
+- TalkToFigma channel: `chamchamcham`
+- Always join this channel before reading the current Figma selection.
+- Do not ask for the channel again unless connecting to `chamchamcham` fails.
+
 ## Captures
 
+- [AppListItem / medium 재캡처](2026-07-12-app-list-item-medium-recapture.md)
+- [커뮤니티 메인 / default (2026-07-12 recapture)](2026-07-12-community-main-default.md)
 - [커뮤니티 캡처 QA](2026-07-08-community-capture-qa.md)
 - [게시물 작성 / default](2026-07-08-community-compose-default.md)
 - [게시물 작성 / 필수값 입력 완료](2026-07-08-community-compose-required-complete.md)

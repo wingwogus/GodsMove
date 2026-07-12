@@ -246,7 +246,7 @@ struct AppListItem<Thumbnail: View>: View {
         HStack(spacing: 2) {
             Image(systemName: systemImage)
                 .font(.system(size: 22))
-                .foregroundStyle(Color.Icon.subtle)
+                .foregroundStyle(Color.Icon.disabled)
                 .frame(width: 24, height: 24)
             Text(text)
                 .appTypography(.bodyMedium)
