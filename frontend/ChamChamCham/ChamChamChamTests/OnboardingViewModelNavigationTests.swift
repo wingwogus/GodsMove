@@ -15,14 +15,91 @@ struct OnboardingViewModelNavigationTests {
 
     private func makeViewModel(startingAt step: OnboardingViewModel.Step, draft: OnboardingDraft = OnboardingDraft()) -> OnboardingViewModel {
         let store = OnboardingTestFactory.isolatedStore()
-        store.save(OnboardingDraftSnapshot(step: step, draft: draft))
-        return OnboardingViewModel(
+        let viewModel = OnboardingViewModel(
             store: store,
             onboardingRepository: FakeOnboardingRepository(),
             mediaUploadRepository: FakeMediaUploadRepository(),
             cropCatalogService: StubCropCatalogService(),
             memberProfileCache: StubMemberProfileCache()
         )
+        viewModel.draft = draft
+        viewModel.jump(to: step)
+        return viewModel
+    }
+
+    private func makeViewModel(store: OnboardingDraftStore) -> OnboardingViewModel {
+        OnboardingViewModel(
+            store: store,
+            onboardingRepository: FakeOnboardingRepository(),
+            mediaUploadRepository: FakeMediaUploadRepository(),
+            cropCatalogService: StubCropCatalogService(),
+            memberProfileCache: StubMemberProfileCache()
+        )
+    }
+
+    @Test("saved draft asks before restoring instead of auto-jumping")
+    func savedDraftRequiresUserChoiceBeforeRestore() {
+        var draft = OnboardingTestFactory.validDraft()
+        draft.farmName = "저장된농장"
+        let store = OnboardingTestFactory.isolatedStore()
+        store.save(OnboardingDraftSnapshot(step: .farmLocation, draft: draft))
+
+        let viewModel = makeViewModel(store: store)
+
+        #expect(viewModel.currentStep == .landing)
+        #expect(viewModel.shouldShowResumePrompt)
+        #expect(viewModel.draft.farmName == "")
+    }
+
+    @Test("resume saved draft applies the saved step and draft")
+    func resumeSavedDraftAppliesSnapshot() {
+        var draft = OnboardingTestFactory.validDraft()
+        draft.farmName = "저장된농장"
+        let store = OnboardingTestFactory.isolatedStore()
+        store.save(OnboardingDraftSnapshot(step: .cropSelection, draft: draft))
+        let viewModel = makeViewModel(store: store)
+
+        viewModel.resumeSavedDraft()
+
+        #expect(viewModel.currentStep == .cropSelection)
+        #expect(!viewModel.shouldShowResumePrompt)
+        #expect(viewModel.draft.farmName == "저장된농장")
+    }
+
+    @Test("discard saved draft clears snapshot and starts from basic profile")
+    func discardSavedDraftStartsFresh() {
+        let store = OnboardingTestFactory.isolatedStore()
+        store.save(OnboardingDraftSnapshot(step: .cropSelection, draft: OnboardingTestFactory.validDraft()))
+        let viewModel = makeViewModel(store: store)
+
+        viewModel.discardSavedDraftAndStartOver()
+
+        #expect(viewModel.currentStep == .basicProfile)
+        #expect(!viewModel.shouldShowResumePrompt)
+        #expect(viewModel.draft.name == "")
+        #expect(store.load() == nil)
+    }
+
+    @Test("authentication continues to basic profile only when no saved draft is pending")
+    func continueAfterAuthenticationWithoutSavedDraft() {
+        let viewModel = makeViewModel(store: OnboardingTestFactory.isolatedStore())
+
+        viewModel.continueAfterAuthentication()
+
+        #expect(viewModel.currentStep == .basicProfile)
+        #expect(!viewModel.shouldShowResumePrompt)
+    }
+
+    @Test("authentication keeps landing visible when saved draft choice is pending")
+    func continueAfterAuthenticationWithSavedDraftWaitsForChoice() {
+        let store = OnboardingTestFactory.isolatedStore()
+        store.save(OnboardingDraftSnapshot(step: .farmLocation, draft: OnboardingTestFactory.validDraft()))
+        let viewModel = makeViewModel(store: store)
+
+        viewModel.continueAfterAuthentication()
+
+        #expect(viewModel.currentStep == .landing)
+        #expect(viewModel.shouldShowResumePrompt)
     }
 
     @Test("Figma input step order is basic profile, farm location, crop selection, completion")

@@ -197,7 +197,7 @@ struct FarmLocationView: View {
             viewModel.draft.farmLandCategory = parcel.jimokName
             viewModel.draft.farmAreaSqm = parcel.areaSqm
             viewModel.draft.farmAreaIsManualEntry = false
-        } else if let manualArea = Double(farmLocationViewModel.manualAreaText) {
+        } else if let manualArea = farmLocationViewModel.manualAreaSqm {
             viewModel.draft.farmPNU = nil
             viewModel.draft.farmLandCategory = nil
             viewModel.draft.farmAreaSqm = manualArea

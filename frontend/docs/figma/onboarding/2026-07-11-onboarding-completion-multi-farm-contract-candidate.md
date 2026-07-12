@@ -20,6 +20,15 @@ Frontend decision:
 - 두 번째 이후 재배지는 새 standalone farm-add endpoint가 생기면 순차 저장 또는 outbox 저장 흐름으로 연결한다.
 - 따라서 이 문서의 기존 `CompleteOnboardingRequest.farms[]` 요청안은 보류한다.
 
+## 2026-07-12 Main Recheck
+
+- `main` 병합 이후 backend source와 deployed Swagger를 다시 확인했다.
+- standalone farm create/update endpoint는 아직 없다.
+- 현재 온보딩은 기존 백엔드 스펙에 맞춰 `POST /api/v1/auth/onboarding/complete`에 단일 대표 재배지만 전송한다.
+- 두 번째 이후 재배지는 standalone farm endpoint가 추가될 때까지 local draft에만 남긴다.
+- Swagger snapshot SHA-256: `46184ce3a531514753f11f8d995feef908d773eda2a62763ac7a1ba0f0fa81b5`
+- 스펙 호환 메모: `FarmRequest.areaSqm`은 값이 있으면 양수여야 하므로, Step 2 수동 면적 입력과 최종 DTO에서 `0` 이하 값을 막는다.
+
 ## Product Intent Captured
 
 `가입 완료` 화면에는 두 개의 CTA가 있다.

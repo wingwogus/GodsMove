@@ -148,4 +148,15 @@ struct OnboardingCompleteRequestDTOTests {
             _ = try OnboardingCompleteRequestDTO(draft: draft)
         }
     }
+
+    @Test("throws when area is present but not positive")
+    func throwsOnNonPositiveArea() {
+        var draft = OnboardingTestFactory.validDraft()
+        draft.farmAreaSqm = 0
+        draft.farmAreaIsManualEntry = true
+
+        #expect(throws: OnboardingSubmissionError.self) {
+            _ = try OnboardingCompleteRequestDTO(draft: draft)
+        }
+    }
 }

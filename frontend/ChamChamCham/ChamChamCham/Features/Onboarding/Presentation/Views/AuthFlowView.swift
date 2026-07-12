@@ -47,8 +47,24 @@ struct AuthFlowView: View {
             // A refresh-token-authenticated user should never land back on the login buttons — this only
             // happens if no draft snapshot was ever saved (e.g. Keychain survived an app delete+reinstall).
             if appState.isAuthenticated, viewModel.currentStep == .landing {
-                viewModel.jump(to: .basicProfile)
+                viewModel.continueAfterAuthentication()
             }
+        }
+        .alert(
+            "이전 온보딩을 이어서 할까요?",
+            isPresented: Binding(
+                get: { appState.isAuthenticated && viewModel.shouldShowResumePrompt },
+                set: { _ in }
+            )
+        ) {
+            Button("이어서 하기") {
+                viewModel.resumeSavedDraft()
+            }
+            Button("처음부터 다시", role: .destructive) {
+                viewModel.discardSavedDraftAndStartOver()
+            }
+        } message: {
+            Text("작성 중이던 정보가 저장되어 있어요. 이어서 진행하거나 처음부터 다시 시작할 수 있어요.")
         }
     }
 

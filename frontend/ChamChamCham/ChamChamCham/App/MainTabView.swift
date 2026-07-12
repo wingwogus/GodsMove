@@ -18,7 +18,7 @@ struct MainTabView: View {
                 .tabItem { Label("영농기록", systemImage: "list.bullet") }
             CommunityView(container: container)
                 .tabItem { Label("커뮤니티", systemImage: "person.3") }
-            Text("마이페이지")
+            MyPageView(authRepository: container.makeAuthRepository())
                 .tabItem { Label("마이페이지", systemImage: "person") }
         }
     }

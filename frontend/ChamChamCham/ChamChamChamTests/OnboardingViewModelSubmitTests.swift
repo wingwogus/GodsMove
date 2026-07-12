@@ -45,6 +45,7 @@ struct OnboardingViewModelSubmitTests {
             cropCatalogService: StubCropCatalogService(),
             memberProfileCache: StubMemberProfileCache()
         )
+        viewModel.resumeSavedDraft()
         return Harness(viewModel: viewModel, store: store, media: media, onboarding: onboarding, appState: AppState())
     }
 

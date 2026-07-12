@@ -45,6 +45,9 @@ final class OnboardingViewModel {
 
     var submissionState: SubmissionState = .idle
 
+    var shouldShowResumePrompt: Bool { pendingResumeSnapshot != nil }
+
+    private var pendingResumeSnapshot: OnboardingDraftSnapshot?
     private let store: OnboardingDraftStore
     private let onboardingRepository: OnboardingRepository
     private let mediaUploadRepository: MediaUploadRepository
@@ -63,10 +66,14 @@ final class OnboardingViewModel {
         self.mediaUploadRepository = mediaUploadRepository
         self.cropCatalogService = cropCatalogService
         self.memberProfileCache = memberProfileCache
-        if let snapshot = store.load() {
-            self.currentStep = snapshot.step
-            self.draft = snapshot.draft
+        if let snapshot = store.load(), snapshot.isRestorable {
+            self.pendingResumeSnapshot = snapshot
+            self.currentStep = .landing
+            self.draft = OnboardingDraft()
         } else {
+            if store.load() != nil {
+                store.clear()
+            }
             self.currentStep = .landing
             self.draft = OnboardingDraft()
         }
@@ -90,6 +97,27 @@ final class OnboardingViewModel {
     func jump(to step: Step) {
         currentStep = step
         persist()
+    }
+
+    func continueAfterAuthentication() {
+        guard !shouldShowResumePrompt else { return }
+        jump(to: .basicProfile)
+    }
+
+    func resumeSavedDraft() {
+        guard let snapshot = pendingResumeSnapshot else { return }
+        pendingResumeSnapshot = nil
+        currentStep = snapshot.step
+        draft = snapshot.draft
+        persist()
+    }
+
+    func discardSavedDraftAndStartOver() {
+        pendingResumeSnapshot = nil
+        store.clear()
+        submissionState = .idle
+        currentStep = .basicProfile
+        draft = OnboardingDraft()
     }
 
     func addFarmFromCompletion() {
@@ -187,5 +215,38 @@ final class OnboardingViewModel {
         } catch {
             submissionState = .failed("제출에 실패했어요. 잠시 후 다시 시도해주세요.")
         }
+    }
+}
+
+private extension OnboardingDraftSnapshot {
+    var isRestorable: Bool {
+        step != .landing && draft.hasRecoverableInput
+    }
+}
+
+private extension OnboardingDraft {
+    var hasRecoverableInput: Bool {
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || birthDate != nil
+            || experienceYears != nil
+            || profileImageFileName != nil
+            || profileMediaId != nil
+            || farms.contains { $0.hasRecoverableInput }
+    }
+}
+
+private extension OnboardingFarmDraft {
+    var hasRecoverableInput: Bool {
+        !cropIDs.isEmpty
+            || !farmName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !farmRoadAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || !farmJibunAddress.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            || farmLatitude != nil
+            || farmLongitude != nil
+            || farmPNU != nil
+            || farmLandCategory != nil
+            || farmAreaSqm != nil
     }
 }

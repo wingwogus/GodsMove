@@ -90,6 +90,9 @@ extension FarmRequestDTO {
         guard let latitude = farm.farmLatitude, let longitude = farm.farmLongitude else {
             throw OnboardingSubmissionError.missingRequiredField("farmCoordinate")
         }
+        if let areaSqm = farm.farmAreaSqm, areaSqm <= 0 {
+            throw OnboardingSubmissionError.missingRequiredField("farmAreaSqm")
+        }
 
         self.farmId = nil
         self.name = farm.farmName
