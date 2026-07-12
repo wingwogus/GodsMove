@@ -2,10 +2,10 @@
 
 - Source title: `ChamChamCham API`
 - Version: `v1`
-- SHA-256: `46184ce3a531514753f11f8d995feef908d773eda2a62763ac7a1ba0f0fa81b5`
-- Paths: `35`
-- Operations: `42`
-- Schemas: `99`
+- SHA-256: `c92cfa6e518ae661d386fd29fb94dbf9ec7e04eee3bae5dd55d9040ebc8643b3`
+- Paths: `37`
+- Operations: `46`
+- Schemas: `102`
 
 ## Operations
 
@@ -41,6 +41,10 @@
 | DELETE | `/api/v1/farming-records/{recordId}` | `deleteRecord` |
 | GET | `/api/v1/farming-records/{recordId}` | `getRecord` |
 | PATCH | `/api/v1/farming-records/{recordId}` | `updateRecord` |
+| GET | `/api/v1/farms` | `list` |
+| POST | `/api/v1/farms` | `create` |
+| DELETE | `/api/v1/farms/{farmId}` | `delete` |
+| PUT | `/api/v1/farms/{farmId}` | `replace` |
 | GET | `/api/v1/farms/{farmId}/weather` | `getCurrentWeather` |
 | POST | `/api/v1/media/images` | `uploadImage` |
 | GET | `/api/v1/members/me` | `getMyProfile` |
@@ -60,11 +64,13 @@
 - `ApiResponseCommentIdResponse`
 - `ApiResponseCommentPageResponse`
 - `ApiResponseCurrentWeatherResponse`
+- `ApiResponseFarmResponse`
 - `ApiResponseLikeToggleResponse`
 - `ApiResponseListBoardResponse`
 - `ApiResponseListCategoryResponse`
 - `ApiResponseListCropResponse`
 - `ApiResponseListFarmCropsResponse`
+- `ApiResponseListFarmResponse`
 - `ApiResponseListWorkTypeResponse`
 - `ApiResponseLoginResponse`
 - `ApiResponseMyProfileResponse`
@@ -88,6 +94,7 @@
 - `AuthorResponse`
 - `BoardResponse`
 - `BoundaryCoordinateRequest`
+- `BoundaryCoordinateResponse`
 - `CategoryResponse`
 - `CommentIdResponse`
 - `CommentPageResponse`
@@ -98,11 +105,10 @@
 - `CropResponse`
 - `CurrentWeatherResponse`
 - `DataSourceRequest`
+- `DataSourceResponse`
 - `EnumOptionResponse`
-- `FarmBoundaryCoordinateResponse`
 - `FarmCropsResponse`
-- `FarmDataSourceResponse`
-- `FarmRequest`
+- `FarmDraftRequest`
 - `FarmResponse`
 - `FertilizingDetailRequest`
 - `FertilizingDetailResponse`
@@ -141,6 +147,7 @@
 - `RecordPageResponse`
 - `RecordSummaryResponse`
 - `ReissueRequest`
+- `SaveFarmRequest`
 - `SavePostRequest`
 - `SaveRecordRequest`
 - `SendVerificationCodeRequest`

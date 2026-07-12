@@ -70,6 +70,23 @@
         ],
         "type": "object"
       },
+      "ApiResponseFarmResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/FarmResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
       "ApiResponseLikeToggleResponse": {
         "properties": {
           "data": {
@@ -152,6 +169,26 @@
           "data": {
             "items": {
               "$ref": "#/components/schemas/FarmCropsResponse"
+            },
+            "type": "array"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseListFarmResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/FarmResponse"
             },
             "type": "array"
           },
@@ -549,6 +586,27 @@
         "properties": {
           "latitude": {
             "format": "double",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "type": "number"
+          }
+        },
+        "required": [
+          "latitude",
+          "longitude"
+        ],
+        "type": "object"
+      },
+      "BoundaryCoordinateResponse": {
+        "properties": {
+          "latitude": {
+            "format": "double",
             "type": "number"
           },
           "longitude": {
@@ -653,6 +711,8 @@
               "format": "uuid",
               "type": "string"
             },
+            "maxItems": 5,
+            "minItems": 0,
             "type": "array"
           },
           "experienceLevel": {
@@ -662,7 +722,7 @@
             "type": "integer"
           },
           "farm": {
-            "$ref": "#/components/schemas/FarmRequest"
+            "$ref": "#/components/schemas/FarmDraftRequest"
           },
           "managementType": {
             "enum": [
@@ -693,7 +753,6 @@
           "farm",
           "managementType",
           "name",
-          "nickname",
           "phone"
         ],
         "type": "object"
@@ -800,6 +859,23 @@
         },
         "type": "object"
       },
+      "DataSourceResponse": {
+        "properties": {
+          "address": {
+            "type": "string"
+          },
+          "coordinate": {
+            "type": "string"
+          },
+          "landCharacteristic": {
+            "type": "string"
+          },
+          "parcel": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "EnumOptionResponse": {
         "properties": {
           "code": {
@@ -812,23 +888,6 @@
         "required": [
           "code",
           "label"
-        ],
-        "type": "object"
-      },
-      "FarmBoundaryCoordinateResponse": {
-        "properties": {
-          "latitude": {
-            "format": "double",
-            "type": "number"
-          },
-          "longitude": {
-            "format": "double",
-            "type": "number"
-          }
-        },
-        "required": [
-          "latitude",
-          "longitude"
         ],
         "type": "object"
       },
@@ -855,24 +914,7 @@
         ],
         "type": "object"
       },
-      "FarmDataSourceResponse": {
-        "properties": {
-          "address": {
-            "type": "string"
-          },
-          "coordinate": {
-            "type": "string"
-          },
-          "landCharacteristic": {
-            "type": "string"
-          },
-          "parcel": {
-            "type": "string"
-          }
-        },
-        "type": "object"
-      },
-      "FarmRequest": {
+      "FarmDraftRequest": {
         "properties": {
           "areaIsManualEntry": {
             "type": "boolean"
@@ -887,15 +929,70 @@
             },
             "type": "array"
           },
-          "cropIds": {
+          "dataSource": {
+            "$ref": "#/components/schemas/DataSourceRequest"
+          },
+          "jibunAddress": {
+            "type": "string"
+          },
+          "landCategory": {
+            "type": "string"
+          },
+          "latitude": {
+            "format": "double",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pnu": {
+            "type": "string"
+          },
+          "roadAddress": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "areaIsManualEntry",
+          "boundaryCoordinates",
+          "dataSource",
+          "latitude",
+          "longitude",
+          "name",
+          "roadAddress"
+        ],
+        "type": "object"
+      },
+      "FarmResponse": {
+        "properties": {
+          "areaIsManualEntry": {
+            "type": "boolean"
+          },
+          "areaSqm": {
+            "type": "number"
+          },
+          "boundaryCoordinates": {
             "items": {
-              "format": "uuid",
-              "type": "string"
+              "$ref": "#/components/schemas/BoundaryCoordinateResponse"
+            },
+            "type": "array"
+          },
+          "crops": {
+            "items": {
+              "$ref": "#/components/schemas/CropResponse"
             },
             "type": "array"
           },
           "dataSource": {
-            "$ref": "#/components/schemas/DataSourceRequest"
+            "$ref": "#/components/schemas/DataSourceResponse"
           },
           "farmId": {
             "format": "uuid",
@@ -928,65 +1025,9 @@
         "required": [
           "areaIsManualEntry",
           "boundaryCoordinates",
-          "cropIds",
+          "crops",
           "dataSource",
-          "latitude",
-          "longitude",
-          "name",
-          "roadAddress"
-        ],
-        "type": "object"
-      },
-      "FarmResponse": {
-        "properties": {
-          "areaIsManualEntry": {
-            "type": "boolean"
-          },
-          "areaSqm": {
-            "type": "number"
-          },
-          "boundaryCoordinates": {
-            "items": {
-              "$ref": "#/components/schemas/FarmBoundaryCoordinateResponse"
-            },
-            "type": "array"
-          },
-          "dataSource": {
-            "$ref": "#/components/schemas/FarmDataSourceResponse"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "jibunAddress": {
-            "type": "string"
-          },
-          "landCategory": {
-            "type": "string"
-          },
-          "latitude": {
-            "format": "double",
-            "type": "number"
-          },
-          "longitude": {
-            "format": "double",
-            "type": "number"
-          },
-          "name": {
-            "type": "string"
-          },
-          "pnu": {
-            "type": "string"
-          },
-          "roadAddress": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "areaIsManualEntry",
-          "boundaryCoordinates",
-          "dataSource",
-          "id",
+          "farmId",
           "name",
           "roadAddress"
         ],
@@ -2278,6 +2319,73 @@
         },
         "type": "object"
       },
+      "SaveFarmRequest": {
+        "properties": {
+          "areaIsManualEntry": {
+            "type": "boolean"
+          },
+          "areaSqm": {
+            "minimum": 0.0,
+            "type": "number"
+          },
+          "boundaryCoordinates": {
+            "items": {
+              "$ref": "#/components/schemas/BoundaryCoordinateRequest"
+            },
+            "type": "array"
+          },
+          "cropIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 0,
+            "type": "array"
+          },
+          "dataSource": {
+            "$ref": "#/components/schemas/DataSourceRequest"
+          },
+          "jibunAddress": {
+            "type": "string"
+          },
+          "landCategory": {
+            "type": "string"
+          },
+          "latitude": {
+            "format": "double",
+            "maximum": 90.0,
+            "minimum": -90.0,
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "maximum": 180.0,
+            "minimum": -180.0,
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pnu": {
+            "type": "string"
+          },
+          "roadAddress": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "areaIsManualEntry",
+          "boundaryCoordinates",
+          "cropIds",
+          "dataSource",
+          "latitude",
+          "longitude",
+          "name",
+          "roadAddress"
+        ],
+        "type": "object"
+      },
       "SavePostRequest": {
         "properties": {
           "body": {
@@ -2456,12 +2564,6 @@
             "minimum": 0,
             "type": "integer"
           },
-          "farms": {
-            "items": {
-              "$ref": "#/components/schemas/FarmRequest"
-            },
-            "type": "array"
-          },
           "managementType": {
             "enum": [
               "AGRICULTURAL_INDIVIDUAL",
@@ -2487,7 +2589,6 @@
         "required": [
           "birthDate",
           "experienceLevel",
-          "farms",
           "managementType",
           "name",
           "nickname",
@@ -3726,6 +3827,117 @@
         },
         "tags": [
           "farming-record-controller"
+        ]
+      }
+    },
+    "/api/v1/farms": {
+      "get": {
+        "operationId": "list",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListFarmResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farm-controller"
+        ]
+      },
+      "post": {
+        "operationId": "create",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFarmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseFarmResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farm-controller"
+        ]
+      }
+    },
+    "/api/v1/farms/{farmId}": {
+      "delete": {
+        "operationId": "delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farmId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farm-controller"
+        ]
+      },
+      "put": {
+        "operationId": "replace",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farmId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveFarmRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseFarmResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farm-controller"
         ]
       }
     },
