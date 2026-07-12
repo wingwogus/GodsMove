@@ -1,14 +1,17 @@
 package com.chamchamcham.api.policy.controller
 
 import com.chamchamcham.api.exception.GlobalExceptionHandler
+import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.policy.recommendation.PolicyRecommendationResult
 import com.chamchamcham.application.policy.recommendation.PolicyRecommendationService
 import com.chamchamcham.application.policy.support.PolicyBenefitCategory
 import com.chamchamcham.application.security.TokenProvider
+import com.chamchamcham.domain.policy.PolicyRecommendationSort
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -43,7 +46,15 @@ class PolicyControllerTest(
 
     @Test
     fun `list recommendations maps authenticated principal and returns items plus next cursor`() {
-        `when`(policyRecommendationService.listRecommendations(memberId, null, 20, null))
+        `when`(
+            policyRecommendationService.listRecommendations(
+                memberId,
+                null,
+                20,
+                null,
+                PolicyRecommendationSort.RECOMMENDED
+            )
+        )
             .thenReturn(
                 PolicyRecommendationResult.Page(
                     items = listOf(
@@ -64,7 +75,7 @@ class PolicyControllerTest(
             )
 
         mockMvc.perform(
-            get("/api/v1/policy-recommendations")
+            get("/api/v1/policies/recommendations")
                 .param("size", "20")
                 .with(authenticatedMember(memberId.toString()))
         )
@@ -81,7 +92,13 @@ class PolicyControllerTest(
             .andExpect(jsonPath("$.data.items[0].reason", equalTo("재배 작물과 지역 조건이 일치합니다")))
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-2")))
 
-        verify(policyRecommendationService).listRecommendations(memberId, null, 20, null)
+        verify(policyRecommendationService).listRecommendations(
+            memberId,
+            null,
+            20,
+            null,
+            PolicyRecommendationSort.RECOMMENDED
+        )
     }
 
     @Test
@@ -91,12 +108,13 @@ class PolicyControllerTest(
                 memberId,
                 null,
                 20,
-                PolicyBenefitCategory.FINANCE
+                PolicyBenefitCategory.FINANCE,
+                PolicyRecommendationSort.RECOMMENDED
             )
         ).thenReturn(PolicyRecommendationResult.Page(emptyList(), null))
 
         mockMvc.perform(
-            get("/api/v1/policy-recommendations")
+            get("/api/v1/policies/recommendations")
                 .param("benefitCategory", "FINANCE")
                 .with(authenticatedMember(memberId.toString()))
         )
@@ -106,18 +124,62 @@ class PolicyControllerTest(
             memberId,
             null,
             20,
-            PolicyBenefitCategory.FINANCE
+            PolicyBenefitCategory.FINANCE,
+            PolicyRecommendationSort.RECOMMENDED
         )
+    }
+
+    @Test
+    fun `list recommendations passes latest sort to service`() {
+        `when`(
+            policyRecommendationService.listRecommendations(
+                memberId,
+                null,
+                20,
+                null,
+                PolicyRecommendationSort.LATEST
+            )
+        ).thenReturn(PolicyRecommendationResult.Page(emptyList(), null))
+
+        mockMvc.perform(
+            get("/api/v1/policies/recommendations")
+                .param("sort", "LATEST")
+                .with(authenticatedMember(memberId.toString()))
+        ).andExpect(status().isOk)
+
+        verify(policyRecommendationService).listRecommendations(
+            memberId,
+            null,
+            20,
+            null,
+            PolicyRecommendationSort.LATEST
+        )
+    }
+
+    @Test
+    fun `list recommendations rejects unknown sort`() {
+        mockMvc.perform(
+            get("/api/v1/policies/recommendations")
+                .param("sort", "BAD")
+                .with(authenticatedMember(memberId.toString()))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo(ErrorCode.INVALID_INPUT.code)))
+
+        verifyNoInteractions(policyRecommendationService)
     }
 
     @Test
     fun `list recommendations rejects unknown benefit category`() {
         mockMvc.perform(
-            get("/api/v1/policy-recommendations")
+            get("/api/v1/policies/recommendations")
                 .param("benefitCategory", "BAD")
                 .with(authenticatedMember(memberId.toString()))
         )
             .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo(ErrorCode.INVALID_INPUT.code)))
+
+        verifyNoInteractions(policyRecommendationService)
     }
 
     @Test
@@ -160,7 +222,7 @@ class PolicyControllerTest(
             )
 
         mockMvc.perform(
-            get("/api/v1/policy-programs/{policyProgramId}", policyProgramId)
+            get("/api/v1/policies/{policyProgramId}", policyProgramId)
                 .with(authenticatedMember(memberId.toString()))
         )
             .andExpect(status().isOk)

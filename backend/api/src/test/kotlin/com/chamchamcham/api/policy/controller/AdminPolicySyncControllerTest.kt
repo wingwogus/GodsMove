@@ -59,7 +59,7 @@ class AdminPolicySyncControllerTest(
             )
 
         mockMvc.perform(
-            post("/api/v1/admin/policy-sync-jobs")
+            post("/api/v1/admin/policies/sync-jobs")
                 .with(authenticatedMember(adminMemberId.toString(), "ROLE_ADMIN"))
         )
             .andExpect(status().isOk)
@@ -95,7 +95,7 @@ class AdminPolicySyncControllerTest(
             )
 
         mockMvc.perform(
-            get("/api/v1/admin/policy-sync-jobs/{jobId}", jobId)
+            get("/api/v1/admin/policies/sync-jobs/{jobId}", jobId)
                 .with(authenticatedMember(adminMemberId.toString(), "ROLE_ADMIN"))
         )
             .andExpect(status().isOk)

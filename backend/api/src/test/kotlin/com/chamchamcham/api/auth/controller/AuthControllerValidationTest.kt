@@ -136,34 +136,29 @@ class AuthControllerValidationTest(
     }
 
     @Test
-    fun `complete onboarding rejects blank nickname`() {
+    fun `complete onboarding rejects more than five crop ids`() {
         mockMvc.perform(
             post("/api/v1/auth/onboarding/complete")
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(
-                    """
-                    {
-                      "name":"홍길동",
-                      "phone":"010-1234-5678",
-                      "birthDate":"1990-01-01",
-                      "nickname":"",
-                      "experienceLevel":3,
-                      "managementType":"AGRICULTURAL_INDIVIDUAL",
-                      "farm": {
-                        "name":"길동농장",
-                        "roadAddress":"서울시 강남구 테헤란로 1",
-                        "latitude":35.8465,
-                        "longitude":127.1292
-                      },
-                      "cropIds":["$cropId"]
-                    }
-                    """.trimIndent()
-                )
+                .content(validOnboardingRequestBody(cropIdsJson = "[\"$cropId\",\"${UUID.randomUUID()}\",\"${UUID.randomUUID()}\",\"${UUID.randomUUID()}\",\"${UUID.randomUUID()}\",\"${UUID.randomUUID()}\"]"))
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.success").value(false))
             .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
-            .andExpect(jsonPath("$.error.detail.field", equalTo("nickname")))
+            .andExpect(jsonPath("$.error.detail.field", equalTo("cropIds")))
+    }
+
+    @Test
+    fun `complete onboarding rejects duplicate crop ids`() {
+        mockMvc.perform(
+            post("/api/v1/auth/onboarding/complete")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(validOnboardingRequestBody(cropIdsJson = "[\"$cropId\",\"$cropId\"]"))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.success").value(false))
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+            .andExpect(jsonPath("$.error.detail.field", equalTo("cropIds")))
     }
 
     @Test

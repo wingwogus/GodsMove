@@ -25,6 +25,9 @@ Folder-specific instructions:
   files and logs.
 - Do not revert user changes unless the user explicitly asks.
 - Follow YAGNI: do not add code, dependencies, or abstractions before a concrete need exists.
+- Keep request-shape validation at the API boundary. Do not duplicate null, blank,
+  range, size, or uniqueness constraints in application services unless a real
+  non-HTTP command caller requires the same validation.
 - Prefer small, reviewable commits with focused scope.
 - Run the relevant test/build command before claiming implementation work is
   complete.
@@ -56,6 +59,20 @@ Common types:
 - `refactor`: behavior-preserving code change
 - `test`: test addition or update
 - `chore`: build, configuration, or miscellaneous work
+
+## Pull Requests
+
+- Use `.github/pull_request_template.md` for every pull request, including pull
+  requests created by AI agents.
+- Complete every template section from the actual diff. Write `해당 없음` when
+  a section does not apply instead of deleting it.
+- Record exact verification commands and results. Disclose skipped checks and
+  remaining risks.
+- State API, database, configuration, deployment, and compatibility impact.
+- Never include secrets, tokens, private keys, or raw environment values in a
+  pull request body.
+- Create a Draft pull request unless the user explicitly requests Ready for
+  review.
 
 ## Branch Strategy
 

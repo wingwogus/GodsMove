@@ -198,8 +198,13 @@ authService.login(AuthCommand.Login(request.email, request.password))
 - Controllers may map API DTOs to application commands/results.
 - Application services must not accept API request DTOs.
 - Do not expose JPA entities directly as API responses.
-- Keep Bean Validation annotations on API request DTOs. Put business-rule
-  validation in application services.
+- Keep request-shape validation on API request DTOs and invoke it with `@Valid`.
+  This includes null, blank, format, range, collection-size, and collection-
+  uniqueness constraints. Do not repeat those rules in application services.
+- Application services validate only business rules that require domain state,
+  repository access, ownership, or lifecycle knowledge. Add a shared command
+  validator only when a real non-HTTP caller needs it; document that caller and
+  cover it with a service-level test.
 
 Example request DTO:
 

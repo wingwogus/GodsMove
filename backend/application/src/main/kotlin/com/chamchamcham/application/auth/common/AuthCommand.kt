@@ -1,7 +1,7 @@
 package com.chamchamcham.application.auth.common
 
+import com.chamchamcham.application.farm.FarmCommand
 import com.chamchamcham.domain.member.ManagementType
-import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 
@@ -47,38 +47,12 @@ object AuthCommand {
         val name: String,
         val phone: String,
         val birthDate: LocalDate,
-        val nickname: String,
+        val nickname: String?,
         val experienceLevel: Int,
         val managementType: ManagementType,
-        val farm: Farm,
+        val farm: FarmCommand.Draft,
         val cropIds: List<UUID>,
         val profileMediaId: UUID?
-    )
-
-    data class Farm(
-        val name: String,
-        val roadAddress: String,
-        val jibunAddress: String?,
-        val latitude: Double?,
-        val longitude: Double?,
-        val pnu: String?,
-        val landCategory: String?,
-        val areaSqm: BigDecimal?,
-        val areaIsManualEntry: Boolean,
-        val boundaryCoordinates: List<FarmBoundaryCoordinate>,
-        val dataSource: FarmDataSource
-    )
-
-    data class FarmBoundaryCoordinate(
-        val latitude: Double,
-        val longitude: Double
-    )
-
-    data class FarmDataSource(
-        val address: String?,
-        val coordinate: String?,
-        val parcel: String?,
-        val landCharacteristic: String?
     )
 
     data class Reissue(

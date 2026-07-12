@@ -167,17 +167,6 @@ class CommunityPostServiceTest {
     }
 
     @Test
-    fun `create rejects more than five images`() {
-        val exception = assertThrows(BusinessException::class.java) {
-            service.create(createCommand(mediaIds = List(6) { UUID.randomUUID() }))
-        }
-
-        assertEquals(ErrorCode.COMMUNITY_TOO_MANY_IMAGES, exception.errorCode)
-        verifyNoInteractions(uploadedMediaRepository)
-        verify(communityPostRepository, never()).save(any(CommunityPost::class.java))
-    }
-
-    @Test
     fun `update allows author to change crop farming record content and images`() {
         val secondRecord = farmingRecord(member, secondCrop)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)

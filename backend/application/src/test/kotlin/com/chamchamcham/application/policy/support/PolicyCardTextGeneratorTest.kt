@@ -8,12 +8,21 @@ class PolicyCardTextGeneratorTest {
     private val generator = PolicyCardTextGenerator()
 
     @Test
-    fun `benefit category exposes stable enum key and card label`() {
-        val category = generator.benefitCategory("정책자금 융자 및 금리 지원")
-
-        assertThat(category).isEqualTo(PolicyBenefitCategory.FINANCE)
-        assertThat(category.label).isEqualTo("융자/금융")
-        assertThat(generator.benefitSummary("정책자금 융자 및 금리 지원")).isEqualTo("융자/금융")
+    fun `benefit categories expose canonical keys and labels`() {
+        assertThat(PolicyBenefitCategory.entries.map { it.name to it.label }).containsExactly(
+            "GRANT" to "지원금",
+            "FINANCE" to "융자·금융",
+            "FACILITY_EQUIPMENT" to "시설·장비",
+            "EDUCATION" to "교육",
+            "WELFARE" to "복지",
+            "CERTIFICATION" to "인증",
+            "MARKET" to "판로",
+            "STARTUP" to "창업",
+            "ENVIRONMENT_INFRA" to "환경·인프라",
+            "ETC" to "기타"
+        )
+        assertThat(PolicyBenefitCategory.fromKey("FINANCE")).isEqualTo(PolicyBenefitCategory.FINANCE)
+        assertThat(PolicyBenefitCategory.fromKey("bad")).isNull()
     }
 
     @Test
@@ -23,12 +32,6 @@ class PolicyCardTextGeneratorTest {
         assertThat(category).isEqualTo(PolicyEligibilityCategory.YOUNG_FARMER)
         assertThat(category.label).isEqualTo("청년 농업인")
         assertThat(generator.eligibilitySummary("청년후계농업경영인")).isEqualTo("청년 농업인")
-    }
-
-    @Test
-    fun `benefit category key parser rejects unknown values`() {
-        assertThat(PolicyBenefitCategory.fromKey("FINANCE")).isEqualTo(PolicyBenefitCategory.FINANCE)
-        assertThat(PolicyBenefitCategory.fromKey("bad")).isNull()
     }
 
     @Test
@@ -64,26 +67,24 @@ class PolicyCardTextGeneratorTest {
     }
 
     @Test
-    fun `benefit summary maps source text to support category labels`() {
+    fun `benefit summary maps source text to canonical support categories`() {
         val cases = mapOf(
-            "친환경농업 직불금 지급" to "직불/수당",
-            "정책자금 융자 및 금리 지원" to "융자/금융",
-            "농기계 장비 설치 및 개보수 지원" to "시설/장비",
-            "농업인 교육과 컨설팅 지원" to "교육/컨설팅",
-            "농작물재해보험 보험료 지원" to "보험/복지",
-            "GAP 인증 및 품질 검정 지원" to "인증/품질",
-            "수출 박람회 참가와 판로 홍보 지원" to "판로/마케팅",
-            "창업 사업화 R&D 지원" to "창업/사업화",
-            "농업용수 수질 개선과 가뭄 대응" to "환경/인프라",
-            "세부 지원 내용은 공고문 참조" to "기타"
+            "청년농 영농정착지원금 지급" to "지원금",
+            "정책자금 융자 및 이자 지원" to "융자·금융",
+            "농기계 장비 설치 및 개보수" to "시설·장비",
+            "농업인 교육과 컨설팅" to "교육",
+            "농작물재해보험 보험료 지원" to "복지",
+            "GAP 인증 및 품질 검정" to "인증",
+            "수출 박람회 참가와 판로 홍보" to "판로",
+            "청년 농업인 창업 사업화" to "창업",
+            "농업용수 환경 인프라 개선" to "환경·인프라",
+            "세부 내용은 공고문 참조" to "기타"
         )
 
         cases.forEach { (source, expected) ->
-            val summary = generator.benefitSummary(source)
-
-            assertThat(summary).isEqualTo(expected)
-            assertThat(summary.length).isLessThanOrEqualTo(19)
+            assertThat(generator.benefitSummary(source)).isEqualTo(expected)
         }
+        assertThat(generator.benefitCategory("농업 데이터 제공")).isEqualTo(PolicyBenefitCategory.ETC)
     }
 
     @Test

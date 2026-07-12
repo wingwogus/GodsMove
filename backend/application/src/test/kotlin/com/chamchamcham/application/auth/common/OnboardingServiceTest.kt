@@ -2,6 +2,7 @@ package com.chamchamcham.application.auth.common
 
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.farm.FarmCommand
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
@@ -105,23 +106,18 @@ class OnboardingServiceTest {
     }
 
     @Test
-    fun `complete de-duplicates crop ids preserving requested order`() {
+    fun `complete uses name when nickname is null or blank`() {
         val member = member()
-        val firstCrop = crop(id = cropId, externalNo = 422, name = "참당귀")
-        val secondCrop = crop(id = secondCropId, externalNo = 107, name = "작약")
-        val command = completeOnboardingCommand(cropIds = listOf(cropId, secondCropId, cropId))
+        val crop = crop(id = cropId, externalNo = 422, name = "참당귀")
+        val command = completeOnboardingCommand(cropIds = listOf(cropId), nickname = " ")
 
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        `when`(cropRepository.findAllById(listOf(cropId, secondCropId))).thenReturn(listOf(secondCrop, firstCrop))
-        `when`(farmRepository.save(any(Farm::class.java))).thenReturn(
-            savedFarm(member, command.farm)
-        )
+        `when`(cropRepository.findAllById(listOf(cropId))).thenReturn(listOf(crop))
+        `when`(farmRepository.save(any(Farm::class.java))).thenReturn(savedFarm(member, command.farm))
 
-        val result = service.complete(command)
+        service.complete(command)
 
-        assertThat(result.crops.map { it.id }).containsExactly(cropId, secondCropId)
-        val savedMemberCrops = capturedMemberCrops()
-        assertThat(savedMemberCrops.map { it.crop.id }).containsExactly(cropId, secondCropId)
+        assertEquals("홍길동", member.nickname)
     }
 
     @Test
@@ -139,18 +135,6 @@ class OnboardingServiceTest {
         }
 
         assertEquals(ErrorCode.CROP_NOT_FOUND, exception.errorCode)
-        verify(farmRepository, never()).save(any(Farm::class.java))
-        verifyNoInteractions(memberCropRepository)
-    }
-
-    @Test
-    fun `complete rejects empty crop ids before lookups or saves`() {
-        val exception = assertThrows(BusinessException::class.java) {
-            service.complete(completeOnboardingCommand(cropIds = emptyList()))
-        }
-
-        assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
-        verifyNoInteractions(memberRepository, cropRepository)
         verify(farmRepository, never()).save(any(Farm::class.java))
         verifyNoInteractions(memberCropRepository)
     }
@@ -237,14 +221,15 @@ class OnboardingServiceTest {
 
     private fun completeOnboardingCommand(
         cropIds: List<UUID> = listOf(cropId),
-        profileMediaId: UUID? = null
+        profileMediaId: UUID? = null,
+        nickname: String? = "길동"
     ): AuthCommand.CompleteOnboarding {
         return AuthCommand.CompleteOnboarding(
             memberId = memberId,
             name = "홍길동",
             phone = "010-1234-5678",
             birthDate = LocalDate.of(1990, 1, 1),
-            nickname = "길동",
+            nickname = nickname,
             experienceLevel = 72,
             managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
             farm = farmCommand(),
@@ -253,8 +238,8 @@ class OnboardingServiceTest {
         )
     }
 
-    private fun farmCommand(): AuthCommand.Farm {
-        return AuthCommand.Farm(
+    private fun farmCommand(): FarmCommand.Draft {
+        return FarmCommand.Draft(
             name = "서울 약초농장",
             roadAddress = "서울특별시 강남구 테헤란로 1",
             jibunAddress = "서울특별시 강남구 역삼동 1",
@@ -265,10 +250,10 @@ class OnboardingServiceTest {
             areaSqm = BigDecimal("1200.5"),
             areaIsManualEntry = false,
             boundaryCoordinates = listOf(
-                AuthCommand.FarmBoundaryCoordinate(latitude = 35.8461, longitude = 127.1289),
-                AuthCommand.FarmBoundaryCoordinate(latitude = 35.8463, longitude = 127.1295)
+                FarmCommand.BoundaryCoordinate(latitude = 35.8461, longitude = 127.1289),
+                FarmCommand.BoundaryCoordinate(latitude = 35.8463, longitude = 127.1295)
             ),
-            dataSource = AuthCommand.FarmDataSource(
+            dataSource = FarmCommand.DataSource(
                 address = "JUSO",
                 coordinate = "V_WORLD_ADDRESS",
                 parcel = "V_WORLD_CADASTRAL",
@@ -277,7 +262,7 @@ class OnboardingServiceTest {
         )
     }
 
-    private fun savedFarm(member: Member, farm: AuthCommand.Farm): Farm {
+    private fun savedFarm(member: Member, farm: FarmCommand.Draft): Farm {
         return Farm(
             id = farmId,
             owner = member,

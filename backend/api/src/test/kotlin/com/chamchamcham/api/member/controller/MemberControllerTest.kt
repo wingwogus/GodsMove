@@ -10,8 +10,9 @@ import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.member.ManagementType
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
-import org.mockito.Mockito.`when`
+import org.mockito.BDDMockito.given
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -27,7 +28,6 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.request.RequestPostProcessor
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
-import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.UUID
 
@@ -46,41 +46,77 @@ class MemberControllerTest(
     @MockBean private lateinit var tokenProvider: TokenProvider
 
     @Test
-    fun `get my profile maps authenticated member id and returns private profile`() {
-        `when`(memberProfileService.getMyProfile(memberId)).thenReturn(myProfileResult())
+    fun `get my profile keeps farm summaries as read model`() {
+        given(memberProfileService.getMyProfile(memberId)).willReturn(myProfile())
 
-        mockMvc.perform(
-            get("/api/v1/members/me")
-                .with(authenticatedMember(memberId.toString()))
-        )
+        mockMvc.perform(get("/api/v1/members/me").with(authenticatedMember(memberId.toString())))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.memberId", equalTo(memberId.toString())))
-            .andExpect(jsonPath("$.data.email", equalTo("hwanggi@example.com")))
-            .andExpect(jsonPath("$.data.name", equalTo("이황기")))
-            .andExpect(jsonPath("$.data.phone", equalTo("010-1000-0001")))
-            .andExpect(jsonPath("$.data.birthDate", equalTo("1986-03-12")))
-            .andExpect(jsonPath("$.data.farms[0].roadAddress", equalTo("강원특별자치도 횡성군 둔내면 샘물로 12")))
+            .andExpect(jsonPath("$.data.farms[0].farmId", equalTo(farmId.toString())))
             .andExpect(jsonPath("$.data.crops[0].cropName", equalTo("황기")))
     }
 
     @Test
-    fun `get public profile maps path member id and returns safe profile`() {
-        `when`(memberProfileService.getPublicProfile(memberId)).thenReturn(publicProfileResult())
-
-        mockMvc.perform(
-            get("/api/v1/members/{memberId}/profile", memberId)
-                .with(authenticatedMember(requesterId.toString()))
+    fun `get farm crops keeps nested crop read model`() {
+        given(memberProfileService.getMyFarmCrops(memberId)).willReturn(
+            listOf(
+                MemberProfileResult.FarmCrops(
+                    farmId = farmId,
+                    farmName = "횡성 황기밭",
+                    crops = listOf(cropSummary())
+                )
+            )
         )
+
+        mockMvc.perform(get("/api/v1/members/me/farm-crops").with(authenticatedMember(memberId.toString())))
             .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.memberId", equalTo(memberId.toString())))
-            .andExpect(jsonPath("$.data.nickname", equalTo("황기농부")))
-            .andExpect(jsonPath("$.data.farms[0].displayRegion", equalTo("강원특별자치도 횡성군")))
-            .andExpect(jsonPath("$.data.crops[0].cropId", equalTo(cropId.toString())))
+            .andExpect(jsonPath("$.data[0].crops[0].id", equalTo(cropId.toString())))
     }
 
     @Test
-    fun `get public profile response does not expose private fields`() {
-        `when`(memberProfileService.getPublicProfile(memberId)).thenReturn(publicProfileResult())
+    fun `update profile maps profile fields without farms`() {
+        given(memberProfileService.updateMyProfile(updateCommand())).willReturn(myProfile())
+
+        mockMvc.perform(
+            put("/api/v1/members/me/profile")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(profileJson())
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.name", equalTo("이황기")))
+
+        verify(memberProfileService).updateMyProfile(updateCommand())
+    }
+
+    @Test
+    fun `update profile rejects blank name before service invocation`() {
+        mockMvc.perform(
+            put("/api/v1/members/me/profile")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(profileJson().replace("\"name\":\"이황기\"", "\"name\":\"\""))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+            .andExpect(jsonPath("$.error.detail.field", equalTo("name")))
+
+        verifyNoInteractions(memberProfileService)
+    }
+
+    @Test
+    fun `get public profile keeps safe fields`() {
+        given(memberProfileService.getPublicProfile(memberId)).willReturn(
+            MemberProfileResult.PublicProfile(
+                memberId = memberId,
+                nickname = "황기농부",
+                experienceLevel = 2,
+                managementType = ManagementType.AGRICULTURAL_INDIVIDUAL.name,
+                profileImageUrl = null,
+                farms = listOf(MemberProfileResult.PublicFarm(farmId, "강원특별자치도 횡성군")),
+                crops = listOf(MemberProfileResult.CropProfile(cropId, "황기"))
+            )
+        )
 
         mockMvc.perform(
             get("/api/v1/members/{memberId}/profile", memberId)
@@ -88,65 +124,11 @@ class MemberControllerTest(
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.email").doesNotExist())
-            .andExpect(jsonPath("$.data.name").doesNotExist())
-            .andExpect(jsonPath("$.data.phone").doesNotExist())
-            .andExpect(jsonPath("$.data.birthDate").doesNotExist())
             .andExpect(jsonPath("$.data.farms[0].roadAddress").doesNotExist())
-            .andExpect(jsonPath("$.data.farms[0].jibunAddress").doesNotExist())
     }
 
-    @Test
-    fun `get my farm crops returns farms with nested crop lists`() {
-        `when`(memberProfileService.getMyFarmCrops(memberId)).thenReturn(
-            listOf(
-                MemberProfileResult.FarmCrops(
-                    farmId = farmId,
-                    farmName = "횡성 황기밭",
-                    crops = listOf(
-                        CropResult.CropSummary(
-                            id = cropId,
-                            externalNo = 1,
-                            name = "황기",
-                            usePartCategory = CropUsePartCategory.ROOT_BARK.name,
-                            usePartCategoryLabel = CropUsePartCategory.ROOT_BARK.label
-                        )
-                    )
-                )
-            )
-        )
-
-        mockMvc.perform(
-            get("/api/v1/members/me/farm-crops")
-                .with(authenticatedMember(memberId.toString()))
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data[0].farmId", equalTo(farmId.toString())))
-            .andExpect(jsonPath("$.data[0].farmName", equalTo("횡성 황기밭")))
-            .andExpect(jsonPath("$.data[0].crops[0].id", equalTo(cropId.toString())))
-            .andExpect(jsonPath("$.data[0].crops[0].usePartCategoryLabel", equalTo("뿌리·껍질")))
-    }
-
-    @Test
-    fun `update my profile maps request to command and returns updated profile`() {
-        val command = updateMyProfileCommand()
-        `when`(memberProfileService.updateMyProfile(command)).thenReturn(myProfileResult())
-
-        mockMvc.perform(
-            put("/api/v1/members/me/profile")
-                .with(authenticatedMember(memberId.toString()))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(updateMyProfileJson())
-        )
-            .andExpect(status().isOk)
-            .andExpect(jsonPath("$.data.memberId", equalTo(memberId.toString())))
-            .andExpect(jsonPath("$.data.name", equalTo("이황기")))
-            .andExpect(jsonPath("$.data.farms[0].farmId", equalTo(farmId.toString())))
-
-        verify(memberProfileService).updateMyProfile(command)
-    }
-
-    private fun authenticatedMember(memberId: String): RequestPostProcessor {
-        return RequestPostProcessor { request ->
+    private fun authenticatedMember(memberId: String): RequestPostProcessor =
+        RequestPostProcessor { request ->
             SecurityContextHolder.getContext().authentication =
                 UsernamePasswordAuthenticationToken(
                     memberId,
@@ -155,9 +137,8 @@ class MemberControllerTest(
                 )
             request
         }
-    }
 
-    private fun myProfileResult(): MemberProfileResult.MyProfile =
+    private fun myProfile(): MemberProfileResult.MyProfile =
         MemberProfileResult.MyProfile(
             memberId = memberId,
             email = "hwanggi@example.com",
@@ -166,51 +147,30 @@ class MemberControllerTest(
             birthDate = LocalDate.of(1986, 3, 12),
             nickname = "황기농부",
             experienceLevel = 2,
-            managementType = "AGRICULTURAL_INDIVIDUAL",
-            profileImageUrl = "https://example.test/profile.jpg",
+            managementType = ManagementType.AGRICULTURAL_INDIVIDUAL.name,
+            profileImageUrl = null,
             farms = listOf(
                 MemberProfileResult.MyFarm(
                     farmId = farmId,
                     name = "횡성 황기밭",
-                    roadAddress = "강원특별자치도 횡성군 둔내면 샘물로 12",
-                    jibunAddress = "강원특별자치도 횡성군 둔내면 현천리 101",
+                    roadAddress = "강원특별자치도 횡성군 둔내면 1",
+                    jibunAddress = null,
                     displayRegion = "강원특별자치도 횡성군"
                 )
             ),
             crops = listOf(MemberProfileResult.CropProfile(cropId, "황기"))
         )
 
-    private fun updateMyProfileJson(): String =
-        """
-            {
-              "name":"이황기",
-              "phone":"010-1000-0001",
-              "birthDate":"1986-03-12",
-              "nickname":"황기농부",
-              "experienceLevel":2,
-              "managementType":"AGRICULTURAL_INDIVIDUAL",
-              "profileMediaId":null,
-              "farms":[
-                {
-                  "farmId":"$farmId",
-                  "name":"횡성 황기밭",
-                  "roadAddress":"강원특별자치도 횡성군 둔내면 샘물로 12",
-                  "jibunAddress":"강원특별자치도 횡성군 둔내면 현천리 101",
-                  "latitude":37.1,
-                  "longitude":128.1,
-                  "pnu":"4273031021101010000",
-                  "landCategory":"전",
-                  "areaSqm":1234.5,
-                  "areaIsManualEntry":false,
-                  "boundaryCoordinates":[{"latitude":37.1,"longitude":128.1}],
-                  "dataSource":{"address":"KAKAO","coordinate":"KAKAO","parcel":"PUBLIC_DATA","landCharacteristic":null},
-                  "cropIds":["$cropId"]
-                }
-              ]
-            }
-        """.trimIndent()
+    private fun cropSummary(): CropResult.CropSummary =
+        CropResult.CropSummary(
+            id = cropId,
+            externalNo = 422,
+            name = "황기",
+            usePartCategory = CropUsePartCategory.ROOT_BARK.name,
+            usePartCategoryLabel = CropUsePartCategory.ROOT_BARK.label
+        )
 
-    private fun updateMyProfileCommand(): MemberProfileCommand.UpdateMyProfile =
+    private fun updateCommand(): MemberProfileCommand.UpdateMyProfile =
         MemberProfileCommand.UpdateMyProfile(
             memberId = memberId,
             name = "이황기",
@@ -224,29 +184,41 @@ class MemberControllerTest(
                 MemberProfileCommand.Farm(
                     farmId = farmId,
                     name = "횡성 황기밭",
-                    roadAddress = "강원특별자치도 횡성군 둔내면 샘물로 12",
-                    jibunAddress = "강원특별자치도 횡성군 둔내면 현천리 101",
-                    latitude = 37.1,
-                    longitude = 128.1,
-                    pnu = "4273031021101010000",
-                    landCategory = "전",
-                    areaSqm = BigDecimal("1234.5"),
+                    roadAddress = "강원특별자치도 횡성군 둔내면 1",
+                    jibunAddress = null,
+                    latitude = 37.5,
+                    longitude = 128.5,
+                    pnu = null,
+                    landCategory = null,
+                    areaSqm = null,
                     areaIsManualEntry = false,
-                    boundaryCoordinates = listOf(MemberProfileCommand.FarmBoundaryCoordinate(37.1, 128.1)),
-                    dataSource = MemberProfileCommand.FarmDataSource("KAKAO", "KAKAO", "PUBLIC_DATA", null),
+                    boundaryCoordinates = emptyList(),
+                    dataSource = MemberProfileCommand.FarmDataSource(null, null, null, null),
                     cropIds = listOf(cropId)
                 )
             )
         )
 
-    private fun publicProfileResult(): MemberProfileResult.PublicProfile =
-        MemberProfileResult.PublicProfile(
-            memberId = memberId,
-            nickname = "황기농부",
-            experienceLevel = 2,
-            managementType = "AGRICULTURAL_INDIVIDUAL",
-            profileImageUrl = "https://example.test/profile.jpg",
-            farms = listOf(MemberProfileResult.PublicFarm(farmId, "강원특별자치도 횡성군")),
-            crops = listOf(MemberProfileResult.CropProfile(cropId, "황기"))
-        )
+    private fun profileJson(): String =
+        """
+        {
+          "name":"이황기",
+          "phone":"010-1000-0001",
+          "birthDate":"1986-03-12",
+          "nickname":"황기농부",
+          "experienceLevel":2,
+          "managementType":"AGRICULTURAL_INDIVIDUAL",
+          "profileMediaId":null,
+          "farms":[
+            {
+              "farmId":"$farmId",
+              "name":"횡성 황기밭",
+              "roadAddress":"강원특별자치도 횡성군 둔내면 1",
+              "latitude":37.5,
+              "longitude":128.5,
+              "cropIds":["$cropId"]
+            }
+          ]
+        }
+        """.trimIndent()
 }

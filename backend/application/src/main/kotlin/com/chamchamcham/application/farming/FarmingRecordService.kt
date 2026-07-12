@@ -5,6 +5,7 @@ import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
+import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecord
@@ -61,7 +62,6 @@ class FarmingRecordService(
 ) {
     fun create(command: FarmingRecordCommand.Create): FarmingRecordResult.RecordId {
         detailValidator.validate(command)
-        validateImageCount(command.mediaIds)
 
         val member = findMember(command.memberId)
         val farm = findFarm(command.farmId, command.memberId)
@@ -92,6 +92,7 @@ class FarmingRecordService(
     fun search(condition: FarmingRecordSearchCondition): FarmingRecordResult.Page {
         validatePageSize(condition.size)
         val cursor = decodeCursor(condition.cursor)
+        val trimmedKeyword = condition.keyword?.trim()?.takeIf(String::isNotEmpty)
         val result = farmingRecordQueryRepository.search(
             FarmingRecordQueryRepository.SearchCondition(
                 memberId = condition.memberId,
@@ -99,6 +100,9 @@ class FarmingRecordService(
                 workType = condition.workType,
                 workedAtFrom = condition.startDate?.atStartOfDay(),
                 workedAtTo = condition.endDate?.plusDays(1)?.atStartOfDay(),
+                keyword = trimmedKeyword,
+                matchedWorkTypes = matchedWorkTypes(trimmedKeyword),
+                matchedParts = matchedParts(trimmedKeyword),
                 cursor = cursor,
                 size = condition.size + 1
             )
@@ -115,6 +119,12 @@ class FarmingRecordService(
         )
     }
 
+    private fun matchedWorkTypes(keyword: String?): List<WorkType> =
+        keyword?.let { kw -> WorkType.entries.filter { it.label.contains(kw) } } ?: emptyList()
+
+    private fun matchedParts(keyword: String?): List<CropUsePartCategory> =
+        keyword?.let { kw -> CropUsePartCategory.entries.filter { it.label.contains(kw) } } ?: emptyList()
+
     @Transactional(readOnly = true)
     fun getDetail(memberId: UUID, recordId: UUID): FarmingRecordResult.Detail {
         val record = findRecord(recordId)
@@ -126,7 +136,6 @@ class FarmingRecordService(
         val record = findRecord(command.recordId)
         assertOwner(record, command.memberId)
         detailValidator.validate(command)
-        validateImageCount(command.mediaIds)
 
         val farm = findFarm(command.farmId, command.memberId)
         val crop = findCrop(command.cropId)
@@ -360,12 +369,6 @@ class FarmingRecordService(
         )
     }
 
-    private fun validateImageCount(mediaIds: List<UUID>) {
-        if (mediaIds.size > MAX_IMAGE_COUNT) {
-            throw BusinessException(ErrorCode.FARMING_RECORD_TOO_MANY_IMAGES)
-        }
-    }
-
     private fun validateMedia(memberId: UUID, mediaIds: List<UUID>): List<UploadedMedia> {
         if (mediaIds.isEmpty()) {
             return emptyList()
@@ -463,7 +466,6 @@ class FarmingRecordService(
         }
 
     private companion object {
-        const val MAX_IMAGE_COUNT = 5
         const val MEMO_PREVIEW_LENGTH = 80
     }
 }

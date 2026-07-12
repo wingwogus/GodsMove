@@ -68,6 +68,21 @@ class CommunityControllerTest(
     }
 
     @Test
+    fun `create post rejects more than five media ids`() {
+        val mediaIds = List(6) { "\"${UUID.randomUUID()}\"" }.joinToString(",")
+
+        mockMvc.perform(
+            post("/api/v1/community/posts")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(savePostJson(mediaIdsJson = "[$mediaIds]"))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+            .andExpect(jsonPath("$.error.detail.field", equalTo("mediaIds")))
+    }
+
+    @Test
     fun `list posts returns cursor page`() {
         `when`(communityPostService.search(anySearchCondition())).thenReturn(postPageResult())
 
@@ -232,7 +247,7 @@ class CommunityControllerTest(
         }
     }
 
-    private fun savePostJson(): String {
+    private fun savePostJson(mediaIdsJson: String = "[\"$mediaId\"]"): String {
         return """
             {
               "cropId":"$cropId",
@@ -240,7 +255,7 @@ class CommunityControllerTest(
               "title":"황기 발아율 질문",
               "body":"싹이 거의 올라오지 않아요.",
               "farmingRecordId":"$recordId",
-              "mediaIds":["$mediaId"]
+              "mediaIds":$mediaIdsJson
             }
         """.trimIndent()
     }

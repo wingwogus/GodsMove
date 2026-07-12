@@ -9,6 +9,7 @@ import com.chamchamcham.domain.media.UploadedMediaStatus
 import com.chamchamcham.domain.media.UploadedMediaType
 import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.pesticide.Pesticide
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -21,6 +22,7 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.TestEntityManager
 import org.springframework.context.annotation.Import
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories
 import org.springframework.test.context.ActiveProfiles
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -150,11 +152,121 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         assertThat(result.rows.single().thumbnailUrl).isEqualTo("https://example.test/1.jpg")
     }
 
+    @Test
+    fun `search matches keyword against crop name`() {
+        persistRecord(crop = hwanggiCrop)
+        persistRecord(crop = ginsengCrop)
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(keyword = "황기"))
+
+        assertThat(result.rows).hasSize(1)
+        assertThat(result.rows.single().record.crop.id).isEqualTo(hwanggiCropId)
+    }
+
+    @Test
+    fun `search matches keyword against memo`() {
+        persistRecord(memo = "진딧물이 많이 보였다")
+        persistRecord(memo = "특이사항 없음")
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(keyword = "진딧물"))
+
+        assertThat(result.rows).hasSize(1)
+        assertThat(result.rows.single().record.memo).isEqualTo("진딧물이 많이 보였다")
+    }
+
+    @Test
+    fun `search matches keyword against fertilizing material name`() {
+        val record = persistRecord(workType = WorkType.FERTILIZING)
+        persistFertilizingDetail(record, materialName = "유박비료")
+        val other = persistRecord(workType = WorkType.FERTILIZING)
+        persistFertilizingDetail(other, materialName = "복합비료")
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(keyword = "유박"))
+
+        assertThat(result.rows).hasSize(1)
+        assertThat(result.rows.single().record.id).isEqualTo(record.id)
+    }
+
+    @Test
+    fun `search matches keyword against pest control pesticide name`() {
+        val record = persistRecord(workType = WorkType.PEST_CONTROL)
+        persistPestControlDetail(record, pesticideName = "친환경약제")
+        val other = persistRecord(workType = WorkType.PEST_CONTROL)
+        persistPestControlDetail(other, pesticideName = "일반약제")
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(keyword = "친환경"))
+
+        assertThat(result.rows).hasSize(1)
+        assertThat(result.rows.single().record.id).isEqualTo(record.id)
+    }
+
+    @Test
+    fun `search matches matched work types`() {
+        persistRecord(workType = WorkType.HARVEST)
+        persistRecord(workType = WorkType.WATERING)
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(matchedWorkTypes = listOf(WorkType.HARVEST)))
+
+        assertThat(result.rows).hasSize(1)
+        assertThat(result.rows.single().record.workType).isEqualTo(WorkType.HARVEST)
+    }
+
+    @Test
+    fun `search matches matched harvest parts`() {
+        val leafCrop = persist(crop(name = "깻잎", externalNo = 900), now)
+        val harvestRecord = persistRecord(crop = leafCrop, workType = WorkType.HARVEST)
+        persistHarvestDetail(harvestRecord, medicinalPart = CropUsePartCategory.LEAF)
+        val otherHarvest = persistRecord(crop = hwanggiCrop, workType = WorkType.HARVEST)
+        persistHarvestDetail(otherHarvest, medicinalPart = CropUsePartCategory.ROOT_BARK)
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(matchedParts = listOf(CropUsePartCategory.LEAF)))
+
+        assertThat(result.rows).hasSize(1)
+        assertThat(result.rows.single().record.id).isEqualTo(harvestRecord.id)
+    }
+
+    @Test
+    fun `search combines keyword with structural filters`() {
+        persistRecord(crop = hwanggiCrop, memo = "황기 관수 완료")
+        persistRecord(crop = ginsengCrop, memo = "관수 완료")
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(cropId = hwanggiCropId, keyword = "관수"))
+
+        assertThat(result.rows).hasSize(1)
+        assertThat(result.rows.single().record.crop.id).isEqualTo(hwanggiCropId)
+    }
+
+    @Test
+    fun `search returns empty when keyword matches nothing`() {
+        persistRecord(memo = "특이사항 없음")
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(condition(keyword = "존재하지않는키워드"))
+
+        assertThat(result.rows).isEmpty()
+    }
+
     private fun persistRecord(
         owner: Member = member,
         crop: Crop = hwanggiCrop,
         workType: WorkType = WorkType.PRUNING,
         workedAt: LocalDateTime = LocalDateTime.of(2026, 6, 12, 9, 0),
+        memo: String = "memo",
         isDeleted: Boolean = false,
     ): FarmingRecord {
         val record = FarmingRecord(
@@ -165,7 +277,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
             workedAt = workedAt,
             weatherCondition = "맑음",
             weatherTemperature = 20,
-            memo = "memo",
+            memo = memo,
             entryMode = EntryMode.MANUAL,
             isDeleted = isDeleted,
         )
@@ -187,6 +299,51 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         persist(FarmingRecordMedia(record = record, uploadedMedia = media, displayOrder = displayOrder), now)
     }
 
+    private fun persistFertilizingDetail(record: FarmingRecord, materialName: String) {
+        persist(
+            FertilizingRecord(
+                record = record,
+                materialName = materialName,
+                amount = BigDecimal.TEN,
+                amountUnit = FertilizerAmountUnit.KG,
+            ),
+            now
+        )
+    }
+
+    private fun persistPestControlDetail(record: FarmingRecord, pesticideName: String) {
+        val pesticide = persist(
+            Pesticide(itemName = pesticideName, brandName = pesticideName),
+            now
+        )
+        persist(
+            PestControlRecord(
+                record = record,
+                pesticide = pesticide,
+                pesticideAmount = BigDecimal.ONE,
+                pesticideAmountUnit = PesticideAmountUnit.ML,
+                totalSprayAmount = BigDecimal.TEN,
+                totalSprayAmountUnit = SprayAmountUnit.L,
+            ),
+            now
+        )
+    }
+
+    private fun persistHarvestDetail(record: FarmingRecord, medicinalPart: CropUsePartCategory) {
+        persist(
+            HarvestRecord(
+                record = record,
+                harvestAmount = BigDecimal.TEN,
+                medicinalPart = medicinalPart,
+                harvestSource = HarvestSource.CULTIVATED,
+                growthPeriod = 1,
+                growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isLastHarvest = false,
+            ),
+            now
+        )
+    }
+
     private fun crop(name: String, externalNo: Int): Crop =
         Crop(externalNo = externalNo, name = name, usePartCategory = CropUsePartCategory.ROOT_BARK)
 
@@ -195,6 +352,9 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         workType: WorkType? = null,
         workedAtFrom: LocalDateTime? = null,
         workedAtTo: LocalDateTime? = null,
+        keyword: String? = null,
+        matchedWorkTypes: List<WorkType> = emptyList(),
+        matchedParts: List<CropUsePartCategory> = emptyList(),
         cursor: FarmingRecordQueryRepository.Cursor? = null,
         size: Int = 20,
     ): FarmingRecordQueryRepository.SearchCondition =
@@ -204,6 +364,9 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
             workType = workType,
             workedAtFrom = workedAtFrom,
             workedAtTo = workedAtTo,
+            keyword = keyword,
+            matchedWorkTypes = matchedWorkTypes,
+            matchedParts = matchedParts,
             cursor = cursor,
             size = size,
         )

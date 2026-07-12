@@ -53,6 +53,7 @@ class FarmingRecordController(
         @RequestParam(required = false) workType: WorkType?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate?,
+        @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") size: Int
     ): ResponseEntity<ApiResponse<FarmingRecordResponses.RecordPageResponse>> {
@@ -63,6 +64,7 @@ class FarmingRecordController(
                 workType = workType,
                 startDate = startDate,
                 endDate = endDate,
+                keyword = keyword,
                 cursor = cursor,
                 size = size
             )

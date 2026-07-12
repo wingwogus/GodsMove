@@ -3,12 +3,10 @@ package com.chamchamcham.application.auth.common
 import com.chamchamcham.application.crop.CropResult
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.farm.toFarm
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.MemberCrop
 import com.chamchamcham.domain.crop.MemberCropRepository
-import com.chamchamcham.domain.farm.Farm
-import com.chamchamcham.domain.farm.FarmBoundaryCoordinate
-import com.chamchamcham.domain.farm.FarmDataSource
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.media.UploadedMediaRepository
 import com.chamchamcham.domain.media.UploadedMediaUsageType
@@ -27,10 +25,6 @@ class OnboardingService(
     private val onboardingStatusResolver: OnboardingStatusResolver
 ) {
     fun complete(command: AuthCommand.CompleteOnboarding): AuthResult.OnboardingComplete {
-        if (command.cropIds.isEmpty()) {
-            throw BusinessException(ErrorCode.INVALID_INPUT)
-        }
-
         val member = memberRepository.findById(command.memberId).orElseThrow {
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)
         }
@@ -49,7 +43,7 @@ class OnboardingService(
             }
             media
         }
-        val requestedCropIds = command.cropIds.distinct()
+        val requestedCropIds = command.cropIds
         val cropsById = cropRepository.findAllById(requestedCropIds)
             .associateBy { requireNotNull(it.id) { "Persisted crop id is required" } }
 
@@ -62,7 +56,7 @@ class OnboardingService(
             name = command.name,
             phone = command.phone,
             birthDate = command.birthDate,
-            nickname = command.nickname,
+            nickname = command.nickname?.trim().takeUnless { it.isNullOrBlank() } ?: command.name,
             experienceLevel = command.experienceLevel,
             managementType = command.managementType
         )
@@ -70,29 +64,7 @@ class OnboardingService(
             member.updateProfileMedia(it)
             it.markAttached()
         }
-        val farm = farmRepository.save(
-            Farm(
-                owner = member,
-                name = command.farm.name,
-                roadAddress = command.farm.roadAddress,
-                jibunAddress = command.farm.jibunAddress,
-                latitude = command.farm.latitude,
-                longitude = command.farm.longitude,
-                pnu = command.farm.pnu,
-                landCategory = command.farm.landCategory,
-                areaSqm = command.farm.areaSqm,
-                areaIsManualEntry = command.farm.areaIsManualEntry,
-                boundaryCoordinates = command.farm.boundaryCoordinates.map {
-                    FarmBoundaryCoordinate(latitude = it.latitude, longitude = it.longitude)
-                }.toMutableList(),
-                dataSource = FarmDataSource(
-                    address = command.farm.dataSource.address,
-                    coordinate = command.farm.dataSource.coordinate,
-                    parcel = command.farm.dataSource.parcel,
-                    landCharacteristic = command.farm.dataSource.landCharacteristic
-                )
-            )
-        )
+        val farm = farmRepository.save(command.farm.toFarm(member))
         memberCropRepository.saveAll(
             crops.map { crop ->
                 MemberCrop(

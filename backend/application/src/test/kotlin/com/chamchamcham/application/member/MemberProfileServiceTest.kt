@@ -356,7 +356,7 @@ class MemberProfileServiceTest {
 
     private fun updateCommand(
         profileMediaId: UUID?,
-        farms: List<MemberProfileCommand.Farm>
+        farms: List<MemberProfileCommand.Farm> = emptyList()
     ): MemberProfileCommand.UpdateMyProfile =
         MemberProfileCommand.UpdateMyProfile(
             memberId = memberId,

@@ -3,6 +3,7 @@ package com.chamchamcham.application.policy.recommendation
 import com.chamchamcham.application.common.OpaqueCursorCodec
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.policy.support.PolicyBenefitCategory
 import com.chamchamcham.application.policy.support.TextListJsonCodec
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
@@ -18,6 +19,7 @@ import com.chamchamcham.domain.policy.PolicyProgramRepository
 import com.chamchamcham.domain.policy.PolicyRecommendation
 import com.chamchamcham.domain.policy.PolicyRecommendationQueryRepository
 import com.chamchamcham.domain.policy.PolicyRecommendationRepository
+import com.chamchamcham.domain.policy.PolicyRecommendationSort
 import com.chamchamcham.domain.policy.PolicySource
 import com.chamchamcham.domain.policy.PolicySyncJob
 import com.chamchamcham.domain.policy.PolicySyncJobRepository
@@ -31,6 +33,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
+import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
@@ -139,7 +142,7 @@ class PolicyRecommendationServiceTest {
         ).thenReturn(null)
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         givenPolicyProfileData()
-        `when`(policyRecommendationQueryRepository.findPage(any()))
+        `when`(policyRecommendationQueryRepository.findPage(recommendationSearchCondition()))
             .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
 
         val page = service.listRecommendations(memberId, cursor = null, size = 20)
@@ -194,7 +197,7 @@ class PolicyRecommendationServiceTest {
         ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         givenPolicyProfileData()
-        `when`(policyRecommendationQueryRepository.findPage(any()))
+        `when`(policyRecommendationQueryRepository.findPage(recommendationSearchCondition()))
             .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
 
         service.listRecommendations(memberId, cursor = null, size = 20)
@@ -245,7 +248,7 @@ class PolicyRecommendationServiceTest {
         ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         givenPolicyProfileData()
-        `when`(policyRecommendationQueryRepository.findPage(any()))
+        `when`(policyRecommendationQueryRepository.findPage(recommendationSearchCondition()))
             .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
 
         val page = service.listRecommendations(memberId, cursor = null, size = 20)
@@ -257,6 +260,25 @@ class PolicyRecommendationServiceTest {
             "2026"
         )
         verify(policyRecommendationRepository, never()).saveAll(any<Iterable<PolicyRecommendation>>())
+    }
+
+    @Test
+    fun `list recommendations loads farms before crops through policy fetch join queries`() {
+        val program = recommendableProgram()
+        val row = recommendation(program)
+        givenReusableRecommendations(program)
+        `when`(policyRecommendationQueryRepository.findPage(recommendationSearchCondition()))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
+
+        service.listRecommendations(memberId, cursor = null, size = 20)
+
+        verify(farmRepository).findAllWithBoundaryCoordinatesByOwnerId(memberId)
+        verify(farmRepository, never()).findByOwnerId(memberId)
+        verify(memberCropRepository, never()).findByMemberId(memberId)
+        inOrder(farmRepository, memberCropRepository).apply {
+            verify(farmRepository).findAllWithBoundaryCoordinatesByOwnerId(memberId)
+            verify(memberCropRepository).findAllWithCropByMemberId(memberId)
+        }
     }
 
     @Test
@@ -293,7 +315,7 @@ class PolicyRecommendationServiceTest {
         ).thenReturn(null)
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         givenPolicyProfileData()
-        `when`(policyRecommendationQueryRepository.findPage(any()))
+        `when`(policyRecommendationQueryRepository.findPage(recommendationSearchCondition()))
             .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(row)))
 
         service.listRecommendations(memberId, cursor = null, size = 20)
@@ -303,83 +325,338 @@ class PolicyRecommendationServiceTest {
     }
 
     @Test
+    fun `list recommendations passes benefit category and latest sort to query repository`() {
+        val program = recommendableProgram()
+        `when`(
+            policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
+                PolicySource.NONGUP_EZ,
+                PolicySyncJobStatus.SUCCEEDED
+            )
+        ).thenReturn(latestJob)
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
+            .thenReturn(listOf(program))
+        `when`(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(listOf(policyProgramId))
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        givenPolicyProfileData()
+        val expectedCondition = recommendationSearchCondition(
+            benefitSummary = "융자·금융",
+            sort = PolicyRecommendationSort.LATEST
+        )
+        `when`(policyRecommendationQueryRepository.findPage(expectedCondition))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(emptyList()))
+
+        service.listRecommendations(
+            memberId = memberId,
+            cursor = null,
+            size = 20,
+            benefitCategory = PolicyBenefitCategory.FINANCE,
+            sort = PolicyRecommendationSort.LATEST
+        )
+
+        val captor = ArgumentCaptor.forClass(PolicyRecommendationQueryRepository.SearchCondition::class.java)
+        verify(policyRecommendationQueryRepository).findPage(captor.capture() ?: expectedCondition)
+        assertThat(captor.value.benefitSummary).isEqualTo("융자·금융")
+        assertThat(captor.value.sort).isEqualTo(PolicyRecommendationSort.LATEST)
+    }
+
+    @Test
+    fun `recommended next cursor contains only recommended ordering fields and round trips to query cursor`() {
+        val secondProgramId = UUID.fromString("00000000-0000-0000-0000-000000000302")
+        val secondRecommendationId = UUID.fromString("00000000-0000-0000-0000-000000000402")
+        val firstProgram = recommendableProgram()
+        val secondProgram = recommendableProgram(id = secondProgramId, title = "후속 정책")
+        val firstRow = recommendation(firstProgram)
+        val secondRow = recommendation(secondProgram, id = secondRecommendationId, score = BigDecimal("90.0"))
+        givenReusableRecommendations(firstProgram, secondProgram)
+        val firstCondition = recommendationSearchCondition(size = 2)
+        val cursorCondition = recommendationSearchCondition(
+            cursor = PolicyRecommendationQueryRepository.Cursor(
+                score = BigDecimal("96.0"),
+                applyStartsOn = null,
+                applyEndsOn = LocalDate.of(2026, 6, 30),
+                id = recommendationId
+            ),
+            size = 2
+        )
+        `when`(policyRecommendationQueryRepository.findPage(firstCondition))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(firstRow, secondRow)))
+        `when`(policyRecommendationQueryRepository.findPage(cursorCondition))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(emptyList()))
+
+        val firstPage = service.listRecommendations(memberId, cursor = null, size = 1)
+        val payload = cursorCodec.decode(
+            requireNotNull(firstPage.nextCursor),
+            PolicyRecommendationCursorPayload::class.java
+        )
+
+        assertThat(payload).isEqualTo(
+            PolicyRecommendationCursorPayload(
+                source = PolicySource.NONGUP_EZ,
+                sourceYear = "2026",
+                benefitCategory = null,
+                sort = PolicyRecommendationSort.RECOMMENDED,
+                score = BigDecimal("96.0"),
+                applyStartsOn = null,
+                applyEndsOn = LocalDate.of(2026, 6, 30),
+                id = recommendationId
+            )
+        )
+
+        service.listRecommendations(memberId, cursor = firstPage.nextCursor, size = 1)
+
+        verify(policyRecommendationQueryRepository).findPage(cursorCondition)
+    }
+
+    @Test
+    fun `latest next cursor contains only latest ordering fields and round trips to query cursor`() {
+        val secondProgramId = UUID.fromString("00000000-0000-0000-0000-000000000302")
+        val secondRecommendationId = UUID.fromString("00000000-0000-0000-0000-000000000402")
+        val firstProgram = recommendableProgram()
+        val secondProgram = recommendableProgram(id = secondProgramId, title = "후속 정책")
+        val firstRow = recommendation(firstProgram)
+        val secondRow = recommendation(secondProgram, id = secondRecommendationId, score = BigDecimal("90.0"))
+        givenReusableRecommendations(firstProgram, secondProgram)
+        val firstCondition = recommendationSearchCondition(sort = PolicyRecommendationSort.LATEST, size = 2)
+        val cursorCondition = recommendationSearchCondition(
+            sort = PolicyRecommendationSort.LATEST,
+            cursor = PolicyRecommendationQueryRepository.Cursor(
+                score = null,
+                applyStartsOn = LocalDate.of(2026, 3, 1),
+                applyEndsOn = null,
+                id = recommendationId
+            ),
+            size = 2
+        )
+        `when`(policyRecommendationQueryRepository.findPage(firstCondition))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(listOf(firstRow, secondRow)))
+        `when`(policyRecommendationQueryRepository.findPage(cursorCondition))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(emptyList()))
+
+        val firstPage = service.listRecommendations(
+            memberId = memberId,
+            cursor = null,
+            size = 1,
+            sort = PolicyRecommendationSort.LATEST
+        )
+        val payload = cursorCodec.decode(
+            requireNotNull(firstPage.nextCursor),
+            PolicyRecommendationCursorPayload::class.java
+        )
+
+        assertThat(payload).isEqualTo(
+            PolicyRecommendationCursorPayload(
+                source = PolicySource.NONGUP_EZ,
+                sourceYear = "2026",
+                benefitCategory = null,
+                sort = PolicyRecommendationSort.LATEST,
+                score = null,
+                applyStartsOn = LocalDate.of(2026, 3, 1),
+                applyEndsOn = null,
+                id = recommendationId
+            )
+        )
+
+        service.listRecommendations(
+            memberId = memberId,
+            cursor = firstPage.nextCursor,
+            size = 1,
+            sort = PolicyRecommendationSort.LATEST
+        )
+
+        verify(policyRecommendationQueryRepository).findPage(cursorCondition)
+    }
+
+    @Test
+    fun `list recommendations rejects recommended cursor without score before downstream reads`() {
+        val cursor = cursorCodec.encode(
+            PolicyRecommendationCursorPayload(
+                source = PolicySource.NONGUP_EZ,
+                sourceYear = "2026",
+                benefitCategory = null,
+                sort = PolicyRecommendationSort.RECOMMENDED,
+                score = null,
+                applyStartsOn = null,
+                applyEndsOn = LocalDate.of(2026, 6, 30),
+                id = recommendationId
+            )
+        )
+        givenLatestSyncJob()
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.listRecommendations(memberId, cursor = cursor, size = 20)
+        }
+
+        assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+        verifyNoRecommendationReads()
+    }
+
+    @Test
+    fun `latest cursor with null start date reaches query as null group boundary`() {
+        val program = recommendableProgram(applyStartsOn = null)
+        givenReusableRecommendations(program)
+        val cursor = cursorCodec.encode(
+            PolicyRecommendationCursorPayload(
+                source = PolicySource.NONGUP_EZ,
+                sourceYear = "2026",
+                benefitCategory = null,
+                sort = PolicyRecommendationSort.LATEST,
+                score = null,
+                applyStartsOn = null,
+                applyEndsOn = null,
+                id = recommendationId
+            )
+        )
+        val expectedCondition = recommendationSearchCondition(
+            sort = PolicyRecommendationSort.LATEST,
+            cursor = PolicyRecommendationQueryRepository.Cursor(
+                score = null,
+                applyStartsOn = null,
+                applyEndsOn = null,
+                id = recommendationId
+            )
+        )
+        `when`(policyRecommendationQueryRepository.findPage(expectedCondition))
+            .thenReturn(PolicyRecommendationQueryRepository.SearchResult(emptyList()))
+
+        service.listRecommendations(
+            memberId = memberId,
+            cursor = cursor,
+            size = 20,
+            sort = PolicyRecommendationSort.LATEST
+        )
+
+        verify(policyRecommendationQueryRepository).findPage(expectedCondition)
+    }
+
+    @Test
+    fun `list recommendations rejects cursor with unknown source before downstream reads`() {
+        val cursor = cursorCodec.encode(
+            mapOf(
+                "source" to "OTHER_SOURCE",
+                "sourceYear" to "2026",
+                "benefitCategory" to null,
+                "sort" to "RECOMMENDED",
+                "score" to "80.0",
+                "applyStartsOn" to null,
+                "applyEndsOn" to "2026-06-30",
+                "id" to recommendationId.toString()
+            )
+        )
+        givenLatestSyncJob()
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.listRecommendations(memberId, cursor = cursor, size = 20)
+        }
+
+        assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+        verifyNoRecommendationReads()
+    }
+
+    @Test
+    fun `list recommendations rejects cursor bound to different benefit category before downstream reads`() {
+        val cursor = cursorCodec.encode(
+            PolicyRecommendationCursorPayload(
+                source = PolicySource.NONGUP_EZ,
+                sourceYear = "2026",
+                benefitCategory = PolicyBenefitCategory.GRANT.name,
+                sort = PolicyRecommendationSort.RECOMMENDED,
+                score = BigDecimal("80.0"),
+                applyStartsOn = null,
+                applyEndsOn = LocalDate.of(2026, 6, 30),
+                id = recommendationId
+            )
+        )
+        givenLatestSyncJob()
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.listRecommendations(
+                memberId = memberId,
+                cursor = cursor,
+                size = 20,
+                benefitCategory = PolicyBenefitCategory.FINANCE
+            )
+        }
+
+        assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+        verifyNoRecommendationReads()
+    }
+
+    @Test
+    fun `list recommendations rejects cursor bound to a different sort before downstream reads`() {
+        val mismatchedCursor = cursorCodec.encode(
+            PolicyRecommendationCursorPayload(
+                source = PolicySource.NONGUP_EZ,
+                sourceYear = "2026",
+                benefitCategory = null,
+                sort = PolicyRecommendationSort.RECOMMENDED,
+                score = BigDecimal("80.0"),
+                applyStartsOn = null,
+                applyEndsOn = LocalDate.of(2026, 6, 30),
+                id = recommendationId
+            )
+        )
+        givenLatestSyncJob()
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.listRecommendations(
+                memberId = memberId,
+                cursor = mismatchedCursor,
+                size = 20,
+                sort = PolicyRecommendationSort.LATEST
+            )
+        }
+
+        assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+        verifyNoRecommendationReads()
+    }
+
+    @Test
     fun `list recommendations rejects cursor from stale sync job as invalid input`() {
         val staleCursor = cursorCodec.encode(
             PolicyRecommendationCursorPayload(
                 source = PolicySource.NONGUP_EZ,
                 sourceYear = "2025",
                 benefitCategory = null,
+                sort = PolicyRecommendationSort.RECOMMENDED,
                 score = BigDecimal("80.0"),
+                applyStartsOn = null,
                 applyEndsOn = LocalDate.of(2026, 6, 30),
                 id = recommendationId
             )
         )
-        `when`(
-            policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
-                PolicySource.NONGUP_EZ,
-                PolicySyncJobStatus.SUCCEEDED
-            )
-        ).thenReturn(latestJob)
-        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
-            .thenReturn(listOf(recommendableProgram()))
-        `when`(
-            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
-                memberId,
-                PolicySource.NONGUP_EZ,
-                "2026"
-            )
-        ).thenReturn(listOf(policyProgramId))
-        `when`(
-            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
-                memberId,
-                PolicySource.NONGUP_EZ,
-                "2026"
-            )
-        ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
-        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        givenPolicyProfileData()
+        givenLatestSyncJob()
 
         val exception = assertThrows(BusinessException::class.java) {
             service.listRecommendations(memberId, cursor = staleCursor, size = 20)
         }
 
         assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
-        verify(policyRecommendationQueryRepository, never()).findPage(any())
+        verifyNoRecommendationReads()
     }
 
     @Test
     fun `list recommendations rejects malformed cursor as invalid input`() {
-        `when`(
-            policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
-                PolicySource.NONGUP_EZ,
-                PolicySyncJobStatus.SUCCEEDED
-            )
-        ).thenReturn(latestJob)
-        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
-            .thenReturn(listOf(recommendableProgram()))
-        `when`(
-            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
-                memberId,
-                PolicySource.NONGUP_EZ,
-                "2026"
-            )
-        ).thenReturn(listOf(policyProgramId))
-        `when`(
-            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
-                memberId,
-                PolicySource.NONGUP_EZ,
-                "2026"
-            )
-        ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
-        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        givenPolicyProfileData()
+        givenLatestSyncJob()
 
         val exception = assertThrows(BusinessException::class.java) {
             service.listRecommendations(memberId, cursor = "not-a-valid-cursor", size = 20)
         }
 
         assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
-        verify(policyRecommendationQueryRepository, never()).findPage(any())
+        verifyNoRecommendationReads()
     }
 
     @Test
@@ -413,7 +690,7 @@ class PolicyRecommendationServiceTest {
         assertThrows(IllegalArgumentException::class.java) {
             service.listRecommendations(memberId, cursor = null, size = 20)
         }
-        verify(policyRecommendationQueryRepository, never()).findPage(any())
+        verifyNoInteractions(policyRecommendationQueryRepository)
     }
 
     @Test
@@ -462,6 +739,64 @@ class PolicyRecommendationServiceTest {
         return captor.value.toList()
     }
 
+    private fun recommendationSearchCondition(
+        benefitSummary: String? = null,
+        sort: PolicyRecommendationSort = PolicyRecommendationSort.RECOMMENDED,
+        cursor: PolicyRecommendationQueryRepository.Cursor? = null,
+        size: Int = 21
+    ): PolicyRecommendationQueryRepository.SearchCondition =
+        PolicyRecommendationQueryRepository.SearchCondition(
+            memberId = memberId,
+            source = PolicySource.NONGUP_EZ,
+            sourceYear = "2026",
+            benefitSummary = benefitSummary,
+            sort = sort,
+            cursor = cursor,
+            size = size
+        )
+
+    private fun givenLatestSyncJob() {
+        `when`(
+            policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
+                PolicySource.NONGUP_EZ,
+                PolicySyncJobStatus.SUCCEEDED
+            )
+        ).thenReturn(latestJob)
+    }
+
+    private fun givenReusableRecommendations(vararg programs: PolicyProgram) {
+        givenLatestSyncJob()
+        `when`(policyProgramRepository.findRecommendableCandidates(PolicySource.NONGUP_EZ, "2026", LocalDate.of(2026, 4, 1)))
+            .thenReturn(programs.toList())
+        `when`(
+            policyRecommendationRepository.findPolicyProgramIdsByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(programs.map { requireNotNull(it.id) })
+        `when`(
+            policyRecommendationRepository.findNewestCreatedAtByMemberIdAndPolicyProgramSourceAndSourceYear(
+                memberId,
+                PolicySource.NONGUP_EZ,
+                "2026"
+            )
+        ).thenReturn(LocalDateTime.of(2026, 3, 1, 0, 0))
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        givenPolicyProfileData()
+    }
+
+    private fun verifyNoRecommendationReads() {
+        verifyNoInteractions(
+            policyProgramRepository,
+            policyRecommendationRepository,
+            memberRepository,
+            memberCropRepository,
+            farmRepository,
+            policyRecommendationQueryRepository
+        )
+    }
+
     private fun givenPolicyProfileData() {
         val farm = farm()
         val crop = Crop(
@@ -469,7 +804,7 @@ class PolicyRecommendationServiceTest {
             name = "참당귀",
             usePartCategory = CropUsePartCategory.ROOT_BARK
         )
-        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(
+        `when`(memberCropRepository.findAllWithCropByMemberId(memberId)).thenReturn(
             listOf(
                 MemberCrop(
                     member = member,
@@ -478,7 +813,7 @@ class PolicyRecommendationServiceTest {
                 )
             )
         )
-        `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))
+        `when`(farmRepository.findAllWithBoundaryCoordinatesByOwnerId(memberId)).thenReturn(listOf(farm))
     }
 
     private fun farm(): Farm =
@@ -506,6 +841,8 @@ class PolicyRecommendationServiceTest {
         targetTagsJson: String = """["YOUNG_FARMER","REGISTERED_FARMER"]""",
         cropTagsJson: String = """["MEDICINAL_CROP"]""",
         regionTagsJson: String = """["충청북도"]""",
+        applyStartsOn: LocalDate? = LocalDate.of(2026, 3, 1),
+        applyEndsOn: LocalDate? = LocalDate.of(2026, 6, 30),
         rawPayload: String = "{}"
     ): PolicyProgram =
         PolicyProgram(
@@ -514,8 +851,8 @@ class PolicyRecommendationServiceTest {
             body = "약용작물 재배 청년농 지원",
             region = "충청북도",
             targetManagementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
-            applyStartsOn = LocalDate.of(2026, 3, 1),
-            applyEndsOn = LocalDate.of(2026, 6, 30),
+            applyStartsOn = applyStartsOn,
+            applyEndsOn = applyEndsOn,
             sourceUrl = "https://example.test/policy",
             source = PolicySource.NONGUP_EZ,
             externalId = "AB000009",
@@ -542,12 +879,16 @@ class PolicyRecommendationServiceTest {
             rawPayload = rawPayload
         )
 
-    private fun recommendation(program: PolicyProgram): PolicyRecommendation =
+    private fun recommendation(
+        program: PolicyProgram,
+        id: UUID = recommendationId,
+        score: BigDecimal = BigDecimal("96.0")
+    ): PolicyRecommendation =
         PolicyRecommendation(
-            id = recommendationId,
+            id = id,
             member = member,
             policyProgram = program,
-            score = BigDecimal("96.0"),
+            score = score,
             reason = "청년농 대상이고 재배 품목이 맞아요."
         )
 }

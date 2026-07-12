@@ -32,15 +32,15 @@ class PolicyCardTextGenerator {
     fun benefitCategory(text: String?): PolicyBenefitCategory {
         val source = text.orEmpty()
         return when {
-            source.containsAny("직불금", "영농정착지원금", "장려금") -> PolicyBenefitCategory.DIRECT_PAYMENT
-            source.containsAny("융자", "정책자금", "대출", "금리") -> PolicyBenefitCategory.FINANCE
+            source.containsAny("직불금", "지원금", "보조금", "장려금", "수당", "바우처") -> PolicyBenefitCategory.GRANT
+            source.containsAny("융자", "정책자금", "대출", "금리", "이자") -> PolicyBenefitCategory.FINANCE
             source.containsAny("시설", "장비", "농기계", "설치", "개보수") -> PolicyBenefitCategory.FACILITY_EQUIPMENT
-            source.containsAny("교육", "컨설팅", "상담", "연수") -> PolicyBenefitCategory.EDUCATION_CONSULTING
-            source.containsAny("보험", "보험료", "연금", "건강보험") -> PolicyBenefitCategory.INSURANCE_WELFARE
-            source.containsAny("인증", "검정", "품질", "무병묘", "저탄소") -> PolicyBenefitCategory.CERTIFICATION_QUALITY
-            source.containsAny("박람회", "수출", "판로", "홍보", "브랜드") -> PolicyBenefitCategory.MARKETING
-            source.containsAny("창업", "사업화", "벤처", "데이터", "R&D") -> PolicyBenefitCategory.STARTUP_BUSINESS
-            source.containsAny("수질", "용수", "저수지", "가뭄", "환경") -> PolicyBenefitCategory.ENVIRONMENT_INFRA
+            source.containsAny("교육", "컨설팅", "상담", "연수") -> PolicyBenefitCategory.EDUCATION
+            source.containsAny("보험", "보험료", "연금", "건강", "복지") -> PolicyBenefitCategory.WELFARE
+            source.containsAny("인증", "검정", "품질", "무병묘", "저탄소") -> PolicyBenefitCategory.CERTIFICATION
+            source.containsAny("박람회", "수출", "판로", "홍보", "브랜드") -> PolicyBenefitCategory.MARKET
+            source.containsAny("창업", "사업화", "벤처", "R&D") -> PolicyBenefitCategory.STARTUP
+            source.containsAny("수질", "용수", "저수지", "가뭄", "환경", "인프라") -> PolicyBenefitCategory.ENVIRONMENT_INFRA
             else -> PolicyBenefitCategory.ETC
         }
     }

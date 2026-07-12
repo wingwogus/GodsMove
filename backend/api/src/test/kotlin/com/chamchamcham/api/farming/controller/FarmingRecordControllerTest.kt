@@ -249,33 +249,6 @@ class FarmingRecordControllerTest(
     }
 
     @Test
-    fun `create record rejects planting without propagation method`() {
-        val json = """
-            {
-              "farmId":"$farmId",
-              "cropId":"$cropId",
-              "workType":"PLANTING",
-              "workedAt":"2026-06-01T09:00:00",
-              "weatherCondition":"맑음",
-              "weatherTemperature":28,
-              "memo":"오늘은 날씨가 좋아 하루 종일 파종 작업을 진행했고 별다른 문제 없이 마무리했습니다",
-              "planting":{
-                "seedAmount":10,
-                "seedAmountUnit":"KG"
-              }
-            }
-        """.trimIndent()
-
-        mockMvc.perform(
-            post("/api/v1/farming-records")
-                .with(authenticatedMember(memberId.toString()))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-        )
-            .andExpect(status().isBadRequest)
-    }
-
-    @Test
     fun `create record rejects harvest without last harvest flag`() {
         val json = """
             {
@@ -292,6 +265,33 @@ class FarmingRecordControllerTest(
                 "harvestSource":"CULTIVATED",
                 "growthPeriod":2,
                 "growthPeriodUnit":"YEAR"
+              }
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            post("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `create record rejects planting without propagation method`() {
+        val json = """
+            {
+              "farmId":"$farmId",
+              "cropId":"$cropId",
+              "workType":"PLANTING",
+              "workedAt":"2026-06-01T09:00:00",
+              "weatherCondition":"맑음",
+              "weatherTemperature":28,
+              "memo":"오늘은 날씨가 좋아 하루 종일 파종 작업을 진행했고 별다른 문제 없이 마무리했습니다",
+              "planting":{
+                "seedAmount":10,
+                "seedAmountUnit":"KG"
               }
             }
         """.trimIndent()
@@ -351,6 +351,7 @@ class FarmingRecordControllerTest(
                     workType = WorkType.HARVEST,
                     startDate = LocalDate.of(2026, 6, 1),
                     endDate = LocalDate.of(2026, 6, 30),
+                    keyword = null,
                     cursor = "cursor-1",
                     size = 10
                 )
@@ -369,6 +370,32 @@ class FarmingRecordControllerTest(
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-1")))
+    }
+
+    @Test
+    fun `list records maps keyword parameter`() {
+        `when`(
+            farmingRecordService.search(
+                FarmingRecordSearchCondition(
+                    memberId = memberId,
+                    cropId = null,
+                    workType = null,
+                    startDate = null,
+                    endDate = null,
+                    keyword = "수확",
+                    cursor = null,
+                    size = 20
+                )
+            )
+        ).thenReturn(pageResult())
+
+        mockMvc.perform(
+            get("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .param("keyword", "수확")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.items[0].id", equalTo(recordId.toString())))
     }
 
     @Test
@@ -546,6 +573,7 @@ class FarmingRecordControllerTest(
             workType = null,
             startDate = null,
             endDate = null,
+            keyword = null,
             cursor = null,
             size = 20
         )

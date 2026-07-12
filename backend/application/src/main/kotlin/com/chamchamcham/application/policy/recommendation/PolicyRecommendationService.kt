@@ -17,6 +17,7 @@ import com.chamchamcham.domain.policy.PolicyProgramRepository
 import com.chamchamcham.domain.policy.PolicyRecommendation
 import com.chamchamcham.domain.policy.PolicyRecommendationQueryRepository
 import com.chamchamcham.domain.policy.PolicyRecommendationRepository
+import com.chamchamcham.domain.policy.PolicyRecommendationSort
 import com.chamchamcham.domain.policy.PolicySource
 import com.chamchamcham.domain.policy.PolicySyncJobRepository
 import com.chamchamcham.domain.policy.PolicySyncJobStatus
@@ -51,7 +52,8 @@ class PolicyRecommendationService(
         memberId: UUID,
         cursor: String?,
         size: Int,
-        benefitCategory: PolicyBenefitCategory? = null
+        benefitCategory: PolicyBenefitCategory? = null,
+        sort: PolicyRecommendationSort = PolicyRecommendationSort.RECOMMENDED
     ): PolicyRecommendationResult.Page {
         validateSize(size)
         val latestJob = policySyncJobRepository.findFirstBySourceAndStatusOrderByTargetYearDescFinishedAtDesc(
@@ -60,6 +62,7 @@ class PolicyRecommendationService(
         ) ?: return PolicyRecommendationResult.Page(emptyList(), null)
         val source = PolicySource.NONGUP_EZ
         val sourceYear = latestJob.targetYear
+        val decodedCursor = decodeCursor(cursor, source, sourceYear, benefitCategory, sort)
         val today = LocalDate.now(clock)
         val candidates = policyProgramRepository.findRecommendableCandidates(
             source,
@@ -69,27 +72,27 @@ class PolicyRecommendationService(
         val member = memberRepository.findById(memberId).orElseThrow {
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)
         }
-        val memberCrops = memberCropRepository.findByMemberId(memberId)
-        val farms = farmRepository.findByOwnerId(memberId)
+        val farms = farmRepository.findAllWithBoundaryCoordinatesByOwnerId(memberId)
+        val memberCrops = memberCropRepository.findAllWithCropByMemberId(memberId)
 
         if (recommendationsAreStale(memberId, source, sourceYear, candidates, member, memberCrops, farms)) {
             regenerate(memberId, member, source, sourceYear, candidates, today, memberCrops, farms)
         }
 
-        val decodedCursor = decodeCursor(cursor, source, sourceYear, benefitCategory)
         val result = policyRecommendationQueryRepository.findPage(
             PolicyRecommendationQueryRepository.SearchCondition(
                 memberId = memberId,
                 source = source,
                 sourceYear = sourceYear,
                 benefitSummary = benefitCategory?.label,
+                sort = sort,
                 cursor = decodedCursor,
                 size = size + 1
             )
         )
         val visible = result.rows.take(size)
         val nextCursor = if (result.rows.size > size) {
-            visible.lastOrNull()?.let { row -> encodeCursor(row, source, sourceYear, benefitCategory) }
+            visible.lastOrNull()?.let { row -> encodeCursor(row, source, sourceYear, benefitCategory, sort) }
         } else {
             null
         }
@@ -217,7 +220,8 @@ class PolicyRecommendationService(
         cursor: String?,
         source: PolicySource,
         sourceYear: String,
-        benefitCategory: PolicyBenefitCategory?
+        benefitCategory: PolicyBenefitCategory?,
+        sort: PolicyRecommendationSort
     ): PolicyRecommendationQueryRepository.Cursor? {
         if (cursor.isNullOrBlank()) {
             return null
@@ -232,30 +236,44 @@ class PolicyRecommendationService(
         }
         if (payload.source != source ||
             payload.sourceYear != sourceYear ||
-            payload.benefitCategory != benefitCategory?.name
+            payload.benefitCategory != benefitCategory?.name ||
+            payload.sort != sort
         ) {
             throw BusinessException(ErrorCode.INVALID_INPUT)
         }
-        return PolicyRecommendationQueryRepository.Cursor(
-            score = payload.score,
-            applyEndsOn = payload.applyEndsOn,
-            id = payload.id
-        )
+        return when (sort) {
+            PolicyRecommendationSort.RECOMMENDED -> PolicyRecommendationQueryRepository.Cursor(
+                score = payload.score ?: throw BusinessException(ErrorCode.INVALID_INPUT),
+                applyStartsOn = null,
+                applyEndsOn = payload.applyEndsOn,
+                id = payload.id
+            )
+
+            PolicyRecommendationSort.LATEST -> PolicyRecommendationQueryRepository.Cursor(
+                score = null,
+                applyStartsOn = payload.applyStartsOn,
+                applyEndsOn = null,
+                id = payload.id
+            )
+        }
     }
 
     private fun encodeCursor(
         row: PolicyRecommendation,
         source: PolicySource,
         sourceYear: String,
-        benefitCategory: PolicyBenefitCategory?
+        benefitCategory: PolicyBenefitCategory?,
+        sort: PolicyRecommendationSort
     ): String =
         cursorCodec.encode(
             PolicyRecommendationCursorPayload(
                 source = source,
                 sourceYear = sourceYear,
                 benefitCategory = benefitCategory?.name,
-                score = row.score,
-                applyEndsOn = row.policyProgram.applyEndsOn,
+                sort = sort,
+                score = row.score.takeIf { sort == PolicyRecommendationSort.RECOMMENDED },
+                applyStartsOn = row.policyProgram.applyStartsOn.takeIf { sort == PolicyRecommendationSort.LATEST },
+                applyEndsOn = row.policyProgram.applyEndsOn.takeIf { sort == PolicyRecommendationSort.RECOMMENDED },
                 id = requireNotNull(row.id)
             )
         )
