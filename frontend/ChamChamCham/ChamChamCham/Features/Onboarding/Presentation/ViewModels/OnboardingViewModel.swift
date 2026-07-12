@@ -5,6 +5,7 @@
 //  Created by iyungui on 7/3/26.
 //
 
+import Foundation
 import Observation
 
 @Observable
@@ -13,8 +14,8 @@ final class OnboardingViewModel {
     enum Step: String, CaseIterable, Codable {
         case landing
         case basicProfile
-        case cropSelection
         case farmLocation
+        case cropSelection
         case complete
     }
 
@@ -28,11 +29,17 @@ final class OnboardingViewModel {
         case photoUploadFailed(String)
     }
 
+    enum CropSelectionToggleResult: Equatable {
+        case selected
+        case deselected
+        case selectionLimitReached
+    }
+
     var currentStep: Step
     var draft: OnboardingDraft
 
     var availableCrops: [Crop] = []
-    var cropCategoryLabels: [String] = []
+    var cropCategories: [CropCategory] = []
     var isLoadingCrops = false
     var cropLoadError: String?
 
@@ -85,6 +92,30 @@ final class OnboardingViewModel {
         persist()
     }
 
+    func addFarmFromCompletion() {
+        draft.addEmptyFarmAndSelect()
+        submissionState = .idle
+        currentStep = .farmLocation
+        persist()
+    }
+
+    @discardableResult
+    func toggleCropSelection(_ cropID: UUID) -> CropSelectionToggleResult {
+        if let index = draft.cropIDs.firstIndex(of: cropID) {
+            draft.cropIDs.remove(at: index)
+            persist()
+            return .deselected
+        }
+
+        guard draft.cropIDs.count < 5 else {
+            return .selectionLimitReached
+        }
+
+        draft.cropIDs.append(cropID)
+        persist()
+        return .selected
+    }
+
     func persist() {
         store.save(OnboardingDraftSnapshot(step: currentStep, draft: draft))
     }
@@ -96,10 +127,9 @@ final class OnboardingViewModel {
         defer { isLoadingCrops = false }
         do {
             async let crops = cropCatalogService.fetchCrops()
-            async let categories = cropCatalogService.fetchCategoryLabels()
+            async let categories = cropCatalogService.fetchCategories()
             availableCrops = try await crops
-            // "인기" (popular) is a purely client-side "show everything" affordance — the backend has no such category.
-            cropCategoryLabels = ["인기"] + (try await categories)
+            cropCategories = try await categories
         } catch {
             cropLoadError = "작물 목록을 불러오지 못했어요. 다시 시도해주세요."
         }

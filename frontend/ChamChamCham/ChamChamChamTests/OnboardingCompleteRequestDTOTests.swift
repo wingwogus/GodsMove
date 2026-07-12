@@ -50,6 +50,43 @@ struct OnboardingCompleteRequestDTOTests {
         #expect(dataSource["landCharacteristic"] == "V_WORLD_LAND_CHARACTERISTIC")
     }
 
+    @Test("maps the first farm to the current onboarding-complete wire contract")
+    func mapsFirstFarmToSingleFarmContract() throws {
+        let firstCrop = UUID()
+        let secondCrop = UUID()
+        var draft = OnboardingTestFactory.validDraft()
+        draft.farms = [
+            OnboardingFarmDraft(
+                cropIDs: [firstCrop],
+                farmName: "첫번째농장",
+                farmRoadAddress: "전북 전주시 완산구 첫길 1",
+                farmJibunAddress: "전북 전주시 완산구 첫동 1",
+                farmLatitude: 35.1,
+                farmLongitude: 127.1
+            ),
+            OnboardingFarmDraft(
+                cropIDs: [secondCrop],
+                farmName: "두번째농장",
+                farmRoadAddress: "전북 전주시 완산구 둘길 2",
+                farmJibunAddress: "전북 전주시 완산구 둘동 2",
+                farmLatitude: 35.2,
+                farmLongitude: 127.2
+            )
+        ]
+        draft.activeFarmIndex = 1
+
+        let json = try encodedJSON(try OnboardingCompleteRequestDTO(draft: draft))
+
+        let cropIds = try #require(json["cropIds"] as? [String])
+        #expect(cropIds.compactMap(UUID.init(uuidString:)) == [firstCrop])
+
+        let farm = try #require(json["farm"] as? [String: Any])
+        #expect(farm["name"] as? String == "첫번째농장")
+        #expect(farm["roadAddress"] as? String == "전북 전주시 완산구 첫길 1")
+        #expect(farm["latitude"] as? Double == 35.1)
+        #expect(farm["longitude"] as? Double == 127.1)
+    }
+
     @Test("includes profileMediaId when the draft has one")
     func includesProfileMediaId() throws {
         var draft = OnboardingTestFactory.validDraft()
@@ -82,10 +119,30 @@ struct OnboardingCompleteRequestDTOTests {
         }
     }
 
+    @Test("throws when nickname is blank")
+    func throwsOnBlankNickname() {
+        var draft = OnboardingTestFactory.validDraft()
+        draft.nickname = "   "
+
+        #expect(throws: OnboardingSubmissionError.self) {
+            _ = try OnboardingCompleteRequestDTO(draft: draft)
+        }
+    }
+
     @Test("throws when no crops are selected")
     func throwsOnEmptyCrops() {
         var draft = OnboardingTestFactory.validDraft()
         draft.cropIDs = []
+
+        #expect(throws: OnboardingSubmissionError.self) {
+            _ = try OnboardingCompleteRequestDTO(draft: draft)
+        }
+    }
+
+    @Test("throws when the representative farm has more than five crops")
+    func throwsOnTooManyCrops() {
+        var draft = OnboardingTestFactory.validDraft()
+        draft.cropIDs = (0..<6).map { _ in UUID() }
 
         #expect(throws: OnboardingSubmissionError.self) {
             _ = try OnboardingCompleteRequestDTO(draft: draft)

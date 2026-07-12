@@ -10,174 +10,352 @@ import SwiftUI
 struct CropSelectionView: View {
     @Environment(OnboardingViewModel.self) private var viewModel
     @State private var searchText = ""
-    @State private var selectedCategory = "인기"
+    @State private var selectedCategoryCode: String?
+    @State private var selectionLimitMessage: String?
 
     private var filteredCrops: [Crop] {
-        let byCategory = selectedCategory == "인기"
-            ? viewModel.availableCrops
-            : viewModel.availableCrops.filter { $0.category == selectedCategory }
-        guard !searchText.trimmingCharacters(in: .whitespaces).isEmpty else { return byCategory }
-        return byCategory.filter { $0.name.localizedCaseInsensitiveContains(searchText) }
+        let selectedCode = selectedCategory?.code
+        let byCategory = selectedCode.map { code in
+            viewModel.availableCrops.filter { $0.categoryCode == code }
+        } ?? viewModel.availableCrops
+
+        let keyword = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        let filtered = keyword.isEmpty
+            ? byCategory
+            : byCategory.filter { $0.name.localizedCaseInsensitiveContains(keyword) }
+
+        return filtered.sorted { lhs, rhs in
+            lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+        }
     }
 
     private var selectedCount: Int { viewModel.draft.cropIDs.count }
 
-    var body: some View {
-        @Bindable var viewModel = viewModel
+    private var selectedCategory: CropCategory? {
+        guard !viewModel.cropCategories.isEmpty else { return nil }
+        if let selectedCategoryCode,
+           let category = viewModel.cropCategories.first(where: { $0.code == selectedCategoryCode }) {
+            return category
+        }
+        return viewModel.cropCategories.first
+    }
 
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack {
-                Button {
-                    viewModel.goBack()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .foregroundStyle(Color.appTextPrimary)
-                }
-                Spacer()
-            }
+    private var selectedCropChips: [SelectedCropChip] {
+        viewModel.draft.cropIDs.map { cropID in
+            let cropName = viewModel.availableCrops.first(where: { $0.id == cropID })?.name ?? "선택 작물"
+            return SelectedCropChip(id: cropID, name: cropName)
+        }
+    }
+
+    private let chipColumns = [
+        GridItem(.adaptive(minimum: 92), spacing: Spacing.sm, alignment: .leading)
+    ]
+
+    var body: some View {
+        VStack(spacing: 0) {
+            topAppBar
 
             OnboardingProgressBar(currentStep: viewModel.currentStep)
+                .padding(.horizontal, 20)
+                .padding(.bottom, Spacing.md)
 
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("재배 작물을\n선택해주세요")
-                    .font(.appTitle)
+            ScrollView {
+                LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
+                    titleHeader
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, Spacing.md)
 
-                HStack(spacing: Spacing.xs) {
-                    Text("여러 개 선택 가능 · 나중에 변경할 수 있어요")
-                        .font(.appCaption)
-                        .foregroundStyle(Color.appTextSecondary)
-                    Text("(필수 수집 데이터)")
-                        .font(.appCaption)
-                        .foregroundStyle(.red)
+                    Section {
+                        cropList
+                            .padding(.bottom, selectedCount == 0 ? 132 : 224)
+                    } header: {
+                        stickyControls
+                    }
                 }
             }
-
-            searchField
-
-            categoryChips
-
-            Text("\(selectedCategory) 작물 · \(filteredCrops.count)개")
-                .font(.appCaption)
-                .foregroundStyle(Color.appTextSecondary)
-
-            cropGrid
-
-            PrimaryButton(title: selectedCount == 0 ? "작물을 선택하세요" : "다음") {
-                viewModel.goNext()
-            }
-            .disabled(selectedCount == 0)
-            .opacity(selectedCount == 0 ? 0.5 : 1)
         }
-        .padding(Spacing.lg)
+        .background(Color.Background.default)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            bottomTray
+        }
         .task {
             await viewModel.loadCropsIfNeeded()
+            selectedCategoryCode = selectedCategoryCode ?? viewModel.cropCategories.first?.code
+        }
+        .onChange(of: viewModel.cropCategories) { _, categories in
+            guard selectedCategoryCode == nil else { return }
+            selectedCategoryCode = categories.first?.code
         }
     }
 
     @ViewBuilder
-    private var cropGrid: some View {
+    private var cropList: some View {
         if viewModel.isLoadingCrops {
             ProgressView()
                 .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.lg)
+                .padding(.vertical, 64)
         } else if let cropLoadError = viewModel.cropLoadError {
             VStack(spacing: Spacing.sm) {
                 Text(cropLoadError)
-                    .font(.appCaption)
-                    .foregroundStyle(Color.appTextSecondary)
+                    .font(AppTypography.bodyMedium.font)
+                    .foregroundStyle(Color.Text.subtle)
                 Button("다시 시도") {
                     Task { await viewModel.loadCropsIfNeeded() }
                 }
+                .font(AppTypography.bodyMediumEmphasized.font)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, Spacing.lg)
+            .padding(.vertical, 64)
+        } else if filteredCrops.isEmpty {
+            VStack(spacing: Spacing.sm) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 28, weight: .medium))
+                    .foregroundStyle(Color.Icon.subtle)
+                Text("검색 결과가 없어요")
+                    .font(AppTypography.bodyMediumEmphasized.font)
+                    .foregroundStyle(Color.Text.default)
+                Text("작물명이나 카테고리를 다시 확인해주세요.")
+                    .font(AppTypography.labelMedium.font)
+                    .foregroundStyle(Color.Text.subtle)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 64)
         } else {
-            ScrollView {
-                LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: Spacing.sm), count: 4), spacing: Spacing.sm) {
-                    ForEach(filteredCrops) { crop in
-                        cropChip(crop)
-                    }
+            VStack(spacing: 0) {
+                ForEach(filteredCrops) { crop in
+                    cropRow(crop)
+                    Divider()
+                        .background(Color.Border.subtle)
+                        .padding(.leading, 20)
                 }
-                .padding(.vertical, Spacing.sm)
             }
         }
+    }
+
+    private var topAppBar: some View {
+        HStack {
+            Button {
+                viewModel.goBack()
+            } label: {
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Color.Icon.default)
+                    .frame(width: 48, height: 48)
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+        }
+        .frame(height: 60)
+        .padding(.horizontal, 4)
+        .background(Color.Background.default)
+    }
+
+    private var titleHeader: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("재배 중인 작물 설정하기")
+                .font(AppTypography.titleLargeEmphasized.font)
+                .foregroundStyle(Color.Text.default)
+
+            Text("대표 재배지의 작물을 입력해주세요.\n작물은 최대 5개까지 선택 가능합니다.")
+                .font(AppTypography.bodyMedium.font)
+                .foregroundStyle(Color.Text.subtle)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var stickyControls: some View {
+        VStack(spacing: 0) {
+            searchField
+                .padding(.horizontal, 10)
+                .padding(.vertical, Spacing.md)
+
+            categoryTabs
+
+            Divider()
+                .background(Color.Border.subtle)
+        }
+        .background(Color.Background.default)
     }
 
     private var searchField: some View {
         HStack(spacing: Spacing.sm) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(Color.appTextSecondary)
-            TextField("작물 이름 검색...", text: $searchText)
+                .font(.system(size: 20, weight: .medium))
+                .foregroundStyle(Color.Icon.default)
+            TextField("작물명을 입력해주세요.", text: $searchText)
+                .font(AppTypography.bodyMedium.font)
+                .textInputAutocapitalization(.never)
         }
-        .padding(Spacing.sm)
-        .background(Color(.secondarySystemBackground))
+        .padding(.horizontal, Spacing.md)
+        .frame(height: 56)
+        .background(Color.Object.default)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-
-    private var categoryChips: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: Spacing.sm) {
-                ForEach(viewModel.cropCategoryLabels, id: \.self) { category in
-                    categoryChip(category)
-                }
-            }
+        .overlay {
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(Color.Border.subtle, lineWidth: 1)
         }
     }
 
-    private func categoryChip(_ category: String) -> some View {
-        let isSelected = category == selectedCategory
+    @ViewBuilder
+    private var categoryTabs: some View {
+        if viewModel.cropCategories.isEmpty {
+            Text("카테고리를 불러오는 중...")
+                .font(AppTypography.labelMedium.font)
+                .foregroundStyle(Color.Text.muted)
+                .frame(height: 56)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 20)
+        } else {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 0) {
+                    ForEach(viewModel.cropCategories) { category in
+                        categoryTab(category)
+                    }
+                }
+                .padding(.horizontal, 10)
+            }
+            .frame(height: 56)
+        }
+    }
+
+    private func categoryTab(_ category: CropCategory) -> some View {
+        let isSelected = category.code == selectedCategory?.code
         return Button {
-            selectedCategory = category
+            selectedCategoryCode = category.code
+            selectionLimitMessage = nil
         } label: {
-            HStack(spacing: Spacing.xs) {
-                if category == "인기" {
-                    Image(systemName: "star.fill")
-                }
-                Text(category)
+            VStack(spacing: 0) {
+                Text(category.label)
+                    .font(AppTypography.labelMediumEmphasized.font)
+                    .foregroundStyle(isSelected ? Color.Text.primary : Color.Text.subtle)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.85)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+                Rectangle()
+                    .fill(isSelected ? Color.Object.primary : Color.clear)
+                    .frame(height: 2)
             }
-            .font(.appCaption)
-            .foregroundStyle(isSelected ? Color.appBackground : Color.appTextPrimary)
-            .padding(.horizontal, Spacing.md)
-            .padding(.vertical, Spacing.sm)
-            .background(isSelected ? Color.appTextPrimary : Color.clear)
-            .clipShape(Capsule())
-            .overlay {
-                if !isSelected {
-                    Capsule().stroke(Color(.systemGray4))
-                }
-            }
+            .frame(width: 104, height: 56)
         }
+        .buttonStyle(.plain)
     }
 
-    private func cropChip(_ crop: Crop) -> some View {
+    private func cropRow(_ crop: Crop) -> some View {
         let isSelected = viewModel.draft.cropIDs.contains(crop.id)
         return Button {
             toggle(crop)
         } label: {
-            HStack(spacing: Spacing.xs) {
-                Circle()
-                    .fill(isSelected ? Color.appPrimary : Color.appPrimary.opacity(0.15))
-                    .frame(width: 24, height: 24)
+            HStack(spacing: Spacing.md) {
                 Text(crop.name)
-                    .font(.appCaption)
-                    .foregroundStyle(Color.appTextPrimary)
+                    .font(AppTypography.bodyLarge.font)
+                    .foregroundStyle(isSelected ? Color.Text.primary : Color.Text.default)
                     .lineLimit(1)
+
+                Spacer()
+
+                if isSelected {
+                    Image(systemName: "checkmark.circle.fill")
+                        .font(.system(size: 24, weight: .semibold))
+                        .foregroundStyle(Color.Object.primary)
+                }
             }
-            .padding(.horizontal, Spacing.sm)
-            .padding(.vertical, Spacing.sm)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .overlay {
-                Capsule().stroke(isSelected ? Color.appPrimary : Color(.systemGray4))
+            .padding(.horizontal, 20)
+            .frame(height: 58)
+            .frame(maxWidth: .infinity)
+            .background(isSelected ? Color.Object.primarySubtle : Color.Background.default)
+        }
+        .buttonStyle(.plain)
+    }
+
+    private var bottomTray: some View {
+        VStack(spacing: Spacing.md) {
+            if selectedCropChips.isEmpty {
+                Text("작물을 1개 이상 선택해주세요.")
+                    .font(AppTypography.labelMedium.font)
+                    .foregroundStyle(Color.Text.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                LazyVGrid(columns: chipColumns, alignment: .leading, spacing: Spacing.sm) {
+                    ForEach(selectedCropChips) { crop in
+                        selectedCropChip(crop)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
             }
+
+            if let selectionLimitMessage {
+                Text(selectionLimitMessage)
+                    .font(AppTypography.labelMedium.font)
+                    .foregroundStyle(Color.Text.red)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+
+            Button {
+                guard selectedCount > 0 else { return }
+                viewModel.goNext()
+            } label: {
+                Text("완료")
+                    .font(AppTypography.bodyLarge.font)
+                    .foregroundStyle(selectedCount == 0 ? Color.Text.muted : Color.Text.inverse)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(selectedCount == 0 ? Color.Object.disabled : Color.Object.bold)
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+            }
+            .buttonStyle(.plain)
+            .disabled(selectedCount == 0)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, selectedCropChips.isEmpty ? Spacing.md : Spacing.lg)
+        .padding(.bottom, Spacing.md)
+        .background {
+            UnevenRoundedRectangle(cornerRadii: .init(topLeading: 32, topTrailing: 32))
+                .fill(Color.Background.default)
+                .shadow(color: .black.opacity(0.08), radius: 16, y: -4)
+        }
+    }
+
+    private func selectedCropChip(_ crop: SelectedCropChip) -> some View {
+        HStack(spacing: Spacing.xs) {
+            Text(crop.name)
+                .font(AppTypography.labelMedium.font)
+                .foregroundStyle(Color.Text.primary)
+                .lineLimit(1)
+
+            Image(systemName: "xmark")
+                .font(.system(size: 12, weight: .bold))
+                .foregroundStyle(Color.Icon.primary)
+        }
+        .padding(.leading, Spacing.md)
+        .padding(.trailing, Spacing.sm)
+        .frame(height: 32)
+        .background(Color.Object.primarySubtle)
+        .clipShape(Capsule())
+        .overlay {
+            Capsule()
+                .stroke(Color.Border.primary, lineWidth: 1)
+        }
+        .onTapGesture {
+            _ = viewModel.toggleCropSelection(crop.id)
+            selectionLimitMessage = nil
         }
     }
 
     private func toggle(_ crop: Crop) {
-        if let index = viewModel.draft.cropIDs.firstIndex(of: crop.id) {
-            viewModel.draft.cropIDs.remove(at: index)
-        } else {
-            viewModel.draft.cropIDs.append(crop.id)
+        switch viewModel.toggleCropSelection(crop.id) {
+        case .selected, .deselected:
+            selectionLimitMessage = nil
+        case .selectionLimitReached:
+            selectionLimitMessage = "작물은 최대 5개까지 선택할 수 있어요."
         }
+    }
+
+    private struct SelectedCropChip: Identifiable {
+        let id: UUID
+        let name: String
     }
 }
 

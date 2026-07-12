@@ -54,9 +54,10 @@ struct PreviewMediaUploadRepository: MediaUploadRepository {
 struct PreviewCropCatalogService: CropCatalogService {
     func fetchCrops() async throws -> [Crop] {
         [
-            Crop(id: UUID(), name: "황기", category: "약초류"),
-            Crop(id: UUID(), name: "당귀", category: "약초류"),
-            Crop(id: UUID(), name: "작약", category: "약초류")
+            Crop(id: UUID(), name: "감초", categoryCode: "ROOT_BARK", categoryLabel: "뿌리·껍질"),
+            Crop(id: UUID(), name: "당귀", categoryCode: "ROOT_BARK", categoryLabel: "뿌리·껍질"),
+            Crop(id: UUID(), name: "작약", categoryCode: "ROOT_BARK", categoryLabel: "뿌리·껍질"),
+            Crop(id: UUID(), name: "황기", categoryCode: "WHOLE_HERB", categoryLabel: "전초")
         ]
     }
 
@@ -64,8 +65,18 @@ struct PreviewCropCatalogService: CropCatalogService {
         try await fetchCrops()
     }
 
-    func fetchCategoryLabels() async throws -> [String] {
-        ["약초류", "근채류", "화훼·열매", "허브·잎"]
+    func fetchCategories() async throws -> [CropCategory] {
+        [
+            CropCategory(code: "WHOLE_HERB", label: "전초"),
+            CropCategory(code: "ROOT_BARK", label: "뿌리·껍질"),
+            CropCategory(code: "RHIZOME", label: "뿌리줄기"),
+            CropCategory(code: "LEAF", label: "잎"),
+            CropCategory(code: "FLOWER", label: "꽃"),
+            CropCategory(code: "FRUIT", label: "열매·과실"),
+            CropCategory(code: "SEED", label: "종자"),
+            CropCategory(code: "STEM_BRANCH", label: "줄기·가지"),
+            CropCategory(code: "UNKNOWN", label: "기타")
+        ]
     }
 }
 

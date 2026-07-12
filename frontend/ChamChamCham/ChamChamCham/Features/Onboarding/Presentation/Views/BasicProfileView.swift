@@ -12,11 +12,13 @@ struct BasicProfileView: View {
     @Environment(OnboardingViewModel.self) private var viewModel
     @State private var pickerItem: PhotosPickerItem?
     @State private var profileImage: Image?
+    @State private var isQualificationGuideVisible = false
 
     private let store = OnboardingDraftStore()
 
     private var isValid: Bool {
         !viewModel.draft.name.trimmingCharacters(in: .whitespaces).isEmpty
+            && !viewModel.draft.nickname.trimmingCharacters(in: .whitespaces).isEmpty
             && !viewModel.draft.phone.trimmingCharacters(in: .whitespaces).isEmpty
             && viewModel.draft.birthDate != nil
             && viewModel.draft.experienceYears != nil
@@ -76,7 +78,7 @@ struct BasicProfileView: View {
             }
 
             AppTextField(label: "*이름", placeholder: "이름(실명)을 입력하세요", text: $viewModel.draft.name)
-            AppTextField(label: "닉네임", placeholder: "예) 이랑이", text: $viewModel.draft.nickname)
+            AppTextField(label: "*닉네임", placeholder: "예) 이랑이", text: $viewModel.draft.nickname)
             AppTextField(label: "*연락처", placeholder: "010-0000-0000", text: $viewModel.draft.phone, keyboardType: .phonePad)
 
             VStack(alignment: .leading, spacing: Spacing.sm) {
@@ -92,9 +94,21 @@ struct BasicProfileView: View {
             AppTextField(label: "*영농 경력(년차)", placeholder: "숫자만 입력하세요 (예: 5)", text: experienceYearsText, keyboardType: .numberPad)
 
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text("*자격")
-                    .font(.appCaption)
-                    .foregroundStyle(Color.appTextSecondary)
+                HStack(spacing: Spacing.xs) {
+                    Text("*자격")
+                        .font(.appCaption)
+                        .foregroundStyle(Color.appTextSecondary)
+
+                    Button {
+                        isQualificationGuideVisible.toggle()
+                    } label: {
+                        Image(systemName: "questionmark.circle.fill")
+                            .font(.system(size: 16, weight: .semibold))
+                            .foregroundStyle(Color.Icon.subtle)
+                    }
+                    .buttonStyle(.plain)
+                    .accessibilityLabel("자격 안내 보기")
+                }
 
                 Picker("자격", selection: $viewModel.draft.managementType) {
                     Text("일반").tag(ManagementType?.some(.agriculturalIndividual))
@@ -103,7 +117,9 @@ struct BasicProfileView: View {
                 }
                 .pickerStyle(.segmented)
 
-                guideBanner
+                if isQualificationGuideVisible {
+                    guideBanner
+                }
             }
 
             Spacer(minLength: 0)
@@ -128,6 +144,7 @@ struct BasicProfileView: View {
             }
         }
         .onAppear {
+            viewModel.draft.managementType = viewModel.draft.managementType ?? .agriculturalIndividual
             guard profileImage == nil,
                   let fileName = viewModel.draft.profileImageFileName,
                   let data = store.loadProfileImage(fileName: fileName),

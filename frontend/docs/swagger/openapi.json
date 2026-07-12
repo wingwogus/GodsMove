@@ -53,6 +53,23 @@
         ],
         "type": "object"
       },
+      "ApiResponseCurrentWeatherResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CurrentWeatherResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
       "ApiResponseLikeToggleResponse": {
         "properties": {
           "data": {
@@ -130,6 +147,46 @@
         ],
         "type": "object"
       },
+      "ApiResponseListFarmCropsResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/FarmCropsResponse"
+            },
+            "type": "array"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseListWorkTypeResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/WorkTypeResponse"
+            },
+            "type": "array"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
       "ApiResponseLoginResponse": {
         "properties": {
           "data": {
@@ -164,10 +221,95 @@
         ],
         "type": "object"
       },
+      "ApiResponseObject": {
+        "properties": {
+          "data": {
+            "type": "object"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
       "ApiResponseOnboardingCompleteResponse": {
         "properties": {
           "data": {
             "$ref": "#/components/schemas/OnboardingCompleteResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePolicyProgramDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PolicyProgramDetailResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePolicyRecommendationPageResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PolicyRecommendationPageResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePolicySyncJobDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PolicySyncJobDetailResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePolicySyncJobSummaryResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PolicySyncJobSummaryResponse"
           },
           "error": {
             "$ref": "#/components/schemas/ApiError"
@@ -236,6 +378,57 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/PublicProfileResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseRecordDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RecordDetailResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseRecordIdResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RecordIdResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseRecordPageResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/RecordPageResponse"
           },
           "error": {
             "$ref": "#/components/schemas/ApiError"
@@ -569,6 +762,27 @@
         ],
         "type": "object"
       },
+      "CurrentWeatherResponse": {
+        "properties": {
+          "observedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "temperature": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weatherCondition": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "observedAt",
+          "temperature",
+          "weatherCondition"
+        ],
+        "type": "object"
+      },
       "DataSourceRequest": {
         "properties": {
           "address": {
@@ -586,6 +800,21 @@
         },
         "type": "object"
       },
+      "EnumOptionResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "label"
+        ],
+        "type": "object"
+      },
       "FarmBoundaryCoordinateResponse": {
         "properties": {
           "latitude": {
@@ -600,6 +829,29 @@
         "required": [
           "latitude",
           "longitude"
+        ],
+        "type": "object"
+      },
+      "FarmCropsResponse": {
+        "properties": {
+          "crops": {
+            "items": {
+              "$ref": "#/components/schemas/CropResponse"
+            },
+            "type": "array"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "farmName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "crops",
+          "farmId",
+          "farmName"
         ],
         "type": "object"
       },
@@ -737,6 +989,193 @@
           "id",
           "name",
           "roadAddress"
+        ],
+        "type": "object"
+      },
+      "FertilizingDetailRequest": {
+        "properties": {
+          "amount": {
+            "minimum": 0.01,
+            "type": "number"
+          },
+          "amountUnit": {
+            "enum": [
+              "KG"
+            ],
+            "type": "string"
+          },
+          "applicationMethod": {
+            "enum": [
+              "SOIL",
+              "FOLIAR"
+            ],
+            "type": "string"
+          },
+          "materialName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "amountUnit",
+          "materialName"
+        ],
+        "type": "object"
+      },
+      "FertilizingDetailResponse": {
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "amountUnit": {
+            "enum": [
+              "KG"
+            ],
+            "type": "string"
+          },
+          "applicationMethod": {
+            "enum": [
+              "SOIL",
+              "FOLIAR"
+            ],
+            "type": "string"
+          },
+          "materialName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "amountUnit",
+          "materialName"
+        ],
+        "type": "object"
+      },
+      "FieldResponse": {
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "options": {
+            "items": {
+              "$ref": "#/components/schemas/EnumOptionResponse"
+            },
+            "type": "array"
+          },
+          "required": {
+            "type": "boolean"
+          },
+          "type": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "options",
+          "required",
+          "type"
+        ],
+        "type": "object"
+      },
+      "HarvestDetailRequest": {
+        "properties": {
+          "growthPeriod": {
+            "format": "int32",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "growthPeriodUnit": {
+            "enum": [
+              "YEAR",
+              "MONTH"
+            ],
+            "type": "string"
+          },
+          "harvestAmount": {
+            "minimum": 0.01,
+            "type": "number"
+          },
+          "harvestAmountUnknown": {
+            "type": "boolean"
+          },
+          "harvestSource": {
+            "enum": [
+              "CULTIVATED",
+              "FORAGED"
+            ],
+            "type": "string"
+          },
+          "medicinalPart": {
+            "enum": [
+              "WHOLE_HERB",
+              "ROOT_BARK",
+              "RHIZOME",
+              "LEAF",
+              "FLOWER",
+              "FRUIT",
+              "SEED",
+              "STEM_BRANCH",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "growthPeriod",
+          "growthPeriodUnit",
+          "harvestAmountUnknown",
+          "harvestSource",
+          "medicinalPart"
+        ],
+        "type": "object"
+      },
+      "HarvestDetailResponse": {
+        "properties": {
+          "amountUnknown": {
+            "type": "boolean"
+          },
+          "growthPeriod": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "growthPeriodUnit": {
+            "enum": [
+              "YEAR",
+              "MONTH"
+            ],
+            "type": "string"
+          },
+          "harvestAmount": {
+            "type": "number"
+          },
+          "harvestSource": {
+            "enum": [
+              "CULTIVATED",
+              "FORAGED"
+            ],
+            "type": "string"
+          },
+          "medicinalPart": {
+            "enum": [
+              "WHOLE_HERB",
+              "ROOT_BARK",
+              "RHIZOME",
+              "LEAF",
+              "FLOWER",
+              "FRUIT",
+              "SEED",
+              "STEM_BRANCH",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "amountUnknown",
+          "growthPeriod",
+          "growthPeriodUnit",
+          "harvestSource",
+          "medicinalPart"
         ],
         "type": "object"
       },
@@ -995,6 +1434,429 @@
         ],
         "type": "object"
       },
+      "PestControlDetailRequest": {
+        "properties": {
+          "pestTarget": {
+            "type": "string"
+          },
+          "pesticideAmount": {
+            "minimum": 0.01,
+            "type": "number"
+          },
+          "pesticideAmountUnit": {
+            "enum": [
+              "ML",
+              "G"
+            ],
+            "type": "string"
+          },
+          "pesticideName": {
+            "type": "string"
+          },
+          "totalSprayAmount": {
+            "minimum": 0.01,
+            "type": "number"
+          },
+          "totalSprayAmountUnit": {
+            "enum": [
+              "L"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "pesticideAmount",
+          "pesticideAmountUnit",
+          "pesticideName",
+          "totalSprayAmount",
+          "totalSprayAmountUnit"
+        ],
+        "type": "object"
+      },
+      "PestControlDetailResponse": {
+        "properties": {
+          "pestTarget": {
+            "type": "string"
+          },
+          "pesticideAmount": {
+            "type": "number"
+          },
+          "pesticideAmountUnit": {
+            "enum": [
+              "ML",
+              "G"
+            ],
+            "type": "string"
+          },
+          "pesticideName": {
+            "type": "string"
+          },
+          "totalSprayAmount": {
+            "type": "number"
+          },
+          "totalSprayAmountUnit": {
+            "enum": [
+              "L"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "pesticideAmount",
+          "pesticideAmountUnit",
+          "pesticideName",
+          "totalSprayAmount",
+          "totalSprayAmountUnit"
+        ],
+        "type": "object"
+      },
+      "PlantingDetailRequest": {
+        "properties": {
+          "propagationMethod": {
+            "enum": [
+              "SEED",
+              "CUTTING",
+              "GRAFTING",
+              "LAYERING",
+              "DIVISION",
+              "TISSUE_CULTURE"
+            ],
+            "type": "string"
+          },
+          "seedAmount": {
+            "minimum": 0.01,
+            "type": "number"
+          },
+          "seedAmountUnit": {
+            "enum": [
+              "KG",
+              "G"
+            ],
+            "type": "string"
+          },
+          "seedlingCount": {
+            "format": "int32",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "seedlingUnit": {
+            "enum": [
+              "JU"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "propagationMethod"
+        ],
+        "type": "object"
+      },
+      "PlantingDetailResponse": {
+        "properties": {
+          "propagationMethod": {
+            "enum": [
+              "SEED",
+              "CUTTING",
+              "GRAFTING",
+              "LAYERING",
+              "DIVISION",
+              "TISSUE_CULTURE"
+            ],
+            "type": "string"
+          },
+          "seedAmount": {
+            "type": "number"
+          },
+          "seedAmountUnit": {
+            "enum": [
+              "KG",
+              "G"
+            ],
+            "type": "string"
+          },
+          "seedlingCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "seedlingUnit": {
+            "enum": [
+              "JU"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "propagationMethod"
+        ],
+        "type": "object"
+      },
+      "PolicyAttachmentResponse": {
+        "properties": {
+          "extension": {
+            "type": "string"
+          },
+          "fileName": {
+            "type": "string"
+          },
+          "sizeBytes": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PolicyContactResponse": {
+        "properties": {
+          "agencyName": {
+            "type": "string"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "phoneNumber": {
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "PolicyProgramDetailResponse": {
+        "properties": {
+          "agencyName": {
+            "type": "string"
+          },
+          "applicationMethod": {
+            "type": "string"
+          },
+          "applicationPeriodLabel": {
+            "type": "string"
+          },
+          "applicationUrl": {
+            "type": "string"
+          },
+          "attachments": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyAttachmentResponse"
+            },
+            "type": "array"
+          },
+          "benefit": {
+            "type": "string"
+          },
+          "contacts": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyContactResponse"
+            },
+            "type": "array"
+          },
+          "departmentName": {
+            "type": "string"
+          },
+          "eligibility": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "onlineApplyAvailable": {
+            "type": "boolean"
+          },
+          "programTitle": {
+            "type": "string"
+          },
+          "purpose": {
+            "type": "string"
+          },
+          "requiredDocuments": {
+            "type": "string"
+          },
+          "selectionCriteria": {
+            "type": "string"
+          },
+          "sourceUrl": {
+            "type": "string"
+          },
+          "sourceYear": {
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "agencyName",
+          "applicationPeriodLabel",
+          "attachments",
+          "contacts",
+          "id",
+          "onlineApplyAvailable",
+          "programTitle",
+          "sourceYear"
+        ],
+        "type": "object"
+      },
+      "PolicyRecommendationItemResponse": {
+        "properties": {
+          "agencyName": {
+            "type": "string"
+          },
+          "applicationPeriodLabel": {
+            "type": "string"
+          },
+          "benefitSummary": {
+            "type": "string"
+          },
+          "eligibilitySummary": {
+            "type": "string"
+          },
+          "policyProgramId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "programTitle": {
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          },
+          "recommendationId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "score": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "agencyName",
+          "applicationPeriodLabel",
+          "benefitSummary",
+          "eligibilitySummary",
+          "policyProgramId",
+          "programTitle",
+          "reason",
+          "recommendationId",
+          "score"
+        ],
+        "type": "object"
+      },
+      "PolicyRecommendationPageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PolicyRecommendationItemResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "PolicySyncJobDetailResponse": {
+        "properties": {
+          "detailFailureCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "detailSuccessCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "errorMessage": {
+            "type": "string"
+          },
+          "finishedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "jobId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "source": {
+            "enum": [
+              "NONGUP_EZ"
+            ],
+            "type": "string"
+          },
+          "startedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "syncedCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "targetYear": {
+            "type": "string"
+          },
+          "totalCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "triggerType": {
+            "enum": [
+              "SCHEDULED",
+              "ADMIN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "detailFailureCount",
+          "detailSuccessCount",
+          "jobId",
+          "source",
+          "startedAt",
+          "status",
+          "syncedCount",
+          "targetYear",
+          "totalCount",
+          "triggerType"
+        ],
+        "type": "object"
+      },
+      "PolicySyncJobSummaryResponse": {
+        "properties": {
+          "jobId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "RUNNING",
+              "SUCCEEDED",
+              "FAILED"
+            ],
+            "type": "string"
+          },
+          "targetYear": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "jobId",
+          "status",
+          "targetYear"
+        ],
+        "type": "object"
+      },
       "PostDetailResponse": {
         "properties": {
           "author": {
@@ -1212,6 +2074,202 @@
         ],
         "type": "object"
       },
+      "RecordDetailResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "cropName": {
+            "type": "string"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "farmName": {
+            "type": "string"
+          },
+          "fertilizing": {
+            "$ref": "#/components/schemas/FertilizingDetailResponse"
+          },
+          "harvest": {
+            "$ref": "#/components/schemas/HarvestDetailResponse"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "imageUrls": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "memo": {
+            "type": "string"
+          },
+          "pestControl": {
+            "$ref": "#/components/schemas/PestControlDetailResponse"
+          },
+          "planting": {
+            "$ref": "#/components/schemas/PlantingDetailResponse"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "watering": {
+            "$ref": "#/components/schemas/WateringDetailResponse"
+          },
+          "weatherCondition": {
+            "type": "string"
+          },
+          "weatherTemperature": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weeding": {
+            "$ref": "#/components/schemas/WeedingDetailResponse"
+          },
+          "workType": {
+            "enum": [
+              "PLANTING",
+              "WATERING",
+              "FERTILIZING",
+              "PEST_CONTROL",
+              "WEEDING",
+              "PRUNING",
+              "HARVEST",
+              "ETC"
+            ],
+            "type": "string"
+          },
+          "workedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "cropId",
+          "cropName",
+          "farmId",
+          "farmName",
+          "id",
+          "imageUrls",
+          "memo",
+          "updatedAt",
+          "weatherCondition",
+          "weatherTemperature",
+          "workType",
+          "workedAt"
+        ],
+        "type": "object"
+      },
+      "RecordIdResponse": {
+        "properties": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "workType": {
+            "enum": [
+              "PLANTING",
+              "WATERING",
+              "FERTILIZING",
+              "PEST_CONTROL",
+              "WEEDING",
+              "PRUNING",
+              "HARVEST",
+              "ETC"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "workType"
+        ],
+        "type": "object"
+      },
+      "RecordPageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RecordSummaryResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "RecordSummaryResponse": {
+        "properties": {
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "cropName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "memoPreview": {
+            "type": "string"
+          },
+          "thumbnailUrl": {
+            "type": "string"
+          },
+          "weatherCondition": {
+            "type": "string"
+          },
+          "weatherTemperature": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "workType": {
+            "enum": [
+              "PLANTING",
+              "WATERING",
+              "FERTILIZING",
+              "PEST_CONTROL",
+              "WEEDING",
+              "PRUNING",
+              "HARVEST",
+              "ETC"
+            ],
+            "type": "string"
+          },
+          "workedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cropId",
+          "cropName",
+          "id",
+          "memoPreview",
+          "weatherCondition",
+          "weatherTemperature",
+          "workType",
+          "workedAt"
+        ],
+        "type": "object"
+      },
       "ReissueRequest": {
         "properties": {
           "refreshToken": {
@@ -1261,6 +2319,85 @@
           "mediaIds",
           "postType",
           "title"
+        ],
+        "type": "object"
+      },
+      "SaveRecordRequest": {
+        "properties": {
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "fertilizing": {
+            "$ref": "#/components/schemas/FertilizingDetailRequest"
+          },
+          "harvest": {
+            "$ref": "#/components/schemas/HarvestDetailRequest"
+          },
+          "mediaIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 5,
+            "minItems": 0,
+            "type": "array"
+          },
+          "memo": {
+            "maxLength": 500,
+            "minLength": 30,
+            "type": "string"
+          },
+          "pestControl": {
+            "$ref": "#/components/schemas/PestControlDetailRequest"
+          },
+          "planting": {
+            "$ref": "#/components/schemas/PlantingDetailRequest"
+          },
+          "watering": {
+            "$ref": "#/components/schemas/WateringDetailRequest"
+          },
+          "weatherCondition": {
+            "type": "string"
+          },
+          "weatherTemperature": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weeding": {
+            "$ref": "#/components/schemas/WeedingDetailRequest"
+          },
+          "workType": {
+            "enum": [
+              "PLANTING",
+              "WATERING",
+              "FERTILIZING",
+              "PEST_CONTROL",
+              "WEEDING",
+              "PRUNING",
+              "HARVEST",
+              "ETC"
+            ],
+            "type": "string"
+          },
+          "workedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "required": [
+          "cropId",
+          "farmId",
+          "mediaIds",
+          "memo",
+          "weatherCondition",
+          "weatherTemperature",
+          "workType",
+          "workedAt"
         ],
         "type": "object"
       },
@@ -1425,6 +2562,104 @@
           "email"
         ],
         "type": "object"
+      },
+      "WateringDetailRequest": {
+        "properties": {
+          "irrigationAmount": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "SUFFICIENT"
+            ],
+            "type": "string"
+          },
+          "irrigationMethod": {
+            "enum": [
+              "DRIP",
+              "SPRINKLER",
+              "SPRAYING",
+              "MANUAL"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WateringDetailResponse": {
+        "properties": {
+          "irrigationAmount": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "SUFFICIENT"
+            ],
+            "type": "string"
+          },
+          "irrigationMethod": {
+            "enum": [
+              "DRIP",
+              "SPRINKLER",
+              "SPRAYING",
+              "MANUAL"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WeedingDetailRequest": {
+        "properties": {
+          "weedingMethod": {
+            "enum": [
+              "HAND",
+              "MACHINE",
+              "MULCHING",
+              "HERBICIDE"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WeedingDetailResponse": {
+        "properties": {
+          "weedingMethod": {
+            "enum": [
+              "HAND",
+              "MACHINE",
+              "MULCHING",
+              "HERBICIDE"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WorkTypeResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "detailRequired": {
+            "type": "boolean"
+          },
+          "fields": {
+            "items": {
+              "$ref": "#/components/schemas/FieldResponse"
+            },
+            "type": "array"
+          },
+          "label": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "detailRequired",
+          "fields",
+          "label"
+        ],
+        "type": "object"
       }
     },
     "securitySchemes": {
@@ -1444,6 +2679,57 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/policies/sync-jobs": {
+      "post": {
+        "operationId": "createJob",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePolicySyncJobSummaryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-policy-sync-controller"
+        ]
+      }
+    },
+    "/api/v1/admin/policies/sync-jobs/{jobId}": {
+      "get": {
+        "operationId": "getJob",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "jobId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePolicySyncJobDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-policy-sync-controller"
+        ]
+      }
+    },
     "/api/v1/auth/apple/login": {
       "post": {
         "operationId": "appleLogin",
@@ -2223,6 +3509,257 @@
         ]
       }
     },
+    "/api/v1/farming-records": {
+      "get": {
+        "operationId": "listRecords",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cropId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workType",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PLANTING",
+                "WATERING",
+                "FERTILIZING",
+                "PEST_CONTROL",
+                "WEEDING",
+                "PRUNING",
+                "HARVEST",
+                "ETC"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "startDate",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "endDate",
+            "required": false,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRecordPageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farming-record-controller"
+        ]
+      },
+      "post": {
+        "operationId": "createRecord",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRecordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRecordIdResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farming-record-controller"
+        ]
+      }
+    },
+    "/api/v1/farming-records/{recordId}": {
+      "delete": {
+        "operationId": "deleteRecord",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recordId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farming-record-controller"
+        ]
+      },
+      "get": {
+        "operationId": "getRecord",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recordId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRecordDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farming-record-controller"
+        ]
+      },
+      "patch": {
+        "operationId": "updateRecord",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recordId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRecordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseRecordIdResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farming-record-controller"
+        ]
+      }
+    },
+    "/api/v1/farms/{farmId}/weather": {
+      "get": {
+        "operationId": "getCurrentWeather",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farmId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCurrentWeatherResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farm-weather-controller"
+        ]
+      }
+    },
     "/api/v1/media/images": {
       "post": {
         "operationId": "uploadImage",
@@ -2262,6 +3799,26 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseMyProfileResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "member-controller"
+        ]
+      }
+    },
+    "/api/v1/members/me/farm-crops": {
+      "get": {
+        "operationId": "getMyFarmCrops",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListFarmCropsResponse"
                 }
               }
             },
@@ -2334,6 +3891,156 @@
         ]
       }
     },
+    "/api/v1/policies/recommendations": {
+      "get": {
+        "operationId": "listRecommendations",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "benefitCategory",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "RECOMMENDED",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePolicyRecommendationPageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "policy-controller"
+        ]
+      }
+    },
+    "/api/v1/policies/{policyProgramId}": {
+      "get": {
+        "operationId": "getProgramDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "policyProgramId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePolicyProgramDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "policy-controller"
+        ]
+      }
+    },
+    "/api/v1/search": {
+      "get": {
+        "operationId": "search",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "default": "ALL",
+              "enum": [
+                "ALL",
+                "RECORD",
+                "POST"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseObject"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "search-controller"
+        ]
+      }
+    },
     "/api/v1/test/me": {
       "get": {
         "operationId": "getMyInfo",
@@ -2371,6 +4078,26 @@
         },
         "tags": [
           "test-controller"
+        ]
+      }
+    },
+    "/api/v1/work-types": {
+      "get": {
+        "operationId": "listWorkTypes",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListWorkTypeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "work-type-controller"
         ]
       }
     }

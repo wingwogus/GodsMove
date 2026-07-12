@@ -1,5 +1,10 @@
 # scripts
 
+> **Deprecated for frontend API work:** `sync_api_spec.py` and its
+> `docs/API 명세서/` output are historical Notion artifacts. Do not run or consult
+> them when implementing or reviewing frontend API contracts. Use the deployed
+> Swagger workflow in `docs/swagger/README.md` instead.
+
 ## sync_api_spec.py — Notion API 명세서 → 로컬 마크다운 동기화
 
 팀 API 명세서가 Notion([공개 사이트](https://wingwogus.notion.site/API-d5b9e2d944058337a774015bc187a6aa))에서 계속 업데이트되는데, 이 페이지는 **다른 워크스페이스의 공개 사이트**라 공식 Notion API/MCP 커넥터로는 DB 행(핵심 DTO 문서)을 가져올 수 없다. 그래서 이 스크립트는 Notion 비공식 web API(`loadPageChunk` / `queryCollection`)로 페이지·하위페이지·DB 행을 전부 크롤링해 `docs/API 명세서/`에 마크다운으로 저장한다. 인증/토큰 불필요(공개 페이지 한정), 의존성 없음(Python 3 표준 라이브러리만).

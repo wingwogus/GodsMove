@@ -27,6 +27,8 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
     let profileMediaId: UUID?
 
     init(draft: OnboardingDraft) throws {
+        let representativeFarm = draft.representativeFarm
+
         guard !draft.name.trimmingCharacters(in: .whitespaces).isEmpty else {
             throw OnboardingSubmissionError.missingRequiredField("name")
         }
@@ -36,13 +38,19 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
         guard let birthDate = draft.birthDate else {
             throw OnboardingSubmissionError.missingRequiredField("birthDate")
         }
+        guard !draft.nickname.trimmingCharacters(in: .whitespaces).isEmpty else {
+            throw OnboardingSubmissionError.missingRequiredField("nickname")
+        }
         guard let experienceYears = draft.experienceYears else {
             throw OnboardingSubmissionError.missingRequiredField("experienceYears")
         }
         guard let managementType = draft.managementType else {
             throw OnboardingSubmissionError.missingRequiredField("managementType")
         }
-        guard !draft.cropIDs.isEmpty else {
+        guard !representativeFarm.cropIDs.isEmpty else {
+            throw OnboardingSubmissionError.missingRequiredField("cropIDs")
+        }
+        guard representativeFarm.cropIDs.count <= 5 else {
             throw OnboardingSubmissionError.missingRequiredField("cropIDs")
         }
 
@@ -52,8 +60,8 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
         self.nickname = draft.nickname
         self.experienceLevel = experienceYears
         self.managementType = managementType.rawValue
-        self.farm = try FarmRequestDTO(draft: draft)
-        self.cropIds = draft.cropIDs
+        self.farm = try FarmRequestDTO(farm: representativeFarm)
+        self.cropIds = representativeFarm.cropIDs
         self.profileMediaId = draft.profileMediaId
     }
 
@@ -69,28 +77,32 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
 
 extension FarmRequestDTO {
     init(draft: OnboardingDraft) throws {
-        guard !draft.farmName.trimmingCharacters(in: .whitespaces).isEmpty else {
+        try self.init(farm: draft.representativeFarm)
+    }
+
+    init(farm: OnboardingFarmDraft) throws {
+        guard !farm.farmName.trimmingCharacters(in: .whitespaces).isEmpty else {
             throw OnboardingSubmissionError.missingRequiredField("farmName")
         }
-        guard !draft.farmRoadAddress.trimmingCharacters(in: .whitespaces).isEmpty else {
+        guard !farm.farmRoadAddress.trimmingCharacters(in: .whitespaces).isEmpty else {
             throw OnboardingSubmissionError.missingRequiredField("farmRoadAddress")
         }
-        guard let latitude = draft.farmLatitude, let longitude = draft.farmLongitude else {
+        guard let latitude = farm.farmLatitude, let longitude = farm.farmLongitude else {
             throw OnboardingSubmissionError.missingRequiredField("farmCoordinate")
         }
 
         self.farmId = nil
-        self.name = draft.farmName
-        self.roadAddress = draft.farmRoadAddress
-        self.jibunAddress = draft.farmJibunAddress.isEmpty ? nil : draft.farmJibunAddress
+        self.name = farm.farmName
+        self.roadAddress = farm.farmRoadAddress
+        self.jibunAddress = farm.farmJibunAddress.isEmpty ? nil : farm.farmJibunAddress
         self.latitude = latitude
         self.longitude = longitude
-        self.pnu = draft.farmPNU
-        self.landCategory = draft.farmLandCategory
-        self.areaSqm = draft.farmAreaSqm
-        self.areaIsManualEntry = draft.farmAreaIsManualEntry
+        self.pnu = farm.farmPNU
+        self.landCategory = farm.farmLandCategory
+        self.areaSqm = farm.farmAreaSqm
+        self.areaIsManualEntry = farm.farmAreaIsManualEntry
         self.boundaryCoordinates = []
         self.dataSource = .onboardingJusoVWorld
-        self.cropIds = draft.cropIDs
+        self.cropIds = farm.cropIDs
     }
 }

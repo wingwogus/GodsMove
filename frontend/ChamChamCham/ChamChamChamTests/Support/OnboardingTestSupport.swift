@@ -69,7 +69,7 @@ actor FakeOnboardingRepository: OnboardingRepository {
 struct StubCropCatalogService: CropCatalogService {
     func fetchCrops() async throws -> [Crop] { [] }
     func fetchCrops(categoryCode: String) async throws -> [Crop] { [] }
-    func fetchCategoryLabels() async throws -> [String] { [] }
+    func fetchCategories() async throws -> [CropCategory] { [] }
 }
 
 @MainActor

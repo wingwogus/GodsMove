@@ -10,13 +10,20 @@ import SwiftUI
 struct OnboardingProgressBar: View {
     let currentStep: OnboardingViewModel.Step
 
+    private let progressSteps: [OnboardingViewModel.Step] = [
+        .basicProfile,
+        .farmLocation,
+        .cropSelection,
+        .complete
+    ]
+
     private var currentIndex: Int {
-        OnboardingViewModel.Step.allCases.firstIndex(of: currentStep) ?? 0
+        progressSteps.firstIndex(of: currentStep) ?? 0
     }
 
     var body: some View {
         HStack(spacing: Spacing.xs) {
-            ForEach(Array(OnboardingViewModel.Step.allCases.enumerated()), id: \.offset) { index, _ in
+            ForEach(Array(progressSteps.enumerated()), id: \.offset) { index, _ in
                 Capsule()
                     .fill(index <= currentIndex ? Color.appPrimary : Color(.systemGray4))
                     .frame(height: 4)
