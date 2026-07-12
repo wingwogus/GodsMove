@@ -1,5 +1,7 @@
 package com.chamchamcham.application.coaching.rag.record
 
+import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
+
 object RecordFeedbackOutputValidator {
     fun validate(
         content: RecordFeedbackContent,

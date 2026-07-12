@@ -1,9 +1,9 @@
 package com.chamchamcham.application.coaching.feedback
 
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContextAssembler
-import com.chamchamcham.domain.coaching.CoachingFeedback
-import com.chamchamcham.domain.coaching.CoachingFeedbackRepository
-import com.chamchamcham.domain.coaching.CoachingFeedbackStatus
+import com.chamchamcham.domain.coaching.RecordFeedback
+import com.chamchamcham.domain.coaching.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.RecordFeedbackStatus
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.context.ApplicationEventPublisher
@@ -14,7 +14,7 @@ import org.springframework.transaction.support.TransactionTemplate
 
 @Service
 class RecordFeedbackPreparationService(
-    private val feedbackRepository: CoachingFeedbackRepository,
+    private val feedbackRepository: RecordFeedbackRepository,
     private val contextAssembler: RecordFeedbackContextAssembler,
     private val objectMapper: ObjectMapper,
     private val eventPublisher: ApplicationEventPublisher,
@@ -26,7 +26,7 @@ class RecordFeedbackPreparationService(
 
     fun prepare(event: RecordFeedbackPreparationRequested) {
         val currentFeedback = feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId) ?: return
-        if (currentFeedback.status != CoachingFeedbackStatus.PENDING || currentFeedback.sourceRevision != event.sourceRevision) {
+        if (currentFeedback.status != RecordFeedbackStatus.PENDING || currentFeedback.sourceRevision != event.sourceRevision) {
             return
         }
 
@@ -63,9 +63,9 @@ class RecordFeedbackPreparationService(
         }
     }
 
-    private fun CoachingFeedback.matches(event: RecordFeedbackPreparationRequested): Boolean {
-        return status == CoachingFeedbackStatus.PENDING &&
-            record?.id == event.recordId &&
+    private fun RecordFeedback.matches(event: RecordFeedbackPreparationRequested): Boolean {
+        return status == RecordFeedbackStatus.PENDING &&
+            record.id == event.recordId &&
             sourceRevision == event.sourceRevision
     }
 

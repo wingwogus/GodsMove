@@ -1,5 +1,8 @@
 package com.chamchamcham.application.coaching.rag.record
 
+import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
+
 import com.chamchamcham.application.coaching.rag.common.RagProperties
 import com.chamchamcham.application.coaching.rag.common.RagSourceType
 import com.chamchamcham.application.coaching.feedback.RecordFeedbackFailureCode

@@ -7,8 +7,6 @@ import com.chamchamcham.application.coaching.feedback.RecordFeedbackLifecycleSer
 import com.chamchamcham.application.coaching.feedback.RecordFeedbackQueryService
 import com.chamchamcham.application.coaching.rag.common.RagModelInfo
 import com.chamchamcham.application.coaching.rag.record.CommonFeedbackDetail
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionCategory
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionDue
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackAction
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContent
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContext
@@ -22,9 +20,10 @@ import com.chamchamcham.application.coaching.rag.record.RecordFeedbackRecordCont
 import com.chamchamcham.application.farming.FarmingRecordCommand
 import com.chamchamcham.application.farming.FarmingRecordService
 import com.chamchamcham.application.report.FarmingCycleReportProjectionService
-import com.chamchamcham.domain.coaching.CoachingFeedbackRepository
-import com.chamchamcham.domain.coaching.CoachingFeedbackStatus
-import com.chamchamcham.domain.coaching.FeedbackType
+import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
+import com.chamchamcham.domain.coaching.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.RecordFeedbackStatus
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
@@ -63,7 +62,7 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
     private val farmingRecordService: FarmingRecordService,
     private val farmingRecordRepository: FarmingRecordRepository,
     private val wateringRecordRepository: WateringRecordRepository,
-    private val coachingFeedbackRepository: CoachingFeedbackRepository,
+    private val recordFeedbackRepository: RecordFeedbackRepository,
     private val memberRepository: MemberRepository,
     private val memberCropRepository: MemberCropRepository,
     private val farmRepository: FarmRepository,
@@ -84,7 +83,7 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
 
     @BeforeEach
     fun setUp() {
-        coachingFeedbackRepository.deleteAllInBatch()
+        recordFeedbackRepository.deleteAll()
         wateringRecordRepository.deleteAllInBatch()
         farmingRecordRepository.deleteAllInBatch()
         memberCropRepository.deleteAllInBatch()
@@ -106,18 +105,15 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
         val recordId = farmingRecordService.create(wateringCreateCommand()).id
 
         val record = farmingRecordRepository.findById(recordId).orElseThrow()
-        val feedback = coachingFeedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
-            FeedbackType.RECORD,
-            recordId,
-            1,
-        ) ?: error("record feedback must be created")
+        val feedback = recordFeedbackRepository.findByRecord_IdAndSourceRevision(recordId, 1)
+            ?: error("record feedback must be created")
 
         assertThat(record.sourceRevision).isEqualTo(1)
-        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.READY)
+        assertThat(feedback.status).isEqualTo(RecordFeedbackStatus.READY)
         assertThat(feedback.inputSnapshot)
             .containsEntry("schemaVersion", "record-feedback-context.v2")
             .doesNotContainKeys("recentRecords", "workTypeStats", "cropCycle", "daysAfterPlanting")
-        assertThat(feedback.structuredResult).containsKey("goodPoint")
+        assertThat(feedback.goodPointText).isEqualTo("관수 기록이 구체적입니다.")
         assertThat(feedback.auditStatus).isEqualTo("PASS")
         assertThat(feedback.modelName).isEqualTo("chat-test")
     }
@@ -127,16 +123,13 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
         val recordId = farmingRecordService.create(wateringCreateCommand()).id
 
         val record = farmingRecordRepository.findById(recordId).orElseThrow()
-        val feedback = coachingFeedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
-            FeedbackType.RECORD,
-            recordId,
-            1,
-        ) ?: error("record feedback must be created")
+        val feedback = recordFeedbackRepository.findByRecord_IdAndSourceRevision(recordId, 1)
+            ?: error("record feedback must be created")
         val feedbackId = requireNotNull(feedback.id)
         val snapshot = requireNotNull(feedback.inputSnapshot)
         val statusResult = queryService.get(requireNotNull(member.id), recordId)
 
-        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.READY)
+        assertThat(feedback.status).isEqualTo(RecordFeedbackStatus.READY)
         assertThat(snapshot).containsEntry("schemaVersion", "record-feedback-context.v2")
         @Suppress("UNCHECKED_CAST")
         val recordSnapshot = snapshot["record"] as Map<String, Any?>
@@ -145,7 +138,7 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
             .containsEntry("sourceRevision", 1)
             .containsEntry("workType", "WATERING")
             .containsEntry("memo", "점적관수로 토양 수분을 보충했습니다.")
-        assertThat(statusResult.content?.goodPoint?.text).isEqualTo("관수 기록이 구체적입니다.")
+        assertThat(statusResult.content?.goodPoint).isEqualTo("관수 기록이 구체적입니다.")
         val nextActions = statusResult.content?.nextActions.orEmpty()
         assertThat(nextActions).hasSize(2)
         assertThat(nextActions.map { it.text }).containsExactly(
@@ -171,13 +164,11 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
             ),
         )
 
-        val feedbacks = coachingFeedbackRepository.findAll().filter {
-            it.feedbackType == FeedbackType.RECORD && it.record?.id == recordId
-        }
-        val reloaded = coachingFeedbackRepository.findById(feedbackId).orElseThrow()
+        val feedbacks = recordFeedbackRepository.findAll().filter { it.record.id == recordId }
+        val reloaded = recordFeedbackRepository.findById(feedbackId).orElseThrow()
         assertThat(feedbacks).hasSize(1)
         assertThat(feedbacks.single().id).isEqualTo(feedbackId)
-        assertThat(reloaded.status).isEqualTo(CoachingFeedbackStatus.READY)
+        assertThat(reloaded.status).isEqualTo(RecordFeedbackStatus.READY)
         assertThat(reloaded.inputSnapshot).isEqualTo(snapshot)
         verify(generationService, times(1)).generate(anyContext(), org.mockito.Mockito.isNull())
     }
@@ -189,22 +180,16 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
         farmingRecordService.update(wateringUpdateCommand(recordId))
 
         val record = farmingRecordRepository.findById(recordId).orElseThrow()
-        val first = coachingFeedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
-            FeedbackType.RECORD,
-            recordId,
-            1,
-        ) ?: error("first revision feedback must exist")
-        val second = coachingFeedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
-            FeedbackType.RECORD,
-            recordId,
-            2,
-        ) ?: error("second revision feedback must exist")
+        val first = recordFeedbackRepository.findByRecord_IdAndSourceRevision(recordId, 1)
+            ?: error("first revision feedback must exist")
+        val second = recordFeedbackRepository.findByRecord_IdAndSourceRevision(recordId, 2)
+            ?: error("second revision feedback must exist")
 
         assertThat(record.sourceRevision).isEqualTo(2)
-        assertThat(first.status).isEqualTo(CoachingFeedbackStatus.STALE)
-        assertThat(second.status).isEqualTo(CoachingFeedbackStatus.READY)
+        assertThat(first.status).isEqualTo(RecordFeedbackStatus.STALE)
+        assertThat(second.status).isEqualTo(RecordFeedbackStatus.READY)
         assertThat(second.inputSnapshot).containsEntry("schemaVersion", "record-feedback-context.v2")
-        assertThat(second.structuredResult).containsKey("goodPoint")
+        assertThat(second.goodPointText).isEqualTo("관수 기록이 구체적입니다.")
     }
 
     @Test
@@ -214,22 +199,13 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
         farmingRecordService.delete(FarmingRecordCommand.Delete(memberId = requireNotNull(member.id), recordId = recordId))
 
         val record = farmingRecordRepository.findById(recordId).orElseThrow()
-        val feedback = coachingFeedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
-            FeedbackType.RECORD,
-            recordId,
-            1,
-        ) ?: error("initial feedback must exist")
+        val feedback = recordFeedbackRepository.findByRecord_IdAndSourceRevision(recordId, 1)
+            ?: error("initial feedback must exist")
 
         assertThat(record.isDeleted).isTrue()
         assertThat(record.sourceRevision).isEqualTo(2)
-        assertThat(feedback.status).isEqualTo(CoachingFeedbackStatus.STALE)
-        assertThat(
-            coachingFeedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
-                FeedbackType.RECORD,
-                recordId,
-                2,
-            ),
-        ).isNull()
+        assertThat(feedback.status).isEqualTo(RecordFeedbackStatus.STALE)
+        assertThat(recordFeedbackRepository.findByRecord_IdAndSourceRevision(recordId, 2)).isNull()
     }
 
     private fun wateringCreateCommand() = FarmingRecordCommand.Create(

@@ -1,5 +1,8 @@
 package com.chamchamcham.application.coaching.rag.record
 
+import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
+
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test

@@ -2,16 +2,15 @@ package com.chamchamcham.api.coaching.controller
 
 import com.chamchamcham.api.exception.GlobalExceptionHandler
 import com.chamchamcham.application.coaching.feedback.RecordFeedbackQueryService
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackNextActionResult
+import com.chamchamcham.application.coaching.feedback.RecordFeedbackResultContent
 import com.chamchamcham.application.coaching.feedback.RecordFeedbackStatusResult
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionCategory
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackActionDue
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackAction
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContent
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGoodPoint
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.security.TokenProvider
-import com.chamchamcham.domain.coaching.CoachingFeedbackStatus
+import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
+import com.chamchamcham.domain.coaching.RecordFeedbackStatus
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
@@ -47,7 +46,7 @@ class RecordFeedbackControllerTest(
 
     @Test
     fun `get status returns only phase two readiness fields`() {
-        `when`(queryService.get(memberId, recordId)).thenReturn(result(status = CoachingFeedbackStatus.PENDING, inputPrepared = true))
+        `when`(queryService.get(memberId, recordId)).thenReturn(result(status = RecordFeedbackStatus.PENDING, inputPrepared = true))
 
         mockMvc.perform(
             get("/api/v1/farming-records/{recordId}/coaching-feedback", recordId)
@@ -69,25 +68,17 @@ class RecordFeedbackControllerTest(
     fun `ready response serializes feedback but not internal coaching fields`() {
         `when`(queryService.get(memberId, recordId)).thenReturn(
             result(
-                status = CoachingFeedbackStatus.READY,
-                content = RecordFeedbackContent(
-                    goodPoint = RecordFeedbackGoodPoint(
-                        basis = "점적관수",
-                        text = "점적관수로 토양 수분을 확인한 점이 좋았어요.",
-                        evidenceRefs = listOf("record:$recordId"),
-                    ),
+                status = RecordFeedbackStatus.READY,
+                content = RecordFeedbackResultContent(
+                    goodPoint = "점적관수로 토양 수분을 확인한 점이 좋았어요.",
                     nextActions = listOf(
-                        RecordFeedbackAction(
-                            basis = "토양 표면",
+                        RecordFeedbackNextActionResult(
                             text = "오후에 토양 표면이 마르는지 한 번 더 확인하세요.",
-                            evidenceRefs = listOf("record:$recordId"),
                             due = RecordFeedbackActionDue.TODAY,
                             category = RecordFeedbackActionCategory.IRRIGATION,
                         ),
-                        RecordFeedbackAction(
-                            basis = "배수로",
+                        RecordFeedbackNextActionResult(
                             text = "이번 주 안에 배수로 주변의 막힌 흙을 정리하세요.",
-                            evidenceRefs = listOf("doc-1"),
                             due = RecordFeedbackActionDue.THIS_WEEK,
                             category = RecordFeedbackActionCategory.CULTIVATION,
                         ),
@@ -121,7 +112,7 @@ class RecordFeedbackControllerTest(
 
     @Test
     fun `regenerate returns retried pending status`() {
-        `when`(queryService.regenerate(memberId, recordId)).thenReturn(result(status = CoachingFeedbackStatus.PENDING))
+        `when`(queryService.regenerate(memberId, recordId)).thenReturn(result(status = RecordFeedbackStatus.PENDING))
 
         mockMvc.perform(
             post("/api/v1/farming-records/{recordId}/coaching-feedback/regenerate", recordId)
@@ -185,10 +176,10 @@ class RecordFeedbackControllerTest(
     }
 
     private fun result(
-        status: CoachingFeedbackStatus,
+        status: RecordFeedbackStatus,
         inputPrepared: Boolean = false,
         failureCode: String? = null,
-        content: RecordFeedbackContent? = null,
+        content: RecordFeedbackResultContent? = null,
     ) = RecordFeedbackStatusResult(
         feedbackId = feedbackId,
         recordId = recordId,

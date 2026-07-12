@@ -4,19 +4,20 @@ import com.chamchamcham.application.coaching.rag.common.RagAuditStatus
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContext
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationResult
 import com.chamchamcham.application.coaching.rag.record.RecordFeedbackGenerationService
-import com.chamchamcham.domain.coaching.CoachingFeedbackRepository
-import com.chamchamcham.domain.coaching.CoachingFeedbackStatus
-import com.fasterxml.jackson.core.type.TypeReference
+import com.chamchamcham.domain.coaching.RecordFeedback
+import com.chamchamcham.domain.coaching.RecordFeedbackNextActionDraft
+import com.chamchamcham.domain.coaching.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.RecordFeedbackStatus
 import com.fasterxml.jackson.databind.ObjectMapper
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.TransactionTemplate
-import mu.KotlinLogging
 
 @Service
 class RecordFeedbackGenerationProcessor(
-    private val feedbackRepository: CoachingFeedbackRepository,
+    private val feedbackRepository: RecordFeedbackRepository,
     private val generationService: RecordFeedbackGenerationService,
     private val objectMapper: ObjectMapper,
     transactionManager: PlatformTransactionManager,
@@ -70,13 +71,23 @@ class RecordFeedbackGenerationProcessor(
         generationResult: RecordFeedbackGenerationResult,
     ) {
         writeTransaction.executeWithoutResult {
-            val feedback = feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId) ?: return@executeWithoutResult
+            val feedback = feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)
+                ?: return@executeWithoutResult
             if (!feedback.matches(event, snapshot)) {
                 return@executeWithoutResult
             }
 
             feedback.markReady(
-                structuredResult = objectMapper.convertValue(generationResult.content, RESULT_TYPE),
+                goodPointBasis = generationResult.content.goodPoint.basis,
+                goodPointText = generationResult.content.goodPoint.text,
+                nextActions = generationResult.content.nextActions.map {
+                    RecordFeedbackNextActionDraft(
+                        due = it.due,
+                        category = it.category,
+                        basis = it.basis,
+                        text = it.text,
+                    )
+                },
                 citations = generationResult.citations,
                 auditStatus = generationResult.auditStatus(),
                 auditWarnings = generationResult.auditWarnings,
@@ -92,7 +103,8 @@ class RecordFeedbackGenerationProcessor(
         failureCode: RecordFeedbackFailureCode,
     ) {
         writeTransaction.executeWithoutResult {
-            val feedback = feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId) ?: return@executeWithoutResult
+            val feedback = feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)
+                ?: return@executeWithoutResult
             if (!feedback.matches(event, snapshot)) {
                 return@executeWithoutResult
             }
@@ -101,12 +113,11 @@ class RecordFeedbackGenerationProcessor(
         }
     }
 
-    private fun com.chamchamcham.domain.coaching.CoachingFeedback.matches(
+    private fun RecordFeedback.matches(
         event: RecordFeedbackGenerationRequested,
         snapshot: Map<String, Any?>,
     ): Boolean {
-        val record = record ?: return false
-        return status == CoachingFeedbackStatus.PENDING &&
+        return status == RecordFeedbackStatus.PENDING &&
             record.id == event.recordId &&
             sourceRevision == event.sourceRevision &&
             inputSnapshot == snapshot
@@ -141,6 +152,5 @@ class RecordFeedbackGenerationProcessor(
 
     private companion object {
         val logger = KotlinLogging.logger {}
-        val RESULT_TYPE = object : TypeReference<Map<String, Any?>>() {}
     }
 }

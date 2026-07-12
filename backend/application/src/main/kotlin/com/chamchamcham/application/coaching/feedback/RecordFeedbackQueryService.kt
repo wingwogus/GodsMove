@@ -1,15 +1,12 @@
 package com.chamchamcham.application.coaching.feedback
 
-import com.chamchamcham.application.coaching.rag.record.RecordFeedbackContent
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
-import com.chamchamcham.domain.coaching.CoachingFeedback
-import com.chamchamcham.domain.coaching.CoachingFeedbackRepository
-import com.chamchamcham.domain.coaching.CoachingFeedbackStatus
-import com.chamchamcham.domain.coaching.FeedbackType
+import com.chamchamcham.domain.coaching.RecordFeedback
+import com.chamchamcham.domain.coaching.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.RecordFeedbackStatus
 import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.farming.FarmingRecordRepository
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -17,9 +14,8 @@ import java.util.UUID
 @Service
 class RecordFeedbackQueryService(
     private val farmingRecordRepository: FarmingRecordRepository,
-    private val feedbackRepository: CoachingFeedbackRepository,
+    private val feedbackRepository: RecordFeedbackRepository,
     private val lifecycleService: RecordFeedbackLifecycleService,
-    private val objectMapper: ObjectMapper,
 ) {
     @Transactional(readOnly = true)
     fun get(memberId: UUID, recordId: UUID): RecordFeedbackStatusResult {
@@ -39,7 +35,7 @@ class RecordFeedbackQueryService(
             throw BusinessException(ErrorCode.RECORD_FEEDBACK_NOT_FOUND)
         }
 
-        if (current.status != CoachingFeedbackStatus.FAILED) {
+        if (current.status != RecordFeedbackStatus.FAILED) {
             throw BusinessException(ErrorCode.RECORD_FEEDBACK_REGENERATION_NOT_ALLOWED)
         }
 
@@ -50,28 +46,23 @@ class RecordFeedbackQueryService(
         farmingRecordRepository.findContextSourceByIdAndMemberId(recordId, memberId)
             ?: throw BusinessException(ErrorCode.FARMING_RECORD_NOT_FOUND)
 
-    private fun findCurrentOrStale(record: FarmingRecord): CoachingFeedback =
+    private fun findCurrentOrStale(record: FarmingRecord): RecordFeedback =
         findCurrent(record)
             ?: findLatestStale(record)
             ?: throw BusinessException(ErrorCode.RECORD_FEEDBACK_NOT_FOUND)
 
-    private fun findCurrent(record: FarmingRecord): CoachingFeedback? =
-        feedbackRepository.findByFeedbackTypeAndRecord_IdAndSourceRevision(
-            FeedbackType.RECORD,
+    private fun findCurrent(record: FarmingRecord): RecordFeedback? =
+        feedbackRepository.findByRecord_IdAndSourceRevision(requireNotNull(record.id), record.sourceRevision)
+
+    private fun findLatestStale(record: FarmingRecord): RecordFeedback? =
+        feedbackRepository.findTopByRecord_IdAndStatusOrderByUpdatedAtDesc(
             requireNotNull(record.id),
-            record.sourceRevision,
+            RecordFeedbackStatus.STALE,
         )
 
-    private fun findLatestStale(record: FarmingRecord): CoachingFeedback? =
-        feedbackRepository.findTopByFeedbackTypeAndRecord_IdAndStatusOrderByUpdatedAtDesc(
-            FeedbackType.RECORD,
-            requireNotNull(record.id),
-            CoachingFeedbackStatus.STALE,
-        )
-
-    private fun CoachingFeedback.toStatusResult(): RecordFeedbackStatusResult = RecordFeedbackStatusResult(
+    private fun RecordFeedback.toStatusResult(): RecordFeedbackStatusResult = RecordFeedbackStatusResult(
         feedbackId = requireNotNull(id),
-        recordId = requireNotNull(record?.id),
+        recordId = requireNotNull(record.id),
         status = status,
         sourceRevision = sourceRevision,
         inputPrepared = inputSnapshot != null,
@@ -81,22 +72,26 @@ class RecordFeedbackQueryService(
         updatedAt = updatedAt,
     )
 
-    private fun CoachingFeedback.toContent(): RecordFeedbackContent? {
-        if (status != CoachingFeedbackStatus.READY) {
+    private fun RecordFeedback.toContent(): RecordFeedbackResultContent? {
+        if (status != RecordFeedbackStatus.READY) {
             return null
         }
 
-        val result = try {
-            objectMapper.convertValue(
-                structuredResult ?: throw IllegalStateException("READY record feedback has no structured result"),
-                RecordFeedbackContent::class.java,
-            )
-        } catch (exception: IllegalStateException) {
-            throw exception
-        } catch (exception: RuntimeException) {
-            throw IllegalStateException("READY record feedback has malformed structured result", exception)
+        val goodPoint = goodPointText ?: throw IllegalStateException("READY record feedback has no good point")
+        val nextActions = nextActions()
+        if (nextActions.size !in 2..3) {
+            throw IllegalStateException("READY record feedback has invalid next action count")
         }
 
-        return result
+        return RecordFeedbackResultContent(
+            goodPoint = goodPoint,
+            nextActions = nextActions.map {
+                RecordFeedbackNextActionResult(
+                    text = it.text,
+                    due = it.due,
+                    category = it.category,
+                )
+            },
+        )
     }
 }
