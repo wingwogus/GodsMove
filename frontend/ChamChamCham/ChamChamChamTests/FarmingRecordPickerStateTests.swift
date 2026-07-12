@@ -39,4 +39,14 @@ struct FarmingRecordPickerStateTests {
         #expect(FarmingRecordPickerView.Layout.cardSpacing == 16)
         #expect(FarmingRecordPickerView.Layout.listTopInset == 8)
     }
+
+    @Test("selected crop sample keeps the captured multi-card list")
+    func selectedCropSample() {
+        let records = FarmingRecordPreview.samples
+        let selected = records[0]
+        let state = FarmingRecordPickerState(records: records, selectedRecord: selected)
+
+        #expect(state.filteredRecords.count >= 3)
+        #expect(state.filteredRecords.allSatisfy { $0.cropName == selected.cropName })
+    }
 }

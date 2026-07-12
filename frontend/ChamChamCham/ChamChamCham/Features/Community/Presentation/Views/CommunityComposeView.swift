@@ -267,7 +267,13 @@ struct CommunityComposeView: View {
     // MARK: - Images
 
     private var imageSection: some View {
-        VStack(alignment: .leading, spacing: Layout.imageSpacing) {
+        let attachmentCount = viewModel.attachments.count
+        let remainingSelectionCount = CommunityComposeViewModel.maxImages - attachmentCount
+        let uploadSlot = AppImageUploadSlot(
+            label: "\(attachmentCount)/\(CommunityComposeViewModel.maxImages)"
+        )
+
+        return VStack(alignment: .leading, spacing: Layout.imageSpacing) {
             Text("사진 첨부하기")
                 .appTypography(.bodyMedium)
                 .foregroundStyle(Color.Text.default)
@@ -278,10 +284,10 @@ struct CommunityComposeView: View {
                     if viewModel.canAddImage {
                         PhotosPicker(
                             selection: $pickerItems,
-                            maxSelectionCount: CommunityComposeViewModel.maxImages - viewModel.attachments.count,
+                            maxSelectionCount: remainingSelectionCount,
                             matching: .images
                         ) {
-                            AppImageUploadSlot(label: "\(viewModel.attachments.count)/\(CommunityComposeViewModel.maxImages)")
+                            uploadSlot
                         }
                     }
 

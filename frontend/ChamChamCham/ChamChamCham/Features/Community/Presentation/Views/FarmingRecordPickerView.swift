@@ -272,5 +272,25 @@ struct FarmingRecordPreview: Identifiable, Hashable, Sendable {
             imageStartHex: 0xE6F7BF,
             imageEndHex: 0x8CC610
         ),
+        .init(
+            id: UUID(uuidString: "7C533075-A8DC-44B8-B4BE-E1EEC1BB30BF")!,
+            dateText: "07/04",
+            cropName: "딸기",
+            category: "필수 데이터",
+            title: "영농 활동 카테고리",
+            caption: "작성 내용은 최대 2줄입니다. 작성 내용은 최대 2줄입니다.",
+            imageStartHex: 0x95DFA5,
+            imageEndHex: 0x33966A
+        ),
+        .init(
+            id: UUID(uuidString: "D0A84045-3563-4D90-9DC7-51B5FDB25586")!,
+            dateText: "07/03",
+            cropName: "딸기",
+            category: "필수 데이터",
+            title: "영농 활동 카테고리",
+            caption: "작성 내용은 최대 2줄입니다. 작성 내용은 최대 2줄입니다.",
+            imageStartHex: 0xC2EBC9,
+            imageEndHex: 0x55A977
+        ),
     ]
 }
