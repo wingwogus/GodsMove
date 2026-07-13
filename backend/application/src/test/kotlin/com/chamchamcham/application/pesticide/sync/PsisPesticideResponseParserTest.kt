@@ -47,4 +47,65 @@ class PsisPesticideResponseParserTest {
 
         org.junit.jupiter.api.Assertions.assertThrows(Exception::class.java) { parser.parse(xml) }
     }
+
+    @Test
+    fun `parseEnvelope extracts resultCode, resultMsg, totalCount and items from an error envelope`() {
+        val xml = """
+            <response>
+              <header>
+                <resultCode>03</resultCode>
+                <resultMsg>NODATA_ERROR</resultMsg>
+              </header>
+              <body>
+                <items/>
+                <totalCount>0</totalCount>
+              </body>
+            </response>
+        """.trimIndent()
+
+        val envelope = parser.parseEnvelope(xml)
+
+        assertThat(envelope.resultCode).isEqualTo("03")
+        assertThat(envelope.resultMsg).isEqualTo("NODATA_ERROR")
+        assertThat(envelope.totalCount).isEqualTo(0)
+        assertThat(envelope.items).isEmpty()
+    }
+
+    @Test
+    fun `parseEnvelope reads totalCount and items from a success envelope`() {
+        val xml = """
+            <response>
+              <header>
+                <resultCode>00</resultCode>
+                <resultMsg>NORMAL_SERVICE</resultMsg>
+              </header>
+              <body>
+                <items>
+                  <item>
+                    <cropNm>감자</cropNm>
+                  </item>
+                </items>
+                <totalCount>1</totalCount>
+              </body>
+            </response>
+        """.trimIndent()
+
+        val envelope = parser.parseEnvelope(xml)
+
+        assertThat(envelope.resultCode).isEqualTo("00")
+        assertThat(envelope.totalCount).isEqualTo(1)
+        assertThat(envelope.items).hasSize(1)
+    }
+
+    @Test
+    fun `parseEnvelope leaves totalCount null when the tag is absent`() {
+        val xml = "<response><body><items/></body></response>"
+
+        val envelope = parser.parseEnvelope(xml)
+
+        assertThat(envelope.resultCode).isNull()
+        assertThat(envelope.resultMsg).isNull()
+        assertThat(envelope.totalCount).isNull()
+        assertThat(envelope.items).isEmpty()
+    }
 }

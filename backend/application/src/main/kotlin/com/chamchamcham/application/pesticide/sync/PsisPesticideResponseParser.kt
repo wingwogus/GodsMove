@@ -14,7 +14,9 @@ import javax.xml.parsers.DocumentBuilderFactory
  */
 @Component
 class PsisPesticideResponseParser {
-    fun parse(xml: String): List<Map<String, String>> {
+    fun parse(xml: String): List<Map<String, String>> = parseEnvelope(xml).items
+
+    fun parseEnvelope(xml: String): PsisPesticideEnvelope {
         val factory = DocumentBuilderFactory.newInstance().apply {
             isNamespaceAware = false
             setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
@@ -25,14 +27,28 @@ class PsisPesticideResponseParser {
             setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "")
         }
         val document = factory.newDocumentBuilder().parse(InputSource(StringReader(xml)))
-        val itemNodes = document.getElementsByTagName("item")
 
-        return (0 until itemNodes.length).map { index ->
-            val itemElement = itemNodes.item(index) as Element
+        val items = (0 until document.getElementsByTagName("item").length).map { index ->
+            val itemElement = document.getElementsByTagName("item").item(index) as Element
             val children = itemElement.childNodes
             (0 until children.length)
                 .mapNotNull { children.item(it) as? Element }
                 .associate { it.tagName to it.textContent.trim() }
         }
+
+        return PsisPesticideEnvelope(
+            resultCode = firstTagText(document, "resultCode"),
+            resultMsg = firstTagText(document, "resultMsg"),
+            totalCount = firstTagText(document, "totalCount")?.toIntOrNull(),
+            items = items,
+        )
+    }
+
+    private fun firstTagText(document: org.w3c.dom.Document, tagName: String): String? {
+        val nodes = document.getElementsByTagName(tagName)
+        if (nodes.length == 0) {
+            return null
+        }
+        return (nodes.item(0) as Element).textContent.trim()
     }
 }
