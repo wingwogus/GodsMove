@@ -128,7 +128,7 @@ object RecordFeedbackOutputValidator {
     private const val MIN_ACTION_COUNT = 2
     private const val MAX_ACTION_COUNT = 3
     private const val MIN_TEXT_LENGTH = 15
-    private const val MAX_TEXT_LENGTH = 45
+    private const val MAX_TEXT_LENGTH = 60
     private const val MIN_BASIS_TOKEN_LENGTH = 2
     private val BASIS_TOKEN_REGEX = Regex("[\\p{L}\\p{N}]+")
 }

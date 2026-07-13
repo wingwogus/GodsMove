@@ -23,7 +23,7 @@ class RecordFeedbackOutputValidatorTest {
     }
 
     @Test
-    fun `rejects text outside 15 to 45 characters and unknown evidence`() {
+    fun `rejects text outside 15 to 60 characters and unknown evidence`() {
         val invalid = validResult().copy(
             goodPoint = validItem(text = "짧음", refs = listOf("unknown")),
         )
@@ -65,7 +65,7 @@ class RecordFeedbackOutputValidatorTest {
     }
 
     @Test
-    fun `accepts text at exact 15 and 45 character boundaries`() {
+    fun `accepts text at exact 15 and 60 character boundaries`() {
         val valid = validResult().copy(
             goodPoint = validItem(basis = "토양", text = textOfLengthWithBasis("토양", 15)),
             nextActions = listOf(
@@ -73,7 +73,7 @@ class RecordFeedbackOutputValidatorTest {
                     due = RecordFeedbackActionDue.THIS_WEEK,
                     category = RecordFeedbackActionCategory.WEATHER,
                     basis = "비예보",
-                    text = textOfLengthWithBasis("비예보", 45),
+                    text = textOfLengthWithBasis("비예보", 60),
                     refs = listOf("weather:2026-07-04"),
                 ),
                 validAction(basis = "토양", text = textOfLengthWithBasis("토양", 15)),
@@ -91,7 +91,7 @@ class RecordFeedbackOutputValidatorTest {
     }
 
     @Test
-    fun `rejects text at 14 and 46 character boundaries`() {
+    fun `rejects text at 14 and 61 character boundaries`() {
         val invalid = validResult().copy(
             goodPoint = validItem(basis = "토양", text = textOfLengthWithBasis("토양", 14)),
             nextActions = listOf(
@@ -99,7 +99,7 @@ class RecordFeedbackOutputValidatorTest {
                     due = RecordFeedbackActionDue.THIS_WEEK,
                     category = RecordFeedbackActionCategory.WEATHER,
                     basis = "비예보",
-                    text = textOfLengthWithBasis("비예보", 46),
+                    text = textOfLengthWithBasis("비예보", 61),
                     refs = listOf("weather:2026-07-04"),
                 ),
                 validAction(),

@@ -28,7 +28,13 @@ class RecordFeedbackPromptBuilderTest {
         assertThat(prompt.system).contains("예보는 확정된 날씨처럼 단정하지 않는다")
         assertThat(prompt.system).contains("잘한 점은 정확히 1개만 작성한다")
         assertThat(prompt.system).contains("다음 행동은 2~3개만 작성한다")
-        assertThat(prompt.system).contains("각 text는 15~45자로 작성한다")
+        assertThat(prompt.system).contains(
+            "잘한 점 text는 \"<기록의 구체 행동>한 점은 잘했어요.\" 형식으로 작성한다.",
+            "잘한 점에는 이유, 조언, 다음 행동을 덧붙이지 않는다.",
+            "다음 행동 text는 현재 근거나 목적을 먼저 말한 뒤 행동을 이어 한 문장으로 작성한다.",
+            "행동만 단독으로 쓰거나, 행동 뒤에 이유를 별도 문장으로 덧붙이지 않는다.",
+            "각 text는 15~60자로 작성한다.",
+        )
         assertThat(prompt.system).contains("응답은 RecordFeedbackContent JSON schema만 따른다")
         assertThat(prompt.system).contains("goodPoint", "nextActions", "basis", "text", "evidenceRefs")
         assertThat(prompt.system).doesNotContain(

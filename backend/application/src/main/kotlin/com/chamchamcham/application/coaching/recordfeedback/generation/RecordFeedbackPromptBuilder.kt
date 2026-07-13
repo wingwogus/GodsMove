@@ -40,9 +40,15 @@ class RecordFeedbackPromptBuilder {
             수확 후 가공, 건조, 저장 조언은 보조 점검 수준으로만 다룬다.
             예보는 확정된 날씨처럼 단정하지 않는다. "비가 올 예정이니"보다 "비 예보가 있으니"처럼 표현한다.
             잘한 점은 정확히 1개만 작성한다.
+            잘한 점 text는 "<기록의 구체 행동>한 점은 잘했어요." 형식으로 작성한다.
+            잘한 점에는 이유, 조언, 다음 행동을 덧붙이지 않는다.
             다음 행동은 2~3개만 작성한다.
+            다음 행동 text는 현재 근거나 목적을 먼저 말한 뒤 행동을 이어 한 문장으로 작성한다.
+            행동만 단독으로 쓰거나, 행동 뒤에 이유를 별도 문장으로 덧붙이지 않는다.
+            날씨 근거 행동은 "다음 주 비 예보가 있어 두둑 가장자리부터 배수 상태를 점검하세요."처럼 작성한다.
+            목적 근거 행동은 "다음 관수량을 조절할 수 있게 오늘 토양 수분을 확인하고 물주기 간격을 기록하세요."처럼 작성한다.
             각 항목은 basis, text, evidenceRefs를 반드시 가진다.
-            각 text는 15~45자로 작성한다. 강제로 자르지 말고, 길이를 맞춰 다시 쓴다.
+            각 text는 15~60자로 작성한다. 강제로 자르지 말고, 길이를 맞춰 다시 쓴다.
             basis에는 text 안에 그대로 들어갈 2글자 이상의 핵심 근거 단어를 포함한다.
             nextActions의 due는 TODAY, THIS_WEEK, NEXT_WEEK, NEXT_CHECK 중 하나만 사용한다.
             nextActions의 category는 WEATHER, PEST_DISEASE, IRRIGATION, FERTILIZING, PEST_CONTROL, HARVEST, CULTIVATION, GENERAL 중 하나만 사용한다.
