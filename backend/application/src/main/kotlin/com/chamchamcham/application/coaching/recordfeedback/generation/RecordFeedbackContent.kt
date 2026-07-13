@@ -1,7 +1,7 @@
 package com.chamchamcham.application.coaching.recordfeedback.generation
 
-import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
-import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionDue
 
 data class RecordFeedbackContent(
     val goodPoint: RecordFeedbackGoodPoint,

@@ -2,12 +2,12 @@ package com.chamchamcham.application.coaching.recordfeedback.lifecycle
 
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
-import com.chamchamcham.domain.coaching.RecordFeedback
-import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
-import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
-import com.chamchamcham.domain.coaching.RecordFeedbackNextActionDraft
-import com.chamchamcham.domain.coaching.RecordFeedbackRepository
-import com.chamchamcham.domain.coaching.RecordFeedbackStatus
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedback
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionDue
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackNextActionDraft
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackStatus
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm

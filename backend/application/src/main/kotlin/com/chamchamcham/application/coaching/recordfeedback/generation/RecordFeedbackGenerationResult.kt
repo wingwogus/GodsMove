@@ -1,6 +1,6 @@
 package com.chamchamcham.application.coaching.recordfeedback.generation
 
-import com.chamchamcham.application.coaching.rag.common.RagModelInfo
+import com.chamchamcham.application.coaching.common.RagModelInfo
 
 data class RecordFeedbackGenerationResult(
     val content: RecordFeedbackContent,

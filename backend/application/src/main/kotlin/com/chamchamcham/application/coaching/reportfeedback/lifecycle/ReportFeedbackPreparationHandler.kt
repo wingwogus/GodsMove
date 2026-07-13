@@ -2,8 +2,8 @@ package com.chamchamcham.application.coaching.reportfeedback.lifecycle
 
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackFailureCode
 import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackContextAssembler
-import com.chamchamcham.domain.coaching.ReportFeedbackRepository
-import com.chamchamcham.domain.coaching.ReportFeedbackStatus
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackRepository
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.fasterxml.jackson.core.type.TypeReference
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.context.ApplicationEventPublisher

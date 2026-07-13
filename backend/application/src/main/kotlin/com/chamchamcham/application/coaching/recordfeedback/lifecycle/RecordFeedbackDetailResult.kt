@@ -1,8 +1,8 @@
 package com.chamchamcham.application.coaching.recordfeedback.lifecycle
 
-import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
-import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
-import com.chamchamcham.domain.coaching.RecordFeedbackStatus
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionDue
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackStatus
 import java.time.LocalDateTime
 import java.util.UUID
 

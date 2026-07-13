@@ -1,6 +1,6 @@
 package com.chamchamcham.application.coaching.recordfeedback.generation
 
-import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionCategory
 
 object RecordFeedbackOutputValidator {
     fun validate(

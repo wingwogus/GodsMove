@@ -1,10 +1,10 @@
 package com.chamchamcham.application.coaching.recordfeedback.generation
 
-import com.chamchamcham.domain.coaching.RecordFeedbackActionCategory
-import com.chamchamcham.domain.coaching.RecordFeedbackActionDue
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionCategory
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionDue
 
-import com.chamchamcham.application.coaching.rag.common.RagProperties
-import com.chamchamcham.application.coaching.rag.common.RagSourceType
+import com.chamchamcham.application.coaching.common.RagProperties
+import com.chamchamcham.application.coaching.common.RagSourceType
 import com.chamchamcham.application.coaching.recordfeedback.RecordFeedbackFailureCode
 import com.chamchamcham.application.coaching.recordfeedback.RecordFeedbackGenerationFailure
 import com.fasterxml.jackson.databind.ObjectMapper

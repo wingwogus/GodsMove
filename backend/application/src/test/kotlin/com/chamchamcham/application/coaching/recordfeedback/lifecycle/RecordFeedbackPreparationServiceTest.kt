@@ -7,9 +7,9 @@ import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFee
 import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackFarmContext
 import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackMemberContext
 import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackRecordContext
-import com.chamchamcham.domain.coaching.RecordFeedback
-import com.chamchamcham.domain.coaching.RecordFeedbackRepository
-import com.chamchamcham.domain.coaching.RecordFeedbackStatus
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedback
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackStatus
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm

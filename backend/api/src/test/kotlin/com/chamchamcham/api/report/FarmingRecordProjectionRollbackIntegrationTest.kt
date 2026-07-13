@@ -18,7 +18,7 @@ import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.WateringRecordRepository
 import com.chamchamcham.domain.farming.WorkType
-import com.chamchamcham.domain.coaching.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackRepository
 import com.chamchamcham.domain.media.UploadedMedia
 import com.chamchamcham.domain.media.UploadedMediaRepository
 import com.chamchamcham.domain.media.UploadedMediaType

@@ -1,8 +1,8 @@
 package com.chamchamcham.application.coaching.reportfeedback.generation
 
-import com.chamchamcham.application.coaching.rag.common.RagModelInfo
-import com.chamchamcham.application.coaching.rag.common.RagProperties
-import com.chamchamcham.application.coaching.rag.common.RagSourceType
+import com.chamchamcham.application.coaching.common.RagModelInfo
+import com.chamchamcham.application.coaching.common.RagProperties
+import com.chamchamcham.application.coaching.common.RagSourceType
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackFailureCode
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackGenerationFailure
 import org.springframework.ai.chat.client.ChatClient

@@ -2,10 +2,10 @@ package com.chamchamcham.application.coaching.reportfeedback.lifecycle
 
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
-import com.chamchamcham.domain.coaching.ReportFeedback
-import com.chamchamcham.domain.coaching.ReportFeedbackItemSection
-import com.chamchamcham.domain.coaching.ReportFeedbackRepository
-import com.chamchamcham.domain.coaching.ReportFeedbackStatus
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedback
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackItemSection
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackRepository
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.chamchamcham.domain.report.FarmingCycleReportRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional

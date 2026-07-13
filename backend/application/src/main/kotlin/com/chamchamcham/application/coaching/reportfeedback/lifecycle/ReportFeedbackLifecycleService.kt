@@ -1,7 +1,7 @@
 package com.chamchamcham.application.coaching.reportfeedback.lifecycle
 
-import com.chamchamcham.domain.coaching.ReportFeedback
-import com.chamchamcham.domain.coaching.ReportFeedbackRepository
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedback
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackRepository
 import com.chamchamcham.domain.report.FarmingCycleReport
 import com.chamchamcham.domain.report.FarmingCycleReportStatus
 import org.springframework.context.ApplicationEventPublisher

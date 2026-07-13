@@ -1,8 +1,8 @@
 package com.chamchamcham.application.coaching.recordfeedback.lifecycle
 
-import com.chamchamcham.domain.coaching.RecordFeedback
-import com.chamchamcham.domain.coaching.RecordFeedbackRepository
-import com.chamchamcham.domain.coaching.RecordFeedbackStatus
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedback
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackStatus
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm
@@ -92,15 +92,15 @@ class RecordFeedbackLifecycleServiceTest {
     }
 
     private fun actions() = listOf(
-        com.chamchamcham.domain.coaching.RecordFeedbackNextActionDraft(
-            com.chamchamcham.domain.coaching.RecordFeedbackActionDue.TODAY,
-            com.chamchamcham.domain.coaching.RecordFeedbackActionCategory.IRRIGATION,
+        com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackNextActionDraft(
+            com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionDue.TODAY,
+            com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionCategory.IRRIGATION,
             "관수 기록",
             "오늘 토양을 확인하세요.",
         ),
-        com.chamchamcham.domain.coaching.RecordFeedbackNextActionDraft(
-            com.chamchamcham.domain.coaching.RecordFeedbackActionDue.THIS_WEEK,
-            com.chamchamcham.domain.coaching.RecordFeedbackActionCategory.CULTIVATION,
+        com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackNextActionDraft(
+            com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionDue.THIS_WEEK,
+            com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackActionCategory.CULTIVATION,
             "배수 기록",
             "이번 주 배수로를 점검하세요.",
         ),

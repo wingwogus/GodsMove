@@ -1,7 +1,7 @@
 package com.chamchamcham.application.coaching.reportfeedback.lifecycle
 
-import com.chamchamcham.domain.coaching.ReportFeedback
-import com.chamchamcham.domain.coaching.ReportFeedbackRepository
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedback
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackRepository
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm

@@ -1,6 +1,6 @@
 package com.chamchamcham.application.coaching.reportfeedback.generation
 
-import com.chamchamcham.application.coaching.rag.common.RagModelInfo
+import com.chamchamcham.application.coaching.common.RagModelInfo
 
 data class ReportFeedbackGenerationResult(
     val content: ReportFeedbackContent,

@@ -1,6 +1,6 @@
 package com.chamchamcham.application.coaching.reportfeedback.generation
 
-import com.chamchamcham.domain.coaching.ReportFeedbackItemSection
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackItemSection
 
 data class ReportFeedbackContent(
     val summary: String,

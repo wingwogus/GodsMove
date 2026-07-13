@@ -1,15 +1,15 @@
 package com.chamchamcham.application.coaching.recordfeedback.lifecycle
 
-import com.chamchamcham.application.coaching.rag.common.RagAuditStatus
+import com.chamchamcham.application.coaching.common.RagAuditStatus
 import com.chamchamcham.application.coaching.recordfeedback.RecordFeedbackFailureCode
 import com.chamchamcham.application.coaching.recordfeedback.RecordFeedbackGenerationFailure
 import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackContext
 import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackGenerationResult
 import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackGenerationService
-import com.chamchamcham.domain.coaching.RecordFeedback
-import com.chamchamcham.domain.coaching.RecordFeedbackNextActionDraft
-import com.chamchamcham.domain.coaching.RecordFeedbackRepository
-import com.chamchamcham.domain.coaching.RecordFeedbackStatus
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedback
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackNextActionDraft
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackStatus
 import com.fasterxml.jackson.databind.ObjectMapper
 import mu.KotlinLogging
 import org.springframework.stereotype.Service

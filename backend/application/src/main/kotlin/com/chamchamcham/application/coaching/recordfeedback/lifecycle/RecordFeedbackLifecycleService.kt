@@ -1,8 +1,8 @@
 package com.chamchamcham.application.coaching.recordfeedback.lifecycle
 
-import com.chamchamcham.domain.coaching.RecordFeedback
-import com.chamchamcham.domain.coaching.RecordFeedbackRepository
-import com.chamchamcham.domain.coaching.RecordFeedbackStatus
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedback
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackStatus
 import com.chamchamcham.domain.farming.FarmingRecord
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service

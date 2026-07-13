@@ -1,14 +1,14 @@
 package com.chamchamcham.application.coaching.reportfeedback.lifecycle
 
-import com.chamchamcham.application.coaching.rag.common.RagAuditStatus
+import com.chamchamcham.application.coaching.common.RagAuditStatus
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackFailureCode
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackGenerationFailure
 import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackContext
 import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackGenerationResult
 import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackGenerationService
-import com.chamchamcham.domain.coaching.ReportFeedbackItemDraft
-import com.chamchamcham.domain.coaching.ReportFeedbackRepository
-import com.chamchamcham.domain.coaching.ReportFeedbackStatus
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackItemDraft
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackRepository
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.stereotype.Component
 import org.springframework.transaction.PlatformTransactionManager
