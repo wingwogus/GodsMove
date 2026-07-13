@@ -2,7 +2,10 @@ package com.chamchamcham.api.pesticide.dto
 
 import com.chamchamcham.application.pesticide.PesticideResult
 import com.chamchamcham.application.pesticide.sync.PesticideProbeResult
+import com.chamchamcham.application.pesticide.sync.PesticideSyncResult
 import com.chamchamcham.application.pesticide.sync.PsisPesticideRow
+import com.chamchamcham.domain.pesticide.PesticideSyncJobStatus
+import java.time.LocalDateTime
 import java.util.UUID
 
 object PesticideResponses {
@@ -69,6 +72,44 @@ object PesticideResponses {
                 requiredKeyResolution = result.requiredKeyResolution,
                 mapped = result.mapped,
             )
+        }
+    }
+
+    data class PesticideSyncJobSummaryResponse(
+        val jobId: UUID,
+        val status: PesticideSyncJobStatus,
+    ) {
+        companion object {
+            fun from(result: PesticideSyncResult.JobSummary): PesticideSyncJobSummaryResponse =
+                PesticideSyncJobSummaryResponse(
+                    jobId = result.jobId,
+                    status = result.status,
+                )
+        }
+    }
+
+    data class PesticideSyncJobDetailResponse(
+        val jobId: UUID,
+        val status: PesticideSyncJobStatus,
+        val totalCount: Int,
+        val fetchedRowCount: Int,
+        val createdApplicationCount: Int,
+        val errorMessage: String?,
+        val startedAt: LocalDateTime,
+        val finishedAt: LocalDateTime?,
+    ) {
+        companion object {
+            fun from(result: PesticideSyncResult.JobDetail): PesticideSyncJobDetailResponse =
+                PesticideSyncJobDetailResponse(
+                    jobId = result.jobId,
+                    status = result.status,
+                    totalCount = result.totalCount,
+                    fetchedRowCount = result.fetchedRowCount,
+                    createdApplicationCount = result.createdApplicationCount,
+                    errorMessage = result.errorMessage,
+                    startedAt = result.startedAt,
+                    finishedAt = result.finishedAt,
+                )
         }
     }
 }
