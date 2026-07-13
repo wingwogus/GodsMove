@@ -1,5 +1,7 @@
 package com.chamchamcham.application.pesticide.sync
 
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.pesticide.Pest
 import com.chamchamcham.domain.pesticide.PestRepository
 import com.chamchamcham.domain.pesticide.Pesticide
@@ -41,7 +43,9 @@ class PesticideSyncService(
                     "type" to "xml",
                 )
             )
-            val rawRows = responseParser.parse(body)
+            val envelope = responseParser.parseEnvelope(body)
+            failOnUpstreamError(envelope)
+            val rawRows = envelope.items
             if (rawRows.isEmpty()) {
                 break
             }
@@ -61,6 +65,17 @@ class PesticideSyncService(
             fetchedRowCount = fetchedRowCount,
             createdApplicationCount = createdApplicationCount,
             pageCount = pagesFetched,
+        )
+    }
+
+    private fun failOnUpstreamError(envelope: PsisPesticideEnvelope) {
+        val resultCode = envelope.resultCode?.trim() ?: return
+        if (resultCode in SUCCESS_RESULT_CODES) {
+            return
+        }
+        throw BusinessException(
+            ErrorCode.PESTICIDE_SYNC_FAILED,
+            detail = mapOf("resultCode" to resultCode, "resultMsg" to envelope.resultMsg),
         )
     }
 
@@ -126,5 +141,6 @@ class PesticideSyncService(
 
     private companion object {
         const val DEFAULT_PAGE_SIZE = 1000
+        val SUCCESS_RESULT_CODES = setOf("00", "0")
     }
 }

@@ -1,5 +1,7 @@
 package com.chamchamcham.application.pesticide.sync
 
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.pesticide.Pest
 import com.chamchamcham.domain.pesticide.PestRepository
 import com.chamchamcham.domain.pesticide.Pesticide
@@ -7,6 +9,7 @@ import com.chamchamcham.domain.pesticide.PesticideApplication
 import com.chamchamcham.domain.pesticide.PesticideApplicationRepository
 import com.chamchamcham.domain.pesticide.PesticideRepository
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -123,6 +126,30 @@ class PesticideSyncServiceTest {
 
         assertEquals(0, secondResult.createdApplicationCount)
     }
+
+    @Test
+    fun `throws when upstream responds with an error resultCode`() {
+        `when`(transport.get(anyMap())).thenReturn(errorEnvelopeXml())
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.sync(pageSize = 100)
+        }
+
+        assertEquals(ErrorCode.PESTICIDE_SYNC_FAILED, exception.errorCode)
+    }
+
+    private fun errorEnvelopeXml(): String = """
+        <response>
+          <header>
+            <resultCode>03</resultCode>
+            <resultMsg>NODATA_ERROR</resultMsg>
+          </header>
+          <body>
+            <items/>
+            <totalCount>0</totalCount>
+          </body>
+        </response>
+    """.trimIndent()
 
     private fun oneRowPageXml(): String = """
         <response><body><items>
