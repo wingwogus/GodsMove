@@ -77,3 +77,7 @@ backend/api/src/test/kotlin/com/chamchamcham/api/dev/
 backend/application/src/main/kotlin/com/chamchamcham/application/coaching/rag/seed/
 backend/application/src/test/kotlin/com/chamchamcham/application/coaching/rag/seed/
 backend/docs/db/crop-seed.sql
+
+# 로컬 전용 시크릿(예: PSIS 농약 API 키) — 절대 커밋 금지
+backend/.psis.env
+.psis.env
