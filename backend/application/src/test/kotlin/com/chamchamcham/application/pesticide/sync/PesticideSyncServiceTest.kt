@@ -17,6 +17,7 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.ArgumentMatchers.anyMap
 import org.mockito.Mock
 import org.mockito.Mockito.lenient
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.transaction.support.AbstractPlatformTransactionManager
@@ -133,6 +134,32 @@ class PesticideSyncServiceTest {
 
         val exception = assertThrows(BusinessException::class.java) {
             service.sync(pageSize = 100)
+        }
+
+        assertEquals(ErrorCode.PESTICIDE_SYNC_FAILED, exception.errorCode)
+    }
+
+    @Test
+    fun `probe fetches one page and reports diagnostics without writing to the database`() {
+        `when`(transport.get(anyMap())).thenReturn(twoRowPageXml())
+
+        val result = service.probe(rows = 10)
+
+        assertEquals(null, result.totalCount)
+        assertEquals(2, result.itemCount)
+        assertEquals(listOf("aplyPestNm", "cropNm", "dltnMag", "prdtNm", "trdmrkNm"), result.distinctTagNames)
+        val mapped = result.mapped
+        requireNotNull(mapped)
+        assertEquals("만코제브 수화제", mapped.itemName)
+        verifyNoInteractions(pesticideRepository, pestRepository, pesticideApplicationRepository)
+    }
+
+    @Test
+    fun `probe throws when upstream responds with an error resultCode`() {
+        `when`(transport.get(anyMap())).thenReturn(errorEnvelopeXml())
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.probe(rows = 10)
         }
 
         assertEquals(ErrorCode.PESTICIDE_SYNC_FAILED, exception.errorCode)

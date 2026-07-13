@@ -68,6 +68,30 @@ class PesticideSyncService(
         )
     }
 
+    fun probe(rows: Int = DEFAULT_PROBE_ROWS): PesticideProbeResult {
+        val body = transport.get(
+            mapOf(
+                "pageNo" to "1",
+                "numOfRows" to rows.toString(),
+                "type" to "xml",
+            )
+        )
+        val envelope = responseParser.parseEnvelope(body)
+        failOnUpstreamError(envelope)
+
+        val sampleRawItem = envelope.items.firstOrNull()
+        return PesticideProbeResult(
+            resultCode = envelope.resultCode,
+            resultMsg = envelope.resultMsg,
+            totalCount = envelope.totalCount,
+            itemCount = envelope.items.size,
+            distinctTagNames = envelope.items.flatMap { it.keys }.distinct().sorted(),
+            sampleRawItem = sampleRawItem,
+            requiredKeyResolution = sampleRawItem?.let(rowMapper::diagnoseRequired) ?: emptyMap(),
+            mapped = sampleRawItem?.let(rowMapper::map),
+        )
+    }
+
     private fun failOnUpstreamError(envelope: PsisPesticideEnvelope) {
         val resultCode = envelope.resultCode?.trim() ?: return
         if (resultCode in SUCCESS_RESULT_CODES) {
@@ -141,6 +165,7 @@ class PesticideSyncService(
 
     private companion object {
         const val DEFAULT_PAGE_SIZE = 1000
+        const val DEFAULT_PROBE_ROWS = 10
         val SUCCESS_RESULT_CODES = setOf("00", "0")
     }
 }
