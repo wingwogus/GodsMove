@@ -154,4 +154,6 @@ private actor RecordingFarmRepository: FarmRepository {
             crops: []
         )
     }
+
+    func deleteFarm(id: UUID) async throws {}
 }

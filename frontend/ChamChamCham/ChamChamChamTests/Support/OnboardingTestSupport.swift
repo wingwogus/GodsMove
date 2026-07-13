@@ -82,6 +82,8 @@ actor FakeFarmRepository: FarmRepository {
         if callCount == failAtCall { throw FakeUploadError() }
         return OnboardingTestFactory.standaloneFarmResponse(name: request.name)
     }
+
+    func deleteFarm(id: UUID) async throws {}
 }
 
 @MainActor

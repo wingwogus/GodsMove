@@ -153,9 +153,12 @@
   전 화면 빌드는 통과. Figma 대조 시각 QA는 로그인 세션에서 수행.
 - **미수집 캡처 반영**: 좋아요 누른 글 탭 세부 레이아웃, 밭 삭제 모드 정식 디자인은
   미수집이라 합리적 기본으로 구현(추후 캡처 시 조정).
-- **뷰모델 테스트 미작성**: AGENTS는 뷰모델 테스트 우선을 권장. 신규 VM
-  (`ProfileMainViewModel`/`ProfileBasicInfoViewModel`/`FarmListViewModel`/`FarmAddViewModel`)
-  의 검증·페이지네이션·매핑 테스트는 후속 과제.
+- ✅ **뷰모델 테스트 작성 완료**(2026-07-13): `ProfileMainViewModelTests`(작물 표시 규칙,
+  탭별 mineOnly/likedOnly 쿼리, 게시판 필터/분류), `ProfileBasicInfoViewModelTests`(프리필,
+  검증 게이트, 저장 DTO 매핑), `FarmListViewModelTests`(삭제 모드/선택/삭제 호출),
+  `FarmAddViewModelTests`(검증, SaveFarmRequest 빌드), `SettingsViewModelTests`(로그아웃/탈퇴).
+  공유 목은 `ChamChamChamTests/Support/MyPageTestSupport.swift`. 옛 `MyPageViewModelTests`는
+  `SettingsViewModelTests`로 이관. **전체 117 tests / 30 suites 통과, 회귀 없음.**
 - **디자인 시스템 승인 대기**: 게시판 선택 미선택 칩 스타일(3단계) — `AppChip` variant 추가 여부.
 - **후속 기능**: 프로필 아바타 이미지 업로드(profileMediaId), 밭 편집(update API 미배포),
   자격 info 가이드, 알림 화면, 프로필 읽기 offline 캐시.
