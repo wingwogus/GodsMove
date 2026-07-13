@@ -33,6 +33,16 @@ class RecordFeedbackOutputValidatorTest {
     }
 
     @Test
+    fun `rejects text that does not end in a friendly honorific`() {
+        val invalid = validResult().copy(
+            goodPoint = validItem(text = "흙 상태를 꼼꼼하게 확인했다."),
+        )
+
+        assertThat(RecordFeedbackOutputValidator.validate(invalid, context, documents))
+            .contains("good_point_text_tone")
+    }
+
+    @Test
     fun `rejects weather action without weather evidence`() {
         val invalid = validResult(
             category = RecordFeedbackActionCategory.WEATHER,
@@ -226,8 +236,8 @@ class RecordFeedbackOutputValidatorTest {
     }
 
     private fun textOfLengthWithBasis(basis: String, length: Int): String {
-        require(basis.length <= length)
-        return basis + "가".repeat(length - basis.length)
+        require(basis.length < length)
+        return basis + "가".repeat(length - basis.length - 1) + "요"
     }
 
     private fun readFixture(name: String): RecordFeedbackContext {

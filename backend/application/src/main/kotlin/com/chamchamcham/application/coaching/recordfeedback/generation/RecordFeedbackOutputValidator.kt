@@ -89,6 +89,9 @@ object RecordFeedbackOutputValidator {
         if (item.text.length !in MIN_TEXT_LENGTH..MAX_TEXT_LENGTH) {
             warnings += "${prefix}_text_length"
         }
+        if (!item.text.hasFriendlyHonorificTone()) {
+            warnings += "${prefix}_text_tone"
+        }
         item.evidenceRefs
             .filter { it.isNotBlank() }
             .filterNot { it in allowedEvidenceRefs.ids }
@@ -101,6 +104,10 @@ object RecordFeedbackOutputValidator {
             text = text,
             evidenceRefs = evidenceRefs,
         )
+    }
+
+    private fun String.hasFriendlyHonorificTone(): Boolean {
+        return trimEnd().trimEnd('.', '!', '?', '…', '。').endsWith("요")
     }
 
     private data class AllowedEvidenceRefs(

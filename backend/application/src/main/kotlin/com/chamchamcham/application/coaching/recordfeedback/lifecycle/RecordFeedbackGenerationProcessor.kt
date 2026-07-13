@@ -180,7 +180,7 @@ class RecordFeedbackGenerationProcessor(
         val logger = KotlinLogging.logger {}
         const val INVALID_PRODUCT_OUTPUT_PREFIX = "invalid product output: "
         val SAFE_VALIDATION_DIAGNOSTIC = Regex(
-            "^(good_point|next_action_[0-9]+)_(basis_blank|text_blank|evidence_refs_blank|evidence_ref_blank|text_length)$" +
+            "^(good_point|next_action_[0-9]+)_(basis_blank|text_blank|evidence_refs_blank|evidence_ref_blank|text_length|text_tone)$" +
                 "|^(action_count|weather_action_without_weather_evidence|pest_disease_action_without_document_evidence)$",
         )
     }
