@@ -22,6 +22,7 @@ import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
+import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
@@ -62,6 +63,34 @@ class RecordFeedbackPreparationServiceTest {
         service.prepare(event)
 
         assertThat(feedback.inputSnapshot).isNotNull
+        verify(eventPublisher).publishEvent(org.mockito.Mockito.any(RecordFeedbackGenerationRequested::class.java))
+    }
+
+    @Test
+    fun `prepare publishes generation only after snapshot transaction resources are cleaned up`() {
+        val feedback = feedback()
+        val event = event(feedback)
+        val transactionManager = RecordingTransactionManager()
+        `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
+        `when`(feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)).thenReturn(feedback)
+        `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenReturn(context())
+        doAnswer {
+            assertThat(transactionManager.resourcesCleanedUp).isTrue()
+            null
+        }.`when`(eventPublisher).publishEvent(
+            org.mockito.Mockito.any(RecordFeedbackGenerationRequested::class.java),
+        )
+        val service = RecordFeedbackPreparationService(
+            feedbackRepository,
+            contextAssembler,
+            objectMapper,
+            eventPublisher,
+            transactionManager,
+        )
+
+        service.prepare(event)
+
+        assertThat(transactionManager.resourcesCleanedUp).isTrue()
         verify(eventPublisher).publishEvent(org.mockito.Mockito.any(RecordFeedbackGenerationRequested::class.java))
     }
 
@@ -133,5 +162,18 @@ class RecordFeedbackPreparationServiceTest {
         override fun doBegin(transaction: Any, definition: TransactionDefinition) = Unit
         override fun doCommit(status: DefaultTransactionStatus) = Unit
         override fun doRollback(status: DefaultTransactionStatus) = Unit
+    }
+
+    private class RecordingTransactionManager : AbstractPlatformTransactionManager() {
+        var resourcesCleanedUp = false
+            private set
+
+        override fun doGetTransaction(): Any = Any()
+        override fun doBegin(transaction: Any, definition: TransactionDefinition) = Unit
+        override fun doCommit(status: DefaultTransactionStatus) = Unit
+        override fun doRollback(status: DefaultTransactionStatus) = Unit
+        override fun doCleanupAfterCompletion(transaction: Any) {
+            resourcesCleanedUp = true
+        }
     }
 }

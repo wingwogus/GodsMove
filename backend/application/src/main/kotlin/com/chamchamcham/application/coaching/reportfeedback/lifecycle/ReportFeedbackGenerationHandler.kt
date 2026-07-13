@@ -10,11 +10,10 @@ import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackItemDraft
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackRepository
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.fasterxml.jackson.databind.ObjectMapper
+import org.springframework.context.event.EventListener
 import org.springframework.stereotype.Component
 import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.TransactionDefinition
-import org.springframework.transaction.event.TransactionPhase
-import org.springframework.transaction.event.TransactionalEventListener
 import org.springframework.transaction.support.TransactionTemplate
 
 @Component
@@ -28,7 +27,7 @@ class ReportFeedbackGenerationHandler(
         propagationBehavior = TransactionDefinition.PROPAGATION_REQUIRES_NEW
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @EventListener
     fun on(event: ReportFeedbackGenerationRequested) {
         val feedback = feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId) ?: return
         if (

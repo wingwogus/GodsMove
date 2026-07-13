@@ -60,29 +60,28 @@ class ReportFeedbackPreparationHandler(
             failureCode = ReportFeedbackFailureCode.CONTEXT_ASSEMBLY_FAILED
             null
         }
-        writeTransaction.executeWithoutResult {
+        val generationRequest = writeTransaction.execute {
             val locked = feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)
-                ?: return@executeWithoutResult
+                ?: return@execute null
             if (
                 locked.status != ReportFeedbackStatus.PENDING ||
                 locked.report.id != event.reportId ||
                 locked.workType != event.workType ||
                 locked.inputSnapshot != snapshotBeforePreparation
-            ) return@executeWithoutResult
+            ) return@execute null
             if (snapshot == null) {
                 locked.markFailed(requireNotNull(failureCode).name)
-                return@executeWithoutResult
+                return@execute null
             }
             locked.attachInputSnapshot(snapshot)
-            eventPublisher.publishEvent(
-                ReportFeedbackGenerationRequested(
-                    feedbackId = event.feedbackId,
-                    memberId = event.memberId,
-                    reportId = event.reportId,
-                    workType = event.workType,
-                ),
+            ReportFeedbackGenerationRequested(
+                feedbackId = event.feedbackId,
+                memberId = event.memberId,
+                reportId = event.reportId,
+                workType = event.workType,
             )
         }
+        generationRequest?.let(eventPublisher::publishEvent)
     }
 
     private companion object {

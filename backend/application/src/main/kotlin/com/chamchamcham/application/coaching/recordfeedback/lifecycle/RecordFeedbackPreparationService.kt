@@ -38,30 +38,30 @@ class RecordFeedbackPreparationService(
             Result.failure(exception)
         }
 
-        writeTransaction.executeWithoutResult {
+        val generationRequest = writeTransaction.execute {
             val lockedFeedback = feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)
-                ?: return@executeWithoutResult
+                ?: return@execute null
             if (!lockedFeedback.matches(event)) {
-                return@executeWithoutResult
+                return@execute null
             }
 
             snapshotResult.fold(
                 onSuccess = { snapshot ->
                     lockedFeedback.attachInputSnapshot(snapshot)
-                    eventPublisher.publishEvent(
-                        RecordFeedbackGenerationRequested(
-                            feedbackId = event.feedbackId,
-                            memberId = event.memberId,
-                            recordId = event.recordId,
-                            sourceRevision = event.sourceRevision,
-                        ),
+                    RecordFeedbackGenerationRequested(
+                        feedbackId = event.feedbackId,
+                        memberId = event.memberId,
+                        recordId = event.recordId,
+                        sourceRevision = event.sourceRevision,
                     )
                 },
                 onFailure = {
                     lockedFeedback.markFailed(RecordFeedbackFailureCode.CONTEXT_ASSEMBLY_FAILED.name)
+                    null
                 },
             )
         }
+        generationRequest?.let(eventPublisher::publishEvent)
     }
 
     private fun RecordFeedback.matches(event: RecordFeedbackPreparationRequested): Boolean {

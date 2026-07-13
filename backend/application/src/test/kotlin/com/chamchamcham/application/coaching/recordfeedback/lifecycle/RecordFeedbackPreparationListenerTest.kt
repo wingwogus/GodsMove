@@ -2,7 +2,9 @@ package com.chamchamcham.application.coaching.recordfeedback.lifecycle
 
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import org.springframework.context.event.EventListener
 import org.springframework.scheduling.annotation.Async
+import org.springframework.transaction.event.TransactionalEventListener
 
 class RecordFeedbackPreparationListenerTest {
     @Test
@@ -18,5 +20,7 @@ class RecordFeedbackPreparationListenerTest {
 
         assertThat(preparationOn.isAnnotationPresent(Async::class.java)).isTrue()
         assertThat(generationOn.isAnnotationPresent(Async::class.java)).isFalse()
+        assertThat(generationOn.isAnnotationPresent(EventListener::class.java)).isTrue()
+        assertThat(generationOn.isAnnotationPresent(TransactionalEventListener::class.java)).isFalse()
     }
 }

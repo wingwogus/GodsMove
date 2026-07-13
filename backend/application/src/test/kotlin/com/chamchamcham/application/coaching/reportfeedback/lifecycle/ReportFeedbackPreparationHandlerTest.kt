@@ -28,15 +28,18 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
 import org.mockito.Mock
+import org.mockito.Mockito.doAnswer
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.context.ApplicationEventPublisher
+import org.springframework.context.event.EventListener
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
 import org.springframework.scheduling.annotation.Async
 import org.springframework.transaction.TransactionDefinition
+import org.springframework.transaction.event.TransactionalEventListener
 import org.springframework.transaction.support.AbstractPlatformTransactionManager
 import org.springframework.transaction.support.DefaultTransactionStatus
 import java.time.LocalDateTime
@@ -118,6 +121,36 @@ class ReportFeedbackPreparationHandlerTest {
 
         assertThat(preparationOn.isAnnotationPresent(Async::class.java)).isTrue()
         assertThat(generationOn.isAnnotationPresent(Async::class.java)).isFalse()
+        assertThat(generationOn.isAnnotationPresent(EventListener::class.java)).isTrue()
+        assertThat(generationOn.isAnnotationPresent(TransactionalEventListener::class.java)).isFalse()
+    }
+
+    @Test
+    fun `preparation publishes generation only after snapshot transaction resources are cleaned up`() {
+        val feedback = pendingFeedback(WorkType.WATERING)
+        val event = preparationEvent(WorkType.WATERING)
+        val transactionManager = RecordingTransactionManager()
+        val transactionAwareHandler = ReportFeedbackPreparationHandler(
+            feedbackRepository,
+            contextAssembler,
+            objectMapper,
+            eventPublisher,
+            transactionManager,
+        )
+        `when`(feedbackRepository.findByIdAndMember_Id(feedbackId, memberId)).thenReturn(feedback)
+        `when`(feedbackRepository.findByIdAndMemberIdForUpdate(feedbackId, memberId)).thenReturn(feedback)
+        `when`(contextAssembler.assemble(memberId, reportId, WorkType.WATERING)).thenReturn(context())
+        doAnswer {
+            assertThat(transactionManager.resourcesCleanedUp).isTrue()
+            null
+        }.`when`(eventPublisher).publishEvent(
+            org.mockito.Mockito.any(ReportFeedbackGenerationRequested::class.java),
+        )
+
+        transactionAwareHandler.on(event)
+
+        assertThat(transactionManager.resourcesCleanedUp).isTrue()
+        verify(eventPublisher).publishEvent(org.mockito.Mockito.any(ReportFeedbackGenerationRequested::class.java))
     }
 
     @Test
@@ -268,5 +301,18 @@ class ReportFeedbackPreparationHandlerTest {
         override fun doBegin(transaction: Any, definition: TransactionDefinition) = Unit
         override fun doCommit(status: DefaultTransactionStatus) = Unit
         override fun doRollback(status: DefaultTransactionStatus) = Unit
+    }
+
+    private class RecordingTransactionManager : AbstractPlatformTransactionManager() {
+        var resourcesCleanedUp = false
+            private set
+
+        override fun doGetTransaction(): Any = Any()
+        override fun doBegin(transaction: Any, definition: TransactionDefinition) = Unit
+        override fun doCommit(status: DefaultTransactionStatus) = Unit
+        override fun doRollback(status: DefaultTransactionStatus) = Unit
+        override fun doCleanupAfterCompletion(transaction: Any) {
+            resourcesCleanedUp = true
+        }
     }
 }
