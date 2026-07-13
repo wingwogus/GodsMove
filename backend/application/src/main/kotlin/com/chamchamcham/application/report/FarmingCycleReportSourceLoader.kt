@@ -45,6 +45,7 @@ class FarmingCycleReportSourceLoader(
                 weatherCondition = record.weatherCondition,
                 weatherTemperature = record.weatherTemperature,
                 hasPhoto = snapshot.mediaRecordIds.contains(recordId),
+                memo = record.memo,
                 planting = when (record.workType) {
                     WorkType.PLANTING -> normalizePlanting(snapshot.plantingByRecordId.required(recordId))
                     else -> null

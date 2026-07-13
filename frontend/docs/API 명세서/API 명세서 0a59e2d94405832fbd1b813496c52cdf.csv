@@ -39,9 +39,10 @@ RECORD-004,영농일지 수정,PATCH,/api/v1/farming-records/{recordId},FarmingR
 RECORD-005,영농일지 삭제,DELETE,/api/v1/farming-records/{recordId},None,IdResponse
 RECORD-006,영농일지 사진 추가,POST,/api/v1/farming-records/{recordId}/media,RecordMediaUploadRequest,RecordMediaResponse
 RECORD-007,영농일지 사진 삭제,DELETE,/api/v1/farming-records/{recordId}/media/{mediaId},None,IdResponse
-RECORD-008,영농일지 코칭 피드백 조회,GET,/api/v1/farming-records/{recordId}/coaching-feedback,None,CoachingFeedbackResponse
-RECORD-009,영농일지 코칭 피드백 재생성,POST,/api/v1/farming-records/{recordId}/coaching-feedback/regenerate,None,CoachingFeedbackResponse
-REPORT-001,영농 리포트 조회,GET,/api/v1/reports/farming,"Query: periodType, from, to, farmId, cropId",FarmingReportResponse
+RECORD-008,영농일지 코칭 피드백 조회,GET,/api/v1/farming-records/{recordId}/feedback,None,CoachingFeedbackResponse
+RECORD-009,영농일지 코칭 피드백 재생성,POST,/api/v1/farming-records/{recordId}/feedback/regenerate,None,CoachingFeedbackResponse
+REPORT-001,영농 리포트 조회,GET,/api/v1/farming-reports,"Query: farmId, cropId, cursor, size",FarmingCycleReportResponse
+REPORT-002,영농 리포트 코칭 피드백 조회,GET,/api/v1/farming-reports/{reportId}/feedback,None,ReportFeedbackStatusResponse
 SEARCH-001,통합 검색,GET,/api/v1/search,"Query: q, type, cropId, workTypeId, from, to, page, size",SearchResponse
 USER-001,내 프로필 조회,GET,/api/v1/users/me,None,UserProfileResponse
 USER-003,내 프로필 수정,PATCH,/api/v1/users/me,UserProfileUpdateRequest,UserProfileResponse

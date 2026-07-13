@@ -1,5 +1,6 @@
 package com.chamchamcham.application.report
 
+import com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackLifecycleService
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
@@ -23,6 +24,7 @@ import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.inOrder
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import java.time.LocalDateTime
 import java.util.Optional
@@ -48,6 +50,7 @@ class FarmingCycleReportProjectionServiceTest {
     @Mock private lateinit var sourceLoader: FarmingCycleReportSourceLoader
     @Mock private lateinit var partitioner: FarmingCyclePartitioner
     @Mock private lateinit var reportRepository: FarmingCycleReportRepository
+    @Mock private lateinit var reportFeedbackLifecycleService: ReportFeedbackLifecycleService
 
     private lateinit var service: FarmingCycleReportProjectionService
     private lateinit var member: Member
@@ -64,6 +67,7 @@ class FarmingCycleReportProjectionServiceTest {
             partitioner = partitioner,
             statisticsCalculator = CycleReportStatisticsCalculator(),
             reportRepository = reportRepository,
+            reportFeedbackLifecycleService = reportFeedbackLifecycleService,
         )
         member = Member(id = memberId, email = "$memberId@example.com", passwordHash = null)
         farm = Farm(id = farmId, owner = member, name = "약초농장", roadAddress = "서울시 강남구")
@@ -116,6 +120,19 @@ class FarmingCycleReportProjectionServiceTest {
         assertThat(active.finalHarvestRecord?.id).isEqualTo(finalHarvestRecordId)
         assertThat(active.endsAt).isEqualTo(baseTime.plusDays(10))
         verify(reportRepository).save(active)
+        verify(reportFeedbackLifecycleService).enqueue(active)
+    }
+
+    @Test
+    fun `active report does not enqueue report feedback`() {
+        stubScope()
+        val source = listOf(wateringRecord(day = 1))
+        `when`(sourceLoader.load(scope)).thenReturn(source)
+        `when`(partitioner.partition(source)).thenReturn(listOf(activeSlice(day = 1)))
+
+        service.rebuild(scope)
+
+        verifyNoInteractions(reportFeedbackLifecycleService)
     }
 
     @Test

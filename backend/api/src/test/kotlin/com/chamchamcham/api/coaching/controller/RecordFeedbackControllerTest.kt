@@ -49,7 +49,7 @@ class RecordFeedbackControllerTest(
         `when`(queryService.get(memberId, recordId)).thenReturn(result(status = RecordFeedbackStatus.PENDING, inputPrepared = true))
 
         mockMvc.perform(
-            get("/api/v1/farming-records/{recordId}/coaching-feedback", recordId)
+            get("/api/v1/farming-records/{recordId}/feedback", recordId)
                 .with(authenticatedMember(memberId.toString())),
         )
             .andExpect(status().isOk)
@@ -88,7 +88,7 @@ class RecordFeedbackControllerTest(
         )
 
         mockMvc.perform(
-            get("/api/v1/farming-records/{recordId}/coaching-feedback", recordId)
+            get("/api/v1/farming-records/{recordId}/feedback", recordId)
                 .with(authenticatedMember(memberId.toString())),
         )
             .andExpect(status().isOk)
@@ -115,7 +115,7 @@ class RecordFeedbackControllerTest(
         `when`(queryService.regenerate(memberId, recordId)).thenReturn(result(status = RecordFeedbackStatus.PENDING))
 
         mockMvc.perform(
-            post("/api/v1/farming-records/{recordId}/coaching-feedback/regenerate", recordId)
+            post("/api/v1/farming-records/{recordId}/feedback/regenerate", recordId)
                 .with(authenticatedMember(memberId.toString())),
         )
             .andExpect(status().isOk)
@@ -125,7 +125,7 @@ class RecordFeedbackControllerTest(
 
     @Test
     fun `get status without principal returns unauthorized`() {
-        mockMvc.perform(get("/api/v1/farming-records/{recordId}/coaching-feedback", recordId))
+        mockMvc.perform(get("/api/v1/farming-records/{recordId}/feedback", recordId))
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.error.code", equalTo("AUTH_001")))
     }
@@ -133,7 +133,7 @@ class RecordFeedbackControllerTest(
     @Test
     fun `regenerate with invalid principal returns unauthorized`() {
         mockMvc.perform(
-            post("/api/v1/farming-records/{recordId}/coaching-feedback/regenerate", recordId)
+            post("/api/v1/farming-records/{recordId}/feedback/regenerate", recordId)
                 .with(authenticatedMember("not-a-uuid")),
         )
             .andExpect(status().isUnauthorized)
@@ -146,7 +146,7 @@ class RecordFeedbackControllerTest(
             .thenThrow(BusinessException(ErrorCode.FARMING_RECORD_NOT_FOUND))
 
         mockMvc.perform(
-            get("/api/v1/farming-records/{recordId}/coaching-feedback", recordId)
+            get("/api/v1/farming-records/{recordId}/feedback", recordId)
                 .with(authenticatedMember(memberId.toString())),
         )
             .andExpect(status().isNotFound)
@@ -159,7 +159,7 @@ class RecordFeedbackControllerTest(
             .thenThrow(BusinessException(ErrorCode.RECORD_FEEDBACK_REGENERATION_NOT_ALLOWED))
 
         mockMvc.perform(
-            post("/api/v1/farming-records/{recordId}/coaching-feedback/regenerate", recordId)
+            post("/api/v1/farming-records/{recordId}/feedback/regenerate", recordId)
                 .with(authenticatedMember(memberId.toString())),
         )
             .andExpect(status().isConflict)

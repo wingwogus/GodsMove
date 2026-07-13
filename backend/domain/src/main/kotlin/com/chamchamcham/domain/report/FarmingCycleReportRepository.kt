@@ -2,6 +2,7 @@ package com.chamchamcham.domain.report
 
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
+import java.time.LocalDateTime
 import java.util.UUID
 
 interface FarmingCycleReportRepository : JpaRepository<FarmingCycleReport, UUID> {
@@ -12,6 +13,15 @@ interface FarmingCycleReportRepository : JpaRepository<FarmingCycleReport, UUID>
         farmId: UUID,
         cropId: UUID,
         status: FarmingCycleReportStatus,
+    ): FarmingCycleReport?
+
+    fun findTopByMember_IdAndFarm_IdAndCrop_IdAndStatusAndEndsAtBeforeAndIdNotOrderByEndsAtDescIdDesc(
+        memberId: UUID,
+        farmId: UUID,
+        cropId: UUID,
+        status: FarmingCycleReportStatus,
+        beforeEndsAt: LocalDateTime,
+        excludedReportId: UUID,
     ): FarmingCycleReport?
 
     @Query(

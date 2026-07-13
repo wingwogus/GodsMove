@@ -56,6 +56,7 @@ data class CycleReportSourceRecord(
     val weatherCondition: String,
     val weatherTemperature: Int,
     val hasPhoto: Boolean,
+    val memo: String = "",
     val planting: PlantingReportSource? = null,
     val watering: WateringReportSource? = null,
     val fertilizing: FertilizingReportSource? = null,

@@ -1,5 +1,6 @@
 package com.chamchamcham.application.report
 
+import com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackLifecycleService
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.crop.CropRepository
@@ -23,6 +24,7 @@ class FarmingCycleReportProjectionService(
     private val partitioner: FarmingCyclePartitioner,
     private val statisticsCalculator: CycleReportStatisticsCalculator,
     private val reportRepository: FarmingCycleReportRepository,
+    private val reportFeedbackLifecycleService: ReportFeedbackLifecycleService,
 ) {
     fun rebuild(scope: ReportScope) {
         val farm = farmRepository.findOwnedByIdForReportUpdate(
@@ -51,6 +53,9 @@ class FarmingCycleReportProjectionService(
             val report = matched?.also { it.applyProjection(projection) }
                 ?: FarmingCycleReport.create(farm.owner, farm, crop, projection)
             reportRepository.save(report)
+            if (report.status == FarmingCycleReportStatus.COMPLETED) {
+                reportFeedbackLifecycleService.enqueue(report)
+            }
         }
 
         val obsolete = unmatched.values.filter { it.supersede() }

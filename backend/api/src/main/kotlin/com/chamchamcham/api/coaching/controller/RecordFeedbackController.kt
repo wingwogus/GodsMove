@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
-@RequestMapping("/api/v1/farming-records/{recordId}/coaching-feedback")
+@RequestMapping("/api/v1/farming-records/{recordId}/feedback")
 class RecordFeedbackController(
     private val queryService: RecordFeedbackQueryService,
 ) {
