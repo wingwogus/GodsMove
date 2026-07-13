@@ -14,10 +14,6 @@ object ReportFeedbackOutputValidator {
             warnings += "summary_text_tone"
         }
         val items = content.items()
-        if (items.isEmpty()) {
-            warnings += "items_empty"
-            return warnings
-        }
 
         val allowedRefs = buildSet {
             context.records.forEach { add("record:${it.id}") }

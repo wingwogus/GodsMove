@@ -23,7 +23,9 @@ class ReportFeedbackPromptBuilder {
         return ReportFeedbackPrompt(
             system = """
                 당신은 약용작물 재배 회고 코치다. 제공된 근거에 없는 수치나 사실을 만들지 않는다.
-                summary, strengths, improvements, nextCycleActions를 구조화해 응답한다.
+                지정된 대상 작업 타입 하나만 회고하고 다른 작업을 비교하거나 권고하지 않는다.
+                summary, strengths, improvements, nextActions를 구조화해 응답한다.
+                strengths, improvements, nextActions는 근거가 없으면 빈 배열로 응답해도 된다.
                 각 항목은 basis, text, evidenceRefs를 가져야 한다.
                 evidenceRefs에는 허용 evidenceRefs에 나열된 값을 정확히 그대로 사용한다.
                 통계 필드명이나 통계값은 evidenceRefs로 사용하지 않는다.
@@ -37,6 +39,7 @@ class ReportFeedbackPromptBuilder {
                 appendLine(allowedEvidenceRefs)
                 appendLine()
                 appendLine("대상 리포트: ${context.report.farmName} / ${context.report.cropName}")
+                appendLine("작업 타입: ${context.workType.name} (${context.workType.label})")
                 appendLine("기간: ${context.report.startsAt}~${context.report.endsAt}")
                 appendLine("통계: ${context.report.statistics}")
                 appendLine(previous)

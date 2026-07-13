@@ -36,7 +36,7 @@ class ReportFeedbackQueryService(
                 summary = requireNotNull(summary),
                 strengths = itemsFor(ReportFeedbackItemSection.STRENGTH),
                 improvements = itemsFor(ReportFeedbackItemSection.IMPROVEMENT),
-                nextCycleActions = itemsFor(ReportFeedbackItemSection.NEXT_CYCLE_ACTION),
+                nextCycleActions = itemsFor(ReportFeedbackItemSection.NEXT_ACTION),
             )
         } else {
             null

@@ -38,7 +38,10 @@ class ReportFeedbackPreparationHandler(
         val feedback = feedbackRepository.findByReport_IdAndMember_Id(event.reportId, event.memberId) ?: return
         if (feedback.status != ReportFeedbackStatus.PENDING) return
         val snapshot = runCatching {
-            objectMapper.convertValue(contextAssembler.assemble(event.memberId, event.reportId), SNAPSHOT_TYPE)
+            objectMapper.convertValue(
+                contextAssembler.assemble(event.memberId, event.reportId, feedback.workType),
+                SNAPSHOT_TYPE,
+            )
         }
         writeTransaction.executeWithoutResult {
             val locked = feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)

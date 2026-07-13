@@ -6,12 +6,12 @@ data class ReportFeedbackContent(
     val summary: String,
     val strengths: List<ReportFeedbackContentItem>,
     val improvements: List<ReportFeedbackContentItem>,
-    val nextCycleActions: List<ReportFeedbackContentItem>,
+    val nextActions: List<ReportFeedbackContentItem>,
 ) {
     fun items(): List<ReportFeedbackStructuredItem> = buildList {
         strengths.forEach { add(ReportFeedbackStructuredItem(ReportFeedbackItemSection.STRENGTH, it)) }
         improvements.forEach { add(ReportFeedbackStructuredItem(ReportFeedbackItemSection.IMPROVEMENT, it)) }
-        nextCycleActions.forEach { add(ReportFeedbackStructuredItem(ReportFeedbackItemSection.NEXT_CYCLE_ACTION, it)) }
+        nextActions.forEach { add(ReportFeedbackStructuredItem(ReportFeedbackItemSection.NEXT_ACTION, it)) }
     }
 }
 
