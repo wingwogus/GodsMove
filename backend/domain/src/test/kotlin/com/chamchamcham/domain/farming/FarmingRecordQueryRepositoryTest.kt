@@ -305,7 +305,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
                 record = record,
                 materialName = materialName,
                 amount = BigDecimal.TEN,
-                amountUnit = FertilizerAmountUnit.KG,
+                amountUnit = FertilizerAmountUnit.G,
             ),
             now
         )

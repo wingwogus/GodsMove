@@ -160,7 +160,7 @@ class FarmingRecordDetailValidatorTest {
             fertilizing = FarmingRecordCommand.FertilizingDetail(
                 materialName = "요소비료",
                 amount = BigDecimal.TEN,
-                amountUnit = FertilizerAmountUnit.KG,
+                amountUnit = FertilizerAmountUnit.G,
             ),
         ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }

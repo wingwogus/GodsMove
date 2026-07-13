@@ -152,7 +152,7 @@ class FarmingRecordControllerTest(
               "fertilizing":{
                 "materialName":" ",
                 "amount":10,
-                "amountUnit":"KG"
+                "amountUnit":"G"
               }
             }
         """.trimIndent()

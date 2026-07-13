@@ -48,7 +48,7 @@ class VoiceRecordCandidateAnalyzerTest {
             fertilizing = FarmingRecordCommand.FertilizingDetail(
                 materialName = "유박비료",
                 amount = java.math.BigDecimal("10"),
-                amountUnit = FertilizerAmountUnit.KG,
+                amountUnit = FertilizerAmountUnit.G,
             )
         )
 
