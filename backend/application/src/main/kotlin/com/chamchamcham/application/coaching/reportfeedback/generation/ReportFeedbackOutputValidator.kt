@@ -10,6 +10,9 @@ object ReportFeedbackOutputValidator {
         if (content.summary.isBlank()) {
             warnings += "summary_blank"
         }
+        if (!content.summary.hasFriendlyHonorificTone()) {
+            warnings += "summary_text_tone"
+        }
         val items = content.items()
         if (items.isEmpty()) {
             warnings += "items_empty"
@@ -30,6 +33,9 @@ object ReportFeedbackOutputValidator {
             if (item.text.isBlank()) {
                 warnings += "${structured.section.name.lowercase()}_text_blank"
             }
+            if (!item.text.hasFriendlyHonorificTone()) {
+                warnings += "${structured.section.name.lowercase()}_text_tone"
+            }
             if (item.evidenceRefs.none { it.isNotBlank() }) {
                 warnings += "${structured.section.name.lowercase()}_evidence_refs_blank"
             }
@@ -42,5 +48,9 @@ object ReportFeedbackOutputValidator {
             }
         }
         return warnings.distinct()
+    }
+
+    private fun String.hasFriendlyHonorificTone(): Boolean {
+        return trimEnd().trimEnd('.', '!', '?', '…', '。').endsWith("요")
     }
 }

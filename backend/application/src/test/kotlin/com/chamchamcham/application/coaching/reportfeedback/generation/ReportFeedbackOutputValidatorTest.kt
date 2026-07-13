@@ -35,8 +35,8 @@ class ReportFeedbackOutputValidatorTest {
     @Test
     fun `allows record-backed feedback without a retrieved technical document`() {
         val content = ReportFeedbackContent(
-            summary = "이번 사이클은 관수 기록을 꾸준히 남겼습니다.",
-            strengths = listOf(item("관수 1회", "관수 기록을 남겨 작업 흐름을 확인할 수 있습니다.")),
+            summary = "이번 사이클에는 관수 기록을 꾸준히 남겼어요.",
+            strengths = listOf(item("관수 1회", "관수 기록을 남겨 작업 흐름을 확인할 수 있어요.")),
             improvements = emptyList(),
             nextCycleActions = emptyList(),
         )
@@ -46,9 +46,9 @@ class ReportFeedbackOutputValidatorTest {
 
     @Test
     fun `rejects an unknown evidence reference and a duplicate item without a count cap`() {
-        val item = item("관수 1회", "관수 기록을 남겨 작업 흐름을 확인할 수 있습니다.")
+        val item = item("관수 1회", "관수 기록을 남겨 작업 흐름을 확인할 수 있어요.")
         val content = ReportFeedbackContent(
-            summary = "이번 사이클 요약입니다.",
+            summary = "이번 사이클 요약이에요.",
             strengths = listOf(item, item),
             improvements = listOf(item("기록 부족", "다음 사이클에는 추가 작업을 기록하세요.", "unknown")),
             nextCycleActions = emptyList(),
@@ -56,6 +56,19 @@ class ReportFeedbackOutputValidatorTest {
 
         assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
             .contains("duplicate_item", "unknown_evidence:unknown")
+    }
+
+    @Test
+    fun `rejects a summary and item text without friendly honorifics`() {
+        val content = ReportFeedbackContent(
+            summary = "이번 사이클은 관수 기록을 꾸준히 남겼습니다.",
+            strengths = listOf(item("관수 1회", "관수 기록을 남겨 작업 흐름을 확인할 수 있습니다.")),
+            improvements = emptyList(),
+            nextCycleActions = emptyList(),
+        )
+
+        assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
+            .contains("summary_text_tone", "strength_text_tone")
     }
 
     private fun item(

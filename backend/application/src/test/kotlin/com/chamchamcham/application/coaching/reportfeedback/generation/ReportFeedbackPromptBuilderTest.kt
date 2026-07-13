@@ -26,6 +26,8 @@ class ReportFeedbackPromptBuilderTest {
         assertThat(prompt.system)
             .contains("evidenceRefs에는 허용 evidenceRefs에 나열된 값을 정확히 그대로 사용한다.")
             .contains("통계 필드명이나 통계값은 evidenceRefs로 사용하지 않는다.")
+            .contains("summary와 모든 text는 친근한 존댓말로 끝낸다.")
+            .contains("다음 행동은 \"~하세요.\"처럼, 회고와 요약은 \"~했어요.\"처럼 작성한다.")
         assertThat(prompt.user)
             .contains(
                 """

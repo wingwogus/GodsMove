@@ -29,6 +29,8 @@ class ReportFeedbackPromptBuilder {
                 통계 필드명이나 통계값은 evidenceRefs로 사용하지 않는다.
                 기술 문서가 없으면 기술 권고를 억지로 만들지 말고 기록 근거의 코칭만 제공한다.
                 같은 항목을 반복하지 말고, 다음 사이클 계획은 실행 방법이 드러나게 작성한다.
+                summary와 모든 text는 친근한 존댓말로 끝낸다.
+                다음 행동은 "~하세요."처럼, 회고와 요약은 "~했어요."처럼 작성한다.
             """.trimIndent(),
             user = buildString {
                 appendLine("허용 evidenceRefs:")
