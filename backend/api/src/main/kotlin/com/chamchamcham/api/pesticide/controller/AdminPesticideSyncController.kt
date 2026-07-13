@@ -1,11 +1,15 @@
 package com.chamchamcham.api.pesticide.controller
 
 import com.chamchamcham.api.common.ApiResponse
+import com.chamchamcham.api.pesticide.dto.PesticideResponses.PesticideProbeResponse
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.pesticide.sync.PesticideSyncResult
 import com.chamchamcham.application.pesticide.sync.PesticideSyncService
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 /**
@@ -22,5 +26,16 @@ class AdminPesticideSyncController(
     fun sync(): ResponseEntity<ApiResponse<PesticideSyncResult>> {
         val result = pesticideSyncService.sync()
         return ResponseEntity.ok(ApiResponse.ok(result))
+    }
+
+    @PostMapping("/probe")
+    fun probe(
+        @RequestParam(defaultValue = "10") rows: Int,
+    ): ResponseEntity<ApiResponse<PesticideProbeResponse>> {
+        if (rows !in 1..100) {
+            throw BusinessException(ErrorCode.INVALID_INPUT)
+        }
+        val result = pesticideSyncService.probe(rows)
+        return ResponseEntity.ok(ApiResponse.ok(PesticideProbeResponse.from(result)))
     }
 }
