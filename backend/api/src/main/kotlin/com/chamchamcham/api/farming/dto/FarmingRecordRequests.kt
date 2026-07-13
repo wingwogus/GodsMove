@@ -128,13 +128,12 @@ object FarmingRecordRequests {
         val harvestAmount: BigDecimal? = null,
         val harvestAmountUnknown: Boolean = false,
 
-        @field:NotNull(message = "수확 부위를 선택해주세요")
-        val medicinalPart: CropUsePartCategory?,
+        val medicinalPart: CropUsePartCategory? = null,
         val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
 
         @field:Min(value = 1, message = "재배기간은 1 이상이어야 합니다")
-        val growthPeriod: Int,
-        val growthPeriodUnit: GrowthPeriodUnit,
+        val growthPeriod: Int? = null,
+        val growthPeriodUnit: GrowthPeriodUnit? = null,
 
         @field:NotNull(message = "마지막 수확 여부를 선택해주세요")
         val isLastHarvest: Boolean?,
@@ -214,7 +213,7 @@ fun FarmingRecordRequests.HarvestDetailRequest.toCommand(): FarmingRecordCommand
     FarmingRecordCommand.HarvestDetail(
         harvestAmount = harvestAmount,
         amountUnknown = harvestAmountUnknown,
-        medicinalPart = requireNotNull(medicinalPart),
+        medicinalPart = medicinalPart,
         harvestSource = harvestSource,
         growthPeriod = growthPeriod,
         growthPeriodUnit = growthPeriodUnit,

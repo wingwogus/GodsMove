@@ -102,15 +102,17 @@ class WorkTypeCatalogServiceTest {
     }
 
     @Test
-    fun `HARVEST has required detail including medicinalPart`() {
+    fun `HARVEST has required detail with optional medicinalPart and growth period`() {
         val harvest = service.listWorkTypes().first { it.code == "HARVEST" }
 
         assertThat(harvest.detailRequired).isTrue()
         assertThat(harvest.fields.map { it.name }).containsExactly(
             "harvestAmount", "medicinalPart", "harvestSource", "growthPeriod", "growthPeriodUnit"
         )
-        assertThat(harvest.fields.first { it.name == "medicinalPart" }.required).isTrue()
+        assertThat(harvest.fields.first { it.name == "medicinalPart" }.required).isFalse()
         assertThat(harvest.fields.first { it.name == "harvestSource" }.required).isFalse()
+        assertThat(harvest.fields.first { it.name == "growthPeriod" }.required).isFalse()
+        assertThat(harvest.fields.first { it.name == "growthPeriodUnit" }.required).isFalse()
     }
 
     @Test

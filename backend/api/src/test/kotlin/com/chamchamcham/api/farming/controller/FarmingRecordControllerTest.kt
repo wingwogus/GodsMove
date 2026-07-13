@@ -168,7 +168,24 @@ class FarmingRecordControllerTest(
     }
 
     @Test
-    fun `create record rejects harvest without medicinal part`() {
+    fun `create record accepts harvest without medicinal part or growth period`() {
+        val command = FarmingRecordCommand.Create(
+            memberId = memberId,
+            farmId = farmId,
+            cropId = cropId,
+            workType = WorkType.HARVEST,
+            workedAt = workedAt,
+            weatherCondition = "맑음",
+            weatherTemperature = 28,
+            memo = "오늘은 날씨가 좋아 하루 종일 수확 작업을 진행했고 별다른 문제 없이 마무리했습니다",
+            harvest = FarmingRecordCommand.HarvestDetail(
+                harvestAmount = BigDecimal.TEN,
+                harvestSource = HarvestSource.CULTIVATED,
+                isLastHarvest = true,
+            ),
+        )
+        `when`(farmingRecordService.create(command)).thenReturn(FarmingRecordResult.RecordId(id = recordId, workType = WorkType.HARVEST))
+
         val json = """
             {
               "farmId":"$farmId",
@@ -181,8 +198,7 @@ class FarmingRecordControllerTest(
               "harvest":{
                 "harvestAmount":10,
                 "harvestSource":"CULTIVATED",
-                "growthPeriod":2,
-                "growthPeriodUnit":"YEAR"
+                "isLastHarvest":true
               }
             }
         """.trimIndent()
@@ -193,7 +209,7 @@ class FarmingRecordControllerTest(
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(json)
         )
-            .andExpect(status().isBadRequest)
+            .andExpect(status().isOk)
     }
 
     @Test

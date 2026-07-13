@@ -165,7 +165,9 @@ object WorkTypeFieldCatalog {
 
     // harvestAmount는 kg 단위로 필수이나, 사용자가 '모르겠음'을 선택하면(harvestAmountUnknown=true)
     // 비워둘 수 있다(FarmingRecordDetailValidator.validateHarvest에서 강제). 이 경우 서버는 NULL로
-    // 저장한다(0 아님). 이 목록 자체는 그 예외를 표현하지 않으므로 프론트가 별도 처리해야 한다.
+    // 저장한다(0 아님). medicinalPart는 선택이다(온보딩 기본값으로 프론트가 미리 채워둔다).
+    // growthPeriod/growthPeriodUnit은 둘 다 비거나 둘 다 채워져야 한다(validateHarvest에서 강제).
+    // 이 목록 자체는 그 예외들을 표현하지 않으므로 프론트가 별도 처리해야 한다.
     private val HARVEST_FIELDS: List<WorkTypeResult.FieldSummary> = listOf(
         WorkTypeResult.FieldSummary(
             name = "harvestAmount",
@@ -176,7 +178,7 @@ object WorkTypeFieldCatalog {
         WorkTypeResult.FieldSummary(
             name = "medicinalPart",
             type = FieldValueType.ENUM,
-            required = true,
+            required = false,
             options = CropUsePartCategory.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
         ),
         WorkTypeResult.FieldSummary(
@@ -188,13 +190,13 @@ object WorkTypeFieldCatalog {
         WorkTypeResult.FieldSummary(
             name = "growthPeriod",
             type = FieldValueType.INT,
-            required = true,
+            required = false,
             options = emptyList()
         ),
         WorkTypeResult.FieldSummary(
             name = "growthPeriodUnit",
             type = FieldValueType.ENUM,
-            required = true,
+            required = false,
             options = GrowthPeriodUnit.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
         )
     )

@@ -196,10 +196,10 @@ object FarmingRecordResponses {
     data class HarvestDetailResponse(
         val harvestAmount: BigDecimal?,
         val amountUnknown: Boolean,
-        val medicinalPart: CropUsePartCategory,
+        val medicinalPart: CropUsePartCategory?,
         val harvestSource: HarvestSource,
-        val growthPeriod: Int,
-        val growthPeriodUnit: GrowthPeriodUnit,
+        val growthPeriod: Int?,
+        val growthPeriodUnit: GrowthPeriodUnit?,
         val isLastHarvest: Boolean,
     ) {
         companion object {

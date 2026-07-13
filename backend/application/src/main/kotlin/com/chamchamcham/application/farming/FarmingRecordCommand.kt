@@ -101,10 +101,10 @@ object FarmingRecordCommand {
     data class HarvestDetail(
         val harvestAmount: BigDecimal?,
         val amountUnknown: Boolean = false,
-        val medicinalPart: CropUsePartCategory,
+        val medicinalPart: CropUsePartCategory? = null,
         val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
-        val growthPeriod: Int,
-        val growthPeriodUnit: GrowthPeriodUnit,
+        val growthPeriod: Int? = null,
+        val growthPeriodUnit: GrowthPeriodUnit? = null,
         val isLastHarvest: Boolean,
     )
 }
