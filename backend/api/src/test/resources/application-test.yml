@@ -67,6 +67,15 @@ weather:
     connect-timeout-millis: 2000
     read-timeout-millis: 2000
 
+openai:
+  realtime:
+    api-key: test-openai-api-key
+    base-url: https://api.openai.com
+    model: gpt-realtime
+    voice: marin
+    connect-timeout-millis: 2000
+    read-timeout-millis: 2000
+
 auth:
   kakao:
     oidc:

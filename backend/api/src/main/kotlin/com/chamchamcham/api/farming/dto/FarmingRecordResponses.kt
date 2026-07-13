@@ -158,21 +158,25 @@ object FarmingRecordResponses {
     }
 
     data class PestControlDetailResponse(
+        val pesticideId: UUID,
         val pesticideName: String,
         val pesticideAmount: BigDecimal,
         val pesticideAmountUnit: PesticideAmountUnit,
         val totalSprayAmount: BigDecimal,
         val totalSprayAmountUnit: SprayAmountUnit,
-        val pestTarget: String?,
+        val pestId: UUID?,
+        val pestName: String?,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.PestControlDetail): PestControlDetailResponse = PestControlDetailResponse(
+                pesticideId = result.pesticideId,
                 pesticideName = result.pesticideName,
                 pesticideAmount = result.pesticideAmount,
                 pesticideAmountUnit = result.pesticideAmountUnit,
                 totalSprayAmount = result.totalSprayAmount,
                 totalSprayAmountUnit = result.totalSprayAmountUnit,
-                pestTarget = result.pestTarget,
+                pestId = result.pestId,
+                pestName = result.pestName,
             )
         }
     }
@@ -193,6 +197,7 @@ object FarmingRecordResponses {
         val harvestSource: HarvestSource,
         val growthPeriod: Int,
         val growthPeriodUnit: GrowthPeriodUnit,
+        val isLastHarvest: Boolean,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.HarvestDetail): HarvestDetailResponse = HarvestDetailResponse(
@@ -202,6 +207,7 @@ object FarmingRecordResponses {
                 harvestSource = result.harvestSource,
                 growthPeriod = result.growthPeriod,
                 growthPeriodUnit = result.growthPeriodUnit,
+                isLastHarvest = result.isLastHarvest,
             )
         }
     }

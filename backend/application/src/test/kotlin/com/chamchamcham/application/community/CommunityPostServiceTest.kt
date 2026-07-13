@@ -20,6 +20,7 @@ import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.crop.MemberCrop
 import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
+import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.farming.FarmingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
@@ -607,7 +608,7 @@ class CommunityPostServiceTest {
             weatherCondition = "맑음",
             weatherTemperature = 20,
             memo = "memo",
-            entryMode = "MANUAL"
+            entryMode = EntryMode.MANUAL
         )
 
     private fun uploadedMedia(

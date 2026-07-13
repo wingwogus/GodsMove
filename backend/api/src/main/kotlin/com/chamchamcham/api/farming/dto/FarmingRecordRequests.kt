@@ -1,6 +1,8 @@
 package com.chamchamcham.api.farming.dto
 
+import com.chamchamcham.application.farming.FarmingRecordCommand
 import com.chamchamcham.domain.crop.CropUsePartCategory
+import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
@@ -67,7 +69,9 @@ object FarmingRecordRequests {
         val harvest: HarvestDetailRequest? = null,
 
         @field:Size(max = 5, message = "사진은 최대 5장까지 첨부할 수 있습니다")
-        val mediaIds: List<UUID> = emptyList()
+        val mediaIds: List<UUID> = emptyList(),
+
+        val entryMode: EntryMode = EntryMode.MANUAL,
     )
 
     data class PlantingDetailRequest(
@@ -99,8 +103,8 @@ object FarmingRecordRequests {
     )
 
     data class PestControlDetailRequest(
-        @field:NotBlank(message = "농약명을 입력해주세요")
-        val pesticideName: String,
+        @field:NotNull(message = "농약을 선택해주세요")
+        val pesticideId: UUID?,
 
         @field:DecimalMin(value = "0.01", message = "농약량은 0보다 커야 합니다")
         val pesticideAmount: BigDecimal,
@@ -109,7 +113,7 @@ object FarmingRecordRequests {
         @field:DecimalMin(value = "0.01", message = "살포량은 0보다 커야 합니다")
         val totalSprayAmount: BigDecimal,
         val totalSprayAmountUnit: SprayAmountUnit,
-        val pestTarget: String? = null,
+        val pestId: UUID? = null,
     )
 
     data class WeedingDetailRequest(
@@ -128,5 +132,87 @@ object FarmingRecordRequests {
         @field:Min(value = 1, message = "재배기간은 1 이상이어야 합니다")
         val growthPeriod: Int,
         val growthPeriodUnit: GrowthPeriodUnit,
+
+        @field:NotNull(message = "마지막 수확 여부를 선택해주세요")
+        val isLastHarvest: Boolean?,
     )
 }
+
+fun FarmingRecordRequests.SaveRecordRequest.toCreateCommand(
+    memberId: UUID,
+    entryMode: EntryMode = this.entryMode,
+): FarmingRecordCommand.Create =
+    FarmingRecordCommand.Create(
+        memberId = memberId,
+        farmId = requireNotNull(farmId),
+        cropId = requireNotNull(cropId),
+        workType = requireNotNull(workType),
+        workedAt = requireNotNull(workedAt),
+        weatherCondition = weatherCondition,
+        weatherTemperature = requireNotNull(weatherTemperature),
+        memo = memo,
+        planting = toPlantingDetail(),
+        watering = toWateringDetail(),
+        fertilizing = toFertilizingDetail(),
+        pestControl = toPestControlDetail(),
+        weeding = toWeedingDetail(),
+        harvest = toHarvestDetail(),
+        mediaIds = mediaIds,
+        entryMode = entryMode,
+    )
+
+fun FarmingRecordRequests.SaveRecordRequest.toPlantingDetail(): FarmingRecordCommand.PlantingDetail? = planting?.toCommand()
+
+fun FarmingRecordRequests.SaveRecordRequest.toWateringDetail(): FarmingRecordCommand.WateringDetail? = watering?.toCommand()
+
+fun FarmingRecordRequests.SaveRecordRequest.toFertilizingDetail(): FarmingRecordCommand.FertilizingDetail? = fertilizing?.toCommand()
+
+fun FarmingRecordRequests.SaveRecordRequest.toPestControlDetail(): FarmingRecordCommand.PestControlDetail? = pestControl?.toCommand()
+
+fun FarmingRecordRequests.SaveRecordRequest.toWeedingDetail(): FarmingRecordCommand.WeedingDetail? = weeding?.toCommand()
+
+fun FarmingRecordRequests.SaveRecordRequest.toHarvestDetail(): FarmingRecordCommand.HarvestDetail? = harvest?.toCommand()
+
+fun FarmingRecordRequests.PlantingDetailRequest.toCommand(): FarmingRecordCommand.PlantingDetail =
+    FarmingRecordCommand.PlantingDetail(
+        seedAmount = seedAmount,
+        seedAmountUnit = seedAmountUnit,
+        seedlingCount = seedlingCount,
+        seedlingUnit = seedlingUnit,
+        propagationMethod = requireNotNull(propagationMethod),
+    )
+
+fun FarmingRecordRequests.WateringDetailRequest.toCommand(): FarmingRecordCommand.WateringDetail =
+    FarmingRecordCommand.WateringDetail(irrigationAmount = irrigationAmount, irrigationMethod = irrigationMethod)
+
+fun FarmingRecordRequests.FertilizingDetailRequest.toCommand(): FarmingRecordCommand.FertilizingDetail =
+    FarmingRecordCommand.FertilizingDetail(
+        materialName = materialName,
+        amount = amount,
+        amountUnit = amountUnit,
+        applicationMethod = applicationMethod,
+    )
+
+fun FarmingRecordRequests.PestControlDetailRequest.toCommand(): FarmingRecordCommand.PestControlDetail =
+    FarmingRecordCommand.PestControlDetail(
+        pesticideId = requireNotNull(pesticideId),
+        pesticideAmount = pesticideAmount,
+        pesticideAmountUnit = pesticideAmountUnit,
+        totalSprayAmount = totalSprayAmount,
+        totalSprayAmountUnit = totalSprayAmountUnit,
+        pestId = pestId,
+    )
+
+fun FarmingRecordRequests.WeedingDetailRequest.toCommand(): FarmingRecordCommand.WeedingDetail =
+    FarmingRecordCommand.WeedingDetail(weedingMethod = weedingMethod)
+
+fun FarmingRecordRequests.HarvestDetailRequest.toCommand(): FarmingRecordCommand.HarvestDetail =
+    FarmingRecordCommand.HarvestDetail(
+        harvestAmount = harvestAmount,
+        amountUnknown = harvestAmountUnknown,
+        medicinalPart = requireNotNull(medicinalPart),
+        harvestSource = harvestSource,
+        growthPeriod = growthPeriod,
+        growthPeriodUnit = growthPeriodUnit,
+        isLastHarvest = requireNotNull(isLastHarvest),
+    )

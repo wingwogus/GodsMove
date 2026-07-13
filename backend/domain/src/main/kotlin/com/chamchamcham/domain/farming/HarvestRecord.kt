@@ -45,4 +45,7 @@ class   HarvestRecord(
     @Enumerated(EnumType.STRING)
     @Column(name = "growth_period_unit", nullable = false, length = 16)
     val growthPeriodUnit: GrowthPeriodUnit,
+
+    @Column(name = "is_last_harvest", nullable = false)
+    val isLastHarvest: Boolean,
 ) : BaseTimeEntity()

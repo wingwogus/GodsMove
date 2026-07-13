@@ -54,7 +54,7 @@ class FarmingRecordQueryRepositoryImpl(
             keywordPredicates += "lower(r.crop.name) like :keyword"
             keywordPredicates += "lower(r.memo) like :keyword"
             keywordPredicates += "exists (select 1 from FertilizingRecord f where f.record.id = r.id and lower(f.materialName) like :keyword)"
-            keywordPredicates += "exists (select 1 from PestControlRecord p where p.record.id = r.id and lower(p.pesticideName) like :keyword)"
+            keywordPredicates += "exists (select 1 from PestControlRecord p where p.record.id = r.id and (lower(p.pesticide.brandName) like :keyword or lower(p.pesticide.itemName) like :keyword))"
         }
         if (condition.matchedWorkTypes.isNotEmpty()) {
             keywordPredicates += "r.workType in :matchedWorkTypes"

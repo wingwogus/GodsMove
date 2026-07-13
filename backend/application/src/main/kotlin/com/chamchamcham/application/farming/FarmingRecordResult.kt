@@ -84,12 +84,14 @@ object FarmingRecordResult {
     )
 
     data class PestControlDetail(
+        val pesticideId: UUID,
         val pesticideName: String,
         val pesticideAmount: BigDecimal,
         val pesticideAmountUnit: PesticideAmountUnit,
         val totalSprayAmount: BigDecimal,
         val totalSprayAmountUnit: SprayAmountUnit,
-        val pestTarget: String?,
+        val pestId: UUID?,
+        val pestName: String?,
     )
 
     data class WeedingDetail(
@@ -102,5 +104,6 @@ object FarmingRecordResult {
         val harvestSource: HarvestSource,
         val growthPeriod: Int,
         val growthPeriodUnit: GrowthPeriodUnit,
+        val isLastHarvest: Boolean,
     )
 }

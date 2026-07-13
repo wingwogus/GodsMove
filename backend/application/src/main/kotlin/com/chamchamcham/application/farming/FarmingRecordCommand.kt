@@ -1,6 +1,7 @@
 package com.chamchamcham.application.farming
 
 import com.chamchamcham.domain.crop.CropUsePartCategory
+import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
@@ -35,6 +36,7 @@ object FarmingRecordCommand {
         override val weeding: WeedingDetail? = null,
         override val harvest: HarvestDetail? = null,
         val mediaIds: List<UUID> = emptyList(),
+        val entryMode: EntryMode = EntryMode.MANUAL,
     ) : FarmingRecordDetailPayload
 
     data class Update(
@@ -82,12 +84,12 @@ object FarmingRecordCommand {
     )
 
     data class PestControlDetail(
-        val pesticideName: String,
+        val pesticideId: UUID,
         val pesticideAmount: BigDecimal,
         val pesticideAmountUnit: PesticideAmountUnit,
         val totalSprayAmount: BigDecimal,
         val totalSprayAmountUnit: SprayAmountUnit,
-        val pestTarget: String? = null,
+        val pestId: UUID? = null,
     )
 
     data class WeedingDetail(
@@ -101,5 +103,6 @@ object FarmingRecordCommand {
         val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
         val growthPeriod: Int,
         val growthPeriodUnit: GrowthPeriodUnit,
+        val isLastHarvest: Boolean,
     )
 }

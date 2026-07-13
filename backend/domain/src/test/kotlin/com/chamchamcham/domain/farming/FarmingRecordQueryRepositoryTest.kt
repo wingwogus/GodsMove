@@ -9,6 +9,7 @@ import com.chamchamcham.domain.media.UploadedMediaStatus
 import com.chamchamcham.domain.media.UploadedMediaType
 import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.pesticide.Pesticide
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -277,7 +278,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
             weatherCondition = "맑음",
             weatherTemperature = 20,
             memo = memo,
-            entryMode = "MANUAL",
+            entryMode = EntryMode.MANUAL,
             isDeleted = isDeleted,
         )
         return persist(record, now)
@@ -311,10 +312,14 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
     }
 
     private fun persistPestControlDetail(record: FarmingRecord, pesticideName: String) {
+        val pesticide = persist(
+            Pesticide(itemName = pesticideName, brandName = pesticideName),
+            now
+        )
         persist(
             PestControlRecord(
                 record = record,
-                pesticideName = pesticideName,
+                pesticide = pesticide,
                 pesticideAmount = BigDecimal.ONE,
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal.TEN,
@@ -333,6 +338,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 1,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isLastHarvest = false,
             ),
             now
         )
