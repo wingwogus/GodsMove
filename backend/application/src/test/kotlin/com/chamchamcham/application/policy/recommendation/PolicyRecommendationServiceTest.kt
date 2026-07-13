@@ -5,6 +5,7 @@ import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.policy.support.PolicyBenefitCategory
 import com.chamchamcham.application.policy.support.TextListJsonCodec
+import com.chamchamcham.domain.common.BaseTimeEntity
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.crop.MemberCrop
@@ -732,6 +733,138 @@ class PolicyRecommendationServiceTest {
         assertThat(exception.errorCode).isEqualTo(ErrorCode.POLICY_PROGRAM_NOT_FOUND)
     }
 
+    @Test
+    fun `search recommendations reads only from query repository and never touches regeneration writes`() {
+        val program = recommendableProgram()
+        val row = recommendation(program)
+        val condition = PolicyRecommendationQueryRepository.MemberSearchCondition(
+            memberId = memberId,
+            keyword = "청년",
+            cursorCreatedAt = null,
+            cursorId = null,
+            size = 21
+        )
+        `when`(policyRecommendationQueryRepository.searchByMember(condition)).thenReturn(listOf(row))
+
+        val page = service.searchRecommendations(memberId, keyword = "청년", cursor = null, size = 20)
+
+        assertThat(page.items).hasSize(1)
+        assertThat(page.items.first().policyProgramId).isEqualTo(policyProgramId)
+        assertThat(page.nextCursor).isNull()
+        verify(policyRecommendationQueryRepository).searchByMember(condition)
+        verifyNoInteractions(
+            policySyncJobRepository,
+            policyProgramRepository,
+            policyRecommendationRepository,
+            memberRepository,
+            memberCropRepository,
+            farmRepository
+        )
+    }
+
+    @Test
+    fun `search recommendations returns next cursor when an extra row exists beyond page size`() {
+        val secondProgramId = UUID.fromString("00000000-0000-0000-0000-000000000302")
+        val secondRecommendationId = UUID.fromString("00000000-0000-0000-0000-000000000402")
+        val firstProgram = recommendableProgram()
+        val secondProgram = recommendableProgram(id = secondProgramId, title = "후속 정책")
+        val firstRow = recommendation(firstProgram, createdAt = LocalDateTime.of(2026, 3, 20, 9, 0))
+        val secondRow = recommendation(
+            secondProgram,
+            id = secondRecommendationId,
+            createdAt = LocalDateTime.of(2026, 3, 10, 9, 0)
+        )
+        val condition = PolicyRecommendationQueryRepository.MemberSearchCondition(
+            memberId = memberId,
+            keyword = null,
+            cursorCreatedAt = null,
+            cursorId = null,
+            size = 2
+        )
+        `when`(policyRecommendationQueryRepository.searchByMember(condition)).thenReturn(listOf(firstRow, secondRow))
+
+        val page = service.searchRecommendations(memberId, keyword = null, cursor = null, size = 1)
+
+        assertThat(page.items).hasSize(1)
+        assertThat(page.items.first().recommendationId).isEqualTo(recommendationId)
+        val payload = cursorCodec.decode(
+            requireNotNull(page.nextCursor),
+            PolicyRecommendationSearchCursorPayload::class.java
+        )
+        assertThat(payload).isEqualTo(
+            PolicyRecommendationSearchCursorPayload(createdAt = firstRow.createdAt, id = recommendationId)
+        )
+    }
+
+    @Test
+    fun `search recommendations returns no next cursor when rows fit within page size`() {
+        val program = recommendableProgram()
+        val row = recommendation(program)
+        val condition = PolicyRecommendationQueryRepository.MemberSearchCondition(
+            memberId = memberId,
+            keyword = null,
+            cursorCreatedAt = null,
+            cursorId = null,
+            size = 21
+        )
+        `when`(policyRecommendationQueryRepository.searchByMember(condition)).thenReturn(listOf(row))
+
+        val page = service.searchRecommendations(memberId, keyword = null, cursor = null, size = 20)
+
+        assertThat(page.nextCursor).isNull()
+    }
+
+    @Test
+    fun `search recommendations decodes cursor into member search condition`() {
+        val program = recommendableProgram()
+        val row = recommendation(program)
+        val payload = PolicyRecommendationSearchCursorPayload(
+            createdAt = LocalDateTime.of(2026, 3, 1, 0, 0),
+            id = recommendationId
+        )
+        val cursor = cursorCodec.encode(payload)
+        val condition = PolicyRecommendationQueryRepository.MemberSearchCondition(
+            memberId = memberId,
+            keyword = null,
+            cursorCreatedAt = payload.createdAt,
+            cursorId = payload.id,
+            size = 21
+        )
+        `when`(policyRecommendationQueryRepository.searchByMember(condition)).thenReturn(listOf(row))
+
+        service.searchRecommendations(memberId, keyword = null, cursor = cursor, size = 20)
+
+        verify(policyRecommendationQueryRepository).searchByMember(condition)
+    }
+
+    @Test
+    fun `search recommendations rejects malformed cursor as invalid input without reading`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            service.searchRecommendations(memberId, keyword = null, cursor = "not-a-valid-cursor", size = 20)
+        }
+
+        assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+        verifyNoInteractions(
+            policyRecommendationQueryRepository,
+            policySyncJobRepository,
+            policyProgramRepository,
+            policyRecommendationRepository,
+            memberRepository,
+            memberCropRepository,
+            farmRepository
+        )
+    }
+
+    @Test
+    fun `search recommendations rejects invalid size before reading`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            service.searchRecommendations(memberId, keyword = null, cursor = null, size = 0)
+        }
+
+        assertThat(exception.errorCode).isEqualTo(ErrorCode.INVALID_INPUT)
+        verifyNoInteractions(policyRecommendationQueryRepository)
+    }
+
     private fun capturedSavedRecommendations(): List<PolicyRecommendation> {
         @Suppress("UNCHECKED_CAST")
         val captor = ArgumentCaptor.forClass(Iterable::class.java) as ArgumentCaptor<Iterable<PolicyRecommendation>>
@@ -882,7 +1015,8 @@ class PolicyRecommendationServiceTest {
     private fun recommendation(
         program: PolicyProgram,
         id: UUID = recommendationId,
-        score: BigDecimal = BigDecimal("96.0")
+        score: BigDecimal = BigDecimal("96.0"),
+        createdAt: LocalDateTime = LocalDateTime.of(2026, 3, 15, 9, 0)
     ): PolicyRecommendation =
         PolicyRecommendation(
             id = id,
@@ -890,5 +1024,12 @@ class PolicyRecommendationServiceTest {
             policyProgram = program,
             score = score,
             reason = "청년농 대상이고 재배 품목이 맞아요."
-        )
+        ).also { setCreatedAt(it, createdAt) }
+
+    private fun setCreatedAt(entity: PolicyRecommendation, createdAt: LocalDateTime) {
+        BaseTimeEntity::class.java.getDeclaredField("createdAt").apply {
+            isAccessible = true
+            set(entity, createdAt)
+        }
+    }
 }
