@@ -1,5 +1,7 @@
 package com.chamchamcham.application.voice
 
+import com.chamchamcham.application.farming.FarmingRecordCommand
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.WorkType
 
 /**
@@ -27,6 +29,16 @@ object VoiceRecordCandidateAnalyzer {
         WorkType.FERTILIZING -> candidate.fertilizing
         WorkType.PEST_CONTROL -> candidate.pestControl
         WorkType.HARVEST -> candidate.harvest
-        WorkType.PLANTING, WorkType.WATERING, WorkType.WEEDING, WorkType.PRUNING, WorkType.ETC -> Unit
+        WorkType.PLANTING -> plantingCompletionMarker(candidate.planting)
+        WorkType.WATERING, WorkType.WEEDING, WorkType.PRUNING, WorkType.ETC -> Unit
+    }
+
+    // plantingMethod=SEED면 seedAmount가, SEEDLING이면 seedlingCount가 채워져야 완료로 본다.
+    private fun plantingCompletionMarker(planting: FarmingRecordCommand.PlantingDetail?): Any? {
+        planting ?: return null
+        return when (planting.plantingMethod) {
+            PlantingMethod.SEED -> planting.seedAmount
+            PlantingMethod.SEEDLING -> planting.seedlingCount
+        }
     }
 }

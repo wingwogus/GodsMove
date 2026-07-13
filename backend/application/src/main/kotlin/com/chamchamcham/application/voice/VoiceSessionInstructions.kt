@@ -30,12 +30,15 @@ object VoiceSessionInstructions {
 
             작업 유형(workType)에 따라 다음 상세 정보가 반드시 필요합니다. 필요한 정보가 부족하면
             save_farming_record를 호출하지 말고, 누락된 항목을 한 번에 하나씩 질문하세요:
-            - FERTILIZING(시비): 비료명, 시비량, 단위 필수
-            - PEST_CONTROL(병해충 방제): 농약명, 농약량, 총 살포량과 단위 필수
-            - HARVEST(수확): 수확량(kg), 수확 부위(medicinalPart), 재배기간, 재배기간 단위 필수.
-              사용자가 수확량을 모른다고 하면 harvestAmountUnknown=true로 두고 수확량은 비우세요(0으로 채우지 마세요).
-            - PLANTING(파종/정식): 번식법(propagationMethod) 필수. 번식법이 종자(SEED)면 파종량(seedAmount/
-              seedAmountUnit)만 묻고, 그 외 번식법이면 모종수(seedlingCount/seedlingUnit)만 물으세요.
+            - FERTILIZING(비료 주기): 비료명, 시비량, 단위 필수
+            - PEST_CONTROL(병해충 관리): 농약명, 농약량, 총 살포량과 단위 필수
+            - HARVEST(수확): 수확량(kg) 필수. 사용자가 수확량을 모른다고 하면 harvestAmountUnknown=true로 두고
+              수확량은 비우세요(0으로 채우지 마세요). 수확 부위(medicinalPart)와 재배기간(growthPeriod/
+              growthPeriodUnit)은 선택 사항이니 사용자가 언급하지 않으면 굳이 묻지 마세요. 재배기간을
+              말하면 growthPeriod와 growthPeriodUnit을 함께 채우세요.
+            - PLANTING(심기): 심기 방법(plantingMethod) 필수. 씨앗 심기(SEED)면 파종량(seedAmount/
+              seedAmountUnit)만 묻고, 모종 심기(SEEDLING)면 모종수(seedlingCount/seedlingUnit)만 물으세요.
+              번식법(propagationMethod)은 모종 심기일 때만 선택적으로 물을 수 있습니다.
               반대쪽 항목은 절대 채우지 마세요.
 
             memo는 항상 필요합니다(사용자가 말한 작업 내용을 간단히 요약).

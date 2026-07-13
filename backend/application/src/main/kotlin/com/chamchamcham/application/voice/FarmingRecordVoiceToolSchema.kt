@@ -8,6 +8,7 @@ import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -59,14 +60,19 @@ object FarmingRecordVoiceToolSchema {
     }
 
     private fun plantingSchema() = objectProperty(
-        "파종/정식 상세 (workType=PLANTING일 때 필수). propagationMethod=SEED면 seedAmount/seedAmountUnit만 채우고, " +
-            "그 외 번식법이면 seedlingCount/seedlingUnit만 채운다. 반대쪽 그룹은 절대 채우지 않는다.",
+        "심기 상세 (workType=PLANTING일 때 필수). plantingMethod=SEED(씨앗 심기)면 seedAmount/seedAmountUnit만 " +
+            "채우고 seedlingCount/seedlingUnit/propagationMethod는 비운다. plantingMethod=SEEDLING(모종 심기)이면 " +
+            "seedlingCount/seedlingUnit만 채우고(propagationMethod는 선택), seedAmount/seedAmountUnit은 비운다.",
         mapOf(
-            "seedAmount" to mapOf("type" to "number", "description" to "파종량(번식법이 종자일 때만)"),
-            "seedAmountUnit" to enumProperty("파종량 단위(번식법이 종자일 때만)", SeedAmountUnit.entries.map { it.name }),
-            "seedlingCount" to mapOf("type" to "integer", "description" to "모종수(번식법이 종자가 아닐 때만)"),
-            "seedlingUnit" to enumProperty("모종수 단위(번식법이 종자가 아닐 때만)", SeedlingUnit.entries.map { it.name }),
-            "propagationMethod" to enumProperty("번식법(필수)", PropagationMethod.entries.map { it.name }),
+            "plantingMethod" to enumProperty("심기 방법(필수)", PlantingMethod.entries.map { it.name }),
+            "seedAmount" to mapOf("type" to "number", "description" to "파종량(plantingMethod=SEED일 때 필수)"),
+            "seedAmountUnit" to enumProperty("파종량 단위(plantingMethod=SEED일 때만)", SeedAmountUnit.entries.map { it.name }),
+            "seedlingCount" to mapOf("type" to "integer", "description" to "모종수(plantingMethod=SEEDLING일 때 필수)"),
+            "seedlingUnit" to enumProperty("모종수 단위(plantingMethod=SEEDLING일 때만)", SeedlingUnit.entries.map { it.name }),
+            "propagationMethod" to enumProperty(
+                "번식법(plantingMethod=SEEDLING일 때만 선택 입력 가능)",
+                PropagationMethod.entries.map { it.name },
+            ),
         ),
     )
 
@@ -107,17 +113,22 @@ object FarmingRecordVoiceToolSchema {
 
     private fun harvestSchema() = objectProperty(
         "수확 상세 (workType=HARVEST일 때 필수). 수확량은 항상 kg 기준이다. 사용자가 수확량을 모른다고 " +
-            "말하면 harvestAmountUnknown=true로 설정하고 harvestAmount는 비운다.",
+            "말하면 harvestAmountUnknown=true로 설정하고 harvestAmount는 비운다. 수확 부위(medicinalPart)와 " +
+            "재배기간(growthPeriod/growthPeriodUnit)은 선택 입력이다. 사용자가 재배기간을 말하면 growthPeriod와 " +
+            "growthPeriodUnit을 함께 채우고, 언급하지 않으면 둘 다 비운다.",
         mapOf(
             "harvestAmount" to mapOf("type" to "number", "description" to "수확량(kg). 모르면 비운다."),
             "harvestAmountUnknown" to mapOf(
                 "type" to "boolean",
                 "description" to "수확량을 모르면 true. 이때 harvestAmount는 비운다.",
             ),
-            "medicinalPart" to enumProperty("수확 부위(필수)", CropUsePartCategory.entries.map { it.name }),
+            "medicinalPart" to enumProperty("수확 부위(선택)", CropUsePartCategory.entries.map { it.name }),
             "harvestSource" to enumProperty("수확 출처", HarvestSource.entries.map { it.name }),
-            "growthPeriod" to mapOf("type" to "integer", "description" to "재배기간(필수)"),
-            "growthPeriodUnit" to enumProperty("재배기간 단위(필수)", GrowthPeriodUnit.entries.map { it.name }),
+            "growthPeriod" to mapOf("type" to "integer", "description" to "재배기간(선택, growthPeriodUnit과 함께 입력)"),
+            "growthPeriodUnit" to enumProperty(
+                "재배기간 단위(선택, growthPeriod와 함께 입력)",
+                GrowthPeriodUnit.entries.map { it.name },
+            ),
         ),
     )
 
