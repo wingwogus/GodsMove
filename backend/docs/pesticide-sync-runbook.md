@@ -89,6 +89,14 @@ PSIS_PESTICIDE_BASE_URL=http://psis.rda.go.kr/openApi/service.do \
 콘솔의 `[PSIS sync] status=... total=... fetched=... createdApplications=...` 로그로 결과를
 확인한다. `SUCCEEDED`가 아니면 단언에서 실패로 드러난다.
 
+적재 직후 같은 실행 안에서 `PesticideCatalogService`(검색/병해충 조회)까지 함께 검증하며,
+`[verify] ...` 로그로 적재 건수와 검색·병해충 조회 결과를 확인한다.
+
+> ⚠️ local 프로필은 `ddl-auto: create`라 **컨텍스트가 부팅될 때마다 스키마를 DROP/재생성**한다.
+> 적재가 끝난 뒤 별도 테스트나 앱을 local 프로필로 다시 띄우면 방금 넣은 데이터가 통째로 지워진다.
+> 그래서 적재와 조회 검증을 하나의 테스트(=한 번의 부팅) 안에서 끝낸다. 실데이터를 계속 쓰려면
+> dev/prod처럼 `ddl-auto: none`으로 스키마를 미리 준비한 환경에 적재해야 한다.
+
 ## 롤백
 
 현재 pesticide/pest/pesticide_application/pesticide_sync_job 테이블에 실데이터가 없다는 전제로
