@@ -72,9 +72,9 @@ class WorkTypeCatalogServiceTest {
 
         assertThat(pestControl.detailRequired).isTrue()
         assertThat(pestControl.fields.filter { it.required }.map { it.name }).containsExactly(
-            "pesticideName", "pesticideAmount", "pesticideAmountUnit", "totalSprayAmount", "totalSprayAmountUnit"
+            "pesticideId", "pesticideAmount", "pesticideAmountUnit", "totalSprayAmount", "totalSprayAmountUnit"
         )
-        assertThat(pestControl.fields.first { it.name == "pestTarget" }.required).isFalse()
+        assertThat(pestControl.fields.first { it.name == "pestId" }.required).isFalse()
     }
 
     @Test

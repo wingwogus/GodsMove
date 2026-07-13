@@ -117,7 +117,7 @@ object WorkTypeFieldCatalog {
 
     private val PEST_CONTROL_FIELDS: List<WorkTypeResult.FieldSummary> = listOf(
         WorkTypeResult.FieldSummary(
-            name = "pesticideName",
+            name = "pesticideId",
             type = FieldValueType.STRING,
             required = true,
             options = emptyList()
@@ -147,7 +147,7 @@ object WorkTypeFieldCatalog {
             options = SprayAmountUnit.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
         ),
         WorkTypeResult.FieldSummary(
-            name = "pestTarget",
+            name = "pestId",
             type = FieldValueType.STRING,
             required = false,
             options = emptyList()
