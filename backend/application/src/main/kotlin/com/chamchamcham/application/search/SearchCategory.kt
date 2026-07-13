@@ -4,4 +4,5 @@ enum class SearchCategory {
     ALL,
     RECORD,
     POST,
+    POLICY,
 }
