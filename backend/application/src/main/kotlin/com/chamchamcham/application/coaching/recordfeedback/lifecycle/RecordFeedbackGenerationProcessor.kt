@@ -33,6 +33,10 @@ class RecordFeedbackGenerationProcessor(
         val generationResult = try {
             generationService.generate(pendingGeneration.context)
         } catch (failure: RecordFeedbackGenerationFailure) {
+            val diagnostics = failure.safeValidationDiagnosticCodes()
+            logger.warn {
+                "record feedback generation failed: code=${failure.code}, diagnostics=${diagnostics.joinToString(",")}"
+            }
             return finalizeFailure(event, pendingGeneration.snapshot, failure.code)
         } catch (exception: RuntimeException) {
             logger.error(exception) { "unexpected record feedback generation failure" }
@@ -141,6 +145,26 @@ class RecordFeedbackGenerationProcessor(
         }
     }
 
+    private fun RecordFeedbackGenerationFailure.safeValidationDiagnosticCodes(): List<String> {
+        val message = cause?.message ?: return emptyList()
+        val validationWarnings = message.removePrefix(INVALID_PRODUCT_OUTPUT_PREFIX)
+        if (validationWarnings == message) {
+            return emptyList()
+        }
+
+        return validationWarnings
+            .split(',')
+            .map { it.trim() }
+            .mapNotNull { warning ->
+                when {
+                    warning.substringBefore(':') == "unknown_evidence" -> "unknown_evidence"
+                    warning.matches(SAFE_VALIDATION_DIAGNOSTIC) -> warning
+                    else -> null
+                }
+            }
+            .distinct()
+    }
+
     private sealed interface GenerationRead
 
     private data class ValidGeneration(
@@ -154,5 +178,10 @@ class RecordFeedbackGenerationProcessor(
 
     private companion object {
         val logger = KotlinLogging.logger {}
+        const val INVALID_PRODUCT_OUTPUT_PREFIX = "invalid product output: "
+        val SAFE_VALIDATION_DIAGNOSTIC = Regex(
+            "^(good_point|next_action_[0-9]+)_(basis_blank|text_blank|evidence_refs_blank|evidence_ref_blank|text_length)$" +
+                "|^(action_count|weather_action_without_weather_evidence|pest_disease_action_without_document_evidence)$",
+        )
     }
 }

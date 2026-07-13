@@ -35,6 +35,8 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.AbstractPlatformTransactionManager
@@ -42,7 +44,7 @@ import org.springframework.transaction.support.DefaultTransactionStatus
 import java.time.LocalDateTime
 import java.util.UUID
 
-@ExtendWith(MockitoExtension::class)
+@ExtendWith(MockitoExtension::class, OutputCaptureExtension::class)
 class RecordFeedbackGenerationProcessorTest {
     @Mock private lateinit var feedbackRepository: RecordFeedbackRepository
     @Mock private lateinit var generationService: RecordFeedbackGenerationService
@@ -92,6 +94,29 @@ class RecordFeedbackGenerationProcessorTest {
 
         assertThat(feedback.status).isEqualTo(RecordFeedbackStatus.FAILED)
         assertThat(feedback.failureCode).isEqualTo("INSUFFICIENT_EVIDENCE")
+    }
+
+    @Test
+    fun `processor logs safe validation diagnostics without raw generated content`(output: CapturedOutput) {
+        val feedback = pendingFeedback()
+        val event = event(feedback)
+        stubFeedback(event, feedback)
+        `when`(generationService.generate(anyContext(), org.mockito.Mockito.isNull())).thenThrow(
+            RecordFeedbackGenerationFailure(
+                RecordFeedbackFailureCode.STRUCTURED_OUTPUT_INVALID,
+                IllegalStateException("invalid product output: next_action_1_text_length,unknown_evidence:untrusted-generated-value"),
+            ),
+        )
+
+        processor.generate(event)
+
+        val logs = output.out + output.err
+        assertThat(logs)
+            .contains("record feedback generation failed")
+            .contains("STRUCTURED_OUTPUT_INVALID")
+            .contains("next_action_1_text_length")
+            .contains("unknown_evidence")
+            .doesNotContain("untrusted-generated-value")
     }
 
     @Test

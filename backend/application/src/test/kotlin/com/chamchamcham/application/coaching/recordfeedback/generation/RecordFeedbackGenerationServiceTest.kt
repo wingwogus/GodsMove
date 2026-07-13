@@ -109,6 +109,24 @@ class RecordFeedbackGenerationServiceTest {
     }
 
     @Test
+    fun `includes product validation codes in the retry prompt`() {
+        val invalidResult = validResult("doc-1", context.recordCitationId()).copy(
+            nextActions = listOf(
+                validAction(text = "짧음", refs = listOf("doc-1")),
+                validAction(),
+            ),
+        )
+        val chatClient = FakeChatClient(invalidResult, validResult("doc-1", context.recordCitationId()))
+
+        service(documents = listOf(officialDocument("doc-1")), chatClient = chatClient)
+            .generate(context)
+
+        assertThat(chatClient.requestSpec.userTexts).hasSize(2)
+        assertThat(chatClient.requestSpec.userTexts.first()).doesNotContain("next_action_0_text_length")
+        assertThat(chatClient.requestSpec.userTexts.last()).contains("next_action_0_text_length")
+    }
+
+    @Test
     fun `retries once when structured output parsing fails`() {
         val chatClient = FakeChatClient(
             RuntimeException("structured output parse failed"),
@@ -387,6 +405,7 @@ class RecordFeedbackGenerationServiceTest {
     ) : ChatClient.ChatClientRequestSpec {
         var systemText: String = ""
         var userText: String = ""
+        val userTexts = mutableListOf<String>()
         var advisorUseCount = 0
 
         override fun mutate(): ChatClient.Builder = error("mutate is not used")
@@ -423,6 +442,7 @@ class RecordFeedbackGenerationServiceTest {
 
         override fun user(text: String): ChatClient.ChatClientRequestSpec {
             userText = text
+            userTexts += text
             return this
         }
 

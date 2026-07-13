@@ -92,7 +92,7 @@ object RecordFeedbackOutputValidator {
         item.evidenceRefs
             .filter { it.isNotBlank() }
             .filterNot { it in allowedEvidenceRefs.ids }
-            .forEach { warnings += "unknown_evidence:$it" }
+            .forEach { warnings += "unknown_evidence" }
     }
 
     private fun RecordFeedbackAction.asGoodPoint(): RecordFeedbackGoodPoint {
@@ -113,5 +113,5 @@ object RecordFeedbackOutputValidator {
     private const val MIN_ACTION_COUNT = 2
     private const val MAX_ACTION_COUNT = 3
     private const val MIN_TEXT_LENGTH = 15
-    private const val MAX_TEXT_LENGTH = 25
+    private const val MAX_TEXT_LENGTH = 60
 }

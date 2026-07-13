@@ -48,9 +48,10 @@ class RecordFeedbackGenerationService(
         evidence: List<RecordFeedbackEvidence>,
     ): RecordFeedbackContent {
         var lastFailure: Throwable? = null
+        var retryValidationWarnings = emptyList<String>()
         repeat(MAX_STRUCTURED_OUTPUT_ATTEMPTS) {
             val content = try {
-                requestStructuredContent(prompt)
+                requestStructuredContent(prompt.withValidationRetryInstructions(retryValidationWarnings))
             } catch (exception: StructuredOutputFailure) {
                 lastFailure = exception
                 return@repeat
@@ -65,6 +66,7 @@ class RecordFeedbackGenerationService(
             if (validationWarnings.isEmpty()) {
                 return content
             }
+            retryValidationWarnings = validationWarnings
             lastFailure = StructuredOutputFailure("invalid product output: ${validationWarnings.joinToString(",")}")
         }
 
@@ -92,6 +94,21 @@ class RecordFeedbackGenerationService(
         } catch (exception: RuntimeException) {
             throw StructuredOutputFailure("structured output parse failed", exception)
         }
+    }
+
+    private fun RecordFeedbackPrompt.withValidationRetryInstructions(
+        validationWarnings: List<String>,
+    ): RecordFeedbackPrompt {
+        if (validationWarnings.isEmpty()) {
+            return this
+        }
+
+        return copy(
+            user = "$user\n\n" +
+                "직전 응답은 내부 검증을 통과하지 못했습니다. " +
+                "다음 오류를 모두 고친 완전한 JSON만 다시 반환하세요:\n" +
+                validationWarnings.joinToString("\n") { "- $it" },
+        )
     }
 
     private fun requireValidContext(context: RecordFeedbackContext): List<String> {
