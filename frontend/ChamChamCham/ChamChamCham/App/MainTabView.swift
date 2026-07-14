@@ -77,7 +77,7 @@ struct MainTabView: View {
     private func tabContent(_ index: Int) -> some View {
         switch index {
         case 0:
-            HomeView()
+            HomeView(container: container)
         case 1:
             RecordListView(
                 repository: container.makeRecordRepository(),
