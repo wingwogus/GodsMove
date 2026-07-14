@@ -38,7 +38,21 @@ class KmaWeatherProviderTest {
         assertThat(snapshot.temperature).isEqualTo(14) // 14.2 반올림
         assertThat(snapshot.skyCondition).isEqualTo("맑음") // 가장 이른 예보(1100): SKY=1, PTY=0
         assertThat(snapshot.observedAt).isEqualTo(LocalDateTime.of(2026, 7, 8, 10, 0))
+        assertThat(snapshot.humidity).isEqualTo(55)
+        assertThat(snapshot.windSpeed).isEqualTo(2.1)
         server.verify()
+    }
+
+    @Test
+    fun `실황에 습도와 풍속이 없어도 스냅샷은 null로 성공한다`() {
+        expectNcst(withJson(NCST_NO_HUMIDITY_WIND_BODY))
+        expectFcst(withJson(FCST_CLEAR_BODY))
+
+        val snapshot = provider.fetchCurrentWeather(37.5665, 126.9780)
+
+        assertThat(snapshot.temperature).isEqualTo(14)
+        assertThat(snapshot.humidity).isNull()
+        assertThat(snapshot.windSpeed).isNull()
     }
 
     @Test
@@ -123,6 +137,13 @@ class KmaWeatherProviderTest {
             {"response":{"header":{"resultCode":"00","resultMsg":"NORMAL_SERVICE"},
              "body":{"dataType":"JSON","items":{"item":[
                {"baseDate":"20260708","baseTime":"1000","category":"REH","nx":60,"ny":127,"obsrValue":"55"}
+             ]},"pageNo":1,"numOfRows":1000,"totalCount":1}}}
+        """.trimIndent()
+
+        private val NCST_NO_HUMIDITY_WIND_BODY = """
+            {"response":{"header":{"resultCode":"00","resultMsg":"NORMAL_SERVICE"},
+             "body":{"dataType":"JSON","items":{"item":[
+               {"baseDate":"20260708","baseTime":"1000","category":"T1H","nx":60,"ny":127,"obsrValue":"14.2"}
              ]},"pageNo":1,"numOfRows":1000,"totalCount":1}}}
         """.trimIndent()
 

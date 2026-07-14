@@ -66,13 +66,21 @@ class KmaWeatherProvider internal constructor(
             ?.roundToInt()
             ?: throw BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE)
 
+        val humidity = ncst.firstOrNull { it.category == "REH" }?.obsrValue
+            ?.toDoubleOrNull()
+            ?.roundToInt()
+        val windSpeed = ncst.firstOrNull { it.category == "WSD" }?.obsrValue
+            ?.toDoubleOrNull()
+
         val observedAt = parseObservedAt(ncst)
         val skyCondition = resolveSkyCondition(fcst)
 
         return WeatherSnapshot(
             temperature = temperature,
             skyCondition = skyCondition,
-            observedAt = observedAt
+            observedAt = observedAt,
+            humidity = humidity,
+            windSpeed = windSpeed
         )
     }
 
