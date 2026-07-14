@@ -870,6 +870,55 @@ class FarmingRecordServiceTest {
         assertThat(page.items).isEmpty()
     }
 
+    @Test
+    fun `count delegates to query repository with derived matched labels and no cursor`() {
+        `when`(
+            farmingRecordQueryRepository.count(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropId = cropId,
+                    workType = null,
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    keyword = "수확",
+                    matchedWorkTypes = listOf(WorkType.HARVEST),
+                    matchedParts = emptyList(),
+                    cursor = null,
+                    size = 1
+                )
+            )
+        ).thenReturn(7L)
+
+        val total = service.count(searchCondition(cropId = cropId, keyword = "수확"))
+
+        assertEquals(7L, total)
+        verifyNoInteractions(farmingRecordRepository)
+    }
+
+    @Test
+    fun `count passes blank keyword as null with no matched labels`() {
+        `when`(
+            farmingRecordQueryRepository.count(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropId = null,
+                    workType = null,
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    keyword = null,
+                    matchedWorkTypes = emptyList(),
+                    matchedParts = emptyList(),
+                    cursor = null,
+                    size = 1
+                )
+            )
+        ).thenReturn(0L)
+
+        val total = service.count(searchCondition(keyword = "   "))
+
+        assertEquals(0L, total)
+    }
+
     private fun searchCondition(
         cropId: UUID? = null,
         workType: WorkType? = null,

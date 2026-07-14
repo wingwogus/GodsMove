@@ -588,6 +588,30 @@ class CommunityPostServiceTest {
         verifyNoInteractions(communityPostQueryRepository)
     }
 
+    @Test
+    fun `count delegates to query repository with condition and no cursor`() {
+        `when`(
+            communityPostQueryRepository.count(
+                CommunityPostQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropId = cropId,
+                    postType = CommunityPostType.QUESTION,
+                    keyword = "발아",
+                    likedOnly = false,
+                    mineOnly = false,
+                    sort = CommunityPostSort.LATEST,
+                    cursor = null,
+                    size = 1
+                )
+            )
+        ).thenReturn(5L)
+
+        val total = service.count(searchCondition())
+
+        assertEquals(5L, total)
+        verifyNoInteractions(communityPostRepository)
+    }
+
     private fun member(id: UUID): Member =
         Member(id = id, email = "$id@example.com", passwordHash = null)
 

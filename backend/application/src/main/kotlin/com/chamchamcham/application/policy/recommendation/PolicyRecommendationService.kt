@@ -128,6 +128,19 @@ class PolicyRecommendationService(
         return PolicyRecommendationResult.Page(visible.map(::toCard), nextCursor)
     }
 
+    @Transactional(readOnly = true)
+    fun countSearchRecommendations(memberId: UUID, keyword: String?): Long {
+        return policyRecommendationQueryRepository.countByMember(
+            PolicyRecommendationQueryRepository.MemberSearchCondition(
+                memberId = memberId,
+                keyword = keyword,
+                cursorCreatedAt = null,
+                cursorId = null,
+                size = COUNT_QUERY_SIZE
+            )
+        )
+    }
+
     fun getProgramDetail(memberId: UUID, policyProgramId: UUID): PolicyRecommendationResult.Detail {
         if (!memberRepository.existsById(memberId)) {
             throw BusinessException(ErrorCode.MEMBER_NOT_FOUND)
@@ -398,4 +411,8 @@ class PolicyRecommendationService(
 
     private fun BaseTimeEntity.updatedAfter(threshold: LocalDateTime): Boolean =
         runCatching { updatedAt.isAfter(threshold) }.getOrDefault(false)
+
+    private companion object {
+        const val COUNT_QUERY_SIZE = 1
+    }
 }

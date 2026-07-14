@@ -85,6 +85,23 @@ class CommunityPostService(
         )
     }
 
+    @Transactional(readOnly = true)
+    fun count(condition: CommunityPostSearchCondition): Long {
+        return communityPostQueryRepository.count(
+            CommunityPostQueryRepository.SearchCondition(
+                memberId = condition.memberId,
+                cropId = condition.cropId,
+                postType = condition.postType,
+                keyword = condition.keyword,
+                likedOnly = condition.likedOnly,
+                mineOnly = condition.mineOnly,
+                sort = condition.sort,
+                cursor = null,
+                size = COUNT_QUERY_SIZE
+            )
+        )
+    }
+
     private fun validatePageSize(size: Int) {
         if (size <= 0 || size == Int.MAX_VALUE) {
             throw BusinessException(ErrorCode.INVALID_INPUT)
@@ -386,5 +403,6 @@ class CommunityPostService(
 
     private companion object {
         const val BODY_PREVIEW_LENGTH = 80
+        const val COUNT_QUERY_SIZE = 1
     }
 }
