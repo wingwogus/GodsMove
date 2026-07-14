@@ -26,12 +26,13 @@ class SearchService(
                     category = searcher.category(),
                     items = page.items,
                     hasMore = page.nextCursor != null,
+                    totalCount = page.totalCount,
                 )
             }
         return SearchResult.Sections(sections = sections)
     }
 
     private companion object {
-        const val PREVIEW_SIZE = 5
+        const val PREVIEW_SIZE = 3
     }
 }

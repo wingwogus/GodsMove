@@ -92,20 +92,8 @@ class FarmingRecordService(
     fun search(condition: FarmingRecordSearchCondition): FarmingRecordResult.Page {
         validatePageSize(condition.size)
         val cursor = decodeCursor(condition.cursor)
-        val trimmedKeyword = condition.keyword?.trim()?.takeIf(String::isNotEmpty)
         val result = farmingRecordQueryRepository.search(
-            FarmingRecordQueryRepository.SearchCondition(
-                memberId = condition.memberId,
-                cropId = condition.cropId,
-                workType = condition.workType,
-                workedAtFrom = condition.startDate?.atStartOfDay(),
-                workedAtTo = condition.endDate?.plusDays(1)?.atStartOfDay(),
-                keyword = trimmedKeyword,
-                matchedWorkTypes = matchedWorkTypes(trimmedKeyword),
-                matchedParts = matchedParts(trimmedKeyword),
-                cursor = cursor,
-                size = condition.size + 1
-            )
+            toQueryCondition(condition, cursor = cursor, size = condition.size + 1)
         )
         val visibleRows = result.rows.take(condition.size)
         val nextCursor = if (result.rows.size > condition.size) {
@@ -116,6 +104,33 @@ class FarmingRecordService(
         return FarmingRecordResult.Page(
             items = visibleRows.map(::toSummary),
             nextCursor = nextCursor
+        )
+    }
+
+    @Transactional(readOnly = true)
+    fun count(condition: FarmingRecordSearchCondition): Long {
+        return farmingRecordQueryRepository.count(
+            toQueryCondition(condition, cursor = null, size = COUNT_QUERY_SIZE)
+        )
+    }
+
+    private fun toQueryCondition(
+        condition: FarmingRecordSearchCondition,
+        cursor: FarmingRecordQueryRepository.Cursor?,
+        size: Int
+    ): FarmingRecordQueryRepository.SearchCondition {
+        val trimmedKeyword = condition.keyword?.trim()?.takeIf(String::isNotEmpty)
+        return FarmingRecordQueryRepository.SearchCondition(
+            memberId = condition.memberId,
+            cropId = condition.cropId,
+            workType = condition.workType,
+            workedAtFrom = condition.startDate?.atStartOfDay(),
+            workedAtTo = condition.endDate?.plusDays(1)?.atStartOfDay(),
+            keyword = trimmedKeyword,
+            matchedWorkTypes = matchedWorkTypes(trimmedKeyword),
+            matchedParts = matchedParts(trimmedKeyword),
+            cursor = cursor,
+            size = size
         )
     }
 
@@ -469,5 +484,6 @@ class FarmingRecordService(
 
     private companion object {
         const val MEMO_PREVIEW_LENGTH = 80
+        const val COUNT_QUERY_SIZE = 1
     }
 }

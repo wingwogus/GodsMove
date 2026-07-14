@@ -29,11 +29,13 @@ object SearchResponses {
     data class PageResponse(
         val items: List<ItemResponse>,
         val nextCursor: String?,
+        val totalCount: Long,
     ) {
         companion object {
             fun from(page: SearchResult.Page): PageResponse = PageResponse(
                 items = page.items.map(ItemResponse::from),
                 nextCursor = page.nextCursor,
+                totalCount = page.totalCount,
             )
         }
     }
@@ -42,12 +44,14 @@ object SearchResponses {
         val category: SearchCategory,
         val items: List<ItemResponse>,
         val hasMore: Boolean,
+        val totalCount: Long,
     ) {
         companion object {
             fun from(section: SearchResult.SectionPreview): SectionResponse = SectionResponse(
                 category = section.category,
                 items = section.items.map(ItemResponse::from),
                 hasMore = section.hasMore,
+                totalCount = section.totalCount,
             )
         }
     }

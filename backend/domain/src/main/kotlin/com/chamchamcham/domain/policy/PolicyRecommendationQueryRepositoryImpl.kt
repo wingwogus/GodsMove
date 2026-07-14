@@ -97,13 +97,7 @@ class PolicyRecommendationQueryRepositoryImpl(
     override fun searchByMember(
         condition: PolicyRecommendationQueryRepository.MemberSearchCondition
     ): List<PolicyRecommendation> {
-        val where = mutableListOf("r.member.id = :memberId")
-        val params = linkedMapOf<String, Any>("memberId" to condition.memberId)
-
-        condition.keyword?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }?.let { keyword ->
-            where += "(lower(p.title) like :keyword or lower(p.summary) like :keyword)"
-            params["keyword"] = "%$keyword%"
-        }
+        val (where, params) = buildMemberFilterPredicates(condition)
 
         if (condition.cursorCreatedAt != null && condition.cursorId != null) {
             where += "(r.createdAt < :cCreatedAt or (r.createdAt = :cCreatedAt and r.id < :cId))"
@@ -125,5 +119,35 @@ class PolicyRecommendationQueryRepositoryImpl(
         query.maxResults = condition.size
 
         return query.resultList
+    }
+
+    override fun countByMember(condition: PolicyRecommendationQueryRepository.MemberSearchCondition): Long {
+        val (where, params) = buildMemberFilterPredicates(condition)
+
+        val query = entityManager.createQuery(
+            """
+            select count(r)
+            from PolicyRecommendation r
+            join r.policyProgram p
+            where ${where.joinToString(" and ")}
+            """.trimIndent(),
+            Long::class.javaObjectType
+        )
+        params.forEach(query::setParameter)
+        return query.singleResult
+    }
+
+    private fun buildMemberFilterPredicates(
+        condition: PolicyRecommendationQueryRepository.MemberSearchCondition
+    ): Pair<MutableList<String>, MutableMap<String, Any>> {
+        val where = mutableListOf("r.member.id = :memberId")
+        val params = linkedMapOf<String, Any>("memberId" to condition.memberId)
+
+        condition.keyword?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }?.let { keyword ->
+            where += "(lower(p.title) like :keyword or lower(p.summary) like :keyword)"
+            params["keyword"] = "%$keyword%"
+        }
+
+        return where to params
     }
 }

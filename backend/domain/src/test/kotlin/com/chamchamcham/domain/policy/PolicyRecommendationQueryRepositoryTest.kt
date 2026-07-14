@@ -304,6 +304,32 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
         assertThat(secondPage.map { requireNotNull(it.id) }).containsExactly(requireNotNull(oldest.id))
     }
 
+    @Test
+    fun `count by member returns total matching recommendations ignoring cursor and size`() {
+        persistRecommendation("내 정책 1", score = "0.9000", applyEndsOn = null)
+        persistRecommendation("내 정책 2", score = "0.8500", applyEndsOn = null)
+        persistRecommendation("다른 회원 정책", member = otherMember, score = "0.9500", applyEndsOn = null)
+        entityManager.flush()
+        entityManager.clear()
+
+        val total = queryRepository.countByMember(searchCondition(size = 1))
+
+        assertThat(total).isEqualTo(2)
+    }
+
+    @Test
+    fun `count by member matches keyword same as search`() {
+        persistRecommendation("청년 농업인 지원", score = "0.9000", applyEndsOn = null)
+        persistRecommendation("귀농 지원", summary = "청년 정착 지원금", score = "0.8500", applyEndsOn = null)
+        persistRecommendation("무관 정책", summary = "다른 내용", score = "0.8000", applyEndsOn = null)
+        entityManager.flush()
+        entityManager.clear()
+
+        val total = queryRepository.countByMember(searchCondition(keyword = "청년"))
+
+        assertThat(total).isEqualTo(2)
+    }
+
     private fun searchCondition(
         keyword: String? = null,
         cursorCreatedAt: LocalDateTime? = null,
