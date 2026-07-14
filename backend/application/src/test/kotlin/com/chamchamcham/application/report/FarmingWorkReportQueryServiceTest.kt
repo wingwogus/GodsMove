@@ -230,30 +230,28 @@ class FarmingWorkReportQueryServiceTest {
             FarmingCycleReportQueryRepository.WorkItemSearchResult(listOf(firstItem, secondItem)),
         )
 
-        val firstUnpictured = record("401", WorkType.WATERING, day = 1)
-        val firstFinal = record("406", WorkType.HARVEST, day = 2)
+        val firstPictured = record("401", WorkType.WATERING, day = 1)
         val secondPictured = record("411", WorkType.WATERING, day = 1, farm = otherFarm, crop = otherCrop)
-        val secondFinal = record("416", WorkType.HARVEST, day = 2, farm = otherFarm, crop = otherCrop)
-        val temptingCrossProduct = record("421", WorkType.WATERING, day = 3, farm = farm, crop = otherCrop)
-        val crossProductFinal = record("426", WorkType.HARVEST, day = 4, farm = farm, crop = otherCrop)
+        val temptingCrossProduct = record("421", WorkType.WATERING, day = 2, farm = farm, crop = otherCrop)
+        val firstFinal = record("406", WorkType.HARVEST, day = 3)
+        val secondFinal = record("416", WorkType.HARVEST, day = 3, farm = otherFarm, crop = otherCrop)
         val farmIds = setOf(requireNotNull(farm.id), requireNotNull(otherFarm.id))
         val cropIds = setOf(requireNotNull(crop.id), requireNotNull(otherCrop.id))
         `when`(sourceRepository.load(memberId, farmIds, cropIds)).thenReturn(
             FarmingWorkReportSourceSnapshot(
                 records = listOf(
-                    temptingCrossProduct,
                     secondFinal,
-                    firstUnpictured,
-                    crossProductFinal,
+                    temptingCrossProduct,
+                    firstPictured,
                     secondPictured,
                     firstFinal,
                 ),
                 finalHarvestRecordIds = setOf(
                     requireNotNull(firstFinal.id),
                     requireNotNull(secondFinal.id),
-                    requireNotNull(crossProductFinal.id),
                 ),
                 firstImageUrlByRecordId = mapOf(
+                    requireNotNull(firstPictured.id) to "https://img/first-scope.jpg",
                     requireNotNull(secondPictured.id) to "https://img/second-scope.jpg",
                     requireNotNull(temptingCrossProduct.id) to "https://img/cross-product-newer.jpg",
                 ),
@@ -272,7 +270,7 @@ class FarmingWorkReportQueryServiceTest {
         )
 
         assertThat(page.items.map { it.thumbnailUrl })
-            .containsExactly(null, "https://img/second-scope.jpg")
+            .containsExactly("https://img/first-scope.jpg", "https://img/second-scope.jpg")
         assertThat(page.nextCursor).isNull()
         verify(queryRepository).searchCompletedWorkItems(expectedCondition)
         verify(sourceRepository).load(memberId, farmIds, cropIds)
