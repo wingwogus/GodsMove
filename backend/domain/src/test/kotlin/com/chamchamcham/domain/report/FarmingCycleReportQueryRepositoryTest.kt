@@ -80,6 +80,37 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
     }
 
     @Test
+    fun `completed list accepts member wide farm only crop only and combined filters`() {
+        val otherFarm = persist(
+            Farm(owner = member, name = "다른 약초농장", roadAddress = "서울시 마포구"),
+            baseTime,
+        )
+        val otherCrop = persist(
+            Crop(externalNo = 423, name = "감초", usePartCategory = CropUsePartCategory.ROOT_BARK),
+            baseTime,
+        )
+        val newestAcrossScopes = persistCompleted(farm = farm, crop = crop, endedAt = day(40))
+        val olderAcrossScopes = persistCompleted(farm = otherFarm, crop = otherCrop, endedAt = day(30))
+        entityManager.flush()
+        entityManager.clear()
+
+        val all = repository.searchCompleted(condition(farmId = null, cropId = null, size = 20))
+        assertThat(all.rows.map { it.id })
+            .containsExactly(newestAcrossScopes.id, olderAcrossScopes.id)
+
+        val byFarm = repository.searchCompleted(condition(farmId = farmId, cropId = null, size = 20))
+        assertThat(byFarm.rows.map { it.id }).containsExactly(newestAcrossScopes.id)
+        assertThat(byFarm.rows).allMatch { it.farm.id == farmId }
+
+        val byCrop = repository.searchCompleted(condition(farmId = null, cropId = cropId, size = 20))
+        assertThat(byCrop.rows.map { it.id }).containsExactly(newestAcrossScopes.id)
+        assertThat(byCrop.rows).allMatch { it.crop.id == cropId }
+
+        val combined = repository.searchCompleted(condition(farmId = farmId, cropId = cropId, size = 20))
+        assertThat(combined.rows.map { it.id }).containsExactly(newestAcrossScopes.id)
+    }
+
+    @Test
     fun `completed cursor resolves equal end times with final harvest id`() {
         repeat(3) {
             persistCompleted(endedAt = day(30))
@@ -128,21 +159,6 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
         ).isEqualTo(previous.id)
     }
 
-    @Test
-    fun `latest completed report uses completed ordering only`() {
-        val older = persistCompleted(endedAt = day(20))
-        val latest = persistCompleted(endedAt = day(30))
-        persistActive()
-        persistSuperseded(endedAt = day(40))
-        entityManager.flush()
-        entityManager.clear()
-
-        val result = repository.findLatestCompleted(memberId, farmId, cropId)
-
-        assertThat(result?.id).isEqualTo(latest.id)
-        assertThat(result?.id).isNotEqualTo(older.id)
-    }
-
     private fun persistActive(): FarmingCycleReport =
         persistReport(
             projection = FarmingCycleReportProjection(
@@ -158,11 +174,24 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
 
     private fun persistCompleted(
         owner: Member = member,
+        farm: Farm? = null,
+        crop: Crop = this.crop,
         endedAt: LocalDateTime = day(10),
     ): FarmingCycleReport {
-        val finalHarvest = persistFinalHarvest(owner = owner, workedAt = endedAt)
+        val reportFarm = farm ?: if (owner === member) this.farm else persist(
+            Farm(owner = owner, name = "다른 농장", roadAddress = "서울시 서초구"),
+            baseTime,
+        )
+        val finalHarvest = persistFinalHarvest(
+            owner = owner,
+            farm = reportFarm,
+            crop = crop,
+            workedAt = endedAt,
+        )
         return persistReport(
             owner = owner,
+            farm = reportFarm,
+            crop = crop,
             projection = FarmingCycleReportProjection(
                 status = FarmingCycleReportStatus.COMPLETED,
                 startsAt = endedAt.minusDays(10),
@@ -185,9 +214,11 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
 
     private fun persistReport(
         owner: Member = member,
+        farm: Farm? = null,
+        crop: Crop = this.crop,
         projection: FarmingCycleReportProjection,
     ): FarmingCycleReport {
-        val reportFarm = if (owner === member) farm else persist(
+        val reportFarm = farm ?: if (owner === member) this.farm else persist(
             Farm(owner = owner, name = "다른 농장", roadAddress = "서울시 서초구"),
             baseTime,
         )
@@ -196,9 +227,11 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
 
     private fun persistFinalHarvest(
         owner: Member,
+        farm: Farm? = null,
+        crop: Crop = this.crop,
         workedAt: LocalDateTime,
     ): FarmingRecord {
-        val recordFarm = if (owner === member) farm else persist(
+        val recordFarm = farm ?: if (owner === member) this.farm else persist(
             Farm(owner = owner, name = "다른 수확 농장", roadAddress = "서울시 송파구"),
             baseTime,
         )
@@ -219,6 +252,8 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
     }
 
     private fun condition(
+        farmId: UUID? = this.farmId,
+        cropId: UUID? = this.cropId,
         cursor: FarmingCycleReportQueryRepository.Cursor? = null,
         size: Int = 20,
     ): FarmingCycleReportQueryRepository.SearchCondition =

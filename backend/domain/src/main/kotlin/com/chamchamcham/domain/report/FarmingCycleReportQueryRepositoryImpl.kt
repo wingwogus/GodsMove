@@ -12,7 +12,7 @@ class FarmingCycleReportQueryRepositoryImpl(
     override fun searchCompleted(
         condition: FarmingCycleReportQueryRepository.SearchCondition,
     ): FarmingCycleReportQueryRepository.SearchResult {
-        val where = completedScopeWhere()
+        val where = completedScopeWhere(condition.farmId, condition.cropId)
         val params = completedScopeParams(condition.memberId, condition.farmId, condition.cropId)
 
         condition.cursor?.let { cursor ->
@@ -26,18 +26,6 @@ class FarmingCycleReportQueryRepositoryImpl(
         )
     }
 
-    override fun findLatestCompleted(
-        memberId: UUID,
-        farmId: UUID,
-        cropId: UUID,
-    ): FarmingCycleReport? {
-        return findCompleted(
-            where = completedScopeWhere(),
-            params = completedScopeParams(memberId, farmId, cropId),
-            maxResults = 1,
-        ).firstOrNull()
-    }
-
     override fun findPreviousCompleted(
         memberId: UUID,
         farmId: UUID,
@@ -45,7 +33,7 @@ class FarmingCycleReportQueryRepositoryImpl(
         endsAt: LocalDateTime,
         finalHarvestRecordId: UUID,
     ): FarmingCycleReport? {
-        val where = completedScopeWhere()
+        val where = completedScopeWhere(farmId, cropId)
         val params = completedScopeParams(memberId, farmId, cropId)
         where += cursorPredicate()
         params["cursorEndsAt"] = endsAt
@@ -63,6 +51,8 @@ class FarmingCycleReportQueryRepositoryImpl(
             """
             select r
             from FarmingCycleReport r
+            join fetch r.farm
+            join fetch r.crop
             where ${where.joinToString(" and ")}
             order by r.endsAt desc, r.finalHarvestRecord.id desc
             """.trimIndent(),
@@ -73,23 +63,28 @@ class FarmingCycleReportQueryRepositoryImpl(
         return query.resultList
     }
 
-    private fun completedScopeWhere(): MutableList<String> = mutableListOf(
+    private fun completedScopeWhere(
+        farmId: UUID?,
+        cropId: UUID?,
+    ): MutableList<String> = mutableListOf(
         "r.member.id = :memberId",
-        "r.farm.id = :farmId",
-        "r.crop.id = :cropId",
         "r.status = :completed",
-    )
+    ).apply {
+        farmId?.let { add("r.farm.id = :farmId") }
+        cropId?.let { add("r.crop.id = :cropId") }
+    }
 
     private fun completedScopeParams(
         memberId: UUID,
-        farmId: UUID,
-        cropId: UUID,
-    ): MutableMap<String, Any> = mutableMapOf(
+        farmId: UUID?,
+        cropId: UUID?,
+    ): MutableMap<String, Any> = mutableMapOf<String, Any>(
         "memberId" to memberId,
-        "farmId" to farmId,
-        "cropId" to cropId,
         "completed" to FarmingCycleReportStatus.COMPLETED,
-    )
+    ).apply {
+        farmId?.let { put("farmId", it) }
+        cropId?.let { put("cropId", it) }
+    }
 
     private fun cursorPredicate(): String =
         """

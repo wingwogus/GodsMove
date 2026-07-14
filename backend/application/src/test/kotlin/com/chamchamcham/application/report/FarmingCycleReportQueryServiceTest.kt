@@ -29,7 +29,6 @@ import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
-import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import java.time.LocalDateTime
 import java.util.UUID
@@ -83,74 +82,24 @@ class FarmingCycleReportQueryServiceTest {
     }
 
     @Test
-    fun `current returns active and latest completed`() {
-        stubScope()
-        `when`(
-            reportRepository.findByMember_IdAndFarm_IdAndCrop_IdAndStatus(
-                memberId,
-                farmId,
-                cropId,
-                FarmingCycleReportStatus.ACTIVE,
-            ),
-        ).thenReturn(active)
-        `when`(queryRepository.findLatestCompleted(memberId, farmId, cropId)).thenReturn(previous)
-
-        val result = service.getCurrent(memberId, farmId, cropId)
-
-        assertThat(result.current?.id).isEqualTo(active.id)
-        assertThat(result.previous?.id).isEqualTo(previous.id)
-    }
-
-    @Test
-    fun `current without active returns null and latest completed as previous`() {
-        stubScope()
-        `when`(
-            reportRepository.findByMember_IdAndFarm_IdAndCrop_IdAndStatus(
-                memberId,
-                farmId,
-                cropId,
-                FarmingCycleReportStatus.ACTIVE,
-            ),
-        ).thenReturn(null)
-        `when`(queryRepository.findLatestCompleted(memberId, farmId, cropId)).thenReturn(previous)
-
-        val result = service.getCurrent(memberId, farmId, cropId)
-
-        assertThat(result.current).isNull()
-        assertThat(result.previous?.id).isEqualTo(previous.id)
-    }
-
-    @Test
-    fun `detail returns selected report and immediately previous completed`() {
+    fun `detail returns only the selected completed report`() {
         `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(selectedCompleted)
-        `when`(
-            queryRepository.findPreviousCompleted(
-                memberId,
-                farmId,
-                cropId,
-                requireNotNull(selectedCompleted.endsAt),
-                requireNotNull(selectedCompleted.finalHarvestRecord?.id),
-            ),
-        ).thenReturn(previous)
 
         val result = service.getDetail(memberId, reportId)
 
         assertThat(result.selected.id).isEqualTo(reportId)
         assertThat(result.selected.statistics).isSameAs(typedStatistics)
-        assertThat(result.previous?.id).isEqualTo(previous.id)
+        verifyNoInteractions(queryRepository)
     }
 
     @Test
-    fun `active detail previous uses latest completed`() {
+    fun `active detail returns selected without completed report lookup`() {
         `when`(reportRepository.findByIdAndMember_Id(activeReportId, memberId)).thenReturn(active)
-        `when`(queryRepository.findLatestCompleted(memberId, farmId, cropId)).thenReturn(previous)
 
         val result = service.getDetail(memberId, activeReportId)
 
         assertThat(result.selected.id).isEqualTo(activeReportId)
-        assertThat(result.previous?.id).isEqualTo(previous.id)
-        verify(queryRepository).findLatestCompleted(memberId, farmId, cropId)
-        verifyNoMoreInteractions(queryRepository)
+        verifyNoInteractions(queryRepository)
     }
 
     @Test
@@ -244,30 +193,6 @@ class FarmingCycleReportQueryServiceTest {
     }
 
     @Test
-    fun `invalid size is rejected before repository access`() {
-        listOf(0, 101).forEach { size ->
-            val exception = assertThrows(BusinessException::class.java) {
-                service.listCompleted(searchCondition(size = size))
-            }
-
-            assertEquals(ErrorCode.INVALID_INPUT, exception.errorCode)
-        }
-        verifyNoInteractions(queryRepository)
-    }
-
-    @Test
-    fun `current rejects unowned farm before report lookup`() {
-        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(null)
-
-        val exception = assertThrows(BusinessException::class.java) {
-            service.getCurrent(memberId, farmId, cropId)
-        }
-
-        assertEquals(ErrorCode.FARM_NOT_FOUND, exception.errorCode)
-        verifyNoInteractions(reportRepository, queryRepository)
-    }
-
-    @Test
     fun `list rejects unowned farm before query lookup`() {
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(null)
 
@@ -276,21 +201,56 @@ class FarmingCycleReportQueryServiceTest {
         }
 
         assertEquals(ErrorCode.FARM_NOT_FOUND, exception.errorCode)
+        verifyNoInteractions(memberCropRepository)
         verifyNoInteractions(queryRepository)
     }
 
     @Test
-    fun `current rejects crop that is not registered to member farm`() {
-        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
-        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId))
-            .thenReturn(false)
+    fun `list without filters stays member scoped without ownership lookups`() {
+        `when`(
+            queryRepository.searchCompleted(
+                FarmingCycleReportQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    farmId = null,
+                    cropId = null,
+                    cursor = null,
+                    size = 21,
+                ),
+            ),
+        ).thenReturn(FarmingCycleReportQueryRepository.SearchResult(emptyList()))
 
-        val exception = assertThrows(BusinessException::class.java) {
-            service.getCurrent(memberId, farmId, cropId)
-        }
+        val result = service.listCompleted(searchCondition(farmId = null, cropId = null))
 
-        assertEquals(ErrorCode.CROP_NOT_FOUND, exception.errorCode)
-        verifyNoInteractions(reportRepository, queryRepository)
+        assertThat(result.items).isEmpty()
+        verifyNoInteractions(farmRepository, memberCropRepository)
+        verify(queryRepository).searchCompleted(
+            FarmingCycleReportQueryRepository.SearchCondition(
+                memberId = memberId,
+                farmId = null,
+                cropId = null,
+                cursor = null,
+                size = 21,
+            ),
+        )
+    }
+
+    @Test
+    fun `list with crop only does not require a farm ownership lookup`() {
+        `when`(
+            queryRepository.searchCompleted(
+                FarmingCycleReportQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    farmId = null,
+                    cropId = cropId,
+                    cursor = null,
+                    size = 21,
+                ),
+            ),
+        ).thenReturn(FarmingCycleReportQueryRepository.SearchResult(emptyList()))
+
+        service.listCompleted(searchCondition(farmId = null, cropId = cropId))
+
+        verifyNoInteractions(farmRepository, memberCropRepository)
     }
 
     @Test
@@ -314,6 +274,8 @@ class FarmingCycleReportQueryServiceTest {
     }
 
     private fun searchCondition(
+        farmId: UUID? = this.farmId,
+        cropId: UUID? = this.cropId,
         cursor: String? = null,
         size: Int = 20,
     ): FarmingCycleReportSearchCondition =

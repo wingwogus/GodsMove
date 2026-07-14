@@ -4,6 +4,7 @@ import com.chamchamcham.ApiApplication
 import com.chamchamcham.application.farming.FarmingRecordCommand
 import com.chamchamcham.application.farming.FarmingRecordService
 import com.chamchamcham.application.report.FarmingCycleReportQueryService
+import com.chamchamcham.application.report.FarmingCycleReportSearchCondition
 import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackRepository
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackRepository
 import com.chamchamcham.domain.crop.Crop
@@ -116,23 +117,22 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
                 FarmingCycleReportStatus.ACTIVE,
             ),
         ).isNull()
-        val current = queryService.getCurrent(memberId, farmId, cropId)
-        assertThat(current.current).isNull()
-        assertThat(current.previous?.status).isEqualTo(FarmingCycleReportStatus.COMPLETED)
-        assertThat(current.previous?.finalHarvestRecordId).isEqualTo(finalHarvestId)
-        assertThat(current.previous?.statistics?.watering?.recordCount).isEqualTo(1)
-        assertThat(current.previous?.statistics?.harvest?.totalAmountKg)
+        val completed = loadOnlyCompletedReport()
+        assertThat(completed.status).isEqualTo(FarmingCycleReportStatus.COMPLETED)
+        assertThat(completed.finalHarvestRecordId).isEqualTo(finalHarvestId)
+        assertThat(completed.statistics.watering.recordCount).isEqualTo(1)
+        assertThat(completed.statistics.harvest.totalAmountKg)
             .isEqualByComparingTo("30.0000")
 
         farmingRecordService.delete(FarmingRecordCommand.Delete(memberId, wateringId))
 
         val rebuilt = queryService.getDetail(
             memberId,
-            requireNotNull(current.previous?.id),
+            completed.id,
         )
         assertThat(rebuilt.selected.statistics.watering.recordCount).isZero()
         assertThat(rebuilt.selected.sourceRevision)
-            .isGreaterThan(requireNotNull(current.previous?.sourceRevision))
+            .isGreaterThan(completed.sourceRevision)
     }
 
     @Test
@@ -148,19 +148,29 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
             ),
         ).id
 
-        val completed = queryService.getCurrent(memberId, farmId, cropId).previous
+        val completed = loadOnlyCompletedReport()
 
-        assertThat(completed?.status).isEqualTo(FarmingCycleReportStatus.COMPLETED)
-        assertThat(completed?.finalHarvestRecordId).isEqualTo(finalHarvestId)
-        assertThat(completed?.statisticsSchemaVersion).isEqualTo(2)
-        assertThat(completed?.statistics?.harvest?.recordCount).isEqualTo(1)
-        assertThat(completed?.statistics?.harvest?.totalAmountKg).isNull()
-        assertThat(completed?.statistics?.harvest?.amountCoverage?.recordedCount).isZero()
-        assertThat(completed?.statistics?.harvest?.amountCoverage?.targetCount).isEqualTo(1)
-        assertThat(completed?.statistics?.harvest?.medicinalParts).isEmpty()
-        assertThat(completed?.statistics?.harvest?.finalGrowthPeriodMonths).isNull()
-        assertThat(completed?.statistics?.harvest?.growthPeriodRangeMonths).isNull()
+        assertThat(completed.status).isEqualTo(FarmingCycleReportStatus.COMPLETED)
+        assertThat(completed.finalHarvestRecordId).isEqualTo(finalHarvestId)
+        assertThat(completed.statisticsSchemaVersion).isEqualTo(2)
+        assertThat(completed.statistics.harvest.recordCount).isEqualTo(1)
+        assertThat(completed.statistics.harvest.totalAmountKg).isNull()
+        assertThat(completed.statistics.harvest.amountCoverage.recordedCount).isZero()
+        assertThat(completed.statistics.harvest.amountCoverage.targetCount).isEqualTo(1)
+        assertThat(completed.statistics.harvest.medicinalParts).isEmpty()
+        assertThat(completed.statistics.harvest.finalGrowthPeriodMonths).isNull()
+        assertThat(completed.statistics.harvest.growthPeriodRangeMonths).isNull()
     }
+
+    private fun loadOnlyCompletedReport() = queryService.listCompleted(
+        FarmingCycleReportSearchCondition(
+            memberId = memberId,
+            farmId = farmId,
+            cropId = cropId,
+            cursor = null,
+            size = 20,
+        ),
+    ).items.single().let { queryService.getDetail(memberId, it.id).selected }
 
     private fun wateringCommand() = FarmingRecordCommand.Create(
         memberId = memberId,

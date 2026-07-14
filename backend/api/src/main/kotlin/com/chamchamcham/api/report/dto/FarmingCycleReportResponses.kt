@@ -1,7 +1,7 @@
 package com.chamchamcham.api.report.dto
 
 import com.chamchamcham.application.report.FarmingCycleReportResult
-import com.chamchamcham.domain.report.CycleReportStatistics
+import com.chamchamcham.api.report.dto.FarmingReportStatisticsResponses.CycleStatisticsResponse
 import com.chamchamcham.domain.report.FarmingCycleReportStatus
 import com.chamchamcham.domain.report.FarmingCycleStartBasis
 import java.time.LocalDateTime
@@ -50,7 +50,7 @@ object FarmingCycleReportResponses {
         val finalHarvestRecordId: UUID?,
         val statisticsSchemaVersion: Int,
         val sourceRevision: Long,
-        val statistics: CycleReportStatistics,
+        val statistics: CycleStatisticsResponse,
     ) {
         companion object {
             fun from(source: FarmingCycleReportResult.Snapshot) =
@@ -67,33 +67,18 @@ object FarmingCycleReportResponses {
                     finalHarvestRecordId = source.finalHarvestRecordId,
                     statisticsSchemaVersion = source.statisticsSchemaVersion,
                     sourceRevision = source.sourceRevision,
-                    statistics = source.statistics,
-                )
-        }
-    }
-
-    data class CurrentResponse(
-        val current: SnapshotResponse?,
-        val previous: SnapshotResponse?,
-    ) {
-        companion object {
-            fun from(source: FarmingCycleReportResult.Current) =
-                CurrentResponse(
-                    current = source.current?.let(SnapshotResponse::from),
-                    previous = source.previous?.let(SnapshotResponse::from),
+                    statistics = CycleStatisticsResponse.from(source.statistics),
                 )
         }
     }
 
     data class DetailResponse(
         val selected: SnapshotResponse,
-        val previous: SnapshotResponse?,
     ) {
         companion object {
             fun from(source: FarmingCycleReportResult.Detail) =
                 DetailResponse(
                     selected = SnapshotResponse.from(source.selected),
-                    previous = source.previous?.let(SnapshotResponse::from),
                 )
         }
     }

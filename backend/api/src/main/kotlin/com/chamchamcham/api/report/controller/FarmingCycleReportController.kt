@@ -6,8 +6,11 @@ import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.report.FarmingCycleReportQueryService
 import com.chamchamcham.application.report.FarmingCycleReportSearchCondition
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.RequestMapping
@@ -16,39 +19,24 @@ import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
 
 @RestController
+@Validated
 @RequestMapping("/api/v1/farming-reports")
 class FarmingCycleReportController(
     private val queryService: FarmingCycleReportQueryService,
 ) {
-    @GetMapping("/current")
-    fun getCurrent(
-        @AuthenticationPrincipal memberId: String?,
-        @RequestParam(required = false) farmId: UUID?,
-        @RequestParam(required = false) cropId: UUID?,
-    ): ResponseEntity<ApiResponse<FarmingCycleReportResponses.CurrentResponse>> {
-        val result = queryService.getCurrent(
-            parseMemberId(memberId),
-            requireQueryParam(farmId),
-            requireQueryParam(cropId),
-        )
-        return ResponseEntity.ok(
-            ApiResponse.ok(FarmingCycleReportResponses.CurrentResponse.from(result)),
-        )
-    }
-
     @GetMapping
     fun listCompleted(
         @AuthenticationPrincipal memberId: String?,
         @RequestParam(required = false) farmId: UUID?,
         @RequestParam(required = false) cropId: UUID?,
         @RequestParam(required = false) cursor: String?,
-        @RequestParam(defaultValue = "20") size: Int,
+        @RequestParam(defaultValue = "20") @Min(1) @Max(100) size: Int,
     ): ResponseEntity<ApiResponse<FarmingCycleReportResponses.PageResponse>> {
         val result = queryService.listCompleted(
             FarmingCycleReportSearchCondition(
                 memberId = parseMemberId(memberId),
-                farmId = requireQueryParam(farmId),
-                cropId = requireQueryParam(cropId),
+                farmId = farmId,
+                cropId = cropId,
                 cursor = cursor,
                 size = size,
             ),
@@ -79,9 +67,5 @@ class FarmingCycleReportController(
         } catch (exception: IllegalArgumentException) {
             throw BusinessException(ErrorCode.UNAUTHORIZED)
         }
-    }
-
-    private fun requireQueryParam(value: UUID?): UUID {
-        return value ?: throw BusinessException(ErrorCode.INVALID_INPUT)
     }
 }

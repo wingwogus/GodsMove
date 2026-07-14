@@ -4,6 +4,7 @@ import com.chamchamcham.api.common.ApiResponse
 import com.chamchamcham.application.common.LoggingUtil
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import jakarta.validation.ConstraintViolationException
 import mu.KotlinLogging
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
@@ -84,6 +85,25 @@ class GlobalExceptionHandler {
             code = ErrorCode.INVALID_INPUT.code,
             messageKey = ErrorCode.INVALID_INPUT.messageKey,
             detail = detail
+        )
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
+    }
+
+    @ExceptionHandler
+    fun handleConstraintViolation(e: ConstraintViolationException): ResponseEntity<ApiResponse<Unit>> {
+        LoggingUtil.logBusinessError(logger, e)
+
+        val violation = e.constraintViolations.firstOrNull()
+        val body = ApiResponse.fail(
+            code = ErrorCode.INVALID_INPUT.code,
+            messageKey = ErrorCode.INVALID_INPUT.messageKey,
+            detail = violation?.let {
+                mapOf(
+                    "field" to it.propertyPath.toString().substringAfterLast('.'),
+                    "reason" to it.message,
+                )
+            },
         )
 
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)

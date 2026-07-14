@@ -11,8 +11,8 @@ interface FarmingCycleReportQueryRepository {
 
     data class SearchCondition(
         val memberId: UUID,
-        val farmId: UUID,
-        val cropId: UUID,
+        val farmId: UUID?,
+        val cropId: UUID?,
         val cursor: Cursor?,
         val size: Int,
     )
@@ -22,12 +22,6 @@ interface FarmingCycleReportQueryRepository {
     )
 
     fun searchCompleted(condition: SearchCondition): SearchResult
-
-    fun findLatestCompleted(
-        memberId: UUID,
-        farmId: UUID,
-        cropId: UUID,
-    ): FarmingCycleReport?
 
     fun findPreviousCompleted(
         memberId: UUID,

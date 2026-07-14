@@ -22,31 +22,10 @@ class FarmingCycleReportQueryService(
     private val queryRepository: FarmingCycleReportQueryRepository,
     private val cursorCodec: OpaqueCursorCodec,
 ) {
-    fun getCurrent(
-        memberId: UUID,
-        farmId: UUID,
-        cropId: UUID,
-    ): FarmingCycleReportResult.Current {
-        validateScope(memberId, farmId, cropId)
-        val current = reportRepository.findByMember_IdAndFarm_IdAndCrop_IdAndStatus(
-            memberId,
-            farmId,
-            cropId,
-            FarmingCycleReportStatus.ACTIVE,
-        )
-        val previous = queryRepository.findLatestCompleted(memberId, farmId, cropId)
-
-        return FarmingCycleReportResult.Current(
-            current = current?.let(::toSnapshot),
-            previous = previous?.let(::toSnapshot),
-        )
-    }
-
     fun listCompleted(
         condition: FarmingCycleReportSearchCondition,
     ): FarmingCycleReportResult.Page {
-        validatePageSize(condition.size)
-        validateScope(condition.memberId, condition.farmId, condition.cropId)
+        validateListScope(condition.memberId, condition.farmId, condition.cropId)
         val cursor = decodeCursor(condition.cursor)
         val result = queryRepository.searchCompleted(
             FarmingCycleReportQueryRepository.SearchCondition(
@@ -78,41 +57,19 @@ class FarmingCycleReportQueryService(
             ?.takeUnless { it.status == FarmingCycleReportStatus.SUPERSEDED }
             ?: throw BusinessException(ErrorCode.REPORT_NOT_FOUND)
 
-        val farmId = requireNotNull(selected.farm.id) { "Persisted farm id is required" }
-        val cropId = requireNotNull(selected.crop.id) { "Persisted crop id is required" }
-        val previous = when (selected.status) {
-            FarmingCycleReportStatus.ACTIVE ->
-                queryRepository.findLatestCompleted(memberId, farmId, cropId)
-            FarmingCycleReportStatus.COMPLETED ->
-                queryRepository.findPreviousCompleted(
-                    memberId = memberId,
-                    farmId = farmId,
-                    cropId = cropId,
-                    endsAt = requireNotNull(selected.endsAt) { "Completed report endsAt is required" },
-                    finalHarvestRecordId = requireNotNull(selected.finalHarvestRecord?.id) {
-                        "Completed report final harvest record id is required"
-                    },
-                )
-            FarmingCycleReportStatus.SUPERSEDED -> null
-        }
-
         return FarmingCycleReportResult.Detail(
             selected = toSnapshot(selected),
-            previous = previous?.let(::toSnapshot),
         )
     }
 
-    private fun validateScope(memberId: UUID, farmId: UUID, cropId: UUID) {
+    private fun validateListScope(memberId: UUID, farmId: UUID?, cropId: UUID?) {
+        if (farmId == null) {
+            return
+        }
         farmRepository.findByIdAndOwnerId(farmId, memberId)
             ?: throw BusinessException(ErrorCode.FARM_NOT_FOUND)
-        if (!memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId)) {
+        if (cropId != null && !memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId)) {
             throw BusinessException(ErrorCode.CROP_NOT_FOUND)
-        }
-    }
-
-    private fun validatePageSize(size: Int) {
-        if (size !in 1..100) {
-            throw BusinessException(ErrorCode.INVALID_INPUT)
         }
     }
 

@@ -36,14 +36,8 @@ object FarmingCycleReportResult {
         val statistics: CycleReportStatistics,
     )
 
-    data class Current(
-        val current: Snapshot?,
-        val previous: Snapshot?,
-    )
-
     data class Detail(
         val selected: Snapshot,
-        val previous: Snapshot?,
     )
 
     data class Page(
