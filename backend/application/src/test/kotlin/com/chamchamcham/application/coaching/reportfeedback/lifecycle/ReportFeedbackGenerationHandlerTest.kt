@@ -38,13 +38,15 @@ import org.mockito.Mockito.verify
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
+import org.springframework.boot.test.system.CapturedOutput
+import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.AbstractPlatformTransactionManager
 import org.springframework.transaction.support.DefaultTransactionStatus
 import java.time.LocalDateTime
 import java.util.UUID
 
-@ExtendWith(MockitoExtension::class)
+@ExtendWith(MockitoExtension::class, OutputCaptureExtension::class)
 class ReportFeedbackGenerationHandlerTest {
     private val memberId = UUID.randomUUID()
     private val reportId = UUID.randomUUID()
@@ -220,6 +222,29 @@ class ReportFeedbackGenerationHandlerTest {
         assertThat(target.status).isEqualTo(ReportFeedbackStatus.FAILED)
         assertThat(target.failureCode).isEqualTo(ReportFeedbackFailureCode.CHAT_UNAVAILABLE.name)
         assertThat(sibling.status).isEqualTo(ReportFeedbackStatus.PENDING)
+    }
+
+    @Test
+    fun `generation failure logs safe diagnostics without raw evidence values`(output: CapturedOutput) {
+        val target = pendingFeedback(WorkType.WATERING)
+        val event = generationEvent(WorkType.WATERING)
+        stubTarget(event, target)
+        `when`(generationService.generate(anyContext())).thenThrow(
+            ReportFeedbackGenerationFailure(
+                ReportFeedbackFailureCode.STRUCTURED_OUTPUT_INVALID,
+                IllegalStateException("comparison_not_available,unknown_evidence:untrusted-generated-value"),
+            ),
+        )
+
+        handler.on(event)
+
+        val logs = output.out + output.err
+        assertThat(logs)
+            .contains("report feedback generation failed")
+            .contains("STRUCTURED_OUTPUT_INVALID")
+            .contains("comparison_not_available")
+            .contains("unknown_evidence")
+            .doesNotContain("untrusted-generated-value")
     }
 
     @Test

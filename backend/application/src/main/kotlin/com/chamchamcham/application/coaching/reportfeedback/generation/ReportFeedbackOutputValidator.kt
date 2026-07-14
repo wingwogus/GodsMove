@@ -1,6 +1,5 @@
 package com.chamchamcham.application.coaching.reportfeedback.generation
 
-import com.chamchamcham.application.coaching.common.CoachingTextPolicy
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackItemSection
 
 object ReportFeedbackOutputValidator {
@@ -12,12 +11,6 @@ object ReportFeedbackOutputValidator {
         val warnings = mutableListOf<String>()
         if (content.summary.isBlank()) {
             warnings += "summary_blank"
-        }
-        if (!content.summary.hasFriendlyHonorificTone()) {
-            warnings += "summary_text_tone"
-        }
-        if (CoachingTextPolicy.containsEnglishLetter(content.summary)) {
-            warnings += "summary_text_english"
         }
         val items = content.items()
         if (content.comparisons.isNotEmpty() && context.comparisons.isEmpty()) {
@@ -32,7 +25,6 @@ object ReportFeedbackOutputValidator {
             context.previousReport?.let { add("report:${it.id}") }
             documents.forEach { add(it.id) }
         }
-        val seen = mutableSetOf<String>()
         items.forEach { structured ->
             val item = structured.item
             if (item.basis.isBlank()) {
@@ -40,12 +32,6 @@ object ReportFeedbackOutputValidator {
             }
             if (item.text.isBlank()) {
                 warnings += "${structured.section.name.lowercase()}_text_blank"
-            }
-            if (!item.text.hasFriendlyHonorificTone()) {
-                warnings += "${structured.section.name.lowercase()}_text_tone"
-            }
-            if (CoachingTextPolicy.containsEnglishLetter(item.text)) {
-                warnings += "${structured.section.name.lowercase()}_text_english"
             }
             if (item.evidenceRefs.none { it.isNotBlank() }) {
                 warnings += "${structured.section.name.lowercase()}_evidence_refs_blank"
@@ -63,15 +49,7 @@ object ReportFeedbackOutputValidator {
                     warnings += "comparison_previous_report_ref_required"
                 }
             }
-            val key = item.text.lowercase().filter(Char::isLetterOrDigit)
-            if (!seen.add(key)) {
-                warnings += "duplicate_item"
-            }
         }
         return warnings.distinct()
-    }
-
-    private fun String.hasFriendlyHonorificTone(): Boolean {
-        return trimEnd().trimEnd('.', '!', '?', '…', '。').endsWith("요")
     }
 }

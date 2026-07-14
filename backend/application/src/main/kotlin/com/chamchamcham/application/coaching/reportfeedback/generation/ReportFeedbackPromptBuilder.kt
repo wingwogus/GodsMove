@@ -67,6 +67,7 @@ class ReportFeedbackPromptBuilder {
             통계 필드명이나 통계값은 evidenceRefs로 사용하지 않는다.
             기술 문서가 없으면 기술 권고를 억지로 만들지 말고 기록 근거의 코칭만 제공한다.
             서버가 계산한 비교값을 그대로 사용하고 다시 계산하지 않는다.
+            서버가 계산한 비교값이 없으면 comparisons는 반드시 빈 배열로 응답한다.
             comparisons에는 변화 사실만 쉬운 문장으로 쓰고 칭찬, 문제 진단, 권고를 넣지 않는다.
             comparison, strength, improvement, next-action 사이에 같은 내용을 반복하지 않는다.
             같은 항목을 반복하지 말고, 선택한 작업의 다음 행동은 실행 방법이 드러나게 작성한다.

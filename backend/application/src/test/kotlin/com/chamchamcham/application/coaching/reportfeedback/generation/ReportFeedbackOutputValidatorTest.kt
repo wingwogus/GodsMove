@@ -1,6 +1,8 @@
 package com.chamchamcham.application.coaching.reportfeedback.generation
 
 import com.chamchamcham.domain.farming.WorkType
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -104,7 +106,7 @@ class ReportFeedbackOutputValidatorTest {
     }
 
     @Test
-    fun `rejects informal English and unknown evidence in comparison`() {
+    fun `allows stylistic deviations but still rejects unknown evidence in comparison`() {
         val unknown = "report:${UUID.randomUUID()}"
         val content = ReportFeedbackContent(
             summary = "이번 물 주기 기록의 흐름을 확인했어요.",
@@ -112,7 +114,7 @@ class ReportFeedbackOutputValidatorTest {
                 ReportFeedbackContentItem(
                     basis = "comparison",
                     text = "WATERING 기록이 늘었다.",
-                    evidenceRefs = listOf(unknown),
+                    evidenceRefs = listOf("report:$reportId", "report:$previousReportId", unknown),
                 ),
             ),
             strengths = emptyList(),
@@ -121,11 +123,11 @@ class ReportFeedbackOutputValidatorTest {
         )
 
         assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
-            .contains("comparison_text_tone", "comparison_text_english", "unknown_evidence:$unknown")
+            .containsExactly("unknown_evidence:$unknown")
     }
 
     @Test
-    fun `rejects the same fact repeated across comparison and another section`() {
+    fun `allows the same fact repeated across comparison and another section`() {
         val comparison = ReportFeedbackContentItem(
             basis = "직전보다 기록 1회 증가",
             text = "직전 재배보다 물 주기 기록이 한 번 늘었어요.",
@@ -141,7 +143,7 @@ class ReportFeedbackOutputValidatorTest {
         )
 
         assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
-            .contains("duplicate_item")
+            .isEmpty()
     }
 
     @Test
@@ -169,7 +171,7 @@ class ReportFeedbackOutputValidatorTest {
     }
 
     @Test
-    fun `rejects an unknown evidence reference and a duplicate item without a count cap`() {
+    fun `rejects an unknown evidence reference while allowing a duplicate item`() {
         val item = item("관수 1회", "물 준 기록을 남겨 작업 흐름을 확인하기 좋았어요.")
         val content = ReportFeedbackContent(
             summary = "이번 물 주기 기록을 확인했어요.",
@@ -178,13 +180,14 @@ class ReportFeedbackOutputValidatorTest {
             nextActions = emptyList(),
         )
 
-        assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
-            .anyMatch { it.startsWith("unknown_evidence:") }
-            .contains("duplicate_item")
+        val warnings = ReportFeedbackOutputValidator.validate(content, context, emptyList())
+
+        assertThat(warnings).hasSize(1)
+        assertThat(warnings.single()).startsWith("unknown_evidence:")
     }
 
     @Test
-    fun `rejects a summary and item text without friendly honorifics`() {
+    fun `allows a summary and item text with formal honorifics`() {
         val content = ReportFeedbackContent(
             summary = "이번 물 주기 기록을 꾸준히 남겼습니다.",
             strengths = listOf(item("관수 1회", "물 준 기록을 남겨 작업 흐름을 확인할 수 있습니다.")),
@@ -193,11 +196,11 @@ class ReportFeedbackOutputValidatorTest {
         )
 
         assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
-            .contains("summary_text_tone", "strength_text_tone")
+            .isEmpty()
     }
 
     @Test
-    fun `rejects English while allowing Korean farming terms in public report text`() {
+    fun `allows English and Korean farming terms in public report text`() {
         val content = ReportFeedbackContent(
             summary = "WATERING 흐름을 확인했어요.",
             strengths = listOf(item("DRIP 관수", "DRIP으로 물을 준 점은 좋았어요.")),
@@ -206,12 +209,11 @@ class ReportFeedbackOutputValidatorTest {
         )
 
         assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
-            .contains("summary_text_english", "strength_text_english")
-            .doesNotContain("improvement_text_english", "next_action_text_english")
+            .isEmpty()
     }
 
     @Test
-    fun `rejects English in every report item section`() {
+    fun `allows English in every report item section`() {
         val content = ReportFeedbackContent(
             summary = "이번 물 주기 기록을 확인했어요.",
             strengths = listOf(item("기록", "DRIP 방식을 꾸준히 사용했어요.")),
@@ -219,11 +221,19 @@ class ReportFeedbackOutputValidatorTest {
             nextActions = listOf(item("확인", "pH 대신 흙 상태를 쉬운 말로 적으세요.")),
         )
 
-        assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList())).contains(
-            "strength_text_english",
-            "improvement_text_english",
-            "next_action_text_english",
+        assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList())).isEmpty()
+    }
+
+    @Test
+    fun `deserializes omitted item sections as empty lists`() {
+        val content = jacksonObjectMapper().readValue<ReportFeedbackContent>(
+            """{"summary":"이번 물 주기 기록을 확인했어요."}""",
         )
+
+        assertThat(content.comparisons).isEmpty()
+        assertThat(content.strengths).isEmpty()
+        assertThat(content.improvements).isEmpty()
+        assertThat(content.nextActions).isEmpty()
     }
 
     @Test

@@ -94,6 +94,16 @@ class ReportFeedbackPromptBuilderTest {
     }
 
     @Test
+    fun `prompt requires an empty comparison section when the server has no comparison`() {
+        val context = context().copy(previousReport = null, comparisons = emptyList())
+
+        val prompt = ReportFeedbackPromptBuilder().build(context, emptyList())
+
+        assertThat(prompt.system)
+            .contains("서버가 계산한 비교값이 없으면 comparisons는 반드시 빈 배열로 응답한다.")
+    }
+
+    @Test
     fun `planting statistics include seed and seedling as easy planting descriptions`() {
         val base = context()
         val plantingContext = base.copy(

@@ -39,61 +39,52 @@ class ReportFeedbackGenerationServiceTest {
     private val previousReportId = UUID.randomUUID()
 
     @Test
-    fun `validation failure is retried with safe diagnostic codes`() {
-        val client = FakeChatClient(invalidToneContent(), validContent())
+    fun `evidence validation failure is retried with safe diagnostic codes`() {
+        val client = FakeChatClient(
+            validContent().copy(strengths = listOf(item(evidenceRefs = listOf("unknown")))),
+            validContent(),
+        )
 
         service(client).generate(context())
 
         assertThat(client.attempts).isEqualTo(2)
-        assertThat(client.requestSpec.userTexts.last()).contains("summary_text_tone")
+        assertThat(client.requestSpec.userTexts.last()).contains("unknown_evidence")
     }
 
     @Test
-    fun `English failure is retried with a fixed diagnostic code only`() {
+    fun `English summary is accepted without retry`() {
         val generatedText = "WATERING 흐름을 확인했어요."
         val client = FakeChatClient(
             validContent().copy(summary = generatedText),
-            validContent(),
         )
 
         service(client).generate(context())
 
-        assertThat(client.attempts).isEqualTo(2)
-        assertThat(client.requestSpec.userTexts.last())
-            .contains("summary_text_english")
-            .doesNotContain(generatedText, "WATERING")
+        assertThat(client.attempts).isEqualTo(1)
     }
 
     @Test
-    fun `item English failure is retried with a fixed diagnostic code only`() {
+    fun `English item is accepted without retry`() {
         val generatedText = "DRIP 방식을 다음에도 확인하세요."
         val client = FakeChatClient(
             validContent().copy(nextActions = listOf(item(text = generatedText))),
-            validContent(),
         )
 
         service(client).generate(context())
 
-        assertThat(client.attempts).isEqualTo(2)
-        assertThat(client.requestSpec.userTexts.last())
-            .contains("next_action_text_english")
-            .doesNotContain(generatedText, "DRIP")
+        assertThat(client.attempts).isEqualTo(1)
     }
 
     @Test
-    fun `comparison English failure is retried with a fixed diagnostic code only`() {
+    fun `English comparison is accepted without retry`() {
         val generatedText = "WATERING 기록이 늘었어요."
         val client = FakeChatClient(
             validContent().copy(comparisons = listOf(comparisonItem(text = generatedText))),
-            validContent(),
         )
 
         service(client).generate(context())
 
-        assertThat(client.attempts).isEqualTo(2)
-        assertThat(client.requestSpec.userTexts.last())
-            .contains("comparison_text_english")
-            .doesNotContain(generatedText, "WATERING")
+        assertThat(client.attempts).isEqualTo(1)
     }
 
     @Test
@@ -138,15 +129,12 @@ class ReportFeedbackGenerationServiceTest {
     }
 
     @Test
-    fun `two English failures end as structured output invalid`() {
-        val invalid = validContent().copy(summary = "WATERING 흐름을 확인했어요.")
-        val client = FakeChatClient(invalid, invalid)
+    fun `English output remains valid on the first attempt`() {
+        val content = validContent().copy(summary = "WATERING 흐름을 확인했어요.")
+        val client = FakeChatClient(content, content)
 
-        assertThatThrownBy { service(client).generate(context()) }
-            .isInstanceOfSatisfying(ReportFeedbackGenerationFailure::class.java) {
-                assertThat(it.code).isEqualTo(ReportFeedbackFailureCode.STRUCTURED_OUTPUT_INVALID)
-            }
-        assertThat(client.attempts).isEqualTo(2)
+        assertThat(service(client).generate(context()).content).isEqualTo(content)
+        assertThat(client.attempts).isEqualTo(1)
     }
 
     @Test
@@ -167,8 +155,9 @@ class ReportFeedbackGenerationServiceTest {
     }
 
     @Test
-    fun `two invalid attempts fail only as structured output invalid`() {
-        val client = FakeChatClient(invalidToneContent(), invalidToneContent())
+    fun `two unknown evidence attempts fail only as structured output invalid`() {
+        val invalid = validContent().copy(strengths = listOf(item(evidenceRefs = listOf("unknown"))))
+        val client = FakeChatClient(invalid, invalid)
 
         assertThatThrownBy { service(client).generate(context()) }
             .isInstanceOfSatisfying(ReportFeedbackGenerationFailure::class.java) {
@@ -196,6 +185,21 @@ class ReportFeedbackGenerationServiceTest {
 
         assertThat(client.attempts).isEqualTo(2)
         assertThat(client.requestSpec.userTexts.last()).contains("structured_output_parse_failed")
+    }
+
+    @Test
+    fun `two parse failures expose only the safe parse diagnostic`() {
+        val rawMessage = "private generated response"
+        val client = FakeChatClient(RuntimeException(rawMessage), RuntimeException(rawMessage))
+
+        assertThatThrownBy { service(client).generate(context()) }
+            .isInstanceOfSatisfying(ReportFeedbackGenerationFailure::class.java) {
+                assertThat(it.code).isEqualTo(ReportFeedbackFailureCode.STRUCTURED_OUTPUT_INVALID)
+                assertThat(it.cause?.message)
+                    .isEqualTo("structured_output_parse_failed")
+                    .doesNotContain(rawMessage)
+            }
+        assertThat(client.attempts).isEqualTo(2)
     }
 
     @Test
@@ -284,10 +288,6 @@ class ReportFeedbackGenerationServiceTest {
         strengths = listOf(item()),
         improvements = emptyList(),
         nextActions = emptyList(),
-    )
-
-    private fun invalidToneContent() = validContent().copy(
-        summary = "이번 물 주기 기록의 흐름을 확인했습니다.",
     )
 
     private fun item(

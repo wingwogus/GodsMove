@@ -103,9 +103,9 @@ class ReportFeedbackGenerationService(
                     ?: throw IllegalStateException("empty structured output")
             } catch (exception: BusinessException) {
                 throw ReportFeedbackGenerationFailure(ReportFeedbackFailureCode.CHAT_UNAVAILABLE, exception)
-            } catch (exception: RuntimeException) {
-                lastFailure = exception
+            } catch (_: RuntimeException) {
                 retryWarnings = listOf("structured_output_parse_failed")
+                lastFailure = IllegalStateException(retryWarnings.single())
                 return@repeat
             }
             val warnings = ReportFeedbackOutputValidator.validate(content, context, evidence)
@@ -165,13 +165,10 @@ class ReportFeedbackGenerationService(
         const val GENERAL_CROP_NAME = "GENERAL"
         const val MAX_STRUCTURED_OUTPUT_ATTEMPTS = 2
         val SAFE_ITEM_WARNING = Regex(
-            "^(comparison|strength|improvement|next_action)_(basis_blank|text_blank|text_tone|text_english|evidence_refs_blank)$",
+            "^(comparison|strength|improvement|next_action)_(basis_blank|text_blank|evidence_refs_blank)$",
         )
         val SAFE_RETRY_WARNINGS = setOf(
             "summary_blank",
-            "summary_text_tone",
-            "summary_text_english",
-            "duplicate_item",
             "comparison_not_available",
             "comparison_current_report_ref_required",
             "comparison_previous_report_ref_required",
