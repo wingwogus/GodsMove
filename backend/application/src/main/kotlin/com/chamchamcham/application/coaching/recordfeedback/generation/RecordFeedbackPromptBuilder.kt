@@ -56,7 +56,9 @@ class RecordFeedbackPromptBuilder {
             근거에 없는 병 이름, 증상, 약 이름을 만들지 않는다.
             기록 작성, 사진 촬영, 메모 작성은 기본 행동으로 추천하지 않는다.
             각 항목은 basis, text, evidenceRefs를 반드시 가진다.
-            각 text는 15~25자를 목표로 하되, 최대 60자까지 허용한다. 강제로 자르지 말고, 길이를 맞춰 다시 쓴다.
+            잘한 점 text는 15~23자를 목표로 작성한다.
+            nextActions의 각 text는 15~25자를 목표로 작성한다.
+            모든 text는 최대 60자까지 허용한다. 강제로 자르지 말고, 길이를 맞춰 다시 쓴다.
             basis와 evidenceRefs는 내부 검증용이다. text에 basis, 근거, citation id를 직접 쓰지 않는다.
             nextActions의 due는 TODAY, THIS_WEEK, NEXT_WEEK, NEXT_CHECK 중 하나만 사용한다.
             nextActions의 category는 WEATHER, PEST_DISEASE, IRRIGATION, FERTILIZING, PEST_CONTROL, HARVEST, CULTIVATION, GENERAL 중 하나만 사용한다.

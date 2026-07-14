@@ -52,8 +52,11 @@ class RecordFeedbackPromptBuilderTest {
             "다음 행동에는 어디를, 무엇을, 어떻게 볼지 또는 할지를 포함한다.",
             "병해충 행동은 공식문서 근거에 있는 눈으로 확인할 수 있는 증상만 구체적으로 쓴다.",
             "basis와 evidenceRefs는 내부 검증용이다. text에 basis, 근거, citation id를 직접 쓰지 않는다.",
-            "각 text는 15~25자를 목표로 하되, 최대 60자까지 허용한다.",
+            "잘한 점 text는 15~23자를 목표로 작성한다.",
+            "nextActions의 각 text는 15~25자를 목표로 작성한다.",
+            "모든 text는 최대 60자까지 허용한다. 강제로 자르지 말고, 길이를 맞춰 다시 쓴다.",
         )
+        assertThat(prompt.system).doesNotContain("각 text는 15~25자를 목표로 하되")
         assertThat(prompt.system).contains("응답은 RecordFeedbackContent JSON schema만 따른다")
         assertThat(prompt.system).contains(CoachingTextPolicy.promptInstructions)
         assertThat(prompt.system).contains("goodPoint", "nextActions", "basis", "text", "evidenceRefs")
