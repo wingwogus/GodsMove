@@ -38,7 +38,7 @@ class FarmingWorkReportQueryService(
     private val feedbackQueryService: ReportFeedbackQueryService,
 ) {
     fun list(condition: FarmingWorkReportSearchCondition): FarmingWorkReportResult.Page {
-        val result = queryRepository.searchCompletedWorkItems(
+        val result = queryRepository.searchWorkItems(
             FarmingCycleReportQueryRepository.WorkItemSearchCondition(
                 memberId = condition.memberId,
                 farmId = condition.farmId,
@@ -76,17 +76,26 @@ class FarmingWorkReportQueryService(
         workType: WorkType,
     ): FarmingWorkReportResult.Detail {
         val report = reportRepository.findByIdAndMember_Id(reportId, memberId)
-            ?.takeIf { it.status == FarmingCycleReportStatus.COMPLETED }
+            ?.takeUnless { it.status == FarmingCycleReportStatus.SUPERSEDED }
             ?: throw BusinessException(ErrorCode.REPORT_NOT_FOUND)
         val statistics = report.statistics.forWorkType(workType)
         if (statistics.common.recordCount == 0) {
             throw BusinessException(ErrorCode.WORK_REPORT_NOT_FOUND)
         }
-        val feedback = feedbackQueryService.get(memberId, reportId).feedbacks
-            .firstOrNull { it.workType == workType }
+        val feedbackStatus = if (report.status == FarmingCycleReportStatus.COMPLETED) {
+            val feedback = feedbackQueryService.get(memberId, reportId).feedbacks
+                .firstOrNull { it.workType == workType }
+            FarmingWorkReportResult.FeedbackStatus(
+                status = feedback?.status ?: ReportFeedbackStatus.PENDING,
+                content = feedback?.content,
+            )
+        } else {
+            null
+        }
 
         return FarmingWorkReportResult.Detail(
             reportId = requireNotNull(report.id) { "Persisted farming cycle report id is required" },
+            status = report.status,
             workType = workType,
             workTypeLabel = workType.toCoachingText(),
             farmId = requireNotNull(report.farm.id) { "Persisted farm id is required" },
@@ -94,12 +103,9 @@ class FarmingWorkReportQueryService(
             cropId = requireNotNull(report.crop.id) { "Persisted crop id is required" },
             cropName = report.crop.name,
             startsAt = report.startsAt,
-            endsAt = requireNotNull(report.endsAt) { "Completed report endsAt is required" },
+            endsAt = report.endsAt,
             statistics = statistics,
-            feedback = FarmingWorkReportResult.FeedbackStatus(
-                status = feedback?.status ?: ReportFeedbackStatus.PENDING,
-                content = feedback?.content,
-            ),
+            feedback = feedbackStatus,
         )
     }
 
@@ -124,8 +130,13 @@ class FarmingWorkReportQueryService(
         slices: List<CycleSlice>,
         snapshot: FarmingWorkReportSourceSnapshot,
     ): String? {
-        val cycle = slices.singleOrNull { slice ->
-            slice.finalHarvestRecordId == row.finalHarvestRecordId
+        val cycle = when (row.status) {
+            FarmingCycleReportStatus.ACTIVE -> slices.singleOrNull { it.status == FarmingCycleReportStatus.ACTIVE }
+            FarmingCycleReportStatus.COMPLETED -> slices.singleOrNull { slice ->
+                slice.status == FarmingCycleReportStatus.COMPLETED &&
+                    slice.finalHarvestRecordId == row.finalHarvestRecordId
+            }
+            FarmingCycleReportStatus.SUPERSEDED -> null
         } ?: return null
         val picturedRecord = cycle.records
             .asSequence()
@@ -146,7 +157,8 @@ class FarmingWorkReportQueryService(
         if (cursor.isNullOrBlank()) return null
         val payload = cursorCodec.decode(cursor, FarmingWorkReportCursorPayload::class.java)
         return FarmingCycleReportQueryRepository.WorkItemCursor(
-            endsAt = payload.endsAt,
+            status = payload.status,
+            sortAt = payload.sortAt,
             reportId = payload.reportId,
             workType = payload.workType,
         )
@@ -155,7 +167,8 @@ class FarmingWorkReportQueryService(
     private fun encodeCursor(row: FarmingCycleReportQueryRepository.WorkItem): String =
         cursorCodec.encode(
             FarmingWorkReportCursorPayload(
-                endsAt = row.endsAt,
+                status = row.status,
+                sortAt = row.sortAt,
                 reportId = row.reportId,
                 workType = row.workType,
             ),
@@ -166,6 +179,7 @@ class FarmingWorkReportQueryService(
     ): FarmingWorkReportResult.Item =
         FarmingWorkReportResult.Item(
             reportId = reportId,
+            status = status,
             farmId = farmId,
             farmName = farmName,
             cropId = cropId,

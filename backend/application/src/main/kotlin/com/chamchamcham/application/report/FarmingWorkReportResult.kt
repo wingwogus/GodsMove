@@ -5,6 +5,7 @@ import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.report.CommonOnlyStatistics
 import com.chamchamcham.domain.report.FertilizingStatistics
+import com.chamchamcham.domain.report.FarmingCycleReportStatus
 import com.chamchamcham.domain.report.HarvestStatistics
 import com.chamchamcham.domain.report.PestControlStatistics
 import com.chamchamcham.domain.report.PlantingStatistics
@@ -17,13 +18,14 @@ import java.util.UUID
 object FarmingWorkReportResult {
     data class Item(
         val reportId: UUID,
+        val status: FarmingCycleReportStatus,
         val farmId: UUID,
         val farmName: String,
         val cropId: UUID,
         val cropName: String,
         val startsAt: LocalDateTime,
-        val endsAt: LocalDateTime,
-        val finalHarvestRecordId: UUID,
+        val endsAt: LocalDateTime?,
+        val finalHarvestRecordId: UUID?,
         val workType: WorkType,
         val workTypeLabel: String,
         val recordCount: Int,
@@ -38,6 +40,7 @@ object FarmingWorkReportResult {
 
     data class Detail(
         val reportId: UUID,
+        val status: FarmingCycleReportStatus,
         val workType: WorkType,
         val workTypeLabel: String,
         val farmId: UUID,
@@ -45,9 +48,9 @@ object FarmingWorkReportResult {
         val cropId: UUID,
         val cropName: String,
         val startsAt: LocalDateTime,
-        val endsAt: LocalDateTime,
+        val endsAt: LocalDateTime?,
         val statistics: WorkStatistics,
-        val feedback: FeedbackStatus,
+        val feedback: FeedbackStatus?,
     )
 
     data class WorkStatistics(

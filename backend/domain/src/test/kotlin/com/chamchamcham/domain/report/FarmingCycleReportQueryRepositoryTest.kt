@@ -162,7 +162,7 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
     }
 
     @Test
-    fun `work item projection filters completed positive statistics and orders report cards`() {
+    fun `work item projection includes active and completed positive statistics and orders report cards`() {
         val otherFarm = persist(
             Farm(owner = member, name = "다른 약초농장", roadAddress = "서울시 마포구"),
             baseTime,
@@ -194,19 +194,30 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
                 watering = WateringStatistics(recordCount = 9, lastWorkedOn = day(50).toLocalDate()),
             ),
         )
-        persistActive()
+        val active = persistActive(
+            statistics = CycleReportStatistics(
+                watering = WateringStatistics(recordCount = 4, lastWorkedOn = day(52).toLocalDate()),
+            ),
+        )
         persistSuperseded(endedAt = day(60))
         entityManager.flush()
         entityManager.clear()
 
-        val all = repository.searchCompletedWorkItems(
+        val all = repository.searchWorkItems(
             workCondition(farmId = null, cropId = null, size = 20),
         ).rows
 
+        assertThat(all.first().reportId).isEqualTo(active.id)
+        assertThat(all.first().status).isEqualTo(FarmingCycleReportStatus.ACTIVE)
+        assertThat(all.first().endsAt).isNull()
+        assertThat(all.first().finalHarvestRecordId).isNull()
         assertThat(all.map { it.reportId to it.workType })
             .containsExactlyElementsOf(
                 all.sortedWith(
-                    compareByDescending<FarmingCycleReportQueryRepository.WorkItem> { it.endsAt }
+                    compareBy<FarmingCycleReportQueryRepository.WorkItem> {
+                        if (it.status == FarmingCycleReportStatus.ACTIVE) 0 else 1
+                    }
+                        .thenByDescending { it.sortAt }
                         .thenByDescending { it.reportId }
                         .thenBy { it.workType.ordinal },
                 ).map { it.reportId to it.workType },
@@ -216,68 +227,83 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
                 requireNotNull(latest.id) to WorkType.WATERING,
                 requireNotNull(latest.id) to WorkType.HARVEST,
                 requireNotNull(sameEndOtherScope.id) to WorkType.PLANTING,
+                requireNotNull(active.id) to WorkType.WATERING,
             )
-        assertThat(all.map { it.recordCount }).containsExactlyInAnyOrder(2, 1, 3)
+        assertThat(all.map { it.recordCount }).containsExactlyInAnyOrder(2, 1, 3, 4)
         assertThat(all.map { it.lastWorkedOn })
             .containsExactlyInAnyOrder(
                 day(38).toLocalDate(),
                 day(40).toLocalDate(),
                 day(15).toLocalDate(),
+                day(52).toLocalDate(),
             )
 
-        assertThat(repository.searchCompletedWorkItems(workCondition(farmId = farmId, cropId = null)).rows)
-            .allMatch { it.reportId == latest.id }
-        assertThat(repository.searchCompletedWorkItems(workCondition(farmId = null, cropId = cropId)).rows)
-            .allMatch { it.reportId == latest.id }
+        assertThat(repository.searchWorkItems(workCondition(farmId = farmId, cropId = null)).rows.map { it.reportId })
+            .containsOnly(latest.id, active.id)
+        assertThat(repository.searchWorkItems(workCondition(farmId = null, cropId = cropId)).rows.map { it.reportId })
+            .containsOnly(latest.id, active.id)
         assertThat(
-            repository.searchCompletedWorkItems(
+            repository.searchWorkItems(
                 workCondition(farmId = null, cropId = null, workType = WorkType.PLANTING),
             ).rows.map { it.reportId },
         ).containsExactly(sameEndOtherScope.id)
     }
 
     @Test
-    fun `work item cursor cuts between work types of one report without overlap`() {
-        val report = persistCompleted(
+    fun `work item cursor crosses active work types and completed reports without overlap`() {
+        val active = persistActive(
+            startsAt = day(40),
+            statistics = CycleReportStatistics(
+                watering = WateringStatistics(recordCount = 2, lastWorkedOn = day(41).toLocalDate()),
+                harvest = HarvestStatistics(recordCount = 1, lastWorkedOn = day(42).toLocalDate()),
+            ),
+        )
+        val completed = persistCompleted(
             endedAt = day(30),
             statistics = CycleReportStatistics(
-                watering = WateringStatistics(recordCount = 2, lastWorkedOn = day(20).toLocalDate()),
-                harvest = HarvestStatistics(recordCount = 1, lastWorkedOn = day(30).toLocalDate()),
+                watering = WateringStatistics(recordCount = 1, lastWorkedOn = day(20).toLocalDate()),
             ),
         )
         entityManager.flush()
         entityManager.clear()
 
-        val firstPage = repository.searchCompletedWorkItems(workCondition(size = 1)).rows
+        val firstPage = repository.searchWorkItems(workCondition(size = 1)).rows
         val first = firstPage.single()
-        val secondPage = repository.searchCompletedWorkItems(
+        val secondPage = repository.searchWorkItems(
             workCondition(
                 cursor = FarmingCycleReportQueryRepository.WorkItemCursor(
-                    endsAt = first.endsAt,
+                    status = first.status,
+                    sortAt = first.sortAt,
                     reportId = first.reportId,
                     workType = first.workType,
                 ),
-                size = 2,
+                size = 20,
             ),
         ).rows
 
-        assertThat(first.reportId).isEqualTo(report.id)
+        assertThat(first.reportId).isEqualTo(active.id)
         assertThat(first.workType).isEqualTo(WorkType.WATERING)
         assertThat(secondPage.map { it.reportId to it.workType })
-            .containsExactly(requireNotNull(report.id) to WorkType.HARVEST)
+            .containsExactly(
+                requireNotNull(active.id) to WorkType.HARVEST,
+                requireNotNull(completed.id) to WorkType.WATERING,
+            )
         assertThat((firstPage + secondPage).map { it.reportId to it.workType }).doesNotHaveDuplicates()
     }
 
-    private fun persistActive(): FarmingCycleReport =
+    private fun persistActive(
+        startsAt: LocalDateTime = day(50),
+        statistics: CycleReportStatistics = CycleReportStatistics.empty(),
+    ): FarmingCycleReport =
         persistReport(
             projection = FarmingCycleReportProjection(
                 status = FarmingCycleReportStatus.ACTIVE,
-                startsAt = day(50),
+                startsAt = startsAt,
                 endsAt = null,
                 startBasis = FarmingCycleStartBasis.AFTER_PREVIOUS_FINAL_HARVEST,
                 finalHarvestRecord = null,
                 statisticsSchemaVersion = 1,
-                statistics = CycleReportStatistics.empty(),
+                statistics = statistics,
             ),
         )
 

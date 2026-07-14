@@ -12,6 +12,7 @@ import com.chamchamcham.application.security.TokenProvider
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.report.CommonOnlyStatistics
+import com.chamchamcham.domain.report.FarmingCycleReportStatus
 import com.chamchamcham.domain.report.WateringStatistics
 import org.hamcrest.Matchers.equalTo
 import org.hamcrest.Matchers.nullValue
@@ -81,6 +82,7 @@ class FarmingWorkReportControllerTest(
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.items[0].reportId", equalTo(reportId.toString())))
+            .andExpect(jsonPath("$.data.items[0].status", equalTo("COMPLETED")))
             .andExpect(jsonPath("$.data.items[0].workType", equalTo("WATERING")))
             .andExpect(jsonPath("$.data.items[0].workTypeLabel", equalTo("물 주기")))
             .andExpect(jsonPath("$.data.items[0].farmName", equalTo("약초농장")))
@@ -91,6 +93,39 @@ class FarmingWorkReportControllerTest(
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-2")))
 
         verify(service).list(condition)
+    }
+
+    @Test
+    fun `list returns active work card with nullable end date`() {
+        val condition = FarmingWorkReportSearchCondition(
+            memberId = memberId,
+            farmId = null,
+            cropId = null,
+            workType = null,
+            cursor = null,
+            size = 20,
+        )
+        `when`(service.list(condition)).thenReturn(
+            FarmingWorkReportResult.Page(
+                items = listOf(
+                    workItem(
+                        status = FarmingCycleReportStatus.ACTIVE,
+                        endsAt = null,
+                        finalHarvestRecordId = null,
+                    ),
+                ),
+                nextCursor = null,
+            ),
+        )
+
+        mockMvc.perform(
+            get("/api/v1/farming-reports/work-items")
+                .with(authenticatedMember(memberId.toString())),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.items[0].status", equalTo("ACTIVE")))
+            .andExpect(jsonPath("$.data.items[0].endsAt", nullValue()))
+            .andExpect(jsonPath("$.data.items[0].thumbnailUrl", nullValue()))
     }
 
     @Test
@@ -185,6 +220,7 @@ class FarmingWorkReportControllerTest(
             ).with(authenticatedMember(memberId.toString())),
         )
             .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.status", equalTo("COMPLETED")))
             .andExpect(jsonPath("$.data.workType", equalTo("WATERING")))
             .andExpect(jsonPath("$.data.workTypeLabel", equalTo("물 주기")))
             .andExpect(jsonPath("$.data.statistics.common.recordCount", equalTo(3)))
@@ -206,6 +242,30 @@ class FarmingWorkReportControllerTest(
             .andExpect(jsonPath("$.data.feedback.content.strengths[0].text", equalTo("흙 상태를 살폈어요.")))
 
         verify(service).getDetail(memberId, reportId, WorkType.WATERING)
+    }
+
+    @Test
+    fun `detail returns active statistics with null feedback`() {
+        `when`(service.getDetail(memberId, reportId, WorkType.WATERING)).thenReturn(
+            detail(
+                status = FarmingCycleReportStatus.ACTIVE,
+                endsAt = null,
+                feedback = null,
+            ),
+        )
+
+        mockMvc.perform(
+            get(
+                "/api/v1/farming-reports/{reportId}/work-types/{workType}",
+                reportId,
+                "WATERING",
+            ).with(authenticatedMember(memberId.toString())),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.status", equalTo("ACTIVE")))
+            .andExpect(jsonPath("$.data.endsAt", nullValue()))
+            .andExpect(jsonPath("$.data.statistics.common.recordCount", equalTo(3)))
+            .andExpect(jsonPath("$.data.feedback", nullValue()))
     }
 
     @Test
@@ -290,8 +350,13 @@ class FarmingWorkReportControllerTest(
             .andExpect(jsonPath("$.error.code", equalTo("REPORT_002")))
     }
 
-    private fun workItem() = FarmingWorkReportResult.Item(
+    private fun workItem(
+        status: FarmingCycleReportStatus = FarmingCycleReportStatus.COMPLETED,
+        endsAt: LocalDateTime? = this.endsAt,
+        finalHarvestRecordId: UUID? = this.finalHarvestRecordId,
+    ) = FarmingWorkReportResult.Item(
         reportId = reportId,
+        status = status,
         farmId = farmId,
         farmName = "약초농장",
         cropId = cropId,
@@ -313,9 +378,12 @@ class FarmingWorkReportControllerTest(
             common = common(recordCount = 3),
             watering = WateringStatistics(recordCount = 3),
         ),
-        feedback: FarmingWorkReportResult.FeedbackStatus,
+        status: FarmingCycleReportStatus = FarmingCycleReportStatus.COMPLETED,
+        endsAt: LocalDateTime? = this.endsAt,
+        feedback: FarmingWorkReportResult.FeedbackStatus?,
     ) = FarmingWorkReportResult.Detail(
         reportId = reportId,
+        status = status,
         workType = workType,
         workTypeLabel = workTypeLabel,
         farmId = farmId,

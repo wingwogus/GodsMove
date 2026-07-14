@@ -12,6 +12,7 @@ import com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeed
 import com.chamchamcham.application.report.FarmingWorkReportResult
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.chamchamcham.domain.farming.WorkType
+import com.chamchamcham.domain.report.FarmingCycleReportStatus
 import com.fasterxml.jackson.annotation.JsonInclude
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -20,12 +21,13 @@ import java.util.UUID
 object FarmingWorkReportResponses {
     data class ItemResponse(
         val reportId: UUID,
+        val status: FarmingCycleReportStatus,
         val farmId: UUID,
         val farmName: String,
         val cropId: UUID,
         val cropName: String,
         val startsAt: LocalDateTime,
-        val endsAt: LocalDateTime,
+        val endsAt: LocalDateTime?,
         val workType: WorkType,
         val workTypeLabel: String,
         val recordCount: Int,
@@ -35,6 +37,7 @@ object FarmingWorkReportResponses {
         companion object {
             fun from(source: FarmingWorkReportResult.Item) = ItemResponse(
                 reportId = source.reportId,
+                status = source.status,
                 farmId = source.farmId,
                 farmName = source.farmName,
                 cropId = source.cropId,
@@ -64,6 +67,7 @@ object FarmingWorkReportResponses {
 
     data class DetailResponse(
         val reportId: UUID,
+        val status: FarmingCycleReportStatus,
         val workType: WorkType,
         val workTypeLabel: String,
         val farmId: UUID,
@@ -71,13 +75,14 @@ object FarmingWorkReportResponses {
         val cropId: UUID,
         val cropName: String,
         val startsAt: LocalDateTime,
-        val endsAt: LocalDateTime,
+        val endsAt: LocalDateTime?,
         val statistics: StatisticsResponse,
-        val feedback: FeedbackStatusResponse,
+        val feedback: FeedbackStatusResponse?,
     ) {
         companion object {
             fun from(source: FarmingWorkReportResult.Detail) = DetailResponse(
                 reportId = source.reportId,
+                status = source.status,
                 workType = source.workType,
                 workTypeLabel = source.workTypeLabel,
                 farmId = source.farmId,
@@ -87,7 +92,7 @@ object FarmingWorkReportResponses {
                 startsAt = source.startsAt,
                 endsAt = source.endsAt,
                 statistics = StatisticsResponse.from(source.statistics),
-                feedback = FeedbackStatusResponse.from(source.feedback),
+                feedback = source.feedback?.let(FeedbackStatusResponse::from),
             )
         }
     }

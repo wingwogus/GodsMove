@@ -24,7 +24,8 @@ interface FarmingCycleReportQueryRepository {
     )
 
     data class WorkItemCursor(
-        val endsAt: LocalDateTime,
+        val status: FarmingCycleReportStatus,
+        val sortAt: LocalDateTime,
         val reportId: UUID,
         val workType: WorkType,
     )
@@ -40,17 +41,21 @@ interface FarmingCycleReportQueryRepository {
 
     data class WorkItem(
         val reportId: UUID,
+        val status: FarmingCycleReportStatus,
         val farmId: UUID,
         val farmName: String,
         val cropId: UUID,
         val cropName: String,
         val startsAt: LocalDateTime,
-        val endsAt: LocalDateTime,
-        val finalHarvestRecordId: UUID,
+        val endsAt: LocalDateTime?,
+        val finalHarvestRecordId: UUID?,
         val workType: WorkType,
         val recordCount: Int,
         val lastWorkedOn: LocalDate?,
-    )
+    ) {
+        val sortAt: LocalDateTime
+            get() = endsAt ?: startsAt
+    }
 
     data class WorkItemSearchResult(
         val rows: List<WorkItem>,
@@ -58,7 +63,7 @@ interface FarmingCycleReportQueryRepository {
 
     fun searchCompleted(condition: SearchCondition): SearchResult
 
-    fun searchCompletedWorkItems(condition: WorkItemSearchCondition): WorkItemSearchResult
+    fun searchWorkItems(condition: WorkItemSearchCondition): WorkItemSearchResult
 
     fun findPreviousCompleted(
         memberId: UUID,

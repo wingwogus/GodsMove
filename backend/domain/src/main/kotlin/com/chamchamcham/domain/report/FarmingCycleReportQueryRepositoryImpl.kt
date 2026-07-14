@@ -27,34 +27,30 @@ class FarmingCycleReportQueryRepositoryImpl(
         )
     }
 
-    override fun searchCompletedWorkItems(
+    override fun searchWorkItems(
         condition: FarmingCycleReportQueryRepository.WorkItemSearchCondition,
     ): FarmingCycleReportQueryRepository.WorkItemSearchResult {
-        val where = completedScopeWhere(condition.farmId, condition.cropId)
-        val params = completedScopeParams(condition.memberId, condition.farmId, condition.cropId)
+        val where = workItemScopeWhere(condition.farmId, condition.cropId)
+        val params = workItemScopeParams(condition.memberId, condition.farmId, condition.cropId)
         val query = entityManager.createQuery(
             """
-            select r.id, r.farm.id, r.farm.name, r.crop.id, r.crop.name,
+            select r.id, r.status, r.farm.id, r.farm.name, r.crop.id, r.crop.name,
                    r.startsAt, r.endsAt, r.finalHarvestRecord.id, r.statistics
             from FarmingCycleReport r
             where ${where.joinToString(" and ")}
-            order by r.endsAt desc, r.id desc
+            order by r.startsAt desc, r.id desc
             """.trimIndent(),
             Array<Any>::class.java,
         )
         params.forEach(query::setParameter)
 
         val rows = query.resultList
-            .map(::toCompletedWorkProjection)
+            .map(::toWorkProjection)
             .flatMap { projection ->
                 val workTypes = condition.workType?.let(::listOf) ?: WorkType.entries
                 workTypes.mapNotNull { workType -> projection.toWorkItem(workType) }
             }
-            .sortedWith(
-                compareByDescending<FarmingCycleReportQueryRepository.WorkItem> { it.endsAt }
-                    .thenByDescending { it.reportId }
-                    .thenBy { it.workType.ordinal },
-            )
+            .sortedWith(workItemComparator)
             .filter { item -> condition.cursor?.let { item.isAfter(it) } ?: true }
             .take(condition.size)
 
@@ -121,6 +117,32 @@ class FarmingCycleReportQueryRepositoryImpl(
         cropId?.let { put("cropId", it) }
     }
 
+    private fun workItemScopeWhere(
+        farmId: UUID?,
+        cropId: UUID?,
+    ): MutableList<String> = mutableListOf(
+        "r.member.id = :memberId",
+        "r.status in :visibleStatuses",
+    ).apply {
+        farmId?.let { add("r.farm.id = :farmId") }
+        cropId?.let { add("r.crop.id = :cropId") }
+    }
+
+    private fun workItemScopeParams(
+        memberId: UUID,
+        farmId: UUID?,
+        cropId: UUID?,
+    ): MutableMap<String, Any> = mutableMapOf<String, Any>(
+        "memberId" to memberId,
+        "visibleStatuses" to setOf(
+            FarmingCycleReportStatus.ACTIVE,
+            FarmingCycleReportStatus.COMPLETED,
+        ),
+    ).apply {
+        farmId?.let { put("farmId", it) }
+        cropId?.let { put("cropId", it) }
+    }
+
     private fun cursorPredicate(): String =
         """
         (
@@ -132,28 +154,30 @@ class FarmingCycleReportQueryRepositoryImpl(
         )
         """.trimIndent()
 
-    private fun toCompletedWorkProjection(row: Array<Any>): CompletedWorkProjection =
-        CompletedWorkProjection(
+    private fun toWorkProjection(row: Array<Any>): WorkProjection =
+        WorkProjection(
             reportId = row[0] as UUID,
-            farmId = row[1] as UUID,
-            farmName = row[2] as String,
-            cropId = row[3] as UUID,
-            cropName = row[4] as String,
-            startsAt = row[5] as LocalDateTime,
-            endsAt = row[6] as LocalDateTime,
-            finalHarvestRecordId = row[7] as UUID,
-            statistics = row[8] as CycleReportStatistics,
+            status = row[1] as FarmingCycleReportStatus,
+            farmId = row[2] as UUID,
+            farmName = row[3] as String,
+            cropId = row[4] as UUID,
+            cropName = row[5] as String,
+            startsAt = row[6] as LocalDateTime,
+            endsAt = row[7] as LocalDateTime?,
+            finalHarvestRecordId = row[8] as UUID?,
+            statistics = row[9] as CycleReportStatistics,
         )
 
-    private data class CompletedWorkProjection(
+    private data class WorkProjection(
         val reportId: UUID,
+        val status: FarmingCycleReportStatus,
         val farmId: UUID,
         val farmName: String,
         val cropId: UUID,
         val cropName: String,
         val startsAt: LocalDateTime,
-        val endsAt: LocalDateTime,
-        val finalHarvestRecordId: UUID,
+        val endsAt: LocalDateTime?,
+        val finalHarvestRecordId: UUID?,
         val statistics: CycleReportStatistics,
     ) {
         fun toWorkItem(workType: WorkType): FarmingCycleReportQueryRepository.WorkItem? {
@@ -161,6 +185,7 @@ class FarmingCycleReportQueryRepositoryImpl(
             if (recordCount <= 0) return null
             return FarmingCycleReportQueryRepository.WorkItem(
                 reportId = reportId,
+                status = status,
                 farmId = farmId,
                 farmName = farmName,
                 cropId = cropId,
@@ -177,10 +202,39 @@ class FarmingCycleReportQueryRepositoryImpl(
 
     private fun FarmingCycleReportQueryRepository.WorkItem.isAfter(
         cursor: FarmingCycleReportQueryRepository.WorkItemCursor,
-    ): Boolean =
-        endsAt < cursor.endsAt ||
-            (endsAt == cursor.endsAt && reportId < cursor.reportId) ||
-            (endsAt == cursor.endsAt && reportId == cursor.reportId && workType.ordinal > cursor.workType.ordinal)
+    ): Boolean {
+        val itemStatusRank = status.rank()
+        val cursorStatusRank = cursor.status.rank()
+        return itemStatusRank > cursorStatusRank ||
+            (itemStatusRank == cursorStatusRank && sortAt < cursor.sortAt) ||
+            (itemStatusRank == cursorStatusRank && sortAt == cursor.sortAt && reportId < cursor.reportId) ||
+            (
+                itemStatusRank == cursorStatusRank &&
+                    sortAt == cursor.sortAt &&
+                    reportId == cursor.reportId &&
+                    workType.ordinal > cursor.workType.ordinal
+            )
+    }
+
+    private fun FarmingCycleReportStatus.rank(): Int = when (this) {
+        FarmingCycleReportStatus.ACTIVE -> 0
+        FarmingCycleReportStatus.COMPLETED -> 1
+        FarmingCycleReportStatus.SUPERSEDED -> 2
+    }
+
+    private companion object {
+        val workItemComparator =
+            compareBy<FarmingCycleReportQueryRepository.WorkItem> { item ->
+                when (item.status) {
+                    FarmingCycleReportStatus.ACTIVE -> 0
+                    FarmingCycleReportStatus.COMPLETED -> 1
+                    FarmingCycleReportStatus.SUPERSEDED -> 2
+                }
+            }
+                .thenByDescending { it.sortAt }
+                .thenByDescending { it.reportId }
+                .thenBy { it.workType.ordinal }
+    }
 }
 
 private fun CycleReportStatistics.summary(workType: WorkType) = when (workType) {
