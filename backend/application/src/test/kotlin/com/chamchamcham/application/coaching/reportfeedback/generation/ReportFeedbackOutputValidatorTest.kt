@@ -3,6 +3,7 @@ package com.chamchamcham.application.coaching.reportfeedback.generation
 import com.chamchamcham.domain.farming.WorkType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -36,8 +37,52 @@ class ReportFeedbackOutputValidatorTest {
             endsAt = LocalDateTime.of(2025, 7, 1, 9, 0),
             statistics = mapOf("recordCount" to 1),
         ),
+        comparisons = listOf(serverComparison()),
         warnings = emptyList(),
     )
+
+    @Test
+    fun `rejects generated comparison when the server has no comparable difference`() {
+        val unavailableContext = context.copy(previousReport = null, comparisons = emptyList())
+        val content = contentWithComparison(
+            evidenceRefs = listOf("report:$reportId"),
+        )
+
+        assertThat(ReportFeedbackOutputValidator.validate(content, unavailableContext, emptyList()))
+            .containsExactly("comparison_not_available")
+    }
+
+    @Test
+    fun `requires the current report reference on every comparison`() {
+        val content = contentWithComparison(
+            evidenceRefs = listOf("report:$previousReportId"),
+        )
+
+        assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
+            .containsExactly("comparison_current_report_ref_required")
+    }
+
+    @Test
+    fun `requires the previous report reference on every comparison`() {
+        val content = contentWithComparison(
+            evidenceRefs = listOf("report:$reportId"),
+        )
+
+        assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
+            .containsExactly("comparison_previous_report_ref_required")
+    }
+
+    @Test
+    fun `record evidence alone cannot ground a comparison`() {
+        val content = contentWithComparison(
+            evidenceRefs = listOf("record:$recordId"),
+        )
+
+        assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList())).containsExactly(
+            "comparison_current_report_ref_required",
+            "comparison_previous_report_ref_required",
+        )
+    }
 
     @Test
     fun `allows polite Korean comparison grounded in current and previous reports`() {
@@ -81,15 +126,16 @@ class ReportFeedbackOutputValidatorTest {
 
     @Test
     fun `rejects the same fact repeated across comparison and another section`() {
-        val repeated = ReportFeedbackContentItem(
+        val comparison = ReportFeedbackContentItem(
             basis = "직전보다 기록 1회 증가",
             text = "직전 재배보다 물 주기 기록이 한 번 늘었어요.",
             evidenceRefs = listOf("report:$reportId", "report:$previousReportId"),
         )
+        val repeatedWithDifferentBasis = comparison.copy(basis = "이번 기록과 직전 기록의 차이")
         val content = ReportFeedbackContent(
             summary = "이번 물 주기 기록의 흐름을 확인했어요.",
-            comparisons = listOf(repeated),
-            strengths = listOf(repeated),
+            comparisons = listOf(comparison),
+            strengths = listOf(repeatedWithDifferentBasis),
             improvements = emptyList(),
             nextActions = emptyList(),
         )
@@ -200,5 +246,29 @@ class ReportFeedbackOutputValidatorTest {
         basis = basis,
         text = text,
         evidenceRefs = listOf(evidenceRef),
+    )
+
+    private fun contentWithComparison(evidenceRefs: List<String>) = ReportFeedbackContent(
+        summary = "이번 물 주기 기록의 흐름을 확인했어요.",
+        comparisons = listOf(
+            ReportFeedbackContentItem(
+                basis = "직전보다 기록 1회 증가",
+                text = "직전 재배보다 물 주기 기록이 한 번 늘었어요.",
+                evidenceRefs = evidenceRefs,
+            ),
+        ),
+        strengths = emptyList(),
+        improvements = emptyList(),
+        nextActions = emptyList(),
+    )
+
+    private fun serverComparison() = ReportFeedbackComparison(
+        metricKey = "recordCount",
+        metricLabel = "기록 횟수",
+        currentValue = BigDecimal("2"),
+        previousValue = BigDecimal("1"),
+        difference = BigDecimal("1"),
+        relativeChangePct = BigDecimal("100"),
+        unit = "회",
     )
 }

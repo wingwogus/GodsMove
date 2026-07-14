@@ -48,3 +48,26 @@
 
 - The full module suite covers generated-schema JPA behavior, but production PostgreSQL DDL rollout was not exercised in this task. `COMPARISON` uses the existing string enum column and does not require a new table or column.
 - Exact token usage is unavailable in this execution surface.
+
+## Review fixes
+
+### Findings resolved
+
+- 서버 `context.comparisons`가 비어 있으면 모델이 만든 비교 문장을 `comparison_not_available`로 거부한다.
+- 서버 비교가 있을 때 모든 비교 문장은 현재·직전 `report:*` 근거를 각각 포함해야 하며, 누락 시 값이 없는 고정 warning code를 반환한다.
+- 중복 검사는 내부 basis를 제외하고 정규화된 공개 `text`만 사용해 섹션 전체에서 같은 문장을 거부한다.
+- 직전 리포트가 없는 context도 `input_snapshot.comparisons`를 명시적인 빈 배열로 보존하는 회귀 테스트를 추가했다.
+
+### Review-fix RED evidence
+
+- Command: `./gradlew :application:test --tests 'com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackOutputValidatorTest' --tests 'com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackGenerationServiceTest' --tests 'com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackPreparationHandlerTest'`
+- Result: 35 tests 중 7개가 예상대로 실패했다.
+- Failure causes: 비교 가용성 검증 없음, 양쪽 report ref 강제 없음, basis가 다른 동일 공개 문장 중복 미검출, safe retry 고정 code 없음.
+- 빈 `comparisons: []` 직렬화 회귀 테스트는 기존 동작이 이미 올바르게 보존해 첫 실행부터 통과했으며 production 변경이 필요하지 않았다.
+
+### Review-fix GREEN evidence
+
+- 위 validator/generation/preparation focused command: PASS.
+- calculator/context/prompt/validator/generation/persistence/query/work-detail와 feedback API 전체 focused 회귀: PASS in 5s.
+- `./gradlew --no-parallel :domain:test :application:test :api:test`: PASS in 25s.
+- `git diff --check`: PASS.

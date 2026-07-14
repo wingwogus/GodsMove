@@ -1,6 +1,7 @@
 package com.chamchamcham.application.coaching.reportfeedback.generation
 
 import com.chamchamcham.application.coaching.common.CoachingTextPolicy
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackItemSection
 
 object ReportFeedbackOutputValidator {
     fun validate(
@@ -19,9 +20,14 @@ object ReportFeedbackOutputValidator {
             warnings += "summary_text_english"
         }
         val items = content.items()
+        if (content.comparisons.isNotEmpty() && context.comparisons.isEmpty()) {
+            warnings += "comparison_not_available"
+        }
 
+        val currentReportRef = "report:${context.report.id}"
+        val previousReportRef = context.previousReport?.let { "report:${it.id}" }
         val allowedRefs = buildSet {
-            add("report:${context.report.id}")
+            add(currentReportRef)
             context.records.forEach { add("record:${it.id}") }
             context.previousReport?.let { add("report:${it.id}") }
             documents.forEach { add(it.id) }
@@ -46,8 +52,18 @@ object ReportFeedbackOutputValidator {
             }
             item.evidenceRefs.filter { it.isNotBlank() && it !in allowedRefs }
                 .forEach { warnings += "unknown_evidence:$it" }
-            val key = listOf(item.basis, item.text)
-                .joinToString("|") { it.lowercase().filter(Char::isLetterOrDigit) }
+            if (
+                structured.section == ReportFeedbackItemSection.COMPARISON &&
+                context.comparisons.isNotEmpty()
+            ) {
+                if (currentReportRef !in item.evidenceRefs) {
+                    warnings += "comparison_current_report_ref_required"
+                }
+                if (previousReportRef == null || previousReportRef !in item.evidenceRefs) {
+                    warnings += "comparison_previous_report_ref_required"
+                }
+            }
+            val key = item.text.lowercase().filter(Char::isLetterOrDigit)
             if (!seen.add(key)) {
                 warnings += "duplicate_item"
             }

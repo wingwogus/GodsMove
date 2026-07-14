@@ -172,6 +172,9 @@ class ReportFeedbackGenerationService(
             "summary_text_tone",
             "summary_text_english",
             "duplicate_item",
+            "comparison_not_available",
+            "comparison_current_report_ref_required",
+            "comparison_previous_report_ref_required",
             "structured_output_parse_failed",
         )
     }

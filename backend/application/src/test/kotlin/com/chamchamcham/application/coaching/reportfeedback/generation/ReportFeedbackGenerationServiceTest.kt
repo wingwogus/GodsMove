@@ -97,6 +97,47 @@ class ReportFeedbackGenerationServiceTest {
     }
 
     @Test
+    fun `unavailable comparison is retried with a fixed diagnostic code only`() {
+        val generatedText = "직전 재배보다 물 주기 기록이 한 번 늘었어요."
+        val client = FakeChatClient(
+            validContent().copy(
+                comparisons = listOf(
+                    comparisonItem(text = generatedText, evidenceRefs = listOf("report:$reportId")),
+                ),
+            ),
+            validContent().copy(comparisons = emptyList()),
+        )
+        val unavailableContext = context().copy(previousReport = null, comparisons = emptyList())
+
+        service(client).generate(unavailableContext)
+
+        assertThat(client.attempts).isEqualTo(2)
+        assertThat(client.requestSpec.userTexts.last())
+            .contains("comparison_not_available")
+            .doesNotContain(generatedText)
+    }
+
+    @Test
+    fun `missing comparison report reference is retried with a fixed diagnostic code only`() {
+        val client = FakeChatClient(
+            validContent().copy(
+                comparisons = listOf(
+                    comparisonItem(evidenceRefs = listOf("report:$previousReportId")),
+                ),
+            ),
+            validContent(),
+        )
+
+        service(client).generate(context())
+
+        assertThat(client.attempts).isEqualTo(2)
+        val retryDiagnostic = client.requestSpec.userTexts.last().substringAfter("직전 응답은")
+        assertThat(retryDiagnostic)
+            .contains("comparison_current_report_ref_required")
+            .doesNotContain(reportId.toString(), previousReportId.toString())
+    }
+
+    @Test
     fun `two English failures end as structured output invalid`() {
         val invalid = validContent().copy(summary = "WATERING 흐름을 확인했어요.")
         val client = FakeChatClient(invalid, invalid)
@@ -260,10 +301,11 @@ class ReportFeedbackGenerationServiceTest {
 
     private fun comparisonItem(
         text: String = "직전 재배보다 물 주기 기록이 한 번 늘었어요.",
+        evidenceRefs: List<String> = listOf("report:$reportId", "report:$previousReportId"),
     ) = ReportFeedbackContentItem(
         basis = "직전보다 기록 1회 증가",
         text = text,
-        evidenceRefs = listOf("report:$reportId", "report:$previousReportId"),
+        evidenceRefs = evidenceRefs,
     )
 
     private class FakeVectorStore : VectorStore {

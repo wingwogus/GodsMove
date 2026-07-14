@@ -191,6 +191,21 @@ class ReportFeedbackPreparationHandlerTest {
     }
 
     @Test
+    fun `preparation preserves an empty comparison list when no previous report exists`() {
+        val feedback = pendingFeedback(WorkType.WATERING)
+        val event = preparationEvent(WorkType.WATERING)
+        val noPrevious = context().copy(previousReport = null, comparisons = emptyList())
+        `when`(feedbackRepository.findByIdAndMember_Id(feedbackId, memberId)).thenReturn(feedback)
+        `when`(feedbackRepository.findByIdAndMemberIdForUpdate(feedbackId, memberId)).thenReturn(feedback)
+        `when`(contextAssembler.assemble(memberId, reportId, WorkType.WATERING)).thenReturn(noPrevious)
+
+        handler.on(event)
+
+        assertThat(feedback.inputSnapshot?.get("previousReport")).isNull()
+        assertThat(feedback.inputSnapshot?.get("comparisons")).isEqualTo(emptyList<Any>())
+    }
+
+    @Test
     fun `preparation ignores an event whose report does not match the target row`() {
         val feedback = pendingFeedback(WorkType.WATERING)
         val event = preparationEvent(WorkType.WATERING, reportId = UUID.randomUUID())
