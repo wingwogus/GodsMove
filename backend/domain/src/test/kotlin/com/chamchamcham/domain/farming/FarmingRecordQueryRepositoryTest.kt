@@ -9,6 +9,7 @@ import com.chamchamcham.domain.media.UploadedMediaStatus
 import com.chamchamcham.domain.media.UploadedMediaType
 import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.pesticide.Pesticide
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -178,40 +179,30 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
     }
 
     @Test
-    fun `search matches keyword against fertilizing material category label`() {
+    fun `search matches keyword against fertilizing material name`() {
         val record = persistRecord(workType = WorkType.FERTILIZING)
-        persistFertilizingDetail(record, materialCategory = FertilizerMaterialCategory.ORGANIC_FERTILIZER)
+        persistFertilizingDetail(record, materialName = "유박비료")
         val other = persistRecord(workType = WorkType.FERTILIZING)
-        persistFertilizingDetail(other, materialCategory = FertilizerMaterialCategory.COMPOUND_FERTILIZER)
+        persistFertilizingDetail(other, materialName = "복합비료")
         entityManager.flush()
         entityManager.clear()
 
-        val result = queryRepository.search(
-            condition(
-                keyword = "유기질비료",
-                matchedFertilizerCategories = listOf(FertilizerMaterialCategory.ORGANIC_FERTILIZER)
-            )
-        )
+        val result = queryRepository.search(condition(keyword = "유박"))
 
         assertThat(result.rows).hasSize(1)
         assertThat(result.rows.single().record.id).isEqualTo(record.id)
     }
 
     @Test
-    fun `search matches keyword against pest control pesticide category label`() {
+    fun `search matches keyword against pest control pesticide name`() {
         val record = persistRecord(workType = WorkType.PEST_CONTROL)
-        persistPestControlDetail(record, pesticideCategory = PesticideCategory.FUNGICIDE)
+        persistPestControlDetail(record, pesticideName = "친환경약제")
         val other = persistRecord(workType = WorkType.PEST_CONTROL)
-        persistPestControlDetail(other, pesticideCategory = PesticideCategory.HERBICIDE)
+        persistPestControlDetail(other, pesticideName = "일반약제")
         entityManager.flush()
         entityManager.clear()
 
-        val result = queryRepository.search(
-            condition(
-                keyword = "살균제",
-                matchedPesticideCategories = listOf(PesticideCategory.FUNGICIDE)
-            )
-        )
+        val result = queryRepository.search(condition(keyword = "친환경"))
 
         assertThat(result.rows).hasSize(1)
         assertThat(result.rows.single().record.id).isEqualTo(record.id)
@@ -287,7 +278,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
             weatherCondition = "맑음",
             weatherTemperature = 20,
             memo = memo,
-            entryMode = "MANUAL",
+            entryMode = EntryMode.MANUAL,
             isDeleted = isDeleted,
         )
         return persist(record, now)
@@ -308,29 +299,27 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         persist(FarmingRecordMedia(record = record, uploadedMedia = media, displayOrder = displayOrder), now)
     }
 
-    private fun persistFertilizingDetail(
-        record: FarmingRecord,
-        materialCategory: FertilizerMaterialCategory
-    ) {
+    private fun persistFertilizingDetail(record: FarmingRecord, materialName: String) {
         persist(
             FertilizingRecord(
                 record = record,
-                materialCategory = materialCategory,
+                materialName = materialName,
                 amount = BigDecimal.TEN,
-                amountUnit = FertilizerAmountUnit.KG,
+                amountUnit = FertilizerAmountUnit.G,
             ),
             now
         )
     }
 
-    private fun persistPestControlDetail(
-        record: FarmingRecord,
-        pesticideCategory: PesticideCategory
-    ) {
+    private fun persistPestControlDetail(record: FarmingRecord, pesticideName: String) {
+        val pesticide = persist(
+            Pesticide(itemName = pesticideName, brandName = pesticideName),
+            now
+        )
         persist(
             PestControlRecord(
                 record = record,
-                pesticideCategory = pesticideCategory,
+                pesticide = pesticide,
                 pesticideAmount = BigDecimal.ONE,
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal.TEN,
@@ -349,7 +338,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 1,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = false,
+                isLastHarvest = false,
             ),
             now
         )
@@ -366,8 +355,6 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         keyword: String? = null,
         matchedWorkTypes: List<WorkType> = emptyList(),
         matchedParts: List<CropUsePartCategory> = emptyList(),
-        matchedFertilizerCategories: List<FertilizerMaterialCategory> = emptyList(),
-        matchedPesticideCategories: List<PesticideCategory> = emptyList(),
         cursor: FarmingRecordQueryRepository.Cursor? = null,
         size: Int = 20,
     ): FarmingRecordQueryRepository.SearchCondition =
@@ -380,8 +367,6 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
             keyword = keyword,
             matchedWorkTypes = matchedWorkTypes,
             matchedParts = matchedParts,
-            matchedFertilizerCategories = matchedFertilizerCategories,
-            matchedPesticideCategories = matchedPesticideCategories,
             cursor = cursor,
             size = size,
         )

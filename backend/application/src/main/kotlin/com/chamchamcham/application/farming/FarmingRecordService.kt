@@ -1,15 +1,11 @@
 package com.chamchamcham.application.farming
 
 import com.chamchamcham.application.common.OpaqueCursorCodec
-import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackLifecycleService
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
-import com.chamchamcham.application.report.FarmingCycleReportProjectionService
-import com.chamchamcham.application.report.ReportScope
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
-import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecord
@@ -17,12 +13,10 @@ import com.chamchamcham.domain.farming.FarmingRecordMedia
 import com.chamchamcham.domain.farming.FarmingRecordMediaRepository
 import com.chamchamcham.domain.farming.FarmingRecordQueryRepository
 import com.chamchamcham.domain.farming.FarmingRecordRepository
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingRecord
 import com.chamchamcham.domain.farming.FertilizingRecordRepository
 import com.chamchamcham.domain.farming.HarvestRecord
 import com.chamchamcham.domain.farming.HarvestRecordRepository
-import com.chamchamcham.domain.farming.PesticideCategory
 import com.chamchamcham.domain.farming.PestControlRecord
 import com.chamchamcham.domain.farming.PestControlRecordRepository
 import com.chamchamcham.domain.farming.PlantingRecord
@@ -37,6 +31,10 @@ import com.chamchamcham.domain.media.UploadedMediaRepository
 import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
+import com.chamchamcham.domain.pesticide.Pest
+import com.chamchamcham.domain.pesticide.PestRepository
+import com.chamchamcham.domain.pesticide.Pesticide
+import com.chamchamcham.domain.pesticide.PesticideRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -45,7 +43,6 @@ import java.util.UUID
 @Transactional
 class FarmingRecordService(
     private val memberRepository: MemberRepository,
-    private val memberCropRepository: MemberCropRepository,
     private val farmRepository: FarmRepository,
     private val cropRepository: CropRepository,
     private val farmingRecordRepository: FarmingRecordRepository,
@@ -58,17 +55,16 @@ class FarmingRecordService(
     private val pestControlRecordRepository: PestControlRecordRepository,
     private val weedingRecordRepository: WeedingRecordRepository,
     private val harvestRecordRepository: HarvestRecordRepository,
+    private val pesticideRepository: PesticideRepository,
+    private val pestRepository: PestRepository,
     private val detailValidator: FarmingRecordDetailValidator,
     private val cursorCodec: OpaqueCursorCodec,
-    private val projectionService: FarmingCycleReportProjectionService,
-    private val recordFeedbackLifecycleService: RecordFeedbackLifecycleService,
 ) {
     fun create(command: FarmingRecordCommand.Create): FarmingRecordResult.RecordId {
         detailValidator.validate(command)
 
         val member = findMember(command.memberId)
         val farm = findFarm(command.farmId, command.memberId)
-        validateMemberCrop(command.memberId, command.farmId, command.cropId)
         val crop = findCrop(command.cropId)
         val media = validateMedia(command.memberId, command.mediaIds)
 
@@ -82,14 +78,12 @@ class FarmingRecordService(
                 weatherCondition = command.weatherCondition,
                 weatherTemperature = command.weatherTemperature,
                 memo = command.memo,
-                entryMode = "MANUAL",
+                entryMode = command.entryMode,
             )
         )
 
         saveDetail(record, command)
         attachMedia(record, media)
-        projectionService.rebuild(ReportScope(command.memberId, command.farmId, command.cropId))
-        recordFeedbackLifecycleService.enqueue(record)
 
         return FarmingRecordResult.RecordId(id = requireNotNull(record.id), workType = record.workType)
     }
@@ -109,8 +103,6 @@ class FarmingRecordService(
                 keyword = trimmedKeyword,
                 matchedWorkTypes = matchedWorkTypes(trimmedKeyword),
                 matchedParts = matchedParts(trimmedKeyword),
-                matchedFertilizerCategories = matchedFertilizerCategories(trimmedKeyword),
-                matchedPesticideCategories = matchedPesticideCategories(trimmedKeyword),
                 cursor = cursor,
                 size = condition.size + 1
             )
@@ -133,12 +125,6 @@ class FarmingRecordService(
     private fun matchedParts(keyword: String?): List<CropUsePartCategory> =
         keyword?.let { kw -> CropUsePartCategory.entries.filter { it.label.contains(kw) } } ?: emptyList()
 
-    private fun matchedFertilizerCategories(keyword: String?): List<FertilizerMaterialCategory> =
-        keyword?.let { kw -> FertilizerMaterialCategory.entries.filter { it.label.contains(kw) } } ?: emptyList()
-
-    private fun matchedPesticideCategories(keyword: String?): List<PesticideCategory> =
-        keyword?.let { kw -> PesticideCategory.entries.filter { it.label.contains(kw) } } ?: emptyList()
-
     @Transactional(readOnly = true)
     fun getDetail(memberId: UUID, recordId: UUID): FarmingRecordResult.Detail {
         val record = findRecord(recordId)
@@ -152,15 +138,9 @@ class FarmingRecordService(
         detailValidator.validate(command)
 
         val farm = findFarm(command.farmId, command.memberId)
-        validateMemberCrop(command.memberId, command.farmId, command.cropId)
         val crop = findCrop(command.cropId)
         val media = validateMedia(command.memberId, command.mediaIds)
 
-        val previousScope = ReportScope(
-            memberId = command.memberId,
-            farmId = requireNotNull(record.farm.id) { "Persisted farm id is required" },
-            cropId = requireNotNull(record.crop.id) { "Persisted crop id is required" },
-        )
         val previousWorkType = record.workType
         record.update(
             farm = farm,
@@ -172,18 +152,10 @@ class FarmingRecordService(
             memo = command.memo,
         )
         deleteExistingDetail(record, previousWorkType)
-        farmingRecordRepository.flush()
         saveDetail(record, command)
 
         farmingRecordMediaRepository.deleteByRecord(record)
         attachMedia(record, media)
-        val currentScope = ReportScope(
-            memberId = command.memberId,
-            farmId = requireNotNull(record.farm.id) { "Persisted farm id is required" },
-            cropId = requireNotNull(record.crop.id) { "Persisted crop id is required" },
-        )
-        projectionService.rebuildAll(listOf(previousScope, currentScope))
-        recordFeedbackLifecycleService.enqueue(record)
 
         return FarmingRecordResult.RecordId(id = requireNotNull(record.id), workType = record.workType)
     }
@@ -191,14 +163,7 @@ class FarmingRecordService(
     fun delete(command: FarmingRecordCommand.Delete) {
         val record = findRecord(command.recordId)
         assertOwner(record, command.memberId)
-        val scope = ReportScope(
-            memberId = command.memberId,
-            farmId = requireNotNull(record.farm.id) { "Persisted farm id is required" },
-            cropId = requireNotNull(record.crop.id) { "Persisted crop id is required" },
-        )
         record.softDelete()
-        projectionService.rebuild(scope)
-        recordFeedbackLifecycleService.staleFor(requireNotNull(record.id))
     }
 
     private fun saveDetail(record: FarmingRecord, payload: FarmingRecordDetailPayload) {
@@ -208,6 +173,7 @@ class FarmingRecordService(
                 plantingRecordRepository.save(
                     PlantingRecord(
                         record = record,
+                        plantingMethod = detail.plantingMethod,
                         seedAmount = detail.seedAmount,
                         seedAmountUnit = detail.seedAmountUnit,
                         seedlingCount = detail.seedlingCount,
@@ -232,7 +198,7 @@ class FarmingRecordService(
                 fertilizingRecordRepository.save(
                     FertilizingRecord(
                         record = record,
-                        materialCategory = detail.materialCategory,
+                        materialName = detail.materialName,
                         amount = detail.amount,
                         amountUnit = detail.amountUnit,
                         applicationMethod = detail.applicationMethod,
@@ -245,12 +211,12 @@ class FarmingRecordService(
                 pestControlRecordRepository.save(
                     PestControlRecord(
                         record = record,
-                        pesticideCategory = detail.pesticideCategory,
+                        pesticide = findPesticide(detail.pesticideId),
                         pesticideAmount = detail.pesticideAmount,
                         pesticideAmountUnit = detail.pesticideAmountUnit,
                         totalSprayAmount = detail.totalSprayAmount,
                         totalSprayAmountUnit = detail.totalSprayAmountUnit,
-                        pestTarget = detail.pestTarget,
+                        pest = detail.pestId?.let(::findPest),
                     )
                 )
             }
@@ -271,7 +237,7 @@ class FarmingRecordService(
                         harvestSource = detail.harvestSource,
                         growthPeriod = detail.growthPeriod,
                         growthPeriodUnit = detail.growthPeriodUnit,
-                        isFinalHarvest = detail.isFinalHarvest,
+                        isLastHarvest = detail.isLastHarvest,
                     )
                 )
             }
@@ -309,6 +275,7 @@ class FarmingRecordService(
         when (record.workType) {
             WorkType.PLANTING -> planting = plantingRecordRepository.findByRecord_Id(recordId)?.let {
                 FarmingRecordResult.PlantingDetail(
+                    plantingMethod = it.plantingMethod,
                     seedAmount = it.seedAmount,
                     seedAmountUnit = it.seedAmountUnit,
                     seedlingCount = it.seedlingCount,
@@ -326,7 +293,7 @@ class FarmingRecordService(
 
             WorkType.FERTILIZING -> fertilizing = fertilizingRecordRepository.findByRecord_Id(recordId)?.let {
                 FarmingRecordResult.FertilizingDetail(
-                    materialCategory = it.materialCategory,
+                    materialName = it.materialName,
                     amount = it.amount,
                     amountUnit = it.amountUnit,
                     applicationMethod = it.applicationMethod,
@@ -335,12 +302,14 @@ class FarmingRecordService(
 
             WorkType.PEST_CONTROL -> pestControl = pestControlRecordRepository.findByRecord_Id(recordId)?.let {
                 FarmingRecordResult.PestControlDetail(
-                    pesticideCategory = it.pesticideCategory,
+                    pesticideId = requireNotNull(it.pesticide.id) { "Persisted pesticide id is required" },
+                    pesticideName = it.pesticide.brandName,
                     pesticideAmount = it.pesticideAmount,
                     pesticideAmountUnit = it.pesticideAmountUnit,
                     totalSprayAmount = it.totalSprayAmount,
                     totalSprayAmountUnit = it.totalSprayAmountUnit,
-                    pestTarget = it.pestTarget,
+                    pestId = it.pest?.id,
+                    pestName = it.pest?.name,
                 )
             }
 
@@ -357,7 +326,7 @@ class FarmingRecordService(
                     harvestSource = it.harvestSource,
                     growthPeriod = it.growthPeriod,
                     growthPeriodUnit = it.growthPeriodUnit,
-                    isFinalHarvest = it.isFinalHarvest,
+                    isLastHarvest = it.isLastHarvest,
                 )
             }
 
@@ -483,15 +452,19 @@ class FarmingRecordService(
         farmRepository.findByIdAndOwnerId(farmId, memberId)
             ?: throw BusinessException(ErrorCode.FARM_NOT_FOUND)
 
-    private fun validateMemberCrop(memberId: UUID, farmId: UUID, cropId: UUID) {
-        if (!memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId)) {
-            throw BusinessException(ErrorCode.CROP_NOT_FOUND)
-        }
-    }
-
     private fun findCrop(cropId: UUID): Crop =
         cropRepository.findById(cropId).orElseThrow {
             BusinessException(ErrorCode.CROP_NOT_FOUND)
+        }
+
+    private fun findPesticide(pesticideId: UUID): Pesticide =
+        pesticideRepository.findById(pesticideId).orElseThrow {
+            BusinessException(ErrorCode.PESTICIDE_NOT_FOUND)
+        }
+
+    private fun findPest(pestId: UUID): Pest =
+        pestRepository.findById(pestId).orElseThrow {
+            BusinessException(ErrorCode.PEST_NOT_FOUND)
         }
 
     private companion object {

@@ -16,8 +16,6 @@ interface FarmingRecordQueryRepository {
         val keyword: String? = null,
         val matchedWorkTypes: List<WorkType> = emptyList(),
         val matchedParts: List<CropUsePartCategory> = emptyList(),
-        val matchedFertilizerCategories: List<FertilizerMaterialCategory> = emptyList(),
-        val matchedPesticideCategories: List<PesticideCategory> = emptyList(),
         val cursor: Cursor?,
         val size: Int
     )

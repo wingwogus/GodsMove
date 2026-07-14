@@ -18,7 +18,7 @@ import java.util.UUID
 
 @Entity
 @Table(name = "harvest_record")
-class HarvestRecord(
+class   HarvestRecord(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)
     @Column(nullable = false, updatable = false, columnDefinition = "uuid")
@@ -32,20 +32,20 @@ class HarvestRecord(
     val harvestAmount: BigDecimal?,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "medicinal_part", nullable = false, length = 32)
-    val medicinalPart: CropUsePartCategory,
+    @Column(name = "medicinal_part", length = 32)
+    val medicinalPart: CropUsePartCategory? = null,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "harvest_source", nullable = false, length = 16)
     val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
 
-    @Column(name = "growth_period", nullable = false)
-    val growthPeriod: Int,
+    @Column(name = "growth_period")
+    val growthPeriod: Int? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "growth_period_unit", nullable = false, length = 16)
-    val growthPeriodUnit: GrowthPeriodUnit,
+    @Column(name = "growth_period_unit", length = 16)
+    val growthPeriodUnit: GrowthPeriodUnit? = null,
 
-    @Column(name = "is_final_harvest", nullable = false)
-    val isFinalHarvest: Boolean,
+    @Column(name = "is_last_harvest", nullable = false)
+    val isLastHarvest: Boolean,
 ) : BaseTimeEntity()

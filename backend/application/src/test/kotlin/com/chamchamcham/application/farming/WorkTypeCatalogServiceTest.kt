@@ -1,7 +1,5 @@
 package com.chamchamcham.application.farming
 
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
-import com.chamchamcham.domain.farming.PesticideCategory
 import com.chamchamcham.domain.farming.WorkType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
@@ -23,44 +21,29 @@ class WorkTypeCatalogServiceTest {
     }
 
     @Test
-    fun `category enums expose stable Korean labels`() {
-        assertThat(FertilizerMaterialCategory.COMPOUND_FERTILIZER.label)
-            .isEqualTo("복합비료")
-        assertThat(PesticideCategory.FUNGICIDE.label).isEqualTo("살균제")
-    }
-
-    @Test
-    fun `category and final harvest fields expose stable contracts`() {
-        val byCode = service.listWorkTypes().associateBy { it.code }
-
-        assertThat(byCode.getValue(WorkType.FERTILIZING.name).fields.first().name)
-            .isEqualTo("materialCategory")
-        assertThat(byCode.getValue(WorkType.PEST_CONTROL.name).fields.first().name)
-            .isEqualTo("pesticideCategory")
-        assertThat(byCode.getValue(WorkType.HARVEST.name).fields.last().name)
-            .isEqualTo("isFinalHarvest")
-        assertThat(byCode.getValue(WorkType.HARVEST.name).fields.last().type)
-            .isEqualTo(FieldValueType.BOOLEAN)
-    }
-
-    @Test
-    fun `PLANTING has required detail with propagationMethod as the only required field`() {
+    fun `PLANTING has required detail with plantingMethod as the only required field`() {
         val planting = service.listWorkTypes().first { it.code == "PLANTING" }
 
         assertThat(planting.detailRequired).isTrue()
         assertThat(planting.fields.map { it.name }).containsExactly(
-            "seedAmount", "seedAmountUnit", "seedlingCount", "seedlingUnit", "propagationMethod"
+            "plantingMethod", "seedAmount", "seedAmountUnit", "seedlingCount", "seedlingUnit", "propagationMethod"
         )
-        assertThat(planting.fields.filter { it.required }.map { it.name }).containsExactly("propagationMethod")
+        assertThat(planting.fields.filter { it.required }.map { it.name }).containsExactly("plantingMethod")
+        val plantingMethodField = planting.fields.first { it.name == "plantingMethod" }
+        assertThat(plantingMethodField.type).isEqualTo(FieldValueType.ENUM)
+        assertThat(plantingMethodField.options).containsExactly(
+            WorkTypeResult.EnumOptionSummary("SEED", "씨앗 심기"),
+            WorkTypeResult.EnumOptionSummary("SEEDLING", "모종 심기")
+        )
         val propagationMethodField = planting.fields.first { it.name == "propagationMethod" }
-        assertThat(propagationMethodField.type).isEqualTo(FieldValueType.ENUM)
+        assertThat(propagationMethodField.required).isFalse()
         assertThat(propagationMethodField.options).containsExactly(
-            WorkTypeResult.EnumOptionSummary("SEED", "종자"),
-            WorkTypeResult.EnumOptionSummary("CUTTING", "삽목"),
-            WorkTypeResult.EnumOptionSummary("GRAFTING", "접목"),
-            WorkTypeResult.EnumOptionSummary("LAYERING", "취목"),
-            WorkTypeResult.EnumOptionSummary("DIVISION", "분주·분리"),
-            WorkTypeResult.EnumOptionSummary("TISSUE_CULTURE", "조직배양")
+            WorkTypeResult.EnumOptionSummary("CUTTING", "꺾꽂이"),
+            WorkTypeResult.EnumOptionSummary("GRAFTING", "접붙이기"),
+            WorkTypeResult.EnumOptionSummary("LAYERING", "휘묻이"),
+            WorkTypeResult.EnumOptionSummary("DIVISION", "포기나누기"),
+            WorkTypeResult.EnumOptionSummary("TISSUE_CULTURE", "조직 배양"),
+            WorkTypeResult.EnumOptionSummary("PURCHASED", "시판 구매")
         )
     }
 
@@ -79,11 +62,7 @@ class WorkTypeCatalogServiceTest {
 
         assertThat(fertilizing.detailRequired).isTrue()
         assertThat(fertilizing.fields.filter { it.required }.map { it.name })
-            .containsExactly("materialCategory", "amount", "amountUnit")
-        assertThat(fertilizing.fields.first { it.name == "materialCategory" }.options)
-            .containsExactlyElementsOf(
-                FertilizerMaterialCategory.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
-            )
+            .containsExactly("materialName", "amount", "amountUnit")
         assertThat(fertilizing.fields.first { it.name == "applicationMethod" }.required).isFalse()
     }
 
@@ -93,13 +72,9 @@ class WorkTypeCatalogServiceTest {
 
         assertThat(pestControl.detailRequired).isTrue()
         assertThat(pestControl.fields.filter { it.required }.map { it.name }).containsExactly(
-            "pesticideCategory", "pesticideAmount", "pesticideAmountUnit", "totalSprayAmount", "totalSprayAmountUnit"
+            "pesticideId", "pesticideAmount", "pesticideAmountUnit", "totalSprayAmount", "totalSprayAmountUnit"
         )
-        assertThat(pestControl.fields.first { it.name == "pesticideCategory" }.options)
-            .containsExactlyElementsOf(
-                PesticideCategory.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
-            )
-        assertThat(pestControl.fields.first { it.name == "pestTarget" }.required).isFalse()
+        assertThat(pestControl.fields.first { it.name == "pestId" }.required).isFalse()
     }
 
     @Test
@@ -127,17 +102,17 @@ class WorkTypeCatalogServiceTest {
     }
 
     @Test
-    fun `HARVEST has required detail including medicinalPart`() {
+    fun `HARVEST has required detail with optional medicinalPart and growth period`() {
         val harvest = service.listWorkTypes().first { it.code == "HARVEST" }
 
         assertThat(harvest.detailRequired).isTrue()
         assertThat(harvest.fields.map { it.name }).containsExactly(
-            "harvestAmount", "medicinalPart", "harvestSource", "growthPeriod", "growthPeriodUnit", "isFinalHarvest"
+            "harvestAmount", "medicinalPart", "harvestSource", "growthPeriod", "growthPeriodUnit"
         )
-        assertThat(harvest.fields.first { it.name == "medicinalPart" }.required).isTrue()
+        assertThat(harvest.fields.first { it.name == "medicinalPart" }.required).isFalse()
         assertThat(harvest.fields.first { it.name == "harvestSource" }.required).isFalse()
-        assertThat(harvest.fields.first { it.name == "isFinalHarvest" }.required).isTrue()
-        assertThat(harvest.fields.first { it.name == "isFinalHarvest" }.type).isEqualTo(FieldValueType.BOOLEAN)
+        assertThat(harvest.fields.first { it.name == "growthPeriod" }.required).isFalse()
+        assertThat(harvest.fields.first { it.name == "growthPeriodUnit" }.required).isFalse()
     }
 
     @Test

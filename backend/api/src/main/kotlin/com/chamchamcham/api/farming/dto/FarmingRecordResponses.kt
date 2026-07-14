@@ -3,14 +3,13 @@ package com.chamchamcham.api.farming.dto
 import com.chamchamcham.application.farming.FarmingRecordResult
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
-import com.chamchamcham.domain.farming.PesticideCategory
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -114,14 +113,16 @@ object FarmingRecordResponses {
     }
 
     data class PlantingDetailResponse(
+        val plantingMethod: PlantingMethod,
         val seedAmount: BigDecimal?,
         val seedAmountUnit: SeedAmountUnit?,
         val seedlingCount: Int?,
         val seedlingUnit: SeedlingUnit?,
-        val propagationMethod: PropagationMethod,
+        val propagationMethod: PropagationMethod?,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.PlantingDetail): PlantingDetailResponse = PlantingDetailResponse(
+                plantingMethod = result.plantingMethod,
                 seedAmount = result.seedAmount,
                 seedAmountUnit = result.seedAmountUnit,
                 seedlingCount = result.seedlingCount,
@@ -144,14 +145,14 @@ object FarmingRecordResponses {
     }
 
     data class FertilizingDetailResponse(
-        val materialCategory: FertilizerMaterialCategory,
+        val materialName: String,
         val amount: BigDecimal,
         val amountUnit: FertilizerAmountUnit,
         val applicationMethod: FertilizingMethod?,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.FertilizingDetail): FertilizingDetailResponse = FertilizingDetailResponse(
-                materialCategory = result.materialCategory,
+                materialName = result.materialName,
                 amount = result.amount,
                 amountUnit = result.amountUnit,
                 applicationMethod = result.applicationMethod,
@@ -160,21 +161,25 @@ object FarmingRecordResponses {
     }
 
     data class PestControlDetailResponse(
-        val pesticideCategory: PesticideCategory,
+        val pesticideId: UUID,
+        val pesticideName: String,
         val pesticideAmount: BigDecimal,
         val pesticideAmountUnit: PesticideAmountUnit,
         val totalSprayAmount: BigDecimal,
         val totalSprayAmountUnit: SprayAmountUnit,
-        val pestTarget: String?,
+        val pestId: UUID?,
+        val pestName: String?,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.PestControlDetail): PestControlDetailResponse = PestControlDetailResponse(
-                pesticideCategory = result.pesticideCategory,
+                pesticideId = result.pesticideId,
+                pesticideName = result.pesticideName,
                 pesticideAmount = result.pesticideAmount,
                 pesticideAmountUnit = result.pesticideAmountUnit,
                 totalSprayAmount = result.totalSprayAmount,
                 totalSprayAmountUnit = result.totalSprayAmountUnit,
-                pestTarget = result.pestTarget,
+                pestId = result.pestId,
+                pestName = result.pestName,
             )
         }
     }
@@ -191,11 +196,11 @@ object FarmingRecordResponses {
     data class HarvestDetailResponse(
         val harvestAmount: BigDecimal?,
         val amountUnknown: Boolean,
-        val medicinalPart: CropUsePartCategory,
+        val medicinalPart: CropUsePartCategory?,
         val harvestSource: HarvestSource,
-        val growthPeriod: Int,
-        val growthPeriodUnit: GrowthPeriodUnit,
-        val isFinalHarvest: Boolean,
+        val growthPeriod: Int?,
+        val growthPeriodUnit: GrowthPeriodUnit?,
+        val isLastHarvest: Boolean,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.HarvestDetail): HarvestDetailResponse = HarvestDetailResponse(
@@ -205,7 +210,7 @@ object FarmingRecordResponses {
                 harvestSource = result.harvestSource,
                 growthPeriod = result.growthPeriod,
                 growthPeriodUnit = result.growthPeriodUnit,
-                isFinalHarvest = result.isFinalHarvest,
+                isLastHarvest = result.isLastHarvest,
             )
         }
     }

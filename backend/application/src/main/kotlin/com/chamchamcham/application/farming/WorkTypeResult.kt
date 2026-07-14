@@ -21,4 +21,4 @@ object WorkTypeResult {
     )
 }
 
-enum class FieldValueType { STRING, INT, DECIMAL, ENUM, BOOLEAN }
+enum class FieldValueType { STRING, INT, DECIMAL, ENUM }

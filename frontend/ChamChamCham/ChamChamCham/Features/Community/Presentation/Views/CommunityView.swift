@@ -7,224 +7,250 @@
 
 import SwiftUI
 
-/// Layout-only wireframe for the community tab. No navigation to post detail or write screens yet —
-/// the category chips, sort control, "+" button, and floating write button are inert placeholders.
+/// Community tab root: 자유 이야기 / Q&A tabs, crop board chips, sort control, and a cursor-paged post list.
+/// The "+" chip opens the crop picker; the floating pencil opens the composer.
 struct CommunityView: View {
-    @State private var selectedCategory = "전체"
+    private let container: DIContainer
+    @State private var viewModel: CommunityFeedViewModel
+    @State private var showCompose = false
+    @State private var showCropPicker = false
+    @State private var showSortOptions = false
+    private let horizontalInset: CGFloat = 20
+
+    init(container: DIContainer) {
+        self.container = container
+        _viewModel = State(
+            initialValue: CommunityFeedViewModel(
+                repository: container.makeCommunityRepository(),
+                cropCatalog: container.makeCropCatalogService()
+            )
+        )
+    }
 
     var body: some View {
-        ZStack(alignment: .bottomTrailing) {
-            ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.lg) {
-                    header
-                    categoryFilterRow
-                    sortRow
+        NavigationStack {
+            ZStack(alignment: .bottomTrailing) {
+                VStack(spacing: 0) {
+                    AppTopAppBar(
+                        title: "커뮤니티",
+                        showBorder: false,
+                        trailing: [.init("magnifyingglass"), .init("bell.fill")]
+                    )
+                    postTypeTabs
+                    cropChipRow
                     postList
                 }
-                .padding(Spacing.md)
+                writeButton
             }
-            writeButton
+            .navigationBarHidden(true)
+            .navigationDestination(for: CommunityPostSummary.self) { post in
+                CommunityDetailView(postId: post.id, container: container)
+            }
         }
-    }
-
-    private var header: some View {
-        HStack {
-            Text("커뮤니티")
-                .font(.largeTitle.bold())
-            Spacer()
-            Button {
-            } label: {
-                Image(systemName: "magnifyingglass")
-                    .font(.title2)
+        .task { await viewModel.onAppear() }
+        .fullScreenCover(isPresented: $showCompose) {
+            CommunityComposeView(container: container) { _ in
+                Task { await viewModel.reload() }
             }
-            Button {
-            } label: {
-                Image(systemName: "bell")
-                    .font(.title2)
+        }
+        .sheet(isPresented: $showCropPicker) {
+            CropPickerSheet(loadCrops: viewModel.catalogCrops) { crops in
+                Task { await viewModel.addBoards(from: crops) }
             }
         }
     }
 
-    private var categoryFilterRow: some View {
-        HStack(spacing: Spacing.sm) {
-            ForEach(categorySampleData, id: \.self) { category in
-                Button {
-                    selectedCategory = category
-                } label: {
-                    Text(category)
-                        .font(.subheadline)
-                        .padding(.horizontal, Spacing.md)
-                        .padding(.vertical, Spacing.sm)
-                        .background(
-                            selectedCategory == category
-                                ? Color(.label)
-                                : Color(.secondarySystemBackground)
-                        )
-                        .foregroundStyle(
-                            selectedCategory == category
-                                ? Color(.systemBackground)
-                                : Color(.label)
-                        )
-                        .clipShape(Capsule())
+    // MARK: - Post type tabs (자유 이야기 / Q&A)
+
+    private var postTypeTabs: some View {
+        AppTabBar(
+            titles: ["일반 게시물", "Q&A 게시물"],
+            selection: Binding(
+                get: { viewModel.postType == .general ? 0 : 1 },
+                set: { index in
+                    Task {
+                        await viewModel.selectPostType(index == 0 ? .general : .question)
+                    }
                 }
-            }
-            Spacer()
+            )
+        )
+        .frame(height: 56)
+    }
+
+    // MARK: - Crop board chips
+
+    private var cropChipRow: some View {
+        HStack(spacing: 0) {
             Button {
+                showCropPicker = true
             } label: {
                 Image(systemName: "plus")
-                    .font(.headline)
-                    .frame(width: 36, height: 36)
-                    .background(Color(.secondarySystemBackground))
+                    .font(.system(size: 18, weight: .medium))
+                    .foregroundStyle(Color.Icon.subtle)
+                    .frame(width: 32, height: 32)
+                    .background(Color.Object.default)
+                    .overlay(Circle().stroke(Color.Border.default, lineWidth: 1))
                     .clipShape(Circle())
             }
+            .buttonStyle(.plain)
+            .frame(width: 60, height: 60)
+            .overlay(alignment: .trailing) {
+                Rectangle()
+                    .fill(Color.Border.default)
+                    .frame(width: 1, height: 24)
+            }
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: Spacing.sm) {
+                    let isAllSelected = viewModel.selectedCropId == nil
+                    AppChip(
+                        label: "전체",
+                        isSelected: isAllSelected,
+                        style: isAllSelected ? .solid : .solidPastel
+                    ) {
+                        Task { await viewModel.selectCrop(nil) }
+                    }
+                    ForEach(viewModel.boards) { board in
+                        let isSelected = viewModel.selectedCropId == board.cropId
+                        AppChip(
+                            label: board.cropName,
+                            isSelected: isSelected,
+                            style: isSelected ? .solid : .solidPastel
+                        ) {
+                            Task { await viewModel.selectCrop(board.cropId) }
+                        }
+                    }
+                }
+                .padding(.leading, Spacing.sm)
+                .padding(.trailing, horizontalInset)
+                .padding(.vertical, 14)
+            }
         }
+        .frame(height: 60)
+        .background(Color.Background.subtle)
+    }
+
+    // MARK: - List
+
+    private var postList: some View {
+        ScrollView {
+            sortRow
+            if viewModel.isLoading {
+                ProgressView()
+                    .frame(maxWidth: .infinity)
+                    .padding(.top, Spacing.xl)
+            } else if let errorMessage = viewModel.errorMessage {
+                emptyState(text: errorMessage, systemImage: "exclamationmark.triangle")
+            } else if viewModel.posts.isEmpty {
+                emptyState(text: "아직 게시글이 없어요.", systemImage: "square.stack.3d.up.slash")
+            } else {
+                LazyVStack(spacing: CommunityPostRow.Layout.interRowSpacing) {
+                    ForEach(viewModel.posts) { post in
+                        NavigationLink(value: post) {
+                            CommunityPostRow(post: post) {
+                                Task { await viewModel.toggleLike(post) }
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        .task { await viewModel.loadMoreIfNeeded(currentItem: post) }
+                    }
+                    if viewModel.isLoadingMore {
+                        ProgressView().padding(Spacing.md)
+                    }
+                }
+                .padding(.bottom, 112)
+            }
+        }
+        .refreshable { await viewModel.reload() }
     }
 
     private var sortRow: some View {
         HStack {
             Spacer()
-            Button {
-            } label: {
-                HStack(spacing: Spacing.xs) {
-                    Text("최신순")
-                    Image(systemName: "chevron.down")
-                }
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            AppSortButton(
+                title: viewModel.sort == .popular ? "인기순" : "최신순",
+                isExpanded: showSortOptions
+            ) {
+                showSortOptions = true
             }
+        }
+        .frame(height: 48)
+        .padding(.horizontal, horizontalInset)
+        .background(Color.Background.default)
+        .confirmationDialog("정렬", isPresented: $showSortOptions, titleVisibility: .hidden) {
+            Button("최신순") { Task { await viewModel.selectSort(.latest) } }
+            Button("인기순") { Task { await viewModel.selectSort(.popular) } }
         }
     }
 
-    private var postList: some View {
-        VStack(spacing: 0) {
-            ForEach(postSampleData) { post in
-                PostRow(post: post)
-                if post.id != postSampleData.last?.id {
-                    Divider()
-                }
-            }
+    private func emptyState(text: String, systemImage: String) -> some View {
+        VStack(spacing: Spacing.md) {
+            Image(systemName: systemImage)
+                .font(.system(size: 40))
+                .foregroundStyle(Color.Icon.disabled)
+            Text(text)
+                .appTypography(.bodyMedium)
+                .foregroundStyle(Color.Text.muted)
         }
+        .frame(maxWidth: .infinity)
+        .padding(.top, Spacing.xl * 2)
     }
 
     private var writeButton: some View {
-        Button {
-        } label: {
-            Image(systemName: "pencil")
-                .font(.title2)
-                .frame(width: 56, height: 56)
-                .background(Color(.systemGray3))
-                .foregroundStyle(Color(.systemBackground))
-                .clipShape(Circle())
+        AppButton(
+            systemImage: "pencil",
+            variant: .primary,
+            size: .xlarge
+        ) {
+            showCompose = true
         }
-        .padding(Spacing.md)
+        .padding(.trailing, horizontalInset)
+        .padding(.bottom, Spacing.xl)
+        .accessibilityLabel("게시물 작성")
     }
 }
 
-private let categorySampleData = ["전체", "인삼", "황기", "당귀", "도라지"]
+/// One row in the community list: badges/date header, title, one-line preview, reactions, and a
+/// fixed thumbnail slot.
+struct CommunityPostRow: View {
+    enum Layout {
+        static let interRowSpacing: CGFloat = 20
+    }
 
-private struct PostSample: Identifiable {
-    let id = UUID()
-    let title: String
-    let preview: String
-    let tags: [String]
-    let authorName: String
-    let timeAgo: String
-    let commentCount: Int
-    let likeCount: Int
-}
-
-private let postSampleData: [PostSample] = [
-    .init(
-        title: "황기 발아율이 너무 낮은데 원인이 뭐임?",
-        preview: "올해 파종했는데 싹이 거의 안 올라오네요...",
-        tags: ["Q&A", "황기"],
-        authorName: "나루지기",
-        timeAgo: "10분 전",
-        commentCount: 12,
-        likeCount: 8
-    ),
-    .init(
-        title: "인삼 밭 두둑 만드는 방법 공유합니다",
-        preview: "작업 도구와 시기를 잘 맞추는 게 핵심입니다...",
-        tags: ["인삼"],
-        authorName: "초보농부",
-        timeAgo: "30분 전",
-        commentCount: 12,
-        likeCount: 8
-    ),
-    .init(
-        title: "인삼 홍삼 가공 수율 기준이 있나요?",
-        preview: "올해 파종했는데 싹이 거의 안 올라오네요...",
-        tags: ["Q&A", "인삼"],
-        authorName: "홍삼러버",
-        timeAgo: "1시간 전",
-        commentCount: 12,
-        likeCount: 8
-    ),
-    .init(
-        title: "당귀 수확 후 건조 방법",
-        preview: "그늘에서 천천히 말리는 게 향이 오래 갑니다.",
-        tags: [],
-        authorName: "당귀지기",
-        timeAgo: "2시간 전",
-        commentCount: 12,
-        likeCount: 8
-    ),
-]
-
-private struct PostRow: View {
-    let post: PostSample
+    let post: CommunityPostSummary
+    var onTapLike: () -> Void
 
     var body: some View {
-        HStack(alignment: .top, spacing: Spacing.md) {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                Text(post.title)
-                    .font(.headline)
-                Text(post.preview)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(1)
-
-                if !post.tags.isEmpty {
-                    HStack(spacing: Spacing.xs) {
-                        ForEach(post.tags, id: \.self) { tag in
-                            Text(tag)
-                                .font(.caption)
-                                .padding(.horizontal, Spacing.sm)
-                                .padding(.vertical, 4)
-                                .background(Color(.secondarySystemBackground))
-                                .clipShape(Capsule())
-                        }
-                    }
-                }
-
-                HStack(spacing: Spacing.sm) {
-                    Circle()
-                        .fill(Color(.systemGray4))
-                        .frame(width: 20, height: 20)
-                    Text("\(post.authorName) · \(post.timeAgo)")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Label("\(post.commentCount)", systemImage: "bubble.left")
-                    Label("\(post.likeCount)", systemImage: "heart")
-                }
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            }
-
-            RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.secondarySystemBackground))
-                .frame(width: 80, height: 80)
-                .overlay {
-                    Image(systemName: "photo")
-                        .foregroundStyle(.secondary)
-                }
+        AppListItem(
+            size: .medium,
+            title: post.title,
+            caption: post.bodyPreview,
+            badges: badges,
+            dateText: rowDateText(post.createdAt),
+            likeText: "\(post.likeCount)",
+            commentText: "\(post.commentCount)"
+        ) {
+            CommunityRemoteImage(url: post.thumbnailUrl)
         }
-        .padding(.vertical, Spacing.md)
+        .overlay(alignment: .topLeading) {
+            Button(action: onTapLike) {
+                Color.clear
+                    .frame(width: 48, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .offset(x: 18, y: 106)
+            .accessibilityLabel(post.likedByMe ? "좋아요 취소" : "좋아요")
+        }
     }
-}
 
-#Preview {
-    CommunityView()
+    private var badges: [String] {
+        post.postType == .question ? [post.cropName, "Q&A"] : [post.cropName]
+    }
+
+    private func rowDateText(_ date: Date) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM/dd"
+        return formatter.string(from: date)
+    }
 }

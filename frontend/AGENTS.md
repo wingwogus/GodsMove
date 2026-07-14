@@ -41,6 +41,70 @@ Most features must default to local-first storage with background sync, not a th
 
 Feature-first folders inside a single app target (`ChamChamCham/App`, `ChamChamCham/Core`, `ChamChamCham/Features/<Feature>/{Data,Domain,Presentation}`). Full layout and rationale in the architecture design doc linked above. Do not introduce local SPM packages without revisiting that decision first.
 
+## Small Device Layout Rule
+
+Figma screens are designed around iPhone 13 size. Implementation must still
+preserve basic usability on iPhone SE 2/3 size for iOS 17+.
+
+SE support does not require pixel-perfect parity with the Figma frame, but must
+prevent:
+
+- clipped primary text, tab labels, or critical values
+- overlapping or incoherently stacked content
+- hidden primary actions
+- the keyboard covering the active input or submit button
+- fixed-height layouts that cannot scroll when content is taller than the screen
+
+Use scrolling, safe-area-aware bottom actions, shorter labels, adaptive spacing,
+and text fallbacks such as wrapping, `lineLimit`, or `minimumScaleFactor` where
+needed. Treat iPhone SE 2/3 as the minimum layout QA size, especially for bottom
+navigation, onboarding forms, compose screens, and comment input flows.
+
+## Figma Screen Implementation Rule
+
+When implementing a screen from Figma Dev Mode, treat the Figma frame as the
+visual target while keeping implementation decisions aligned with API readiness,
+offline-first behavior, and the existing SwiftUI architecture.
+
+Apply screen designs in this order:
+
+1. Reuse existing design-system components where possible.
+2. Extend an existing component only when the new state or variant repeats.
+3. Keep one-off layout details inside the feature screen.
+4. Create a new design-system component only for repeated UI with stable
+   behavior.
+
+Screen implementation should follow API readiness:
+
+- API ready: connect the screen to its real view model and repository flow.
+- API partially ready: implement the skeleton with loading, empty, error, and
+  disabled states.
+- API unavailable: render a clear placeholder or disabled affordance without
+  inventing networking code.
+
+Every Figma-backed screen should include the relevant runtime states, not only
+the happy-path frame: loading, empty, error, disabled, submitting, and retry
+where applicable.
+
+## Design-System Source of Truth (Strict)
+
+Before implementing or modifying UI, inspect all relevant files under
+`Core/DesignSystem/`; never bypass that folder or recreate something it already
+provides.
+
+- Reuse `Components/` and `Modifiers/` before writing feature-local UI.
+- Use `Foundation/Color+App.swift`, `Font+App.swift`, and `Spacing.swift` for
+  color, text typography, and spacing. Do not introduce an equivalent raw value
+  or duplicate token when the design system already defines it.
+- Outside the foundation, do not add raw app colors, raw text-font styling, or
+  component-specific overrides merely to chase a Figma value. System icon glyph
+  sizing and genuinely missing one-off layout measurements are the exceptions.
+- If Figma conflicts with the design system, keep the existing design-system
+  value and report the mismatch. Do not modify foundations, component token
+  mappings, or public component APIs without explicit user authorization.
+- Before completion, inspect the Swift diff for duplicated components, raw
+  foundation values, and unapproved design-system changes.
+
 ## Product Source of Truth
 
 Do not duplicate product behavior into this file. Read from:
@@ -70,7 +134,7 @@ Use the IDE run button / Simulator for interactive development.
 
 ## Backend Integration
 
-The backend is Spring Boot Kotlin with a `member`-centric domain (UUID ids). See [backend/AGENTS.md](../backend/AGENTS.md). Only three controllers are implemented so far: `AuthController` (Kakao/Naver/Apple login + onboarding completion), `CropController`, and `TestController` — Farm, Community, Voice, Report, and Policy domains have no backend endpoints yet, so don't scaffold networking code against them. An API spec with field-level DTO shapes exists at `docs/API 명세서/` (endpoint index + per-DTO field docs, re-exported 2026-07-03; the older `docs/API명세서(260702)/` CSV-only export is gone), but treat the actual `*Controller`/`*Request`/`*Response` Kotlin source under `backend/api` and `backend/domain` as authoritative when it disagrees with the doc — the doc lags behind confirmed backend changes (e.g. its 온보딩 완료 page still says onboarding doesn't create a farm; it does). Onboarding completion (`AuthController` → `CompleteOnboardingRequest`) creates a `member`, a `farm`, and `member_crop` rows together in one call (`Business Rule.md` BR-USER-002 is authoritative) — see the [Onboarding Flow Plan](../docs/superpowers/specs/2026-07-02-frontend-onboarding-flow-plan.md) for the confirmed field shapes.
+The backend is Spring Boot Kotlin with a `member`-centric domain (UUID ids). See [backend/AGENTS.md](../backend/AGENTS.md). The frontend API contract source is the deployed Swagger snapshot in `docs/swagger/`, generated from `https://chamchamcham.jaehyuns.com/v3/api-docs`; do not hand-edit it. Before work that touches API endpoints, DTOs, or request/response shapes, run `python3 scripts/sync_swagger_spec.py --write` from `frontend/`. `docs/API 명세서/` and `scripts/sync_api_spec.py` are archived Notion artifacts: **never use or regenerate them for frontend API decisions.** When Swagger and local backend source differ, treat Swagger as the deployed frontend contract and record the discrepancy with the backend commit before changing client behavior. Onboarding completion (`AuthController` → `CompleteOnboardingRequest`) creates a `member`, a `farm`, and `member_crop` rows together in one call (`Business Rule.md` BR-USER-002 is authoritative).
 
 Production base URL is confirmed: `https://chamchamcham.jaehyuns.com` (see `Core/Networking/APIEnvironment.swift`).
 

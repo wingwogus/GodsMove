@@ -2,14 +2,13 @@ package com.chamchamcham.application.farming
 
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
-import com.chamchamcham.domain.farming.PesticideCategory
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -66,11 +65,12 @@ object FarmingRecordResult {
     )
 
     data class PlantingDetail(
+        val plantingMethod: PlantingMethod,
         val seedAmount: BigDecimal?,
         val seedAmountUnit: SeedAmountUnit?,
         val seedlingCount: Int?,
         val seedlingUnit: SeedlingUnit?,
-        val propagationMethod: PropagationMethod,
+        val propagationMethod: PropagationMethod?,
     )
 
     data class WateringDetail(
@@ -79,19 +79,21 @@ object FarmingRecordResult {
     )
 
     data class FertilizingDetail(
-        val materialCategory: FertilizerMaterialCategory,
+        val materialName: String,
         val amount: BigDecimal,
         val amountUnit: FertilizerAmountUnit,
         val applicationMethod: FertilizingMethod?,
     )
 
     data class PestControlDetail(
-        val pesticideCategory: PesticideCategory,
+        val pesticideId: UUID,
+        val pesticideName: String,
         val pesticideAmount: BigDecimal,
         val pesticideAmountUnit: PesticideAmountUnit,
         val totalSprayAmount: BigDecimal,
         val totalSprayAmountUnit: SprayAmountUnit,
-        val pestTarget: String?,
+        val pestId: UUID?,
+        val pestName: String?,
     )
 
     data class WeedingDetail(
@@ -100,10 +102,10 @@ object FarmingRecordResult {
 
     data class HarvestDetail(
         val harvestAmount: BigDecimal?,
-        val medicinalPart: CropUsePartCategory,
+        val medicinalPart: CropUsePartCategory?,
         val harvestSource: HarvestSource,
-        val growthPeriod: Int,
-        val growthPeriodUnit: GrowthPeriodUnit,
-        val isFinalHarvest: Boolean,
+        val growthPeriod: Int?,
+        val growthPeriodUnit: GrowthPeriodUnit?,
+        val isLastHarvest: Boolean,
     )
 }

@@ -8,22 +8,27 @@
 import SwiftUI
 
 /// Figma `date-input`. Renders like a text field with a trailing calendar icon and a
-/// `yyyy-mm-dd` placeholder; tapping presents a graphical date picker. `selection` is optional so
+/// `yyyy.mm.dd` placeholder; tapping presents a graphical date picker. `selection` is optional so
 /// the empty state shows the placeholder. Focus (green border) is driven by the picker being open.
 struct AppDateField: View {
     var label: String?
-    var placeholder: String = "yyyy-mm-dd"
+    var placeholder: String = "yyyy.mm.dd"
     @Binding var selection: Date?
     var isRequired: Bool = false
     var helperText: String? = nil
     /// When non-nil, the field renders the error variant (red border) and shows this string,
     /// taking precedence over `helperText`.
     var errorMessage: String? = nil
+    /// Mirrors Figma's separate `filled` property while retaining selection-derived state by default.
+    var filled: Bool? = nil
 
     @Environment(\.isEnabled) private var isEnabled
     @State private var isPickerPresented = false
 
     private var isError: Bool { errorMessage != nil }
+    private var isFilled: Bool {
+        AppFieldContainer<EmptyView>.resolvedFilled(override: filled, hasValue: selection != nil)
+    }
 
     var body: some View {
         AppFieldContainer(
@@ -60,12 +65,16 @@ struct AppDateField: View {
 
     private var valueColor: Color {
         if !isEnabled { return Color.Text.disabled }
-        return selection == nil ? Color.Text.muted : Color.Text.default
+        return isFilled ? Color.Text.default : Color.Text.muted
     }
 
     private var iconColor: Color {
+        Self.iconColor(isEnabled: isEnabled, isError: isError)
+    }
+
+    static func iconColor(isEnabled: Bool, isError: Bool) -> Color {
         if !isEnabled { return Color.Icon.disabled }
-        if isError { return Color.Icon.error }
+        if isError { return Color.Icon.subtle }
         return Color.Icon.default
     }
 
@@ -96,7 +105,7 @@ struct AppDateField: View {
     static let formatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.dateFormat = "yyyy.MM.dd"
         return formatter
     }()
 }

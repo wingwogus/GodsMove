@@ -1,8 +1,7 @@
 package com.chamchamcham.domain.farming
 
 enum class IrrigationMethod(val label: String) {
-    DRIP("점적관수"),
-    SPRINKLER("스프링클러"),
+    DRIP("점적"),
     SPRAYING("살수"),
-    MANUAL("수동"),
+    ETC("기타"),
 }

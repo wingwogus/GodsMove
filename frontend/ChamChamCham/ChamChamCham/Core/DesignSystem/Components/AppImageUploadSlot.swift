@@ -7,10 +7,43 @@
 
 import SwiftUI
 
-/// Figma `image` upload slot. Empty state shows the camera affordance; filled state accepts a
-/// thumbnail view and can expose a remove action.
+/// Figma `image-uploader`. Empty medium state shows the camera affordance; filled states accept a
+/// thumbnail view and expose a size-specific remove icon when an action is supplied.
 struct AppImageUploadSlot<Thumbnail: View>: View {
-    var size: CGFloat = 92
+    enum Size {
+        case small
+        case medium
+
+        var dimension: CGFloat {
+            switch self {
+            case .small: 64
+            case .medium: 96
+            }
+        }
+
+        var cornerRadius: CGFloat {
+            switch self {
+            case .small: 4
+            case .medium: 8
+            }
+        }
+
+        var removeIconSize: CGFloat {
+            switch self {
+            case .small: 20
+            case .medium: 24
+            }
+        }
+
+        var removeInset: CGFloat {
+            switch self {
+            case .small: 8
+            case .medium: 12
+            }
+        }
+    }
+
+    var size: Size = .medium
     var label: String = "n/n"
     var onTap: () -> Void = {}
     var onRemove: (() -> Void)? = nil
@@ -18,7 +51,7 @@ struct AppImageUploadSlot<Thumbnail: View>: View {
     private let thumbnail: Thumbnail?
 
     init(
-        size: CGFloat = 92,
+        size: Size = .medium,
         label: String = "n/n",
         onTap: @escaping () -> Void = {},
         onRemove: (() -> Void)? = nil,
@@ -35,37 +68,37 @@ struct AppImageUploadSlot<Thumbnail: View>: View {
         ZStack(alignment: .topTrailing) {
             Button(action: onTap) {
                 slotContent
-                    .frame(width: size, height: size)
-                    .clipShape(RoundedRectangle(cornerRadius: 8))
+                    .frame(width: size.dimension, height: size.dimension)
+                    .clipShape(RoundedRectangle(cornerRadius: size.cornerRadius))
             }
             .buttonStyle(.plain)
 
             if thumbnail != nil, let onRemove {
                 Button(action: onRemove) {
                     Image(systemName: "xmark")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: size.removeIconSize * 0.45, weight: .bold))
                         .foregroundStyle(Color.Text.inverse)
-                        .frame(width: 20, height: 20)
+                        .frame(width: size.removeIconSize, height: size.removeIconSize)
                         .background(Color.Object.bold)
                         .clipShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .padding(6)
+                .padding(size.removeInset)
             }
         }
-        .frame(width: size, height: size)
+        .frame(width: size.dimension, height: size.dimension)
     }
 
     @ViewBuilder private var slotContent: some View {
         if let thumbnail {
             thumbnail
         } else {
-            VStack(spacing: 6) {
+            VStack(spacing: 2) {
                 Image(systemName: "camera.fill")
-                    .font(.system(size: 24))
+                    .font(.system(size: 32))
                     .foregroundStyle(Color.Icon.default)
                 Text(label)
-                    .appTypography(.labelMedium)
+                    .appTypography(.bodyMedium)
                     .foregroundStyle(Color.Text.subtle)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -76,7 +109,7 @@ struct AppImageUploadSlot<Thumbnail: View>: View {
 
 extension AppImageUploadSlot where Thumbnail == EmptyView {
     init(
-        size: CGFloat = 92,
+        size: Size = .medium,
         label: String = "n/n",
         onTap: @escaping () -> Void = {}
     ) {

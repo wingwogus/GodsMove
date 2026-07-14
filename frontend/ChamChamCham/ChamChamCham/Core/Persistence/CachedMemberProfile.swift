@@ -23,6 +23,7 @@ final class CachedMemberProfile {
     var birthDateRaw: String?
     var experienceLevel: Int?
     var managementTypeRaw: String?
+    var profileImageUrl: String?
     var onboardingStatusRaw: String
     var missingFieldsRaw: [String]
     var updatedAt: Date
@@ -36,6 +37,7 @@ final class CachedMemberProfile {
         birthDateRaw: String?,
         experienceLevel: Int?,
         managementTypeRaw: String?,
+        profileImageUrl: String?,
         onboardingStatusRaw: String,
         missingFieldsRaw: [String],
         updatedAt: Date
@@ -48,6 +50,7 @@ final class CachedMemberProfile {
         self.birthDateRaw = birthDateRaw
         self.experienceLevel = experienceLevel
         self.managementTypeRaw = managementTypeRaw
+        self.profileImageUrl = profileImageUrl
         self.onboardingStatusRaw = onboardingStatusRaw
         self.missingFieldsRaw = missingFieldsRaw
         self.updatedAt = updatedAt
@@ -77,6 +80,7 @@ final class CachedMemberProfile {
             existing.birthDateRaw = member.birthDate
             existing.experienceLevel = member.experienceLevel
             existing.managementTypeRaw = member.managementType
+            existing.profileImageUrl = member.profileImageUrl
             existing.onboardingStatusRaw = onboarding.status.rawValue
             existing.missingFieldsRaw = onboarding.missingFields
             existing.updatedAt = Date()
@@ -92,6 +96,7 @@ final class CachedMemberProfile {
             birthDateRaw: member.birthDate,
             experienceLevel: member.experienceLevel,
             managementTypeRaw: member.managementType,
+            profileImageUrl: member.profileImageUrl,
             onboardingStatusRaw: onboarding.status.rawValue,
             missingFieldsRaw: onboarding.missingFields,
             updatedAt: Date()

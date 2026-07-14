@@ -1,0 +1,265 @@
+//
+//  ProfileMainView.swift
+//  ChamChamCham
+//
+//  Created by iyungui on 7/13/26.
+//
+
+import SwiftUI
+
+/// 프로필 메인 (마이페이지 탭 루트). Member header card + 나의 게시물 / 좋아요 누른 글 tabs +
+/// board filter chip + paginated post list. The settings icon presents the settings screen; the
+/// board filter sheet is wired in a later step.
+struct ProfileMainView: View {
+    let container: DIContainer
+    @State private var viewModel: ProfileMainViewModel
+    @State private var isShowingSettings = false
+    @State private var isShowingBoardSheet = false
+    @State private var isShowingProfileEdit = false
+
+    init(container: DIContainer) {
+        self.container = container
+        _viewModel = State(
+            initialValue: ProfileMainViewModel(
+                profileRepository: container.makeMemberProfileRepository(),
+                communityRepository: container.makeCommunityRepository()
+            )
+        )
+    }
+
+    var body: some View {
+        VStack(spacing: 0) {
+            AppTopAppBar(
+                title: "나의 프로필",
+                trailing: [
+                    .init("gearshape") { isShowingSettings = true },
+                    .init("bell") {} // 알림: 이번 범위 제외
+                ]
+            )
+
+            ScrollView {
+                LazyVStack(spacing: 0, pinnedViews: []) {
+                    profileCard
+                        .padding(.horizontal, Spacing.lg - Spacing.xs)
+                        .padding(.top, Spacing.md)
+                        .padding(.bottom, Spacing.md)
+
+                    AppTabBar(
+                        titles: ["나의 게시물", "좋아요 누른 글"],
+                        selection: $viewModel.selectedTabIndex
+                    )
+
+                    filterRow
+
+                    postsSection
+                }
+            }
+        }
+        .background(Color.Background.default)
+        .task { await viewModel.onAppear() }
+        .onChange(of: viewModel.selectedTabIndex) { _, _ in
+            Task { await viewModel.onTabChanged() }
+        }
+        .sheet(isPresented: $isShowingSettings) {
+            SettingsView(authRepository: container.makeAuthRepository())
+        }
+        .sheet(isPresented: $isShowingBoardSheet) {
+            BoardSelectSheet(
+                activeBoards: viewModel.activeBoards,
+                otherBoards: viewModel.otherBoards,
+                isLoading: viewModel.isLoadingBoards,
+                initialSelection: viewModel.selectedBoardCropId
+            ) { cropId in
+                Task { await viewModel.applyBoardFilter(cropId: cropId) }
+            }
+        }
+        .fullScreenCover(isPresented: $isShowingProfileEdit, onDismiss: {
+            Task { await viewModel.loadProfile() }
+        }) {
+            ProfileEditView(container: container)
+        }
+    }
+
+    // MARK: - Profile card
+
+    private var profileCard: some View {
+        VStack(spacing: Spacing.md) {
+            avatar
+
+            VStack(spacing: Spacing.sm) {
+                Text(viewModel.profile?.nickname ?? "닉네임")
+                    .appTypography(.titleMediumEmphasized)
+                    .foregroundStyle(Color.Text.default)
+                    .lineLimit(1)
+
+                identityLine
+            }
+
+            if !cropNames.isEmpty || viewModel.hiddenCropCount > 0 {
+                Divider().overlay(Color.Border.default)
+                cropBadges
+            }
+        }
+        .padding(Spacing.lg - Spacing.xs)
+        .frame(maxWidth: .infinity)
+        .background(
+            RoundedRectangle(cornerRadius: 20).fill(Color.Object.default)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 20).stroke(Color.Border.default, lineWidth: 1)
+        )
+    }
+
+    private var avatar: some View {
+        Button {
+            isShowingProfileEdit = true
+        } label: {
+            AppAvatar(size: .large) {
+                profileImage
+            }
+            .overlay(alignment: .bottomTrailing) {
+                Circle()
+                    .fill(Color.Object.bold)
+                    .frame(width: 36, height: 36)
+                    .overlay {
+                        Image(systemName: "pencil")
+                            .font(.system(size: 16))
+                            .foregroundStyle(Color.Icon.inverse)
+                    }
+            }
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel("프로필 수정")
+    }
+
+    @ViewBuilder private var profileImage: some View {
+        if let urlString = viewModel.profile?.profileImageUrl, let url = URL(string: urlString) {
+            AsyncImage(url: url) { image in
+                image.resizable().scaledToFill()
+            } placeholder: {
+                ProgressView()
+            }
+        } else {
+            AppImagePlaceholder(isCircle: true, squareSize: 12)
+        }
+    }
+
+    @ViewBuilder private var identityLine: some View {
+        let parts = [viewModel.regionText, viewModel.experienceText].compactMap { $0 }
+        if !parts.isEmpty {
+            HStack(spacing: Spacing.sm) {
+                ForEach(Array(parts.enumerated()), id: \.offset) { index, part in
+                    if index > 0 {
+                        Rectangle()
+                            .fill(Color.Border.default)
+                            .frame(width: 1, height: 12)
+                    }
+                    Text(part)
+                        .appTypography(.bodyLarge)
+                        .foregroundStyle(Color.Text.subtle)
+                }
+            }
+            .lineLimit(1)
+        }
+    }
+
+    private var cropNames: [String] { viewModel.displayedCropNames }
+
+    @ViewBuilder private var cropBadges: some View {
+        let rows = chunk(cropNames, size: 5)
+        VStack(spacing: Spacing.sm) {
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                HStack(spacing: Spacing.sm) {
+                    ForEach(Array(row.enumerated()), id: \.offset) { _, name in
+                        AppBadge(label: name, style: .solid, variant: .primary)
+                    }
+                }
+            }
+            if viewModel.hiddenCropCount > 0 {
+                Button {
+                    viewModel.cropsExpanded = true
+                } label: {
+                    Text("외 \(viewModel.hiddenCropCount)종")
+                        .appTypography(.labelMedium)
+                        .foregroundStyle(Color.Text.subtle)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    // MARK: - Filter
+
+    private var filterRow: some View {
+        HStack {
+            AppChip(
+                label: viewModel.selectedBoardName ?? "게시판 선택",
+                isSelected: viewModel.selectedBoardCropId != nil,
+                trailingSystemImage: "chevron.down"
+            ) {
+                isShowingBoardSheet = true
+                Task { await viewModel.loadBoardsIfNeeded() }
+            }
+            Spacer()
+        }
+        .padding(.horizontal, Spacing.lg - Spacing.xs)
+        .padding(.vertical, 14)
+        .background(Color.Background.subtle)
+    }
+
+    // MARK: - Posts
+
+    @ViewBuilder private var postsSection: some View {
+        if viewModel.isLoadingPosts && viewModel.posts.isEmpty {
+            LoadingView()
+                .frame(maxWidth: .infinity)
+                .padding(.top, Spacing.xl)
+        } else if let error = viewModel.postsErrorMessage, viewModel.posts.isEmpty {
+            errorState(error)
+        } else if viewModel.posts.isEmpty {
+            EmptyStateView(message: emptyMessage)
+                .padding(.top, Spacing.xl)
+        } else {
+            LazyVStack(spacing: CommunityPostRow.Layout.interRowSpacing) {
+                ForEach(viewModel.posts) { post in
+                    CommunityPostRow(post: post) {
+                        Task { await viewModel.toggleLike(post) }
+                    }
+                    .task { await viewModel.loadMoreIfNeeded(currentItem: post) }
+                }
+                if viewModel.isLoadingMore {
+                    ProgressView().padding(.vertical, Spacing.md)
+                }
+            }
+            .padding(.top, Spacing.md)
+        }
+    }
+
+    private func errorState(_ message: String) -> some View {
+        VStack(spacing: Spacing.md) {
+            Text(message)
+                .appTypography(.bodyMedium)
+                .foregroundStyle(Color.Text.muted)
+                .multilineTextAlignment(.center)
+            Button("다시 시도") {
+                Task { await viewModel.reloadPosts() }
+            }
+            .appTypography(.bodyMediumEmphasized)
+            .foregroundStyle(Color.Text.primary)
+        }
+        .frame(maxWidth: .infinity)
+        .padding(.top, Spacing.xl)
+        .padding(.horizontal, Spacing.lg)
+    }
+
+    private var emptyMessage: String {
+        viewModel.currentTab == .myPosts ? "작성한 게시물이 없어요." : "좋아요 누른 글이 없어요."
+    }
+
+    private func chunk(_ items: [String], size: Int) -> [[String]] {
+        guard size > 0 else { return [items] }
+        return stride(from: 0, to: items.count, by: size).map {
+            Array(items[$0..<min($0 + size, items.count)])
+        }
+    }
+}

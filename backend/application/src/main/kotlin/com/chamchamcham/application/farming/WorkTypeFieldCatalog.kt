@@ -2,14 +2,13 @@ package com.chamchamcham.application.farming
 
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
-import com.chamchamcham.domain.farming.PesticideCategory
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -31,10 +30,17 @@ object WorkTypeFieldCatalog {
         WorkType.ETC -> emptyList()
     }
 
-    // propagationMethod=SEED면 seedAmount/seedAmountUnit만, 그 외 번식법이면 seedlingCount/seedlingUnit만
-    // 입력 가능하다(FarmingRecordDetailValidator.validatePlanting에서 강제). 이 목록 자체는 조건을
-    // 표현하지 않으므로 프론트는 검증 규칙을 별도로 반영해야 한다.
+    // plantingMethod=SEED면 seedAmount/seedAmountUnit만, plantingMethod=SEEDLING이면
+    // seedlingCount/seedlingUnit(+선택적으로 propagationMethod)만 입력 가능하다
+    // (FarmingRecordDetailValidator.validatePlanting에서 강제). 이 목록 자체는 조건을 표현하지
+    // 않으므로 프론트는 검증 규칙을 별도로 반영해야 한다.
     private val PLANTING_FIELDS: List<WorkTypeResult.FieldSummary> = listOf(
+        WorkTypeResult.FieldSummary(
+            name = "plantingMethod",
+            type = FieldValueType.ENUM,
+            required = true,
+            options = PlantingMethod.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
+        ),
         WorkTypeResult.FieldSummary(
             name = "seedAmount",
             type = FieldValueType.DECIMAL,
@@ -62,7 +68,7 @@ object WorkTypeFieldCatalog {
         WorkTypeResult.FieldSummary(
             name = "propagationMethod",
             type = FieldValueType.ENUM,
-            required = true,
+            required = false,
             options = PropagationMethod.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
         )
     )
@@ -84,10 +90,10 @@ object WorkTypeFieldCatalog {
 
     private val FERTILIZING_FIELDS: List<WorkTypeResult.FieldSummary> = listOf(
         WorkTypeResult.FieldSummary(
-            name = "materialCategory",
-            type = FieldValueType.ENUM,
+            name = "materialName",
+            type = FieldValueType.STRING,
             required = true,
-            options = FertilizerMaterialCategory.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
+            options = emptyList()
         ),
         WorkTypeResult.FieldSummary(
             name = "amount",
@@ -111,10 +117,10 @@ object WorkTypeFieldCatalog {
 
     private val PEST_CONTROL_FIELDS: List<WorkTypeResult.FieldSummary> = listOf(
         WorkTypeResult.FieldSummary(
-            name = "pesticideCategory",
-            type = FieldValueType.ENUM,
+            name = "pesticideId",
+            type = FieldValueType.STRING,
             required = true,
-            options = PesticideCategory.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
+            options = emptyList()
         ),
         WorkTypeResult.FieldSummary(
             name = "pesticideAmount",
@@ -141,7 +147,7 @@ object WorkTypeFieldCatalog {
             options = SprayAmountUnit.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
         ),
         WorkTypeResult.FieldSummary(
-            name = "pestTarget",
+            name = "pestId",
             type = FieldValueType.STRING,
             required = false,
             options = emptyList()
@@ -159,7 +165,9 @@ object WorkTypeFieldCatalog {
 
     // harvestAmount는 kg 단위로 필수이나, 사용자가 '모르겠음'을 선택하면(harvestAmountUnknown=true)
     // 비워둘 수 있다(FarmingRecordDetailValidator.validateHarvest에서 강제). 이 경우 서버는 NULL로
-    // 저장한다(0 아님). 이 목록 자체는 그 예외를 표현하지 않으므로 프론트가 별도 처리해야 한다.
+    // 저장한다(0 아님). medicinalPart는 선택이다(온보딩 기본값으로 프론트가 미리 채워둔다).
+    // growthPeriod/growthPeriodUnit은 둘 다 비거나 둘 다 채워져야 한다(validateHarvest에서 강제).
+    // 이 목록 자체는 그 예외들을 표현하지 않으므로 프론트가 별도 처리해야 한다.
     private val HARVEST_FIELDS: List<WorkTypeResult.FieldSummary> = listOf(
         WorkTypeResult.FieldSummary(
             name = "harvestAmount",
@@ -170,7 +178,7 @@ object WorkTypeFieldCatalog {
         WorkTypeResult.FieldSummary(
             name = "medicinalPart",
             type = FieldValueType.ENUM,
-            required = true,
+            required = false,
             options = CropUsePartCategory.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
         ),
         WorkTypeResult.FieldSummary(
@@ -182,20 +190,14 @@ object WorkTypeFieldCatalog {
         WorkTypeResult.FieldSummary(
             name = "growthPeriod",
             type = FieldValueType.INT,
-            required = true,
+            required = false,
             options = emptyList()
         ),
         WorkTypeResult.FieldSummary(
             name = "growthPeriodUnit",
             type = FieldValueType.ENUM,
-            required = true,
+            required = false,
             options = GrowthPeriodUnit.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
-        ),
-        WorkTypeResult.FieldSummary(
-            name = "isFinalHarvest",
-            type = FieldValueType.BOOLEAN,
-            required = true,
-            options = emptyList()
         )
     )
 }

@@ -1,6 +1,7 @@
 package com.chamchamcham.application.policy.recommendation
 
 import java.math.BigDecimal
+import java.time.LocalDateTime
 import java.util.UUID
 
 object PolicyRecommendationResult {
@@ -18,7 +19,8 @@ object PolicyRecommendationResult {
         val applicationPeriodLabel: String,
         val agencyName: String,
         val score: BigDecimal,
-        val reason: String
+        val reason: String,
+        val createdAt: LocalDateTime
     )
 
     data class Detail(

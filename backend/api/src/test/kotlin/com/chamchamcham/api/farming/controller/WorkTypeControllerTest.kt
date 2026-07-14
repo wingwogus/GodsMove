@@ -65,28 +65,15 @@ class WorkTypeControllerTest(
                     )
                 ),
                 WorkTypeResult.WorkTypeSummary(
-                    code = "HARVEST",
-                    label = "수확",
-                    detailRequired = true,
-                    fields = listOf(
-                        WorkTypeResult.FieldSummary(
-                            name = "isFinalHarvest",
-                            type = FieldValueType.BOOLEAN,
-                            required = true,
-                            options = emptyList()
-                        )
-                    )
-                ),
-                WorkTypeResult.WorkTypeSummary(
                     code = "FERTILIZING",
                     label = "시비",
                     detailRequired = true,
                     fields = listOf(
                         WorkTypeResult.FieldSummary(
-                            name = "materialCategory",
-                            type = FieldValueType.ENUM,
+                            name = "materialName",
+                            type = FieldValueType.STRING,
                             required = true,
-                            options = listOf(WorkTypeResult.EnumOptionSummary("COMPOUND_FERTILIZER", "복합비료"))
+                            options = emptyList()
                         )
                     )
                 ),
@@ -102,7 +89,7 @@ class WorkTypeControllerTest(
         mockMvc.perform(get("/api/v1/work-types"))
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success").value(true))
-            .andExpect(jsonPath("$.data", hasSize<Any>(5)))
+            .andExpect(jsonPath("$.data", hasSize<Any>(4)))
             .andExpect(jsonPath("$.data[0].code", equalTo("PLANTING")))
             .andExpect(jsonPath("$.data[0].label", equalTo("파종/정식")))
             .andExpect(jsonPath("$.data[0].detailRequired", equalTo(true)))
@@ -112,16 +99,11 @@ class WorkTypeControllerTest(
             .andExpect(jsonPath("$.data[0].fields[0].options[1].label", equalTo("삽목")))
             .andExpect(jsonPath("$.data[1].code", equalTo("WATERING")))
             .andExpect(jsonPath("$.data[1].fields[0].required", equalTo(false)))
-            .andExpect(jsonPath("$.data[2].code", equalTo("HARVEST")))
+            .andExpect(jsonPath("$.data[2].code", equalTo("FERTILIZING")))
             .andExpect(jsonPath("$.data[2].detailRequired", equalTo(true)))
             .andExpect(jsonPath("$.data[2].fields[0].required", equalTo(true)))
-            .andExpect(jsonPath("$.data[2].fields[0].type", equalTo("BOOLEAN")))
-            .andExpect(jsonPath("$.data[3].code", equalTo("FERTILIZING")))
-            .andExpect(jsonPath("$.data[3].detailRequired", equalTo(true)))
-            .andExpect(jsonPath("$.data[3].fields[0].name", equalTo("materialCategory")))
-            .andExpect(jsonPath("$.data[3].fields[0].options[0].label", equalTo("복합비료")))
-            .andExpect(jsonPath("$.data[4].code", equalTo("PRUNING")))
-            .andExpect(jsonPath("$.data[4].detailRequired", equalTo(false)))
-            .andExpect(jsonPath("$.data[4].fields", hasSize<Any>(0)))
+            .andExpect(jsonPath("$.data[3].code", equalTo("PRUNING")))
+            .andExpect(jsonPath("$.data[3].detailRequired", equalTo(false)))
+            .andExpect(jsonPath("$.data[3].fields", hasSize<Any>(0)))
     }
 }

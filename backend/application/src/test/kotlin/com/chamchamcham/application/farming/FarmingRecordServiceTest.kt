@@ -1,16 +1,12 @@
 package com.chamchamcham.application.farming
 
 import com.chamchamcham.application.common.OpaqueCursorCodec
-import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackLifecycleService
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
-import com.chamchamcham.application.report.FarmingCycleReportProjectionService
-import com.chamchamcham.application.report.ReportScope
 import com.chamchamcham.domain.common.BaseTimeEntity
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
-import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecord
@@ -18,18 +14,20 @@ import com.chamchamcham.domain.farming.FarmingRecordMedia
 import com.chamchamcham.domain.farming.FarmingRecordMediaRepository
 import com.chamchamcham.domain.farming.FarmingRecordQueryRepository
 import com.chamchamcham.domain.farming.FarmingRecordRepository
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingRecordRepository
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestRecord
 import com.chamchamcham.domain.farming.HarvestRecordRepository
+import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.HarvestSource
-import com.chamchamcham.domain.farming.PesticideCategory
+import com.chamchamcham.domain.farming.PestControlRecord
 import com.chamchamcham.domain.farming.PestControlRecordRepository
+import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PlantingRecord
 import com.chamchamcham.domain.farming.PlantingRecordRepository
-import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
+import com.chamchamcham.domain.farming.SprayAmountUnit
 import com.chamchamcham.domain.farming.WateringRecordRepository
 import com.chamchamcham.domain.farming.WeedingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
@@ -40,8 +38,11 @@ import com.chamchamcham.domain.media.UploadedMediaType
 import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
+import com.chamchamcham.domain.pesticide.Pest
+import com.chamchamcham.domain.pesticide.PestRepository
+import com.chamchamcham.domain.pesticide.Pesticide
+import com.chamchamcham.domain.pesticide.PesticideRepository
 import org.assertj.core.api.Assertions.assertThat
-import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertFalse
 import org.junit.jupiter.api.Assertions.assertThrows
@@ -53,10 +54,6 @@ import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
-import org.mockito.Mockito.doThrow
-import org.mockito.Mockito.inOrder
-import org.mockito.Mockito.lenient
-import org.mockito.Mockito.mockingDetails
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
@@ -72,9 +69,7 @@ class FarmingRecordServiceTest {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val otherMemberId = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val farmId = UUID.fromString("00000000-0000-0000-0000-000000000101")
-    private val newFarmId = UUID.fromString("00000000-0000-0000-0000-000000000102")
     private val cropId = UUID.fromString("00000000-0000-0000-0000-000000000201")
-    private val newCropId = UUID.fromString("00000000-0000-0000-0000-000000000202")
     private val recordId = UUID.fromString("00000000-0000-0000-0000-000000000301")
     private val secondRecordId = UUID.fromString("00000000-0000-0000-0000-000000000302")
     private val mediaId1 = UUID.fromString("00000000-0000-0000-0000-000000000401")
@@ -82,7 +77,6 @@ class FarmingRecordServiceTest {
     private val cursorCodec = OpaqueCursorCodec()
 
     @Mock private lateinit var memberRepository: MemberRepository
-    @Mock private lateinit var memberCropRepository: MemberCropRepository
     @Mock private lateinit var farmRepository: FarmRepository
     @Mock private lateinit var cropRepository: CropRepository
     @Mock private lateinit var farmingRecordRepository: FarmingRecordRepository
@@ -95,17 +89,15 @@ class FarmingRecordServiceTest {
     @Mock private lateinit var pestControlRecordRepository: PestControlRecordRepository
     @Mock private lateinit var weedingRecordRepository: WeedingRecordRepository
     @Mock private lateinit var harvestRecordRepository: HarvestRecordRepository
+    @Mock private lateinit var pesticideRepository: PesticideRepository
+    @Mock private lateinit var pestRepository: PestRepository
     @Mock private lateinit var detailValidator: FarmingRecordDetailValidator
-    @Mock private lateinit var projectionService: FarmingCycleReportProjectionService
-    @Mock private lateinit var recordFeedbackLifecycleService: RecordFeedbackLifecycleService
 
     private lateinit var service: FarmingRecordService
     private lateinit var member: Member
     private lateinit var otherMember: Member
     private lateinit var farm: Farm
-    private lateinit var newFarm: Farm
     private lateinit var crop: Crop
-    private lateinit var newCrop: Crop
     private lateinit var media1: UploadedMedia
     private lateinit var replacementMedia: UploadedMedia
 
@@ -113,7 +105,6 @@ class FarmingRecordServiceTest {
     fun setUp() {
         service = FarmingRecordService(
             memberRepository = memberRepository,
-            memberCropRepository = memberCropRepository,
             farmRepository = farmRepository,
             cropRepository = cropRepository,
             farmingRecordRepository = farmingRecordRepository,
@@ -126,29 +117,24 @@ class FarmingRecordServiceTest {
             pestControlRecordRepository = pestControlRecordRepository,
             weedingRecordRepository = weedingRecordRepository,
             harvestRecordRepository = harvestRecordRepository,
+            pesticideRepository = pesticideRepository,
+            pestRepository = pestRepository,
             detailValidator = detailValidator,
             cursorCodec = cursorCodec,
-            projectionService = projectionService,
-            recordFeedbackLifecycleService = recordFeedbackLifecycleService,
         )
         member = Member(id = memberId, email = "$memberId@example.com", passwordHash = null)
         otherMember = Member(id = otherMemberId, email = "$otherMemberId@example.com", passwordHash = null)
         farm = Farm(id = farmId, owner = member, name = "약초농장", roadAddress = "서울시 강남구")
-        newFarm = Farm(id = newFarmId, owner = member, name = "새 약초농장", roadAddress = "서울시 서초구")
         crop = Crop(id = cropId, externalNo = cropId.hashCode(), name = "황기", usePartCategory = CropUsePartCategory.ROOT_BARK)
-        newCrop = Crop(id = newCropId, externalNo = newCropId.hashCode(), name = "당귀", usePartCategory = CropUsePartCategory.ROOT_BARK)
         media1 = uploadedMedia(mediaId1)
         replacementMedia = uploadedMedia(replacementMediaId)
-        lenient().`when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId))
-            .thenReturn(true)
-        lenient().`when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, newFarmId, newCropId))
-            .thenReturn(true)
     }
 
     private fun baseCommand(
         workType: WorkType,
         planting: FarmingRecordCommand.PlantingDetail? = null,
         harvest: FarmingRecordCommand.HarvestDetail? = null,
+        pestControl: FarmingRecordCommand.PestControlDetail? = null,
         mediaIds: List<UUID> = emptyList(),
     ) = FarmingRecordCommand.Create(
         memberId = memberId,
@@ -161,13 +147,12 @@ class FarmingRecordServiceTest {
         memo = "memo",
         planting = planting,
         harvest = harvest,
+        pestControl = pestControl,
         mediaIds = mediaIds,
     )
 
     private fun updateCommand(
         workType: WorkType,
-        farmId: UUID = this.farmId,
-        cropId: UUID = this.cropId,
         planting: FarmingRecordCommand.PlantingDetail? = null,
         harvest: FarmingRecordCommand.HarvestDetail? = null,
         mediaIds: List<UUID> = emptyList(),
@@ -201,7 +186,7 @@ class FarmingRecordServiceTest {
         weatherCondition = "맑음",
         weatherTemperature = 20,
         memo = "memo",
-        entryMode = "MANUAL",
+        entryMode = EntryMode.MANUAL,
     )
 
     private fun uploadedMedia(
@@ -264,9 +249,9 @@ class FarmingRecordServiceTest {
         val command = baseCommand(
             workType = WorkType.PLANTING,
             planting = FarmingRecordCommand.PlantingDetail(
+                plantingMethod = PlantingMethod.SEED,
                 seedAmount = BigDecimal.TEN,
-                seedAmountUnit = SeedAmountUnit.KG,
-                propagationMethod = PropagationMethod.SEED,
+                seedAmountUnit = SeedAmountUnit.G,
             ),
         )
 
@@ -277,8 +262,68 @@ class FarmingRecordServiceTest {
         val captor = ArgumentCaptor.forClass(PlantingRecord::class.java)
         verify(plantingRecordRepository).save(captor.capture())
         assertEquals(BigDecimal.TEN, captor.value.seedAmount)
-        assertEquals(SeedAmountUnit.KG, captor.value.seedAmountUnit)
+        assertEquals(SeedAmountUnit.G, captor.value.seedAmountUnit)
         verifyNoInteractions(harvestRecordRepository, wateringRecordRepository, fertilizingRecordRepository, pestControlRecordRepository, weedingRecordRepository)
+    }
+
+    @Test
+    fun `create saves pest control detail when workType is PEST_CONTROL`() {
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
+        val pesticideId = UUID.randomUUID()
+        val pestId = UUID.randomUUID()
+        val pesticide = Pesticide(id = pesticideId, itemName = "만코제브 수화제", brandName = "가가방")
+        val pest = Pest(id = pestId, name = "역병")
+        `when`(pesticideRepository.findById(pesticideId)).thenReturn(Optional.of(pesticide))
+        `when`(pestRepository.findById(pestId)).thenReturn(Optional.of(pest))
+        stubFarmingRecordSave()
+
+        val command = baseCommand(
+            workType = WorkType.PEST_CONTROL,
+            pestControl = FarmingRecordCommand.PestControlDetail(
+                pesticideId = pesticideId,
+                pesticideAmount = BigDecimal.ONE,
+                pesticideAmountUnit = PesticideAmountUnit.ML,
+                totalSprayAmount = BigDecimal.TEN,
+                totalSprayAmountUnit = SprayAmountUnit.L,
+                pestId = pestId,
+            ),
+        )
+
+        service.create(command)
+
+        val captor = ArgumentCaptor.forClass(PestControlRecord::class.java)
+        verify(pestControlRecordRepository).save(captor.capture())
+        assertEquals(pesticideId, captor.value.pesticide.id)
+        assertEquals(pestId, captor.value.pest?.id)
+        verifyNoInteractions(harvestRecordRepository, wateringRecordRepository, fertilizingRecordRepository, plantingRecordRepository, weedingRecordRepository)
+    }
+
+    @Test
+    fun `create throws when pesticide id does not exist`() {
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
+        val pesticideId = UUID.randomUUID()
+        `when`(pesticideRepository.findById(pesticideId)).thenReturn(Optional.empty())
+        stubFarmingRecordSave()
+
+        val command = baseCommand(
+            workType = WorkType.PEST_CONTROL,
+            pestControl = FarmingRecordCommand.PestControlDetail(
+                pesticideId = pesticideId,
+                pesticideAmount = BigDecimal.ONE,
+                pesticideAmountUnit = PesticideAmountUnit.ML,
+                totalSprayAmount = BigDecimal.TEN,
+                totalSprayAmountUnit = SprayAmountUnit.L,
+            ),
+        )
+
+        val exception = assertThrows(BusinessException::class.java) { service.create(command) }
+
+        assertEquals(ErrorCode.PESTICIDE_NOT_FOUND, exception.errorCode)
+        verify(pestControlRecordRepository, never()).save(any(PestControlRecord::class.java))
     }
 
     @Test
@@ -303,71 +348,11 @@ class FarmingRecordServiceTest {
         `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
         `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(media1))
         stubFarmingRecordSave()
-        `when`(projectionService.rebuild(ReportScope(memberId, farmId, cropId))).thenAnswer {
-            assertThat(mockingDetails(recordFeedbackLifecycleService).invocations).isEmpty()
-            null
-        }
 
         service.create(baseCommand(workType = WorkType.PRUNING, mediaIds = listOf(mediaId1)))
 
         assertEquals(UploadedMediaStatus.ATTACHED, media1.status)
         assertThat(capturedFarmingRecordMedia().map { it.uploadedMedia.id }).containsExactly(mediaId1)
-    }
-
-    @Test
-    fun `create queues feedback after detail media and report rebuild`() {
-        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
-        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
-        `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(media1))
-        stubFarmingRecordSave()
-
-        service.create(
-            baseCommand(
-                workType = WorkType.HARVEST,
-                harvest = FarmingRecordCommand.HarvestDetail(
-                    harvestAmount = BigDecimal.TEN,
-                    medicinalPart = CropUsePartCategory.ROOT_BARK,
-                    growthPeriod = 2,
-                    growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                    isFinalHarvest = true,
-                ),
-                mediaIds = listOf(mediaId1),
-            )
-        )
-
-        @Suppress("UNCHECKED_CAST")
-        val mediaCaptor = ArgumentCaptor.forClass(Iterable::class.java) as ArgumentCaptor<Iterable<FarmingRecordMedia>>
-        inOrder(
-            harvestRecordRepository,
-            farmingRecordMediaRepository,
-            projectionService,
-        ).apply {
-            verify(harvestRecordRepository).save(any(HarvestRecord::class.java))
-            verify(farmingRecordMediaRepository).saveAll(mediaCaptor.capture())
-            verify(projectionService).rebuild(ReportScope(memberId, farmId, cropId))
-        }
-        val feedbackInvocations = mockingDetails(recordFeedbackLifecycleService).invocations
-        assertThat(feedbackInvocations).hasSize(1)
-        assertThat(feedbackInvocations.single().method.name).isEqualTo("enqueue")
-        val queuedRecord = feedbackInvocations.single().arguments.single() as FarmingRecord
-        assertThat(queuedRecord.id).isNotNull()
-    }
-
-    @Test
-    fun `projection failure is propagated from the record transaction`() {
-        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
-        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
-        stubFarmingRecordSave()
-        doThrow(IllegalStateException("projection failed"))
-            .`when`(projectionService)
-            .rebuild(ReportScope(memberId, farmId, cropId))
-
-        assertThatThrownBy { service.create(baseCommand(workType = WorkType.PRUNING)) }
-            .isInstanceOf(IllegalStateException::class.java)
-            .hasMessage("projection failed")
-        verifyNoInteractions(recordFeedbackLifecycleService)
     }
 
     @Test
@@ -384,7 +369,7 @@ class FarmingRecordServiceTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = true,
+                isLastHarvest = false,
             ),
         )
 
@@ -394,7 +379,6 @@ class FarmingRecordServiceTest {
         verify(harvestRecordRepository).save(captor.capture())
         assertEquals(BigDecimal.TEN, captor.value.harvestAmount)
         assertEquals(CropUsePartCategory.ROOT_BARK, captor.value.medicinalPart)
-        assertTrue(captor.value.isFinalHarvest)
     }
 
     @Test
@@ -412,7 +396,7 @@ class FarmingRecordServiceTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = false,
+                isLastHarvest = false,
             ),
         )
 
@@ -421,7 +405,6 @@ class FarmingRecordServiceTest {
         val captor = ArgumentCaptor.forClass(HarvestRecord::class.java)
         verify(harvestRecordRepository).save(captor.capture())
         assertEquals(null, captor.value.harvestAmount)
-        assertFalse(captor.value.isFinalHarvest)
     }
 
     @Test
@@ -505,22 +488,6 @@ class FarmingRecordServiceTest {
     }
 
     @Test
-    fun `create rejects crop that is not registered to member farm`() {
-        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
-        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
-        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId))
-            .thenReturn(false)
-
-        val exception = assertThrows(BusinessException::class.java) {
-            service.create(baseCommand(workType = WorkType.PRUNING))
-        }
-
-        assertEquals(ErrorCode.CROP_NOT_FOUND, exception.errorCode)
-        verify(cropRepository, never()).findById(cropId)
-        verify(farmingRecordRepository, never()).save(any(FarmingRecord::class.java))
-    }
-
-    @Test
     fun `create throws BusinessException not IllegalArgumentException when detail is missing despite validator passing`() {
         `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
@@ -551,7 +518,7 @@ class FarmingRecordServiceTest {
                     medicinalPart = CropUsePartCategory.ROOT_BARK,
                     growthPeriod = 2,
                     growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                    isFinalHarvest = true,
+                    isLastHarvest = false,
                 ),
             )
         )
@@ -576,17 +543,14 @@ class FarmingRecordServiceTest {
             updateCommand(
                 workType = WorkType.PLANTING,
                 planting = FarmingRecordCommand.PlantingDetail(
+                    plantingMethod = PlantingMethod.SEED,
                     seedAmount = BigDecimal.ONE,
-                    seedAmountUnit = SeedAmountUnit.KG,
-                    propagationMethod = PropagationMethod.SEED,
+                    seedAmountUnit = SeedAmountUnit.G,
                 ),
             )
         )
 
-        inOrder(plantingRecordRepository, farmingRecordRepository).apply {
-            verify(plantingRecordRepository).deleteByRecord(record)
-            verify(farmingRecordRepository).flush()
-        }
+        verify(plantingRecordRepository).deleteByRecord(record)
         val captor = ArgumentCaptor.forClass(PlantingRecord::class.java)
         verify(plantingRecordRepository).save(captor.capture())
         assertEquals(BigDecimal.ONE, captor.value.seedAmount)
@@ -604,46 +568,6 @@ class FarmingRecordServiceTest {
 
         verify(farmingRecordMediaRepository).deleteByRecord(record)
         assertEquals(UploadedMediaStatus.ATTACHED, replacementMedia.status)
-    }
-
-    @Test
-    fun `update increments revision queues feedback and rebuilds old and new scopes when farm or crop changes`() {
-        val record = existingRecord(workType = WorkType.PRUNING)
-        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
-        `when`(farmRepository.findByIdAndOwnerId(newFarmId, memberId)).thenReturn(newFarm)
-        `when`(cropRepository.findById(newCropId)).thenReturn(Optional.of(newCrop))
-
-        service.update(updateCommand(workType = WorkType.PRUNING, farmId = newFarmId, cropId = newCropId))
-
-        verify(projectionService).rebuildAll(
-            listOf(
-                ReportScope(memberId, farmId, cropId),
-                ReportScope(memberId, newFarmId, newCropId),
-            ),
-        )
-        verify(memberCropRepository).existsByMemberIdAndFarmIdAndCropId(memberId, newFarmId, newCropId)
-        assertThat(record.sourceRevision).isEqualTo(2)
-        verify(recordFeedbackLifecycleService).enqueue(record)
-    }
-
-    @Test
-    fun `update rejects target crop that is not registered to member farm before mutating record`() {
-        val record = existingRecord(workType = WorkType.PRUNING)
-        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
-        `when`(farmRepository.findByIdAndOwnerId(newFarmId, memberId)).thenReturn(newFarm)
-        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, newFarmId, newCropId))
-            .thenReturn(false)
-
-        val exception = assertThrows(BusinessException::class.java) {
-            service.update(updateCommand(workType = WorkType.HARVEST, farmId = newFarmId, cropId = newCropId))
-        }
-
-        assertEquals(ErrorCode.CROP_NOT_FOUND, exception.errorCode)
-        assertEquals(farmId, record.farm.id)
-        assertEquals(cropId, record.crop.id)
-        assertEquals(WorkType.PRUNING, record.workType)
-        verify(cropRepository, never()).findById(newCropId)
-        verifyNoInteractions(farmingRecordMediaRepository, projectionService)
     }
 
     @Test
@@ -678,23 +602,6 @@ class FarmingRecordServiceTest {
 
         assertTrue(record.isDeleted)
         verify(farmingRecordRepository, never()).delete(any(FarmingRecord::class.java))
-    }
-
-    @Test
-    fun `delete soft deletes rebuilds its scope then stales feedback`() {
-        val record = existingRecord(workType = WorkType.PRUNING)
-        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
-        `when`(projectionService.rebuild(ReportScope(memberId, farmId, cropId))).thenAnswer {
-            assertTrue(record.isDeleted)
-            null
-        }
-
-        service.delete(FarmingRecordCommand.Delete(memberId = memberId, recordId = recordId))
-
-        verify(projectionService).rebuild(ReportScope(memberId, farmId, cropId))
-        verify(recordFeedbackLifecycleService).staleFor(recordId)
-        assertThat(mockingDetails(recordFeedbackLifecycleService).invocations)
-            .allSatisfy { invocation -> assertThat(invocation.method.name).isEqualTo("staleFor") }
     }
 
     @Test
@@ -734,7 +641,7 @@ class FarmingRecordServiceTest {
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = false,
+                isLastHarvest = true,
             )
         )
         `when`(farmingRecordMediaRepository.findByRecord_Id(recordId)).thenReturn(
@@ -750,7 +657,7 @@ class FarmingRecordServiceTest {
         assertEquals("맑음", detail.weatherCondition)
         assertEquals(20, detail.weatherTemperature)
         assertEquals(BigDecimal.TEN, detail.harvest?.harvestAmount)
-        assertEquals(false, detail.harvest?.isFinalHarvest)
+        assertEquals(true, detail.harvest?.isLastHarvest)
         assertThat(detail.imageUrls).containsExactly(media1.fileUrl)
     }
 
@@ -935,58 +842,6 @@ class FarmingRecordServiceTest {
         ).thenReturn(FarmingRecordQueryRepository.SearchResult(emptyList()))
 
         val page = service.search(searchCondition(keyword = "잎"))
-
-        assertThat(page.items).isEmpty()
-    }
-
-    @Test
-    fun `search resolves keyword into matched fertilizer category label`() {
-        `when`(
-            farmingRecordQueryRepository.search(
-                FarmingRecordQueryRepository.SearchCondition(
-                    memberId = memberId,
-                    cropId = null,
-                    workType = null,
-                    workedAtFrom = null,
-                    workedAtTo = null,
-                    keyword = "유기질비료",
-                    matchedWorkTypes = emptyList(),
-                    matchedParts = emptyList(),
-                    matchedFertilizerCategories = listOf(FertilizerMaterialCategory.ORGANIC_FERTILIZER),
-                    matchedPesticideCategories = emptyList(),
-                    cursor = null,
-                    size = 21
-                )
-            )
-        ).thenReturn(FarmingRecordQueryRepository.SearchResult(emptyList()))
-
-        val page = service.search(searchCondition(keyword = "유기질비료"))
-
-        assertThat(page.items).isEmpty()
-    }
-
-    @Test
-    fun `search resolves keyword into matched pesticide category label`() {
-        `when`(
-            farmingRecordQueryRepository.search(
-                FarmingRecordQueryRepository.SearchCondition(
-                    memberId = memberId,
-                    cropId = null,
-                    workType = null,
-                    workedAtFrom = null,
-                    workedAtTo = null,
-                    keyword = "살균제",
-                    matchedWorkTypes = emptyList(),
-                    matchedParts = emptyList(),
-                    matchedFertilizerCategories = emptyList(),
-                    matchedPesticideCategories = listOf(PesticideCategory.FUNGICIDE),
-                    cursor = null,
-                    size = 21
-                )
-            )
-        ).thenReturn(FarmingRecordQueryRepository.SearchResult(emptyList()))
-
-        val page = service.search(searchCondition(keyword = "살균제"))
 
         assertThat(page.items).isEmpty()
     }

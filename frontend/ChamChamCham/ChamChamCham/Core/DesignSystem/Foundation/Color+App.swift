@@ -88,6 +88,7 @@ extension Color {
         static let `default` = Gray.c0
         static let subtle = Gray.c50
         static let muted = Gray.c100
+        static let strong = Gray.c200
         static let bold = Gray.c800
         static let primary = Green.c600
         static let primarySubtle = Green.c100
@@ -116,7 +117,7 @@ extension Color {
         static let disabled = Gray.c400
         static let inverse = Gray.c0
         static let primary = Green.c700
-        static let error = Red.c500
+        static let red = Red.c500
     }
 
     enum Border {

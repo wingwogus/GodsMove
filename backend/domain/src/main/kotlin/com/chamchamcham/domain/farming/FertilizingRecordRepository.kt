@@ -5,6 +5,5 @@ import java.util.UUID
 
 interface FertilizingRecordRepository : JpaRepository<FertilizingRecord, UUID> {
     fun findByRecord_Id(recordId: UUID): FertilizingRecord?
-    fun findByRecord_IdIn(recordIds: Collection<UUID>): List<FertilizingRecord>
     fun deleteByRecord(record: FarmingRecord)
 }

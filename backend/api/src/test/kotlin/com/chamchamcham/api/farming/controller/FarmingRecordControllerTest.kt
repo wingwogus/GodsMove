@@ -13,7 +13,6 @@ import com.chamchamcham.domain.farming.WorkType
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
-import org.mockito.Mockito.verifyNoInteractions
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest
@@ -140,7 +139,7 @@ class FarmingRecordControllerTest(
     }
 
     @Test
-    fun `create record rejects missing fertilizing material category before service call`() {
+    fun `create record rejects blank fertilizing material name`() {
         val json = """
             {
               "farmId":"$farmId",
@@ -151,8 +150,9 @@ class FarmingRecordControllerTest(
               "weatherTemperature":28,
               "memo":"오늘은 날씨가 좋아 하루 종일 시비 작업을 진행했고 별다른 문제 없이 마무리했습니다",
               "fertilizing":{
+                "materialName":" ",
                 "amount":10,
-                "amountUnit":"KG"
+                "amountUnit":"G"
               }
             }
         """.trimIndent()
@@ -165,74 +165,10 @@ class FarmingRecordControllerTest(
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
-
-        verifyNoInteractions(farmingRecordService)
     }
 
     @Test
-    fun `create record rejects harvest without medicinal part`() {
-        val json = """
-            {
-              "farmId":"$farmId",
-              "cropId":"$cropId",
-              "workType":"HARVEST",
-              "workedAt":"2026-06-01T09:00:00",
-              "weatherCondition":"맑음",
-              "weatherTemperature":28,
-              "memo":"오늘은 날씨가 좋아 하루 종일 수확 작업을 진행했고 별다른 문제 없이 마무리했습니다",
-              "harvest":{
-                "harvestAmount":10,
-                "harvestSource":"CULTIVATED",
-                "growthPeriod":2,
-                "growthPeriodUnit":"YEAR",
-                "isFinalHarvest":false
-              }
-            }
-        """.trimIndent()
-
-        mockMvc.perform(
-            post("/api/v1/farming-records")
-                .with(authenticatedMember(memberId.toString()))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-        )
-            .andExpect(status().isBadRequest)
-    }
-
-    @Test
-    fun `create record rejects harvest without final harvest flag before service call`() {
-        val json = """
-            {
-              "farmId":"$farmId",
-              "cropId":"$cropId",
-              "workType":"HARVEST",
-              "workedAt":"2026-06-01T09:00:00",
-              "weatherCondition":"맑음",
-              "weatherTemperature":28,
-              "memo":"오늘은 날씨가 좋아 하루 종일 수확 작업을 진행했고 별다른 문제 없이 마무리했습니다",
-              "harvest":{
-                "harvestAmount":10,
-                "medicinalPart":"ROOT_BARK",
-                "harvestSource":"CULTIVATED",
-                "growthPeriod":2,
-                "growthPeriodUnit":"YEAR"
-              }
-            }
-        """.trimIndent()
-
-        mockMvc.perform(
-            post("/api/v1/farming-records")
-                .with(authenticatedMember(memberId.toString()))
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(json)
-        )
-            .andExpect(status().isBadRequest)
-
-        verifyNoInteractions(farmingRecordService)
-    }
-
-    @Test
-    fun `create record accepts explicit false final harvest flag`() {
+    fun `create record accepts harvest without medicinal part or growth period`() {
         val command = FarmingRecordCommand.Create(
             memberId = memberId,
             farmId = farmId,
@@ -244,16 +180,11 @@ class FarmingRecordControllerTest(
             memo = "오늘은 날씨가 좋아 하루 종일 수확 작업을 진행했고 별다른 문제 없이 마무리했습니다",
             harvest = FarmingRecordCommand.HarvestDetail(
                 harvestAmount = BigDecimal.TEN,
-                medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
-                growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = false,
+                isLastHarvest = true,
             ),
-            mediaIds = emptyList(),
         )
-        `when`(farmingRecordService.create(command))
-            .thenReturn(FarmingRecordResult.RecordId(id = recordId, workType = WorkType.HARVEST))
+        `when`(farmingRecordService.create(command)).thenReturn(FarmingRecordResult.RecordId(id = recordId, workType = WorkType.HARVEST))
 
         val json = """
             {
@@ -266,11 +197,8 @@ class FarmingRecordControllerTest(
               "memo":"오늘은 날씨가 좋아 하루 종일 수확 작업을 진행했고 별다른 문제 없이 마무리했습니다",
               "harvest":{
                 "harvestAmount":10,
-                "medicinalPart":"ROOT_BARK",
                 "harvestSource":"CULTIVATED",
-                "growthPeriod":2,
-                "growthPeriodUnit":"YEAR",
-                "isFinalHarvest":false
+                "isLastHarvest":true
               }
             }
         """.trimIndent()
@@ -302,7 +230,7 @@ class FarmingRecordControllerTest(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = false,
+                isLastHarvest = true,
             ),
         )
         `when`(farmingRecordService.create(command)).thenReturn(FarmingRecordResult.RecordId(id = recordId, workType = WorkType.HARVEST))
@@ -322,7 +250,7 @@ class FarmingRecordControllerTest(
                 "harvestSource":"CULTIVATED",
                 "growthPeriod":2,
                 "growthPeriodUnit":"YEAR",
-                "isFinalHarvest":false
+                "isLastHarvest":true
               }
             }
         """.trimIndent()
@@ -337,7 +265,37 @@ class FarmingRecordControllerTest(
     }
 
     @Test
-    fun `create record rejects planting without propagation method`() {
+    fun `create record rejects harvest without last harvest flag`() {
+        val json = """
+            {
+              "farmId":"$farmId",
+              "cropId":"$cropId",
+              "workType":"HARVEST",
+              "workedAt":"2026-06-01T09:00:00",
+              "weatherCondition":"맑음",
+              "weatherTemperature":28,
+              "memo":"오늘은 날씨가 좋아 하루 종일 수확 작업을 진행했고 별다른 문제 없이 마무리했습니다",
+              "harvest":{
+                "harvestAmount":10,
+                "medicinalPart":"ROOT_BARK",
+                "harvestSource":"CULTIVATED",
+                "growthPeriod":2,
+                "growthPeriodUnit":"YEAR"
+              }
+            }
+        """.trimIndent()
+
+        mockMvc.perform(
+            post("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json)
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
+    fun `create record rejects planting without planting method`() {
         val json = """
             {
               "farmId":"$farmId",
@@ -349,7 +307,7 @@ class FarmingRecordControllerTest(
               "memo":"오늘은 날씨가 좋아 하루 종일 파종 작업을 진행했고 별다른 문제 없이 마무리했습니다",
               "planting":{
                 "seedAmount":10,
-                "seedAmountUnit":"KG"
+                "seedAmountUnit":"G"
               }
             }
         """.trimIndent()
@@ -468,6 +426,7 @@ class FarmingRecordControllerTest(
             .andExpect(jsonPath("$.data.id", equalTo(recordId.toString())))
             .andExpect(jsonPath("$.data.harvest.harvestAmount", equalTo(10)))
             .andExpect(jsonPath("$.data.harvest.amountUnknown", equalTo(false)))
+            .andExpect(jsonPath("$.data.harvest.isLastHarvest", equalTo(true)))
     }
 
     @Test
@@ -529,7 +488,7 @@ class FarmingRecordControllerTest(
                 "harvestSource":"CULTIVATED",
                 "growthPeriod":$growthPeriod,
                 "growthPeriodUnit":"YEAR",
-                "isFinalHarvest":false
+                "isLastHarvest":true
               },
               "mediaIds":$mediaIdsJson
             }
@@ -552,7 +511,7 @@ class FarmingRecordControllerTest(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = false,
+                isLastHarvest = true,
             ),
             mediaIds = listOf(mediaId),
         )
@@ -574,7 +533,7 @@ class FarmingRecordControllerTest(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = false,
+                isLastHarvest = true,
             ),
             mediaIds = listOf(mediaId),
         )
@@ -616,7 +575,7 @@ class FarmingRecordControllerTest(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = false,
+                isLastHarvest = true,
             ),
             imageUrls = listOf("https://example.test/1.jpg"),
             createdAt = createdAt,

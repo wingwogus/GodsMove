@@ -246,14 +246,88 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
         assertThat(pagedIds).doesNotHaveDuplicates()
     }
 
+    @Test
+    fun `search by member returns only that member's recommendations`() {
+        persistRecommendation("내 정책", score = "0.9000", applyEndsOn = null)
+        persistRecommendation("다른 회원 정책", member = otherMember, score = "0.9500", applyEndsOn = null)
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.searchByMember(searchCondition())
+
+        assertThat(result.map { it.policyProgram.title }).containsExactly("내 정책")
+    }
+
+    @Test
+    fun `search by member matches keyword in title or summary case insensitively`() {
+        persistRecommendation("청년 농업인 지원", score = "0.9000", applyEndsOn = null)
+        persistRecommendation("귀농 지원", summary = "청년 정착 지원금", score = "0.8500", applyEndsOn = null)
+        persistRecommendation("무관 정책", summary = "다른 내용", score = "0.8000", applyEndsOn = null)
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.searchByMember(searchCondition(keyword = "청년"))
+
+        assertThat(result.map { it.policyProgram.title }).containsExactlyInAnyOrder("청년 농업인 지원", "귀농 지원")
+    }
+
+    @Test
+    fun `search by member orders by created at desc id desc with cursor pagination`() {
+        val oldest = persistRecommendation(
+            "가장 오래됨", score = "0.9000", applyEndsOn = null,
+            createdAt = LocalDateTime.of(2026, 7, 5, 9, 0)
+        )
+        val middle = persistRecommendation(
+            "중간", score = "0.9000", applyEndsOn = null,
+            createdAt = LocalDateTime.of(2026, 7, 6, 9, 0)
+        )
+        val newest = persistRecommendation(
+            "가장 최근", score = "0.9000", applyEndsOn = null,
+            createdAt = LocalDateTime.of(2026, 7, 7, 9, 0)
+        )
+        entityManager.flush()
+        entityManager.clear()
+
+        val firstPage = queryRepository.searchByMember(searchCondition(size = 2))
+        val cursorRow = firstPage.last()
+        val secondPage = queryRepository.searchByMember(
+            searchCondition(
+                cursorCreatedAt = cursorRow.createdAt,
+                cursorId = requireNotNull(cursorRow.id)
+            )
+        )
+
+        assertThat(firstPage.map { requireNotNull(it.id) }).containsExactly(
+            requireNotNull(newest.id),
+            requireNotNull(middle.id)
+        )
+        assertThat(secondPage.map { requireNotNull(it.id) }).containsExactly(requireNotNull(oldest.id))
+    }
+
+    private fun searchCondition(
+        keyword: String? = null,
+        cursorCreatedAt: LocalDateTime? = null,
+        cursorId: UUID? = null,
+        size: Int = 20
+    ): PolicyRecommendationQueryRepository.MemberSearchCondition =
+        PolicyRecommendationQueryRepository.MemberSearchCondition(
+            memberId = memberId,
+            keyword = keyword,
+            cursorCreatedAt = cursorCreatedAt,
+            cursorId = cursorId,
+            size = size
+        )
+
     private fun persistRecommendation(
         title: String,
         member: Member = this.member,
         sourceYear: String = this.sourceYear,
         benefitSummary: String = "지원 확인",
+        summary: String = "$title 요약",
         score: String,
         applyStartsOn: LocalDate? = null,
-        applyEndsOn: LocalDate?
+        applyEndsOn: LocalDate?,
+        createdAt: LocalDateTime = LocalDateTime.of(2026, 7, 7, 9, 20)
     ): PolicyRecommendation {
         val program = persist(
             PolicyProgram(
@@ -268,7 +342,7 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
                     externalId = "external-$title",
                     sourceYear = sourceYear,
                     title = title,
-                    summary = "$title 요약",
+                    summary = summary,
                     region = "전국",
                     sourceUrl = null,
                     agencyName = "농림축산식품부"
@@ -306,7 +380,7 @@ class PolicyRecommendationQueryRepositoryTest @Autowired constructor(
                 score = BigDecimal(score),
                 reason = "추천 사유"
             ),
-            LocalDateTime.of(2026, 7, 7, 9, 20)
+            createdAt
         )
     }
 

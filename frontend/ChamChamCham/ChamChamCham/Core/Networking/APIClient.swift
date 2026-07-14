@@ -50,6 +50,15 @@ actor APIClient {
         }
 
         if T.self == EmptyDTO.self, (200...299).contains(http.statusCode) {
+            guard let envelope = try? JSONDecoder().decode(APIEnvelope<EmptyDTO>.self, from: data) else {
+                throw APIError.server(statusCode: http.statusCode)
+            }
+            guard envelope.success else {
+                throw APIError.apiError(
+                    code: envelope.error?.code ?? "UNKNOWN",
+                    message: envelope.error?.message ?? ""
+                )
+            }
             return EmptyDTO() as! T // swiftlint:disable:this force_cast — guarded by the metatype check above
         }
 
@@ -74,7 +83,15 @@ actor APIClient {
     }
 
     private func makeRequest(for endpoint: Endpoint) throws -> URLRequest {
-        var request = URLRequest(url: APIEnvironment.baseURL.appendingPathComponent(endpoint.path))
+        let base = APIEnvironment.baseURL.appendingPathComponent(endpoint.path)
+        var components = URLComponents(url: base, resolvingAgainstBaseURL: false)
+        if !endpoint.queryItems.isEmpty {
+            components?.queryItems = endpoint.queryItems
+        }
+        guard let url = components?.url else {
+            throw APIError.network(URLError(.badURL))
+        }
+        var request = URLRequest(url: url)
         request.httpMethod = endpoint.method.rawValue
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         for (field, value) in endpoint.headers {

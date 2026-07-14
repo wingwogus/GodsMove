@@ -17,7 +17,7 @@ struct AppAvatar<Thumbnail: View>: View {
 
         var dimension: CGFloat {
             switch self {
-            case .large: 92
+            case .large: 96
             case .medium: 48
             case .small: 32
             case .xSmall: 24

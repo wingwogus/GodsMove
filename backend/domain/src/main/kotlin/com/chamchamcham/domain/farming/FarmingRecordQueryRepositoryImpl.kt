@@ -53,6 +53,8 @@ class FarmingRecordQueryRepositoryImpl(
             params["keyword"] = "%$kw%"
             keywordPredicates += "lower(r.crop.name) like :keyword"
             keywordPredicates += "lower(r.memo) like :keyword"
+            keywordPredicates += "exists (select 1 from FertilizingRecord f where f.record.id = r.id and lower(f.materialName) like :keyword)"
+            keywordPredicates += "exists (select 1 from PestControlRecord p where p.record.id = r.id and (lower(p.pesticide.brandName) like :keyword or lower(p.pesticide.itemName) like :keyword))"
         }
         if (condition.matchedWorkTypes.isNotEmpty()) {
             keywordPredicates += "r.workType in :matchedWorkTypes"
@@ -61,14 +63,6 @@ class FarmingRecordQueryRepositoryImpl(
         if (condition.matchedParts.isNotEmpty()) {
             keywordPredicates += "exists (select 1 from HarvestRecord h where h.record.id = r.id and h.medicinalPart in :matchedParts)"
             params["matchedParts"] = condition.matchedParts
-        }
-        if (condition.matchedFertilizerCategories.isNotEmpty()) {
-            keywordPredicates += "exists (select 1 from FertilizingRecord f where f.record.id = r.id and f.materialCategory in :matchedFertilizerCategories)"
-            params["matchedFertilizerCategories"] = condition.matchedFertilizerCategories
-        }
-        if (condition.matchedPesticideCategories.isNotEmpty()) {
-            keywordPredicates += "exists (select 1 from PestControlRecord p where p.record.id = r.id and p.pesticideCategory in :matchedPesticideCategories)"
-            params["matchedPesticideCategories"] = condition.matchedPesticideCategories
         }
         if (keywordPredicates.isNotEmpty()) {
             where += "(${keywordPredicates.joinToString(" or ")})"
