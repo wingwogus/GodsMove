@@ -27,6 +27,10 @@ class PlantingRecord(
     @JoinColumn(name = "record_id", nullable = false, unique = true)
     val record: FarmingRecord,
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "planting_method", nullable = false, length = 32)
+    val plantingMethod: PlantingMethod,
+
     @Column(name = "seed_amount", precision = 18, scale = 4)
     val seedAmount: BigDecimal? = null,
 
@@ -42,6 +46,6 @@ class PlantingRecord(
     val seedlingUnit: SeedlingUnit? = null,
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "propagation_method", nullable = false, length = 32)
-    val propagationMethod: PropagationMethod,
+    @Column(name = "propagation_method", length = 32)
+    val propagationMethod: PropagationMethod? = null,
 ) : BaseTimeEntity()

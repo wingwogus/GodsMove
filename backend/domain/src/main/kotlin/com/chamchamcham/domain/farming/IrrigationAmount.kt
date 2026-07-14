@@ -1,7 +1,7 @@
 package com.chamchamcham.domain.farming
 
 enum class IrrigationAmount(val label: String) {
-    LOW("적음"),
+    LOW("조금"),
     NORMAL("보통"),
-    SUFFICIENT("충분"),
+    SUFFICIENT("많이"),
 }

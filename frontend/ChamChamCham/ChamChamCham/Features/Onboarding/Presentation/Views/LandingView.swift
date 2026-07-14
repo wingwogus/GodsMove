@@ -42,7 +42,7 @@ struct LandingView: View {
         await method(appState)
         guard appState.isAuthenticated else { return }
         if !appState.isOnboarded {
-            viewModel.jump(to: .basicProfile)
+            viewModel.continueAfterAuthentication()
         }
         // else: appState now satisfies RootView's `isAuthenticated && isOnboarded` gate — it swaps to
         // MainTabView on its own, no further action needed here.

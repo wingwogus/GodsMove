@@ -13,55 +13,41 @@ struct FarmLocationView: View {
     @State private var farmLocationViewModel = FarmLocationViewModel()
     @State private var isSearchSheetPresented = false
     @State private var cameraPosition: MapCameraPosition = .automatic
+    @State private var cameraSpanMeters: CLLocationDistance = 300
+    @State private var hasAttemptedNext = false
 
     private var isValid: Bool {
-        !viewModel.draft.farmName.trimmingCharacters(in: .whitespaces).isEmpty
+        farmLocationViewModel.requiredInputError(farmName: viewModel.draft.farmName) == nil
             && farmLocationViewModel.canProceed
+    }
+
+    private var requiredInputError: String? {
+        guard hasAttemptedNext else { return nil }
+        return farmLocationViewModel.requiredInputError(farmName: viewModel.draft.farmName)
     }
 
     var body: some View {
         @Bindable var viewModel = viewModel
 
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            HStack {
-                Button {
-                    viewModel.goBack()
-                } label: {
-                    Image(systemName: "chevron.left")
-                        .foregroundStyle(Color.appTextPrimary)
-                }
-                Spacer()
-            }
+        VStack(spacing: 0) {
+            topAppBar
 
             OnboardingProgressBar(currentStep: viewModel.currentStep)
+                .padding(.horizontal, 20)
+                .padding(.top, 8)
+                .padding(.bottom, 36)
 
-            VStack(alignment: .leading, spacing: Spacing.xs) {
-                Text("농지 위치")
-                    .font(.appCaption)
-                    .foregroundStyle(Color.appTextSecondary)
-                Text("농장 이름과 위치를\n입력해주세요")
-                    .font(.appTitle)
-            }
+            header
+                .padding(.horizontal, 20)
+                .padding(.bottom, 20)
 
-            AppTextField(label: "*농장 이름", placeholder: "예) 이랑농장", text: $viewModel.draft.farmName)
-
-            addressSection
-
-            if farmLocationViewModel.resolvedCoordinate != nil {
-                mapSection
-                parcelInfoSection
-            }
-
-            Spacer(minLength: 0)
-
-            PrimaryButton(title: "다음") {
-                applySelectionToDraft()
-                viewModel.goNext()
-            }
-            .disabled(!isValid)
-            .opacity(isValid ? 1 : 0.5)
+            mapOverlaySection
+                .ignoresSafeArea(.container, edges: .bottom)
         }
-        .padding(Spacing.lg)
+        .background(Color.Background.default)
+        .overlay(alignment: .bottom) {
+            bottomCTA
+        }
         .sheet(isPresented: $isSearchSheetPresented) {
             AddressSearchSheet(viewModel: farmLocationViewModel) { address in
                 Task { await farmLocationViewModel.selectAddress(address) }
@@ -70,38 +56,130 @@ struct FarmLocationView: View {
         .onChange(of: farmLocationViewModel.resolvedCoordinate) { _, newValue in
             guard let newValue else { return }
             cameraPosition = .region(
-                MKCoordinateRegion(center: newValue.clLocationCoordinate, latitudinalMeters: 300, longitudinalMeters: 300)
+                MKCoordinateRegion(center: newValue.clLocationCoordinate, latitudinalMeters: cameraSpanMeters, longitudinalMeters: cameraSpanMeters)
             )
         }
     }
 
-    private var addressSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("*농지 주소")
-                .font(.appCaption)
-                .foregroundStyle(Color.appTextSecondary)
-
+    private var topAppBar: some View {
+        HStack {
             Button {
-                isSearchSheetPresented = true
+                viewModel.goBack()
             } label: {
-                HStack {
-                    Image(systemName: "magnifyingglass")
-                    Text(farmLocationViewModel.selectedAddress?.roadAddrPart1 ?? "주소 검색")
-                        .lineLimit(1)
-                    Spacer()
-                }
-                .foregroundStyle(
-                    farmLocationViewModel.selectedAddress == nil ? Color.appTextSecondary : Color.appTextPrimary
-                )
-                .padding(Spacing.md)
-                .background(Color(.secondarySystemBackground))
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                Image(systemName: "chevron.left")
+                    .font(.system(size: 20, weight: .semibold))
+                    .foregroundStyle(Color.Icon.default)
+                    .frame(width: 48, height: 48)
             }
+            .buttonStyle(.plain)
+            Spacer()
+        }
+        .frame(height: 60)
+        .padding(.horizontal, 4)
+        .background(Color.Background.default)
+    }
 
-            if case .failed(let message) = farmLocationViewModel.lookupState {
-                errorBanner(message)
+    private var header: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("대표 재배지 설정하기")
+                .appTypography(.headlineMedium)
+                .foregroundStyle(Color.Text.default)
+
+            Text("재배지의 주소명과 농지명을 입력해주세요.")
+                .appTypography(.bodyLarge)
+                .foregroundStyle(Color.Text.muted)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    private var mapOverlaySection: some View {
+        ZStack(alignment: .top) {
+            mapSection
+
+            VStack(spacing: 12) {
+                addressOverlayField
+                farmNameOverlayField
+
+                if let requiredInputError {
+                    Text(requiredInputError)
+                        .appTypography(.labelMedium)
+                        .foregroundStyle(Color.Text.red)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+
+                if case .failed(let message) = farmLocationViewModel.lookupState {
+                    errorBanner(message)
+                }
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+
+            zoomControls
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .padding(.trailing, 20)
+                .padding(.top, 190)
+
+            VStack {
+                Spacer()
+                parcelInfoSection
+            }
+            .padding(.horizontal, 20)
+            .padding(.bottom, 116)
+        }
+        .frame(maxWidth: .infinity)
+        .frame(maxHeight: .infinity)
+        .background(Color.Object.muted)
+    }
+
+    private var addressOverlayField: some View {
+        Button {
+            isSearchSheetPresented = true
+        } label: {
+            HStack(spacing: 12) {
+                Image(systemName: "magnifyingglass")
+                    .font(.system(size: 22, weight: .medium))
+                    .foregroundStyle(Color.Icon.default)
+                Text(farmLocationViewModel.selectedAddress?.roadAddrPart1 ?? "주소지를 입력해주세요.")
+                    .appTypography(.bodyLarge)
+                    .foregroundStyle(farmLocationViewModel.selectedAddress == nil ? Color.Text.muted : Color.Text.default)
+                    .lineLimit(1)
+                Spacer(minLength: 0)
+            }
+            .padding(.horizontal, 16)
+            .frame(height: 56)
+            .background(Color.Background.default)
+            .overlay {
+                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                    .stroke(addressBorderColor, lineWidth: 1)
             }
         }
+        .buttonStyle(.plain)
+    }
+
+    private var farmNameOverlayField: some View {
+        TextField("농지명을 입력해주세요.", text: Binding(
+            get: { viewModel.draft.farmName },
+            set: { viewModel.draft.farmName = $0 }
+        ))
+        .appTypography(.bodyLarge)
+        .foregroundStyle(Color.Text.default)
+        .textInputAutocapitalization(.never)
+        .padding(.horizontal, 16)
+        .frame(height: 56)
+        .background(Color.Background.default)
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(farmNameBorderColor, lineWidth: 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private var addressBorderColor: Color {
+        hasAttemptedNext && farmLocationViewModel.selectedAddress == nil ? Color.Border.error : Color.Border.default
+    }
+
+    private var farmNameBorderColor: Color {
+        hasAttemptedNext && viewModel.draft.farmName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.Border.error : Color.Border.default
     }
 
     private var mapSection: some View {
@@ -112,8 +190,13 @@ struct FarmLocationView: View {
                 }
                 if let parcel = farmLocationViewModel.selectedParcel {
                     MapPolygon(coordinates: parcel.coordinates.map(\.clLocationCoordinate))
-                        .foregroundStyle(Color.appPrimary.opacity(0.25))
-                        .stroke(Color.appPrimary, lineWidth: 2)
+                        .foregroundStyle(Color.Object.primary.opacity(0.25))
+                        .stroke(Color.Object.primary, lineWidth: 2)
+                }
+            }
+            .overlay {
+                if farmLocationViewModel.resolvedCoordinate == nil {
+                    mapPlaceholder
                 }
             }
             .onTapGesture { screenPoint in
@@ -121,30 +204,69 @@ struct FarmLocationView: View {
                 Task { await farmLocationViewModel.handleMapTap(at: coordinate) }
             }
         }
-        .frame(height: 300)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var mapPlaceholder: some View {
+        ZStack {
+            Color.Object.muted
+            Image(systemName: "map")
+                .font(.system(size: 42, weight: .medium))
+                .foregroundStyle(Color.Icon.disabled)
+        }
+    }
+
+    private var zoomControls: some View {
+        VStack(spacing: 0) {
+            zoomButton(systemName: "plus") { zoom(by: 0.5) }
+            Divider()
+                .background(Color.Border.default)
+                .padding(.horizontal, 8)
+            zoomButton(systemName: "minus") { zoom(by: 2.0) }
+        }
+        .frame(width: 48, height: 104)
+        .background(Color.Background.default)
+        .overlay {
+            RoundedRectangle(cornerRadius: 8, style: .continuous)
+                .stroke(Color.Border.default, lineWidth: 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+    }
+
+    private func zoomButton(systemName: String, action: @escaping () -> Void) -> some View {
+        Button(action: action) {
+            Image(systemName: systemName)
+                .font(.system(size: 22, weight: .semibold))
+                .foregroundStyle(Color.Icon.default)
+                .frame(width: 48, height: 51)
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder
     private var parcelInfoSection: some View {
         switch farmLocationViewModel.lookupState {
         case .resolvingCoordinate, .loadingParcel:
-            LoadingView()
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, Spacing.md)
+            mapStatusCard {
+                HStack(spacing: 12) {
+                    ProgressView()
+                    Text("재배지 정보를 확인하고 있어요.")
+                        .appTypography(.labelMedium)
+                        .foregroundStyle(Color.Text.subtle)
+                }
+            }
         case .loaded:
             if let parcel = farmLocationViewModel.selectedParcel {
-                CardView {
+                mapStatusCard {
                     VStack(alignment: .leading, spacing: Spacing.xs) {
                         Text(parcel.jibunAddr)
-                            .font(.appBody)
+                            .appTypography(.bodyMedium)
                         HStack(spacing: Spacing.sm) {
                             Text("지목 \(parcel.jimokName)")
                             Text("·")
                             Text(parcel.formattedArea)
                         }
-                        .font(.appCaption)
-                        .foregroundStyle(Color.appTextSecondary)
+                        .appTypography(.labelMedium)
+                        .foregroundStyle(Color.Text.subtle)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }
@@ -157,7 +279,8 @@ struct FarmLocationView: View {
     }
 
     private var manualAreaFallback: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
+        mapStatusCard {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
             errorBanner("지도에서 필지를 찾지 못했어요. 면적을 직접 입력해주세요.")
             AppTextField(
                 label: "면적 (㎡)",
@@ -168,21 +291,59 @@ struct FarmLocationView: View {
                 ),
                 keyboardType: .decimalPad
             )
+            }
         }
+    }
+
+    private func mapStatusCard<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            content()
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Background.default.opacity(0.96))
+        .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
     }
 
     private func errorBanner(_ message: String) -> some View {
         HStack(alignment: .top, spacing: Spacing.sm) {
             Image(systemName: "info.circle.fill")
-                .foregroundStyle(Color.appPrimary)
+                .foregroundStyle(Color.Icon.primary)
             Text(message)
-                .font(.appCaption)
-                .foregroundStyle(Color.appTextPrimary)
+                .appTypography(.labelMedium)
+                .foregroundStyle(Color.Text.default)
         }
         .padding(Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.appPrimary.opacity(0.1))
+        .background(Color.Object.primarySubtle)
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private var bottomCTA: some View {
+        VStack(spacing: 0) {
+            OnboardingCTAButton(title: "다음", isVisuallyEnabled: isValid) {
+                hasAttemptedNext = true
+                guard isValid else { return }
+                applySelectionToDraft()
+                viewModel.goNext()
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 16)
+            .padding(.bottom, 28)
+        }
+    }
+
+    private func zoom(by factor: Double) {
+        guard let coordinate = farmLocationViewModel.resolvedCoordinate else { return }
+        cameraSpanMeters = min(max(cameraSpanMeters * factor, 80), 2000)
+        cameraPosition = .region(
+            MKCoordinateRegion(
+                center: coordinate.clLocationCoordinate,
+                latitudinalMeters: cameraSpanMeters,
+                longitudinalMeters: cameraSpanMeters
+            )
+        )
     }
 
     private func applySelectionToDraft() {
@@ -197,7 +358,7 @@ struct FarmLocationView: View {
             viewModel.draft.farmLandCategory = parcel.jimokName
             viewModel.draft.farmAreaSqm = parcel.areaSqm
             viewModel.draft.farmAreaIsManualEntry = false
-        } else if let manualArea = Double(farmLocationViewModel.manualAreaText) {
+        } else if let manualArea = farmLocationViewModel.manualAreaSqm {
             viewModel.draft.farmPNU = nil
             viewModel.draft.farmLandCategory = nil
             viewModel.draft.farmAreaSqm = manualArea

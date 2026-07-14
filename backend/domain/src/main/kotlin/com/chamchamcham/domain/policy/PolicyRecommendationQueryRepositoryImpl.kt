@@ -93,4 +93,37 @@ class PolicyRecommendationQueryRepositoryImpl(
 
         return PolicyRecommendationQueryRepository.SearchResult(query.resultList)
     }
+
+    override fun searchByMember(
+        condition: PolicyRecommendationQueryRepository.MemberSearchCondition
+    ): List<PolicyRecommendation> {
+        val where = mutableListOf("r.member.id = :memberId")
+        val params = linkedMapOf<String, Any>("memberId" to condition.memberId)
+
+        condition.keyword?.trim()?.lowercase()?.takeIf { it.isNotEmpty() }?.let { keyword ->
+            where += "(lower(p.title) like :keyword or lower(p.summary) like :keyword)"
+            params["keyword"] = "%$keyword%"
+        }
+
+        if (condition.cursorCreatedAt != null && condition.cursorId != null) {
+            where += "(r.createdAt < :cCreatedAt or (r.createdAt = :cCreatedAt and r.id < :cId))"
+            params["cCreatedAt"] = condition.cursorCreatedAt
+            params["cId"] = condition.cursorId
+        }
+
+        val query = entityManager.createQuery(
+            """
+            select r
+            from PolicyRecommendation r
+            join fetch r.policyProgram p
+            where ${where.joinToString(" and ")}
+            order by r.createdAt desc, r.id desc
+            """.trimIndent(),
+            PolicyRecommendation::class.java
+        )
+        params.forEach(query::setParameter)
+        query.maxResults = condition.size
+
+        return query.resultList
+    }
 }

@@ -179,7 +179,24 @@ class MemberControllerTest(
             nickname = "황기농부",
             experienceLevel = 2,
             managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
-            profileMediaId = null
+            profileMediaId = null,
+            farms = listOf(
+                MemberProfileCommand.Farm(
+                    farmId = farmId,
+                    name = "횡성 황기밭",
+                    roadAddress = "강원특별자치도 횡성군 둔내면 1",
+                    jibunAddress = null,
+                    latitude = 37.5,
+                    longitude = 128.5,
+                    pnu = null,
+                    landCategory = null,
+                    areaSqm = null,
+                    areaIsManualEntry = false,
+                    boundaryCoordinates = emptyList(),
+                    dataSource = MemberProfileCommand.FarmDataSource(null, null, null, null),
+                    cropIds = listOf(cropId)
+                )
+            )
         )
 
     private fun profileJson(): String =
@@ -191,7 +208,17 @@ class MemberControllerTest(
           "nickname":"황기농부",
           "experienceLevel":2,
           "managementType":"AGRICULTURAL_INDIVIDUAL",
-          "profileMediaId":null
+          "profileMediaId":null,
+          "farms":[
+            {
+              "farmId":"$farmId",
+              "name":"횡성 황기밭",
+              "roadAddress":"강원특별자치도 횡성군 둔내면 1",
+              "latitude":37.5,
+              "longitude":128.5,
+              "cropIds":["$cropId"]
+            }
+          ]
         }
         """.trimIndent()
 }

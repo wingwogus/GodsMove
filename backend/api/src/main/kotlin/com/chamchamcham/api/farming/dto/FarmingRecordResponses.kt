@@ -9,6 +9,7 @@ import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -112,14 +113,16 @@ object FarmingRecordResponses {
     }
 
     data class PlantingDetailResponse(
+        val plantingMethod: PlantingMethod,
         val seedAmount: BigDecimal?,
         val seedAmountUnit: SeedAmountUnit?,
         val seedlingCount: Int?,
         val seedlingUnit: SeedlingUnit?,
-        val propagationMethod: PropagationMethod,
+        val propagationMethod: PropagationMethod?,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.PlantingDetail): PlantingDetailResponse = PlantingDetailResponse(
+                plantingMethod = result.plantingMethod,
                 seedAmount = result.seedAmount,
                 seedAmountUnit = result.seedAmountUnit,
                 seedlingCount = result.seedlingCount,
@@ -158,21 +161,25 @@ object FarmingRecordResponses {
     }
 
     data class PestControlDetailResponse(
+        val pesticideId: UUID,
         val pesticideName: String,
         val pesticideAmount: BigDecimal,
         val pesticideAmountUnit: PesticideAmountUnit,
         val totalSprayAmount: BigDecimal,
         val totalSprayAmountUnit: SprayAmountUnit,
-        val pestTarget: String?,
+        val pestId: UUID?,
+        val pestName: String?,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.PestControlDetail): PestControlDetailResponse = PestControlDetailResponse(
+                pesticideId = result.pesticideId,
                 pesticideName = result.pesticideName,
                 pesticideAmount = result.pesticideAmount,
                 pesticideAmountUnit = result.pesticideAmountUnit,
                 totalSprayAmount = result.totalSprayAmount,
                 totalSprayAmountUnit = result.totalSprayAmountUnit,
-                pestTarget = result.pestTarget,
+                pestId = result.pestId,
+                pestName = result.pestName,
             )
         }
     }
@@ -189,10 +196,11 @@ object FarmingRecordResponses {
     data class HarvestDetailResponse(
         val harvestAmount: BigDecimal?,
         val amountUnknown: Boolean,
-        val medicinalPart: CropUsePartCategory,
+        val medicinalPart: CropUsePartCategory?,
         val harvestSource: HarvestSource,
-        val growthPeriod: Int,
-        val growthPeriodUnit: GrowthPeriodUnit,
+        val growthPeriod: Int?,
+        val growthPeriodUnit: GrowthPeriodUnit?,
+        val isLastHarvest: Boolean,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.HarvestDetail): HarvestDetailResponse = HarvestDetailResponse(
@@ -202,6 +210,7 @@ object FarmingRecordResponses {
                 harvestSource = result.harvestSource,
                 growthPeriod = result.growthPeriod,
                 growthPeriodUnit = result.growthPeriodUnit,
+                isLastHarvest = result.isLastHarvest,
             )
         }
     }

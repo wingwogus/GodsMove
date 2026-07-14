@@ -7,22 +7,37 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CE49AA6A3004BEDC009333D6 /* KakaoSDKUser in Frameworks */ = {isa = PBXBuildFile; productRef = CE49AA693004BEDC009333D6 /* KakaoSDKUser */; };
 		CE6491E02FF7FAC20092F2F1 /* KakaoSDK in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491DF2FF7FAC20092F2F1 /* KakaoSDK */; };
 		CE6491E22FF7FAC20092F2F1 /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491E12FF7FAC20092F2F1 /* KakaoSDKAuth */; };
-		CE6491E42FF7FAC20092F2F1 /* KakaoSDKCert in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491E32FF7FAC20092F2F1 /* KakaoSDKCert */; };
-		CE6491E62FF7FAC20092F2F1 /* KakaoSDKCertCore in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491E52FF7FAC20092F2F1 /* KakaoSDKCertCore */; };
 		CE6491E82FF7FAC20092F2F1 /* KakaoSDKCommon in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491E72FF7FAC20092F2F1 /* KakaoSDKCommon */; };
 		CE6491EB2FF7FB020092F2F1 /* NidThirdPartyLogin in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491EA2FF7FB020092F2F1 /* NidThirdPartyLogin */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		CEAA00000000000000000011 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = CE648D7A2FF61D6A0092F2F1 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = CE648D812FF61D6A0092F2F1;
+			remoteInfo = ChamChamCham;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
 		CE648D822FF61D6A0092F2F1 /* ChamChamCham.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ChamChamCham.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		CEAA00000000000000000002 /* ChamChamChamTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ChamChamChamTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		CE648D842FF61D6A0092F2F1 /* ChamChamCham */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			path = ChamChamCham;
+			sourceTree = "<group>";
+		};
+		CEAA00000000000000000006 /* ChamChamChamTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = ChamChamChamTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -32,22 +47,37 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				CE6491E62FF7FAC20092F2F1 /* KakaoSDKCertCore in Frameworks */,
-				CE6491E42FF7FAC20092F2F1 /* KakaoSDKCert in Frameworks */,
 				CE6491E02FF7FAC20092F2F1 /* KakaoSDK in Frameworks */,
+				CE49AA6A3004BEDC009333D6 /* KakaoSDKUser in Frameworks */,
 				CE6491E82FF7FAC20092F2F1 /* KakaoSDKCommon in Frameworks */,
 				CE6491E22FF7FAC20092F2F1 /* KakaoSDKAuth in Frameworks */,
 				CE6491EB2FF7FB020092F2F1 /* NidThirdPartyLogin in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CEAA00000000000000000004 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		CE49AA683004BEDC009333D6 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		CE648D792FF61D6A0092F2F1 = {
 			isa = PBXGroup;
 			children = (
 				CE648D842FF61D6A0092F2F1 /* ChamChamCham */,
+				CEAA00000000000000000006 /* ChamChamChamTests */,
+				CE49AA683004BEDC009333D6 /* Frameworks */,
 				CE648D832FF61D6A0092F2F1 /* Products */,
 			);
 			sourceTree = "<group>";
@@ -56,6 +86,7 @@
 			isa = PBXGroup;
 			children = (
 				CE648D822FF61D6A0092F2F1 /* ChamChamCham.app */,
+				CEAA00000000000000000002 /* ChamChamChamTests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -82,14 +113,36 @@
 			packageProductDependencies = (
 				CE6491DF2FF7FAC20092F2F1 /* KakaoSDK */,
 				CE6491E12FF7FAC20092F2F1 /* KakaoSDKAuth */,
-				CE6491E32FF7FAC20092F2F1 /* KakaoSDKCert */,
-				CE6491E52FF7FAC20092F2F1 /* KakaoSDKCertCore */,
 				CE6491E72FF7FAC20092F2F1 /* KakaoSDKCommon */,
 				CE6491EA2FF7FB020092F2F1 /* NidThirdPartyLogin */,
+				CE49AA693004BEDC009333D6 /* KakaoSDKUser */,
 			);
 			productName = ChamChamCham;
 			productReference = CE648D822FF61D6A0092F2F1 /* ChamChamCham.app */;
 			productType = "com.apple.product-type.application";
+		};
+		CEAA00000000000000000001 /* ChamChamChamTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = CEAA00000000000000000007 /* Build configuration list for PBXNativeTarget "ChamChamChamTests" */;
+			buildPhases = (
+				CEAA00000000000000000003 /* Sources */,
+				CEAA00000000000000000004 /* Frameworks */,
+				CEAA00000000000000000005 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				CEAA00000000000000000010 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				CEAA00000000000000000006 /* ChamChamChamTests */,
+			);
+			name = ChamChamChamTests;
+			packageProductDependencies = (
+			);
+			productName = ChamChamChamTests;
+			productReference = CEAA00000000000000000002 /* ChamChamChamTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
 		};
 /* End PBXNativeTarget section */
 
@@ -103,6 +156,10 @@
 				TargetAttributes = {
 					CE648D812FF61D6A0092F2F1 = {
 						CreatedOnToolsVersion = 26.2;
+					};
+					CEAA00000000000000000001 = {
+						CreatedOnToolsVersion = 26.2;
+						TestTargetID = CE648D812FF61D6A0092F2F1;
 					};
 				};
 			};
@@ -125,12 +182,20 @@
 			projectRoot = "";
 			targets = (
 				CE648D812FF61D6A0092F2F1 /* ChamChamCham */,
+				CEAA00000000000000000001 /* ChamChamChamTests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
 		CE648D802FF61D6A0092F2F1 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		CEAA00000000000000000005 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -147,7 +212,22 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		CEAA00000000000000000003 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		CEAA00000000000000000010 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = CE648D812FF61D6A0092F2F1 /* ChamChamCham */;
+			targetProxy = CEAA00000000000000000011 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		CE648D8B2FF61D6C0092F2F1 /* Debug */ = {
@@ -349,6 +429,50 @@
 			};
 			name = Release;
 		};
+		CEAA00000000000000000008 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 285ZKW5MPR;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = me.GodsMove.ChamChamChamTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ChamChamCham.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ChamChamCham";
+			};
+			name = Debug;
+		};
+		CEAA00000000000000000009 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 285ZKW5MPR;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = me.GodsMove.ChamChamChamTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/ChamChamCham.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/ChamChamCham";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -366,6 +490,15 @@
 			buildConfigurations = (
 				CE648D8E2FF61D6C0092F2F1 /* Debug */,
 				CE648D8F2FF61D6C0092F2F1 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		CEAA00000000000000000007 /* Build configuration list for PBXNativeTarget "ChamChamChamTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				CEAA00000000000000000008 /* Debug */,
+				CEAA00000000000000000009 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -392,6 +525,11 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		CE49AA693004BEDC009333D6 /* KakaoSDKUser */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
+			productName = KakaoSDKUser;
+		};
 		CE6491DF2FF7FAC20092F2F1 /* KakaoSDK */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
@@ -401,16 +539,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
 			productName = KakaoSDKAuth;
-		};
-		CE6491E32FF7FAC20092F2F1 /* KakaoSDKCert */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
-			productName = KakaoSDKCert;
-		};
-		CE6491E52FF7FAC20092F2F1 /* KakaoSDKCertCore */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */;
-			productName = KakaoSDKCertCore;
 		};
 		CE6491E72FF7FAC20092F2F1 /* KakaoSDKCommon */ = {
 			isa = XCSwiftPackageProductDependency;

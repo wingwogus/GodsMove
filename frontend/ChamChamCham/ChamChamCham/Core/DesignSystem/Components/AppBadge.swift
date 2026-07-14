@@ -45,7 +45,7 @@ struct AppBadge: View {
     }
 
     private var height: CGFloat { size == .medium ? 32 : 28 }
-    private var minWidth: CGFloat { size == .medium ? 48 : 42 }
+    private var minWidth: CGFloat { size == .medium ? 48 : 36 }
     private var horizontalPadding: CGFloat { size == .medium ? 10 : 8 }
 
     private var backgroundColor: Color {

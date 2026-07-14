@@ -37,17 +37,46 @@ struct PreviewAuthRepository: AuthRepository {
     func logout() async throws {}
 }
 
+struct PreviewMediaUploadRepository: MediaUploadRepository {
+    func uploadProfileImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO {
+        throw OnboardingSubmissionError.missingRequiredField("preview")
+    }
+
+    func uploadCommunityImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO {
+        throw OnboardingSubmissionError.missingRequiredField("preview")
+    }
+
+    func uploadFarmingRecordImage(_ imageData: Data, originalFilename: String?) async throws -> UploadedImageResponseDTO {
+        throw OnboardingSubmissionError.missingRequiredField("preview")
+    }
+}
+
 struct PreviewCropCatalogService: CropCatalogService {
     func fetchCrops() async throws -> [Crop] {
         [
-            Crop(id: UUID(), name: "황기", category: "약초류"),
-            Crop(id: UUID(), name: "당귀", category: "약초류"),
-            Crop(id: UUID(), name: "작약", category: "약초류")
+            Crop(id: UUID(), name: "감초", categoryCode: "ROOT_BARK", categoryLabel: "뿌리·껍질"),
+            Crop(id: UUID(), name: "당귀", categoryCode: "ROOT_BARK", categoryLabel: "뿌리·껍질"),
+            Crop(id: UUID(), name: "작약", categoryCode: "ROOT_BARK", categoryLabel: "뿌리·껍질"),
+            Crop(id: UUID(), name: "황기", categoryCode: "WHOLE_HERB", categoryLabel: "전초")
         ]
     }
 
-    func fetchCategoryLabels() async throws -> [String] {
-        ["약초류", "근채류", "화훼·열매", "허브·잎"]
+    func fetchCrops(categoryCode: String) async throws -> [Crop] {
+        try await fetchCrops()
+    }
+
+    func fetchCategories() async throws -> [CropCategory] {
+        [
+            CropCategory(code: "WHOLE_HERB", label: "전초"),
+            CropCategory(code: "ROOT_BARK", label: "뿌리·껍질"),
+            CropCategory(code: "RHIZOME", label: "뿌리줄기"),
+            CropCategory(code: "LEAF", label: "잎"),
+            CropCategory(code: "FLOWER", label: "꽃"),
+            CropCategory(code: "FRUIT", label: "열매·과실"),
+            CropCategory(code: "SEED", label: "종자"),
+            CropCategory(code: "STEM_BRANCH", label: "줄기·가지"),
+            CropCategory(code: "UNKNOWN", label: "기타")
+        ]
     }
 }
 
@@ -63,6 +92,7 @@ struct PreviewMemberProfileCache: MemberProfileCache {
             birthDateRaw: member.birthDate,
             experienceLevel: member.experienceLevel,
             managementTypeRaw: member.managementType,
+            profileImageUrl: member.profileImageUrl,
             onboardingStatusRaw: onboarding.status.rawValue,
             missingFieldsRaw: onboarding.missingFields,
             updatedAt: Date()
@@ -70,12 +100,30 @@ struct PreviewMemberProfileCache: MemberProfileCache {
     }
 }
 
+struct PreviewFarmRepository: FarmRepository {
+    func listFarms() async throws -> [StandaloneFarmResponseDTO] { [] }
+
+    func createFarm(_ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO {
+        throw OnboardingSubmissionError.missingRequiredField("preview")
+    }
+
+    func deleteFarm(id: UUID) async throws {}
+}
+
 extension OnboardingViewModel {
     static func preview() -> OnboardingViewModel {
-        OnboardingViewModel(
+        let pendingStore = PendingFarmStore(
+            defaults: UserDefaults(suiteName: "preview-pending-farms")!
+        )
+        return OnboardingViewModel(
             onboardingRepository: PreviewOnboardingRepository(),
+            mediaUploadRepository: PreviewMediaUploadRepository(),
             cropCatalogService: PreviewCropCatalogService(),
-            memberProfileCache: PreviewMemberProfileCache()
+            memberProfileCache: PreviewMemberProfileCache(),
+            pendingFarmSyncService: PendingFarmSyncService(
+                store: pendingStore,
+                repository: PreviewFarmRepository()
+            )
         )
     }
 }

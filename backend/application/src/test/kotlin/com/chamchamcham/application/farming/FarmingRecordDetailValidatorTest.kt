@@ -6,6 +6,7 @@ import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -82,33 +83,37 @@ class FarmingRecordDetailValidatorTest {
     }
 
     @Test
-    fun `planting accepts detail with propagation method`() {
+    fun `planting accepts seed method with seed amount only`() {
         payloads(
             workType = WorkType.PLANTING,
             planting = FarmingRecordCommand.PlantingDetail(
-                propagationMethod = PropagationMethod.SEED,
-            ),
-        ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
-    }
-
-    @Test
-    fun `planting accepts seed group when propagation method is seed`() {
-        payloads(
-            workType = WorkType.PLANTING,
-            planting = FarmingRecordCommand.PlantingDetail(
-                propagationMethod = PropagationMethod.SEED,
+                plantingMethod = PlantingMethod.SEED,
                 seedAmount = BigDecimal.TEN,
-                seedAmountUnit = SeedAmountUnit.KG,
+                seedAmountUnit = SeedAmountUnit.G,
             ),
         ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
 
     @Test
-    fun `planting rejects seedling group when propagation method is seed`() {
+    fun `planting rejects seed method without seed amount`() {
         payloads(
             workType = WorkType.PLANTING,
             planting = FarmingRecordCommand.PlantingDetail(
-                propagationMethod = PropagationMethod.SEED,
+                plantingMethod = PlantingMethod.SEED,
+            ),
+        ).forEach { payload ->
+            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
+            assertEquals(ErrorCode.FARMING_RECORD_INVALID_DETAIL, exception.errorCode)
+        }
+    }
+
+    @Test
+    fun `planting rejects seed method with seedling group filled`() {
+        payloads(
+            workType = WorkType.PLANTING,
+            planting = FarmingRecordCommand.PlantingDetail(
+                plantingMethod = PlantingMethod.SEED,
+                seedAmount = BigDecimal.TEN,
                 seedlingCount = 10,
                 seedlingUnit = SeedlingUnit.JU,
             ),
@@ -119,11 +124,26 @@ class FarmingRecordDetailValidatorTest {
     }
 
     @Test
-    fun `planting accepts seedling group when propagation method is not seed`() {
+    fun `planting rejects seed method with propagation method filled`() {
         payloads(
             workType = WorkType.PLANTING,
             planting = FarmingRecordCommand.PlantingDetail(
+                plantingMethod = PlantingMethod.SEED,
+                seedAmount = BigDecimal.TEN,
                 propagationMethod = PropagationMethod.CUTTING,
+            ),
+        ).forEach { payload ->
+            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
+            assertEquals(ErrorCode.FARMING_RECORD_INVALID_DETAIL, exception.errorCode)
+        }
+    }
+
+    @Test
+    fun `planting accepts seedling method with seedling count only`() {
+        payloads(
+            workType = WorkType.PLANTING,
+            planting = FarmingRecordCommand.PlantingDetail(
+                plantingMethod = PlantingMethod.SEEDLING,
                 seedlingCount = 10,
                 seedlingUnit = SeedlingUnit.JU,
             ),
@@ -131,13 +151,41 @@ class FarmingRecordDetailValidatorTest {
     }
 
     @Test
-    fun `planting rejects seed group when propagation method is not seed`() {
+    fun `planting accepts seedling method with optional propagation method`() {
         payloads(
             workType = WorkType.PLANTING,
             planting = FarmingRecordCommand.PlantingDetail(
+                plantingMethod = PlantingMethod.SEEDLING,
+                seedlingCount = 10,
+                seedlingUnit = SeedlingUnit.JU,
                 propagationMethod = PropagationMethod.CUTTING,
+            ),
+        ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
+    }
+
+    @Test
+    fun `planting rejects seedling method without seedling count`() {
+        payloads(
+            workType = WorkType.PLANTING,
+            planting = FarmingRecordCommand.PlantingDetail(
+                plantingMethod = PlantingMethod.SEEDLING,
+                propagationMethod = PropagationMethod.CUTTING,
+            ),
+        ).forEach { payload ->
+            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
+            assertEquals(ErrorCode.FARMING_RECORD_INVALID_DETAIL, exception.errorCode)
+        }
+    }
+
+    @Test
+    fun `planting rejects seedling method with seed group filled`() {
+        payloads(
+            workType = WorkType.PLANTING,
+            planting = FarmingRecordCommand.PlantingDetail(
+                plantingMethod = PlantingMethod.SEEDLING,
+                seedlingCount = 10,
                 seedAmount = BigDecimal.TEN,
-                seedAmountUnit = SeedAmountUnit.KG,
+                seedAmountUnit = SeedAmountUnit.G,
             ),
         ).forEach { payload ->
             val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
@@ -160,7 +208,7 @@ class FarmingRecordDetailValidatorTest {
             fertilizing = FarmingRecordCommand.FertilizingDetail(
                 materialName = "요소비료",
                 amount = BigDecimal.TEN,
-                amountUnit = FertilizerAmountUnit.KG,
+                amountUnit = FertilizerAmountUnit.G,
             ),
         ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
@@ -178,7 +226,7 @@ class FarmingRecordDetailValidatorTest {
         payloads(
             workType = WorkType.PEST_CONTROL,
             pestControl = FarmingRecordCommand.PestControlDetail(
-                pesticideName = "약제",
+                pesticideId = UUID.randomUUID(),
                 pesticideAmount = BigDecimal.ONE,
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal.TEN,
@@ -204,6 +252,7 @@ class FarmingRecordDetailValidatorTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isLastHarvest = false,
             ),
         ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
@@ -218,6 +267,7 @@ class FarmingRecordDetailValidatorTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isLastHarvest = false,
             ),
         ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
@@ -232,6 +282,7 @@ class FarmingRecordDetailValidatorTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isLastHarvest = false,
             ),
         ).forEach { payload ->
             val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
@@ -249,6 +300,55 @@ class FarmingRecordDetailValidatorTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isLastHarvest = false,
+            ),
+        ).forEach { payload ->
+            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
+            assertEquals(ErrorCode.FARMING_RECORD_INVALID_DETAIL, exception.errorCode)
+        }
+    }
+
+    @Test
+    fun `harvest accepts null medicinal part and null growth period together`() {
+        payloads(
+            workType = WorkType.HARVEST,
+            harvest = FarmingRecordCommand.HarvestDetail(
+                harvestAmount = BigDecimal.TEN,
+                medicinalPart = null,
+                growthPeriod = null,
+                growthPeriodUnit = null,
+                isLastHarvest = false,
+            ),
+        ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
+    }
+
+    @Test
+    fun `harvest rejects growth period without growth period unit`() {
+        payloads(
+            workType = WorkType.HARVEST,
+            harvest = FarmingRecordCommand.HarvestDetail(
+                harvestAmount = BigDecimal.TEN,
+                medicinalPart = null,
+                growthPeriod = 2,
+                growthPeriodUnit = null,
+                isLastHarvest = false,
+            ),
+        ).forEach { payload ->
+            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
+            assertEquals(ErrorCode.FARMING_RECORD_INVALID_DETAIL, exception.errorCode)
+        }
+    }
+
+    @Test
+    fun `harvest rejects growth period unit without growth period`() {
+        payloads(
+            workType = WorkType.HARVEST,
+            harvest = FarmingRecordCommand.HarvestDetail(
+                harvestAmount = BigDecimal.TEN,
+                medicinalPart = null,
+                growthPeriod = null,
+                growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                isLastHarvest = false,
             ),
         ).forEach { payload ->
             val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }

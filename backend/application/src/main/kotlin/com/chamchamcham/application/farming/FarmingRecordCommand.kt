@@ -1,6 +1,7 @@
 package com.chamchamcham.application.farming
 
 import com.chamchamcham.domain.crop.CropUsePartCategory
+import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
@@ -8,6 +9,7 @@ import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -35,6 +37,7 @@ object FarmingRecordCommand {
         override val weeding: WeedingDetail? = null,
         override val harvest: HarvestDetail? = null,
         val mediaIds: List<UUID> = emptyList(),
+        val entryMode: EntryMode = EntryMode.MANUAL,
     ) : FarmingRecordDetailPayload
 
     data class Update(
@@ -62,11 +65,12 @@ object FarmingRecordCommand {
     )
 
     data class PlantingDetail(
+        val plantingMethod: PlantingMethod,
         val seedAmount: BigDecimal? = null,
         val seedAmountUnit: SeedAmountUnit? = null,
         val seedlingCount: Int? = null,
         val seedlingUnit: SeedlingUnit? = null,
-        val propagationMethod: PropagationMethod,
+        val propagationMethod: PropagationMethod? = null,
     )
 
     data class WateringDetail(
@@ -82,12 +86,12 @@ object FarmingRecordCommand {
     )
 
     data class PestControlDetail(
-        val pesticideName: String,
+        val pesticideId: UUID,
         val pesticideAmount: BigDecimal,
         val pesticideAmountUnit: PesticideAmountUnit,
         val totalSprayAmount: BigDecimal,
         val totalSprayAmountUnit: SprayAmountUnit,
-        val pestTarget: String? = null,
+        val pestId: UUID? = null,
     )
 
     data class WeedingDetail(
@@ -97,9 +101,10 @@ object FarmingRecordCommand {
     data class HarvestDetail(
         val harvestAmount: BigDecimal?,
         val amountUnknown: Boolean = false,
-        val medicinalPart: CropUsePartCategory,
+        val medicinalPart: CropUsePartCategory? = null,
         val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
-        val growthPeriod: Int,
-        val growthPeriodUnit: GrowthPeriodUnit,
+        val growthPeriod: Int? = null,
+        val growthPeriodUnit: GrowthPeriodUnit? = null,
+        val isLastHarvest: Boolean,
     )
 }

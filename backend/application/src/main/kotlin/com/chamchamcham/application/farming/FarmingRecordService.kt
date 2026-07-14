@@ -31,6 +31,10 @@ import com.chamchamcham.domain.media.UploadedMediaRepository
 import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
+import com.chamchamcham.domain.pesticide.Pest
+import com.chamchamcham.domain.pesticide.PestRepository
+import com.chamchamcham.domain.pesticide.Pesticide
+import com.chamchamcham.domain.pesticide.PesticideRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -51,6 +55,8 @@ class FarmingRecordService(
     private val pestControlRecordRepository: PestControlRecordRepository,
     private val weedingRecordRepository: WeedingRecordRepository,
     private val harvestRecordRepository: HarvestRecordRepository,
+    private val pesticideRepository: PesticideRepository,
+    private val pestRepository: PestRepository,
     private val detailValidator: FarmingRecordDetailValidator,
     private val cursorCodec: OpaqueCursorCodec,
 ) {
@@ -72,7 +78,7 @@ class FarmingRecordService(
                 weatherCondition = command.weatherCondition,
                 weatherTemperature = command.weatherTemperature,
                 memo = command.memo,
-                entryMode = "MANUAL",
+                entryMode = command.entryMode,
             )
         )
 
@@ -167,6 +173,7 @@ class FarmingRecordService(
                 plantingRecordRepository.save(
                     PlantingRecord(
                         record = record,
+                        plantingMethod = detail.plantingMethod,
                         seedAmount = detail.seedAmount,
                         seedAmountUnit = detail.seedAmountUnit,
                         seedlingCount = detail.seedlingCount,
@@ -204,12 +211,12 @@ class FarmingRecordService(
                 pestControlRecordRepository.save(
                     PestControlRecord(
                         record = record,
-                        pesticideName = detail.pesticideName,
+                        pesticide = findPesticide(detail.pesticideId),
                         pesticideAmount = detail.pesticideAmount,
                         pesticideAmountUnit = detail.pesticideAmountUnit,
                         totalSprayAmount = detail.totalSprayAmount,
                         totalSprayAmountUnit = detail.totalSprayAmountUnit,
-                        pestTarget = detail.pestTarget,
+                        pest = detail.pestId?.let(::findPest),
                     )
                 )
             }
@@ -230,6 +237,7 @@ class FarmingRecordService(
                         harvestSource = detail.harvestSource,
                         growthPeriod = detail.growthPeriod,
                         growthPeriodUnit = detail.growthPeriodUnit,
+                        isLastHarvest = detail.isLastHarvest,
                     )
                 )
             }
@@ -267,6 +275,7 @@ class FarmingRecordService(
         when (record.workType) {
             WorkType.PLANTING -> planting = plantingRecordRepository.findByRecord_Id(recordId)?.let {
                 FarmingRecordResult.PlantingDetail(
+                    plantingMethod = it.plantingMethod,
                     seedAmount = it.seedAmount,
                     seedAmountUnit = it.seedAmountUnit,
                     seedlingCount = it.seedlingCount,
@@ -293,12 +302,14 @@ class FarmingRecordService(
 
             WorkType.PEST_CONTROL -> pestControl = pestControlRecordRepository.findByRecord_Id(recordId)?.let {
                 FarmingRecordResult.PestControlDetail(
-                    pesticideName = it.pesticideName,
+                    pesticideId = requireNotNull(it.pesticide.id) { "Persisted pesticide id is required" },
+                    pesticideName = it.pesticide.brandName,
                     pesticideAmount = it.pesticideAmount,
                     pesticideAmountUnit = it.pesticideAmountUnit,
                     totalSprayAmount = it.totalSprayAmount,
                     totalSprayAmountUnit = it.totalSprayAmountUnit,
-                    pestTarget = it.pestTarget,
+                    pestId = it.pest?.id,
+                    pestName = it.pest?.name,
                 )
             }
 
@@ -315,6 +326,7 @@ class FarmingRecordService(
                     harvestSource = it.harvestSource,
                     growthPeriod = it.growthPeriod,
                     growthPeriodUnit = it.growthPeriodUnit,
+                    isLastHarvest = it.isLastHarvest,
                 )
             }
 
@@ -443,6 +455,16 @@ class FarmingRecordService(
     private fun findCrop(cropId: UUID): Crop =
         cropRepository.findById(cropId).orElseThrow {
             BusinessException(ErrorCode.CROP_NOT_FOUND)
+        }
+
+    private fun findPesticide(pesticideId: UUID): Pesticide =
+        pesticideRepository.findById(pesticideId).orElseThrow {
+            BusinessException(ErrorCode.PESTICIDE_NOT_FOUND)
+        }
+
+    private fun findPest(pestId: UUID): Pest =
+        pestRepository.findById(pestId).orElseThrow {
+            BusinessException(ErrorCode.PEST_NOT_FOUND)
         }
 
     private companion object {

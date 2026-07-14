@@ -49,7 +49,7 @@ struct AppToast: View {
     }
 
     private var iconColor: Color {
-        variant == .error ? Color.Icon.error : Color.Icon.inverse
+        variant == .error ? Color.Icon.red : Color.Icon.inverse
     }
 }
 

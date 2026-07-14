@@ -28,9 +28,31 @@ final class FarmLocationViewModel {
     var manualAreaText: String = ""
     var lookupState: LookupState = .idle
 
+    var manualAreaSqm: Double? {
+        let trimmedText = manualAreaText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let areaSqm = Double(trimmedText), areaSqm > 0 else { return nil }
+        return areaSqm
+    }
+
     var canProceed: Bool {
         guard selectedAddress != nil else { return false }
-        return selectedParcel != nil || !manualAreaText.trimmingCharacters(in: .whitespaces).isEmpty
+        return selectedParcel != nil || manualAreaSqm != nil
+    }
+
+    func requiredInputError(farmName: String) -> String? {
+        let isAddressMissing = selectedAddress == nil
+        let isFarmNameMissing = farmName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+
+        switch (isAddressMissing, isFarmNameMissing) {
+        case (true, true):
+            return "주소지와 농지명은 필수로 입력해주세요."
+        case (true, false):
+            return "주소지는 필수로 입력해주세요."
+        case (false, true):
+            return "농지명은 필수로 입력해주세요."
+        case (false, false):
+            return nil
+        }
     }
 
     private let addressSearch: any AddressSearching

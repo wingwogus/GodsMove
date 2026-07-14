@@ -53,7 +53,34 @@ class MemberController(
                 nickname = request.nickname,
                 experienceLevel = requireNotNull(request.experienceLevel),
                 managementType = requireNotNull(request.managementType),
-                profileMediaId = request.profileMediaId
+                profileMediaId = request.profileMediaId,
+                farms = request.farms.map { farm ->
+                    MemberProfileCommand.Farm(
+                        farmId = farm.farmId,
+                        name = farm.name,
+                        roadAddress = farm.roadAddress,
+                        jibunAddress = farm.jibunAddress,
+                        latitude = farm.latitude,
+                        longitude = farm.longitude,
+                        pnu = farm.pnu,
+                        landCategory = farm.landCategory,
+                        areaSqm = farm.areaSqm,
+                        areaIsManualEntry = farm.areaIsManualEntry,
+                        boundaryCoordinates = farm.boundaryCoordinates.map {
+                            MemberProfileCommand.FarmBoundaryCoordinate(
+                                latitude = requireNotNull(it.latitude),
+                                longitude = requireNotNull(it.longitude)
+                            )
+                        },
+                        dataSource = MemberProfileCommand.FarmDataSource(
+                            address = farm.dataSource.address,
+                            coordinate = farm.dataSource.coordinate,
+                            parcel = farm.dataSource.parcel,
+                            landCharacteristic = farm.dataSource.landCharacteristic
+                        ),
+                        cropIds = farm.cropIds
+                    )
+                }
             )
         )
         return ResponseEntity.ok(ApiResponse.ok(MemberResponses.MyProfileResponse.from(profile)))

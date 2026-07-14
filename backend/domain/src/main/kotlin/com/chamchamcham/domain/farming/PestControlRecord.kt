@@ -1,6 +1,8 @@
 package com.chamchamcham.domain.farming
 
 import com.chamchamcham.domain.common.BaseTimeEntity
+import com.chamchamcham.domain.pesticide.Pest
+import com.chamchamcham.domain.pesticide.Pesticide
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.EnumType
@@ -10,6 +12,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
+import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
 import java.math.BigDecimal
@@ -27,8 +30,9 @@ class PestControlRecord(
     @JoinColumn(name = "record_id", nullable = false, unique = true)
     val record: FarmingRecord,
 
-    @Column(name = "pesticide_name", nullable = false, length = 255)
-    val pesticideName: String,
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "pesticide_id", nullable = false)
+    val pesticide: Pesticide,
 
     @Column(name = "pesticide_amount", nullable = false, precision = 18, scale = 4)
     val pesticideAmount: BigDecimal,
@@ -44,6 +48,7 @@ class PestControlRecord(
     @Column(name = "total_spray_amount_unit", nullable = false, length = 16)
     val totalSprayAmountUnit: SprayAmountUnit,
 
-    @Column(name = "pest_target", length = 255)
-    val pestTarget: String? = null,
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "pest_id")
+    val pest: Pest? = null,
 ) : BaseTimeEntity()

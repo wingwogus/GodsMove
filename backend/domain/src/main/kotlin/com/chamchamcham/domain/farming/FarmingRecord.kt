@@ -54,8 +54,9 @@ class FarmingRecord(
     @Column(columnDefinition = "text", nullable = false)
     var memo: String,
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "entry_mode", nullable = false, length = 32)
-    val entryMode: String,
+    val entryMode: EntryMode,
 
     @Column(name = "is_deleted", nullable = false)
     var isDeleted: Boolean = false,

@@ -17,9 +17,11 @@ final class OnboardingDraftStore {
     private let snapshotKey = "onboarding.draft.snapshot"
     private let imagesDirectory: URL
 
-    init(defaults: UserDefaults = .standard) {
+    /// `baseDirectory` defaults to Application Support; tests inject a unique temp directory so parallel runs don't
+    /// clobber each other's saved images (and each other's `clear()`).
+    init(defaults: UserDefaults = .standard, baseDirectory: URL? = nil) {
         self.defaults = defaults
-        let base = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
+        let base = baseDirectory ?? FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask)[0]
         self.imagesDirectory = base.appendingPathComponent("OnboardingDraft", isDirectory: true)
         try? FileManager.default.createDirectory(at: imagesDirectory, withIntermediateDirectories: true)
     }

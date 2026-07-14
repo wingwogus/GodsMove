@@ -26,6 +26,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.math.BigDecimal
+import java.time.LocalDateTime
 import java.util.UUID
 
 @WebMvcTest(PolicyController::class)
@@ -67,7 +68,8 @@ class PolicyControllerTest(
                             applicationPeriodLabel = "2026.01.01 - 2026.02.28",
                             agencyName = "농림축산식품부",
                             score = BigDecimal("87.50"),
-                            reason = "재배 작물과 지역 조건이 일치합니다"
+                            reason = "재배 작물과 지역 조건이 일치합니다",
+                            createdAt = LocalDateTime.of(2026, 1, 1, 0, 0)
                         )
                     ),
                     nextCursor = "cursor-2"

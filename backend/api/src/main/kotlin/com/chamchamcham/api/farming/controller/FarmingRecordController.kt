@@ -3,6 +3,13 @@ package com.chamchamcham.api.farming.controller
 import com.chamchamcham.api.common.ApiResponse
 import com.chamchamcham.api.farming.dto.FarmingRecordRequests
 import com.chamchamcham.api.farming.dto.FarmingRecordResponses
+import com.chamchamcham.api.farming.dto.toCreateCommand
+import com.chamchamcham.api.farming.dto.toFertilizingDetail
+import com.chamchamcham.api.farming.dto.toHarvestDetail
+import com.chamchamcham.api.farming.dto.toPestControlDetail
+import com.chamchamcham.api.farming.dto.toPlantingDetail
+import com.chamchamcham.api.farming.dto.toWateringDetail
+import com.chamchamcham.api.farming.dto.toWeedingDetail
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.application.farming.FarmingRecordCommand
@@ -35,7 +42,7 @@ class FarmingRecordController(
         @AuthenticationPrincipal memberId: String?,
         @Valid @RequestBody request: FarmingRecordRequests.SaveRecordRequest
     ): ResponseEntity<ApiResponse<FarmingRecordResponses.RecordIdResponse>> {
-        val result = farmingRecordService.create(toCreateCommand(parseMemberId(memberId), request))
+        val result = farmingRecordService.create(request.toCreateCommand(parseMemberId(memberId)))
         return ResponseEntity.ok(ApiResponse.ok(FarmingRecordResponses.RecordIdResponse.from(result)))
     }
 
@@ -93,25 +100,6 @@ class FarmingRecordController(
         return ResponseEntity.ok(ApiResponse.empty(Unit))
     }
 
-    private fun toCreateCommand(memberId: UUID, request: FarmingRecordRequests.SaveRecordRequest): FarmingRecordCommand.Create =
-        FarmingRecordCommand.Create(
-            memberId = memberId,
-            farmId = requireNotNull(request.farmId),
-            cropId = requireNotNull(request.cropId),
-            workType = requireNotNull(request.workType),
-            workedAt = requireNotNull(request.workedAt),
-            weatherCondition = request.weatherCondition,
-            weatherTemperature = requireNotNull(request.weatherTemperature),
-            memo = request.memo,
-            planting = request.toPlantingDetail(),
-            watering = request.toWateringDetail(),
-            fertilizing = request.toFertilizingDetail(),
-            pestControl = request.toPestControlDetail(),
-            weeding = request.toWeedingDetail(),
-            harvest = request.toHarvestDetail(),
-            mediaIds = request.mediaIds,
-        )
-
     private fun toUpdateCommand(
         memberId: UUID,
         recordId: UUID,
@@ -135,62 +123,6 @@ class FarmingRecordController(
             harvest = request.toHarvestDetail(),
             mediaIds = request.mediaIds,
         )
-
-    private fun FarmingRecordRequests.SaveRecordRequest.toPlantingDetail(): FarmingRecordCommand.PlantingDetail? =
-        planting?.let {
-            FarmingRecordCommand.PlantingDetail(
-                seedAmount = it.seedAmount,
-                seedAmountUnit = it.seedAmountUnit,
-                seedlingCount = it.seedlingCount,
-                seedlingUnit = it.seedlingUnit,
-                propagationMethod = requireNotNull(it.propagationMethod),
-            )
-        }
-
-    private fun FarmingRecordRequests.SaveRecordRequest.toWateringDetail(): FarmingRecordCommand.WateringDetail? =
-        watering?.let {
-            FarmingRecordCommand.WateringDetail(
-                irrigationAmount = it.irrigationAmount,
-                irrigationMethod = it.irrigationMethod,
-            )
-        }
-
-    private fun FarmingRecordRequests.SaveRecordRequest.toFertilizingDetail(): FarmingRecordCommand.FertilizingDetail? =
-        fertilizing?.let {
-            FarmingRecordCommand.FertilizingDetail(
-                materialName = it.materialName,
-                amount = it.amount,
-                amountUnit = it.amountUnit,
-                applicationMethod = it.applicationMethod,
-            )
-        }
-
-    private fun FarmingRecordRequests.SaveRecordRequest.toPestControlDetail(): FarmingRecordCommand.PestControlDetail? =
-        pestControl?.let {
-            FarmingRecordCommand.PestControlDetail(
-                pesticideName = it.pesticideName,
-                pesticideAmount = it.pesticideAmount,
-                pesticideAmountUnit = it.pesticideAmountUnit,
-                totalSprayAmount = it.totalSprayAmount,
-                totalSprayAmountUnit = it.totalSprayAmountUnit,
-                pestTarget = it.pestTarget,
-            )
-        }
-
-    private fun FarmingRecordRequests.SaveRecordRequest.toWeedingDetail(): FarmingRecordCommand.WeedingDetail? =
-        weeding?.let { FarmingRecordCommand.WeedingDetail(weedingMethod = it.weedingMethod) }
-
-    private fun FarmingRecordRequests.SaveRecordRequest.toHarvestDetail(): FarmingRecordCommand.HarvestDetail? =
-        harvest?.let {
-            FarmingRecordCommand.HarvestDetail(
-                harvestAmount = it.harvestAmount,
-                amountUnknown = it.harvestAmountUnknown,
-                medicinalPart = requireNotNull(it.medicinalPart),
-                harvestSource = it.harvestSource,
-                growthPeriod = it.growthPeriod,
-                growthPeriodUnit = it.growthPeriodUnit,
-            )
-        }
 
     private fun parseMemberId(memberId: String?): UUID {
         if (memberId.isNullOrBlank()) {

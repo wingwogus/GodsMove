@@ -12,7 +12,9 @@ import UIKit
 /// system spec; letter-spacing and line-height are expressed there as a percentage of size.
 enum AppTypography {
     case headlineLarge
+    case headlineLargeEmphasized
     case headlineMedium
+    case headlineMediumEmphasized
     case titleLarge
     case titleLargeEmphasized
     case titleMedium
@@ -26,8 +28,8 @@ enum AppTypography {
 
     var size: CGFloat {
         switch self {
-        case .headlineLarge: 32
-        case .headlineMedium: 28
+        case .headlineLarge, .headlineLargeEmphasized: 32
+        case .headlineMedium, .headlineMediumEmphasized: 28
         case .titleLarge, .titleLargeEmphasized: 24
         case .titleMedium, .titleMediumEmphasized: 20
         case .bodyLarge, .bodyLargeEmphasized: 18
@@ -55,20 +57,42 @@ enum AppTypography {
         }
     }
 
-    /// Figma spec lists `label/medium-emphasized` as weight "medium" (not bold, unlike every
-    /// other "-emphasized" token) — kept literal to the source rather than assumed.
-    var isBold: Bool {
+    enum Weight {
+        case medium
+        case semibold
+        case bold
+    }
+
+    /// Figma spec weights: non-emphasized tokens are Medium, and "-emphasized" tokens are SemiBold —
+    /// except `headlineLargeEmphasized`, the largest page-title emphasis, which is Bold. Note
+    /// `label/medium-emphasized` is spec'd as "medium" (not heavier, unlike every other
+    /// "-emphasized" token), so it stays Medium here — kept literal to the source rather than assumed.
+    var weight: Weight {
         switch self {
-        case .headlineLarge, .headlineMedium, .titleLargeEmphasized, .titleMediumEmphasized,
-             .bodyLargeEmphasized, .bodyMediumEmphasized:
-            true
+        case .headlineLargeEmphasized:
+            .bold
+        case .headlineLarge, .headlineMedium, .headlineMediumEmphasized, .titleLargeEmphasized,
+             .titleMediumEmphasized, .bodyLargeEmphasized, .bodyMediumEmphasized:
+            .semibold
         default:
-            false
+            .medium
         }
     }
 
     private var fontName: String {
-        isBold ? "Pretendard-Bold" : "Pretendard-Medium"
+        switch weight {
+        case .medium: "Pretendard-Medium"
+        case .semibold: "Pretendard-SemiBold"
+        case .bold: "Pretendard-Bold"
+        }
+    }
+
+    private var fallbackWeight: UIFont.Weight {
+        switch weight {
+        case .medium: .medium
+        case .semibold: .semibold
+        case .bold: .bold
+        }
     }
 
     var font: Font {
@@ -76,7 +100,7 @@ enum AppTypography {
     }
 
     fileprivate var uiFont: UIFont {
-        UIFont(name: fontName, size: size) ?? .systemFont(ofSize: size, weight: isBold ? .bold : .medium)
+        UIFont(name: fontName, size: size) ?? .systemFont(ofSize: size, weight: fallbackWeight)
     }
 }
 

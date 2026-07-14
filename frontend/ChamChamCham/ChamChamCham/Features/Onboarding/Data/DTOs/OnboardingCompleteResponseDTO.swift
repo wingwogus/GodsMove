@@ -14,22 +14,6 @@ struct OnboardingCompleteResponseDTO: Decodable, Sendable {
     let onboarding: OnboardingResponseDTO
 }
 
-struct FarmResponseDTO: Decodable, Sendable {
-    let id: UUID
-    let name: String
-    let roadAddress: String
-    let jibunAddress: String?
-    let latitude: Double?
-    let longitude: Double?
-    let pnu: String?
-    let landCategory: String?
-    let areaSqm: Double?
-    let areaIsManualEntry: Bool
-    let boundaryCoordinates: [FarmBoundaryCoordinateDTO]
-    // `dataSource` is present in the real response body but intentionally not declared here —
-    // JSONDecoder ignores undeclared keys, and nothing client-side consumes it.
-}
-
 struct CropResponseDTO: Decodable, Sendable {
     let id: UUID
     let externalNo: Int

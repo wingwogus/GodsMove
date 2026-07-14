@@ -99,6 +99,35 @@ class PolicyRecommendationService(
         return PolicyRecommendationResult.Page(visible.map(::toCard), nextCursor)
     }
 
+    @Transactional(readOnly = true)
+    fun searchRecommendations(
+        memberId: UUID,
+        keyword: String?,
+        cursor: String?,
+        size: Int,
+    ): PolicyRecommendationResult.Page {
+        validateSize(size)
+        val payload = decodeSearchCursor(cursor)
+        val rows = policyRecommendationQueryRepository.searchByMember(
+            PolicyRecommendationQueryRepository.MemberSearchCondition(
+                memberId = memberId,
+                keyword = keyword,
+                cursorCreatedAt = payload?.createdAt,
+                cursorId = payload?.id,
+                size = size + 1
+            )
+        )
+        val visible = rows.take(size)
+        val nextCursor = if (rows.size > size) {
+            visible.lastOrNull()?.let { row ->
+                cursorCodec.encode(PolicyRecommendationSearchCursorPayload(row.createdAt, requireNotNull(row.id)))
+            }
+        } else {
+            null
+        }
+        return PolicyRecommendationResult.Page(visible.map(::toCard), nextCursor)
+    }
+
     fun getProgramDetail(memberId: UUID, policyProgramId: UUID): PolicyRecommendationResult.Detail {
         if (!memberRepository.existsById(memberId)) {
             throw BusinessException(ErrorCode.MEMBER_NOT_FOUND)
@@ -258,6 +287,20 @@ class PolicyRecommendationService(
         }
     }
 
+    private fun decodeSearchCursor(cursor: String?): PolicyRecommendationSearchCursorPayload? {
+        if (cursor.isNullOrBlank()) {
+            return null
+        }
+        return try {
+            cursorCodec.decode(cursor, PolicyRecommendationSearchCursorPayload::class.java)
+        } catch (exception: BusinessException) {
+            if (exception.errorCode == ErrorCode.INVALID_CURSOR) {
+                throw BusinessException(ErrorCode.INVALID_INPUT)
+            }
+            throw exception
+        }
+    }
+
     private fun encodeCursor(
         row: PolicyRecommendation,
         source: PolicySource,
@@ -289,7 +332,8 @@ class PolicyRecommendationService(
             applicationPeriodLabel = program.applicationPeriodLabel,
             agencyName = program.agencyName,
             score = row.score,
-            reason = row.reason
+            reason = row.reason,
+            createdAt = row.createdAt
         )
     }
 

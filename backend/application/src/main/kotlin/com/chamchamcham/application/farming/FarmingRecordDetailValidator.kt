@@ -2,7 +2,7 @@ package com.chamchamcham.application.farming
 
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
-import com.chamchamcham.domain.farming.PropagationMethod
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.WorkType
 import org.springframework.stereotype.Component
 
@@ -33,30 +33,45 @@ class DefaultFarmingRecordDetailValidator : FarmingRecordDetailValidator {
         detail ?: throw BusinessException(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
     }
 
-    // 번식법이 종자(SEED)면 파종 항목(seedAmount/seedAmountUnit)만, 그 외 번식법이면 정식 항목
-    // (seedlingCount/seedlingUnit)만 입력을 허용한다. 반대쪽 그룹이 채워져 있으면 거부한다.
+    // plantingMethod=SEED면 seedAmount는 필수이고 seedlingCount/seedlingUnit/propagationMethod는
+    // 모두 비워야 한다. plantingMethod=SEEDLING이면 seedlingCount는 필수, propagationMethod는
+    // 선택이며 seedAmount/seedAmountUnit은 비워야 한다.
     private fun validatePlanting(detail: FarmingRecordCommand.PlantingDetail?) {
         detail ?: return
-        val seedGroupFilled = detail.seedAmount != null || detail.seedAmountUnit != null
-        val seedlingGroupFilled = detail.seedlingCount != null || detail.seedlingUnit != null
-
-        if (detail.propagationMethod == PropagationMethod.SEED) {
-            if (seedlingGroupFilled) {
-                throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
+        when (detail.plantingMethod) {
+            PlantingMethod.SEED -> {
+                if (detail.seedAmount == null) {
+                    throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
+                }
+                if (detail.seedlingCount != null || detail.seedlingUnit != null || detail.propagationMethod != null) {
+                    throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
+                }
             }
-        } else if (seedGroupFilled) {
-            throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
+
+            PlantingMethod.SEEDLING -> {
+                if (detail.seedlingCount == null) {
+                    throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
+                }
+                if (detail.seedAmount != null || detail.seedAmountUnit != null) {
+                    throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
+                }
+            }
         }
     }
 
     // 수확량은 kg로 입력하거나, 모르면 amountUnknown=true로 비워둔다. 둘 다 없거나(누락) 둘 다
     // 있으면(모순) 거부한다. 모름은 항상 NULL로 저장되어 0과 구분된다.
+    // 수확 부위(medicinalPart)는 선택이다. 재배기간(growthPeriod)과 그 단위(growthPeriodUnit)는
+    // 둘 다 비어있거나 둘 다 채워져 있어야 한다.
     private fun validateHarvest(detail: FarmingRecordCommand.HarvestDetail?) {
         detail ?: return
         if (!detail.amountUnknown && detail.harvestAmount == null) {
             throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
         }
         if (detail.amountUnknown && detail.harvestAmount != null) {
+            throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
+        }
+        if ((detail.growthPeriod == null) != (detail.growthPeriodUnit == null)) {
             throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
         }
     }
