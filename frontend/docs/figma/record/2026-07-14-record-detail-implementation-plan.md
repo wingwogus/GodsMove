@@ -27,6 +27,12 @@
 `confirmationDialog` → `DELETE /farming-records/{id}` → pop + 리스트 `reload()`. 실패 시 `alert`, 진행 중 오버레이.
 `RecordEndpoint.deleteRecord` + `RecordRepository.deleteRecord`(EmptyDTO) 추가.
 
+**작성 완료 → 상세 이동 + 토스트(2026-07-14)**: `RecordComposeView` 성공 시 생성된 recordId를
+`RecordListView`의 `NavigationStack(path:)`에 push → 방금 만든 기록 상세로 이동. 동시에 하단 토스트
+"영농 기록 작성이 완료되었습니다."(Figma `toast-bar` node `1520:22391`: `Object.bold` 바 + `check_circle`
+흰 아이콘 + 흰 텍스트, r12, 2초 자동 소멸) 표시 + 리스트 `reload()`. 토스트는 feature-local
+`RecordToastBar`/`.recordToast(message:)` — 2번째 피처가 쓰면 DS 승격.
+
 **수정(edit) 보류(2026-07-14, 사용자 확정)**: 상세 응답에 media id가 없어 편집 시 기존 사진 보존 불가
 (→ [C-19](2026-07-13-record-backend-conflicts.md), 데이터 손실). 백엔드가 상세 응답에 media id를 반환하거나
 PATCH 부분 업데이트를 지원한 뒤 구현. 그때까지 ⋮ 메뉴는 **삭제만** 노출.
