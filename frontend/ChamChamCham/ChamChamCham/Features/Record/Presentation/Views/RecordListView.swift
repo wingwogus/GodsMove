@@ -19,15 +19,22 @@ struct RecordListView: View {
     @State private var viewModel: RecordListViewModel
     @State private var selectedTab = 0
     @State private var activeSheet: RecordFilterKind?
-    @State private var isSpeedDialOpen = false
+    /// Owned by the shell (`MainTabView`) so the same flag dims both the content region *and* the
+    /// nav bar in one animation transaction — the two scrims read the same value and fade together.
+    @Binding private var isSpeedDialOpen: Bool
     @State private var showCompose = false
     @State private var path: [UUID] = []
     @State private var toastMessage: String?
     private let horizontalInset: CGFloat = 20
 
-    init(repository: any RecordRepository, mediaUpload: any MediaUploadRepository) {
+    init(
+        repository: any RecordRepository,
+        mediaUpload: any MediaUploadRepository,
+        isSpeedDialOpen: Binding<Bool>
+    ) {
         self.repository = repository
         self.mediaUpload = mediaUpload
+        _isSpeedDialOpen = isSpeedDialOpen
         _viewModel = State(initialValue: RecordListViewModel(repository: repository))
     }
 
@@ -205,19 +212,19 @@ struct RecordListView: View {
     /// FAB 탭 시 딤(#1a1a1a@64%) + 음성/텍스트/닫기 스피드다이얼. (Figma `기록 버튼 탭 시`)
     @ViewBuilder private var speedDialOverlay: some View {
         if isSpeedDialOpen {
-            Color(red: 0x1a / 255, green: 0x1a / 255, blue: 0x1a / 255).opacity(0.64)
+            Color.scrim
                 .ignoresSafeArea()
-                .onTapGesture { isSpeedDialOpen = false }
+                .onTapGesture { closeSpeedDial() }
                 .transition(.opacity)
         }
         VStack(alignment: .trailing, spacing: 20) {
             if isSpeedDialOpen {
                 speedDialItem(label: "음성으로 기록하기", icon: .asset("mic")) {
                     // 음성 기록 화면 미수집 — 후속.
-                    isSpeedDialOpen = false
+                    closeSpeedDial()
                 }
                 speedDialItem(label: "텍스트로 기록하기", icon: .asset("edit")) {
-                    isSpeedDialOpen = false
+                    closeSpeedDial()
                     showCompose = true
                 }
             }
@@ -237,6 +244,12 @@ struct RecordListView: View {
         }
         .padding(.trailing, horizontalInset)
         .padding(.bottom, Spacing.xl)
+    }
+
+    /// Closes the speed-dial in an animation transaction so the content scrim and the shell's nav-bar
+    /// scrim fade out together.
+    private func closeSpeedDial() {
+        withAnimation(.easeInOut(duration: 0.15)) { isSpeedDialOpen = false }
     }
 
     private func speedDialItem(label: String, icon: AppIconSource, action: @escaping () -> Void) -> some View {

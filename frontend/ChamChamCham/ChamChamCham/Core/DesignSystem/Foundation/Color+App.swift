@@ -130,6 +130,12 @@ extension Color {
     }
 }
 
+extension Color {
+    /// Scrim/dim behind full-screen overlays such as the record speed-dial (`Gray/900` @ 64%).
+    /// Baked-in opacity so the same value can back both the content region and the nav bar.
+    static let scrim = Gray.c900.opacity(0.64)
+}
+
 // MARK: - Legacy shorthands
 
 extension Color {

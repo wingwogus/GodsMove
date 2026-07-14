@@ -17,10 +17,10 @@ struct AppNavBar: View {
     struct Item: Identifiable {
         let id = UUID()
         let title: String
-        let icon: String
-        let selectedIcon: String
+        let icon: AppIconSource
+        let selectedIcon: AppIconSource
 
-        init(title: String, icon: String, selectedIcon: String) {
+        init(title: String, icon: AppIconSource, selectedIcon: AppIconSource) {
             self.title = title
             self.icon = icon
             self.selectedIcon = selectedIcon
@@ -38,9 +38,7 @@ struct AppNavBar: View {
                     selection = index
                 } label: {
                     VStack(spacing: Spacing.xs) {
-                        Image(systemName: isSelected ? item.selectedIcon : item.icon)
-                            .font(.system(size: 22))
-                            .frame(width: 24, height: 24)
+                        AppIconView(source: isSelected ? item.selectedIcon : item.icon, size: 24)
                             .foregroundStyle(isSelected ? Color.Icon.default : Color.Icon.subtle)
                         Text(item.title)
                             .appTypography(.labelMedium)
@@ -75,10 +73,10 @@ struct AppNavBar: View {
                 Spacer()
                 AppNavBar(
                     items: [
-                        .init(title: "홈", icon: "house", selectedIcon: "house.fill"),
-                        .init(title: "영농 기록", icon: "doc.text", selectedIcon: "doc.text.fill"),
-                        .init(title: "정보 공유", icon: "bubble.left", selectedIcon: "bubble.left.fill"),
-                        .init(title: "프로필", icon: "person", selectedIcon: "person.fill"),
+                        .init(title: "홈", icon: .asset("home_line"), selectedIcon: .asset("home")),
+                        .init(title: "영농 기록", icon: .asset("assignment-1"), selectedIcon: .asset("assignment")),
+                        .init(title: "정보 공유", icon: .asset("forum_line"), selectedIcon: .asset("forum")),
+                        .init(title: "프로필", icon: .asset("person_line"), selectedIcon: .asset("person")),
                     ],
                     selection: $selection
                 )
