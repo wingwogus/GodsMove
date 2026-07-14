@@ -9,8 +9,8 @@ interface FarmingRecordQueryRepository {
 
     data class SearchCondition(
         val memberId: UUID,
-        val cropId: UUID?,
-        val workType: WorkType?,
+        val cropIds: List<UUID> = emptyList(),
+        val workTypes: List<WorkType> = emptyList(),
         val workedAtFrom: LocalDateTime?,
         val workedAtTo: LocalDateTime?,
         val keyword: String? = null,

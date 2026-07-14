@@ -373,8 +373,8 @@ class FarmingRecordControllerTest(
             farmingRecordService.search(
                 FarmingRecordSearchCondition(
                     memberId = memberId,
-                    cropId = cropId,
-                    workType = WorkType.HARVEST,
+                    cropIds = listOf(cropId),
+                    workTypes = listOf(WorkType.HARVEST),
                     startDate = LocalDate.of(2026, 6, 1),
                     endDate = LocalDate.of(2026, 6, 30),
                     keyword = null,
@@ -387,8 +387,8 @@ class FarmingRecordControllerTest(
         mockMvc.perform(
             get("/api/v1/farming-records")
                 .with(authenticatedMember(memberId.toString()))
-                .param("cropId", cropId.toString())
-                .param("workType", "HARVEST")
+                .param("cropIds", cropId.toString())
+                .param("workTypes", "HARVEST")
                 .param("startDate", "2026-06-01")
                 .param("endDate", "2026-06-30")
                 .param("cursor", "cursor-1")
@@ -404,8 +404,8 @@ class FarmingRecordControllerTest(
             farmingRecordService.search(
                 FarmingRecordSearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     startDate = null,
                     endDate = null,
                     keyword = "수확",
@@ -593,8 +593,8 @@ class FarmingRecordControllerTest(
     private fun anySearchCondition(): FarmingRecordSearchCondition =
         FarmingRecordSearchCondition(
             memberId = memberId,
-            cropId = null,
-            workType = null,
+            cropIds = emptyList(),
+            workTypes = emptyList(),
             startDate = null,
             endDate = null,
             keyword = null,

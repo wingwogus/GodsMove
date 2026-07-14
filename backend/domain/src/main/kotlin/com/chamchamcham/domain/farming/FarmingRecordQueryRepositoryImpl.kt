@@ -31,13 +31,13 @@ class FarmingRecordQueryRepositoryImpl(
         val where = mutableListOf("r.isDeleted = false", "r.member.id = :memberId")
         val params = mutableMapOf<String, Any>("memberId" to condition.memberId)
 
-        condition.cropId?.let {
-            where += "r.crop.id = :cropId"
-            params["cropId"] = it
+        if (condition.cropIds.isNotEmpty()) {
+            where += "r.crop.id in :cropIds"
+            params["cropIds"] = condition.cropIds
         }
-        condition.workType?.let {
-            where += "r.workType = :workType"
-            params["workType"] = it
+        if (condition.workTypes.isNotEmpty()) {
+            where += "r.workType in :workTypes"
+            params["workTypes"] = condition.workTypes
         }
         condition.workedAtFrom?.let {
             where += "r.workedAt >= :workedAtFrom"

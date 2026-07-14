@@ -14,8 +14,8 @@ class FarmingRecordSearcher(
         val page = farmingRecordService.search(
             FarmingRecordSearchCondition(
                 memberId = query.memberId,
-                cropId = null,
-                workType = null,
+                cropIds = emptyList(),
+                workTypes = emptyList(),
                 startDate = null,
                 endDate = null,
                 keyword = query.keyword,

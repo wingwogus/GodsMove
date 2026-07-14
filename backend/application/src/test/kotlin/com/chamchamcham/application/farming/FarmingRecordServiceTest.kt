@@ -685,8 +685,8 @@ class FarmingRecordServiceTest {
             farmingRecordQueryRepository.search(
                 FarmingRecordQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = cropId,
-                    workType = WorkType.PRUNING,
+                    cropIds = listOf(cropId),
+                    workTypes = listOf(WorkType.PRUNING),
                     workedAtFrom = null,
                     workedAtTo = null,
                     cursor = null,
@@ -705,8 +705,8 @@ class FarmingRecordServiceTest {
         val page = service.search(
             FarmingRecordSearchCondition(
                 memberId = memberId,
-                cropId = cropId,
-                workType = WorkType.PRUNING,
+                cropIds = listOf(cropId),
+                workTypes = listOf(WorkType.PRUNING),
                 startDate = null,
                 endDate = null,
                 cursor = null,
@@ -728,8 +728,8 @@ class FarmingRecordServiceTest {
             farmingRecordQueryRepository.search(
                 FarmingRecordQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     workedAtFrom = LocalDateTime.of(2026, 6, 1, 0, 0),
                     workedAtTo = LocalDateTime.of(2026, 7, 1, 0, 0),
                     cursor = null,
@@ -741,8 +741,8 @@ class FarmingRecordServiceTest {
         val page = service.search(
             FarmingRecordSearchCondition(
                 memberId = memberId,
-                cropId = null,
-                workType = null,
+                cropIds = emptyList(),
+                workTypes = emptyList(),
                 startDate = LocalDate.of(2026, 6, 1),
                 endDate = LocalDate.of(2026, 6, 30),
                 cursor = null,
@@ -799,8 +799,8 @@ class FarmingRecordServiceTest {
             farmingRecordQueryRepository.search(
                 FarmingRecordQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     workedAtFrom = null,
                     workedAtTo = null,
                     keyword = "수확",
@@ -823,8 +823,8 @@ class FarmingRecordServiceTest {
             farmingRecordQueryRepository.search(
                 FarmingRecordQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     workedAtFrom = null,
                     workedAtTo = null,
                     keyword = "잎",
@@ -847,8 +847,8 @@ class FarmingRecordServiceTest {
             farmingRecordQueryRepository.search(
                 FarmingRecordQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     workedAtFrom = null,
                     workedAtTo = null,
                     keyword = null,
@@ -866,8 +866,8 @@ class FarmingRecordServiceTest {
     }
 
     private fun searchCondition(
-        cropId: UUID? = null,
-        workType: WorkType? = null,
+        cropIds: List<UUID> = emptyList(),
+        workTypes: List<WorkType> = emptyList(),
         startDate: LocalDate? = null,
         endDate: LocalDate? = null,
         keyword: String? = null,
@@ -875,8 +875,8 @@ class FarmingRecordServiceTest {
         size: Int = 20,
     ) = FarmingRecordSearchCondition(
         memberId = memberId,
-        cropId = cropId,
-        workType = workType,
+        cropIds = cropIds,
+        workTypes = workTypes,
         startDate = startDate,
         endDate = endDate,
         keyword = keyword,

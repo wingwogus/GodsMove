@@ -43,6 +43,8 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         get() = requireNotNull(member.id) { "Persisted member id is required" }
     private val hwanggiCropId: UUID
         get() = requireNotNull(hwanggiCrop.id) { "Persisted crop id is required" }
+    private val ginsengCropId: UUID
+        get() = requireNotNull(ginsengCrop.id) { "Persisted crop id is required" }
 
     private val now = LocalDateTime.of(2026, 6, 12, 7, 0)
 
@@ -89,7 +91,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         entityManager.flush()
         entityManager.clear()
 
-        val result = queryRepository.search(condition(cropId = hwanggiCropId))
+        val result = queryRepository.search(condition(cropIds = listOf(hwanggiCropId)))
 
         assertThat(result.rows).hasSize(1)
         assertThat(result.rows.single().record.crop.id).isEqualTo(hwanggiCropId)
@@ -102,10 +104,26 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         entityManager.flush()
         entityManager.clear()
 
-        val result = queryRepository.search(condition(workType = WorkType.HARVEST))
+        val result = queryRepository.search(condition(workTypes = listOf(WorkType.HARVEST)))
 
         assertThat(result.rows).hasSize(1)
         assertThat(result.rows.single().record.workType).isEqualTo(WorkType.HARVEST)
+    }
+
+    @Test
+    fun `search filters by multiple crop ids and multiple work types`() {
+        persistRecord(crop = hwanggiCrop, workType = WorkType.PLANTING)
+        persistRecord(crop = ginsengCrop, workType = WorkType.HARVEST)
+        persistRecord(crop = ginsengCrop, workType = WorkType.WATERING)
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(
+            condition(cropIds = listOf(hwanggiCropId, ginsengCropId), workTypes = listOf(WorkType.PLANTING, WorkType.HARVEST))
+        )
+
+        assertThat(result.rows).hasSize(2)
+        assertThat(result.rows.map { it.record.workType }).containsExactlyInAnyOrder(WorkType.PLANTING, WorkType.HARVEST)
     }
 
     @Test
@@ -244,7 +262,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         entityManager.flush()
         entityManager.clear()
 
-        val result = queryRepository.search(condition(cropId = hwanggiCropId, keyword = "관수"))
+        val result = queryRepository.search(condition(cropIds = listOf(hwanggiCropId), keyword = "관수"))
 
         assertThat(result.rows).hasSize(1)
         assertThat(result.rows.single().record.crop.id).isEqualTo(hwanggiCropId)
@@ -347,8 +365,8 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         Crop(externalNo = externalNo, name = name, usePartCategory = CropUsePartCategory.ROOT_BARK)
 
     private fun condition(
-        cropId: UUID? = null,
-        workType: WorkType? = null,
+        cropIds: List<UUID> = emptyList(),
+        workTypes: List<WorkType> = emptyList(),
         workedAtFrom: LocalDateTime? = null,
         workedAtTo: LocalDateTime? = null,
         keyword: String? = null,
@@ -359,8 +377,8 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
     ): FarmingRecordQueryRepository.SearchCondition =
         FarmingRecordQueryRepository.SearchCondition(
             memberId = memberId,
-            cropId = cropId,
-            workType = workType,
+            cropIds = cropIds,
+            workTypes = workTypes,
             workedAtFrom = workedAtFrom,
             workedAtTo = workedAtTo,
             keyword = keyword,

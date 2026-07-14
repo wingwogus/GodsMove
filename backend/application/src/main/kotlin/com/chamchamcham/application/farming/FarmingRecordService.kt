@@ -96,8 +96,8 @@ class FarmingRecordService(
         val result = farmingRecordQueryRepository.search(
             FarmingRecordQueryRepository.SearchCondition(
                 memberId = condition.memberId,
-                cropId = condition.cropId,
-                workType = condition.workType,
+                cropIds = condition.cropIds,
+                workTypes = condition.workTypes,
                 workedAtFrom = condition.startDate?.atStartOfDay(),
                 workedAtTo = condition.endDate?.plusDays(1)?.atStartOfDay(),
                 keyword = trimmedKeyword,
