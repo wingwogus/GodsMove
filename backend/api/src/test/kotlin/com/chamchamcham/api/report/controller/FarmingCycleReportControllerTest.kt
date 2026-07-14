@@ -187,6 +187,27 @@ class FarmingCycleReportControllerTest(
     }
 
     @Test
+    fun `list translates an invalid cursor from the query service to invalid input`() {
+        val condition = searchCondition(
+            farmId = null,
+            cropId = null,
+            cursor = "not-base64",
+        )
+        `when`(service.listCompleted(condition))
+            .thenThrow(BusinessException(ErrorCode.INVALID_CURSOR))
+
+        mockMvc.perform(
+            get("/api/v1/farming-reports")
+                .with(authenticatedMember(memberId.toString()))
+                .param("cursor", "not-base64"),
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+
+        verify(service).listCompleted(condition)
+    }
+
+    @Test
     fun `list accepts no filters either filter and both filters`() {
         val conditions = listOf(
             searchCondition(farmId = null, cropId = null),

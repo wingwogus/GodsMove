@@ -32,15 +32,22 @@ class FarmingCycleReportController(
         @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) size: Int,
     ): ResponseEntity<ApiResponse<FarmingCycleReportResponses.PageResponse>> {
-        val result = queryService.listCompleted(
-            FarmingCycleReportSearchCondition(
-                memberId = parseMemberId(memberId),
-                farmId = farmId,
-                cropId = cropId,
-                cursor = cursor,
-                size = size,
-            ),
-        )
+        val result = try {
+            queryService.listCompleted(
+                FarmingCycleReportSearchCondition(
+                    memberId = parseMemberId(memberId),
+                    farmId = farmId,
+                    cropId = cropId,
+                    cursor = cursor,
+                    size = size,
+                ),
+            )
+        } catch (exception: BusinessException) {
+            if (exception.errorCode == ErrorCode.INVALID_CURSOR) {
+                throw BusinessException(ErrorCode.INVALID_INPUT)
+            }
+            throw exception
+        }
         return ResponseEntity.ok(
             ApiResponse.ok(FarmingCycleReportResponses.PageResponse.from(result)),
         )
