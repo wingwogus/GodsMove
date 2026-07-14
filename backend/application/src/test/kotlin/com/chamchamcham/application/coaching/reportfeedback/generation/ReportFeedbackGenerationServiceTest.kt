@@ -3,6 +3,8 @@ package com.chamchamcham.application.coaching.reportfeedback.generation
 import com.chamchamcham.application.coaching.common.RagProperties
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackFailureCode
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackGenerationFailure
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.farming.WorkType
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -97,6 +99,27 @@ class ReportFeedbackGenerationServiceTest {
                 assertThat(it.code).isEqualTo(ReportFeedbackFailureCode.STRUCTURED_OUTPUT_INVALID)
             }
         assertThat(client.attempts).isEqualTo(2)
+    }
+
+    @Test
+    fun `entity time chat failure is not retried as invalid structured output`() {
+        val client = FakeChatClient(BusinessException(ErrorCode.RAG_CHAT_UNAVAILABLE))
+
+        assertThatThrownBy { service(client).generate(context()) }
+            .isInstanceOfSatisfying(ReportFeedbackGenerationFailure::class.java) {
+                assertThat(it.code).isEqualTo(ReportFeedbackFailureCode.CHAT_UNAVAILABLE)
+            }
+        assertThat(client.attempts).isEqualTo(1)
+    }
+
+    @Test
+    fun `structured output parse failure still receives one retry`() {
+        val client = FakeChatClient(RuntimeException("parse failed"), validContent())
+
+        service(client).generate(context())
+
+        assertThat(client.attempts).isEqualTo(2)
+        assertThat(client.requestSpec.userTexts.last()).contains("structured_output_parse_failed")
     }
 
     @Test
@@ -245,7 +268,10 @@ class ReportFeedbackGenerationServiceTest {
     private class FakeCallResponseSpec(
         private val chatClient: FakeChatClient,
     ) : ChatClient.CallResponseSpec {
-        override fun <T : Any> entity(type: Class<T>): T = type.cast(chatClient.nextResponse())
+        override fun <T : Any> entity(type: Class<T>): T = when (val response = chatClient.nextResponse()) {
+            is RuntimeException -> throw response
+            else -> type.cast(response)
+        }
         override fun <T : Any> entity(type: ParameterizedTypeReference<T>): T = error("not used")
         override fun <T : Any> entity(structuredOutputConverter: StructuredOutputConverter<T>): T = error("not used")
         override fun chatClientResponse(): ChatClientResponse = error("not used")

@@ -7,6 +7,8 @@ import com.chamchamcham.application.coaching.common.RagProperties
 import com.chamchamcham.application.coaching.common.RagSourceType
 import com.chamchamcham.application.coaching.recordfeedback.RecordFeedbackFailureCode
 import com.chamchamcham.application.coaching.recordfeedback.RecordFeedbackGenerationFailure
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
@@ -271,6 +273,19 @@ class RecordFeedbackGenerationServiceTest {
             assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.CHAT_UNAVAILABLE)
         }
         assertThat(chatClient.attempts).isZero()
+    }
+
+    @Test
+    fun `maps entity time chat failures to chat unavailable without structured output retry`() {
+        val chatClient = FakeChatClient(BusinessException(ErrorCode.RAG_CHAT_UNAVAILABLE))
+
+        assertThatThrownBy {
+            service(documents = listOf(officialDocument("doc-1")), chatClient = chatClient)
+                .generate(context)
+        }.isInstanceOfSatisfying(RecordFeedbackGenerationFailure::class.java) {
+            assertThat(it.code).isEqualTo(RecordFeedbackFailureCode.CHAT_UNAVAILABLE)
+        }
+        assertThat(chatClient.attempts).isEqualTo(1)
     }
 
     private fun service(

@@ -5,6 +5,7 @@ import com.chamchamcham.application.coaching.common.RagProperties
 import com.chamchamcham.application.coaching.common.RagSourceType
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackFailureCode
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackGenerationFailure
+import com.chamchamcham.application.exception.business.BusinessException
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.document.Document
 import org.springframework.ai.vectorstore.SearchRequest
@@ -100,6 +101,8 @@ class ReportFeedbackGenerationService(
                 response
                     .entity(ReportFeedbackContent::class.java)
                     ?: throw IllegalStateException("empty structured output")
+            } catch (exception: BusinessException) {
+                throw ReportFeedbackGenerationFailure(ReportFeedbackFailureCode.CHAT_UNAVAILABLE, exception)
             } catch (exception: RuntimeException) {
                 lastFailure = exception
                 retryWarnings = listOf("structured_output_parse_failed")

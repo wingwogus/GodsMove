@@ -5,6 +5,7 @@ import com.chamchamcham.application.coaching.common.RagProperties
 import com.chamchamcham.application.coaching.common.RagSourceType
 import com.chamchamcham.application.coaching.recordfeedback.RecordFeedbackFailureCode
 import com.chamchamcham.application.coaching.recordfeedback.RecordFeedbackGenerationFailure
+import com.chamchamcham.application.exception.business.BusinessException
 import org.springframework.ai.chat.client.ChatClient
 import org.springframework.ai.document.Document
 import org.springframework.ai.vectorstore.SearchRequest
@@ -91,6 +92,8 @@ class RecordFeedbackGenerationService(
                 ?: throw StructuredOutputFailure("empty structured output")
         } catch (exception: StructuredOutputFailure) {
             throw exception
+        } catch (exception: BusinessException) {
+            throw ChatRuntimeFailure(exception)
         } catch (exception: RuntimeException) {
             throw StructuredOutputFailure("structured output parse failed", exception)
         }
