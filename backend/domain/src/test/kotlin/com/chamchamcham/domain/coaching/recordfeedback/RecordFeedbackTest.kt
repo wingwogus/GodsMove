@@ -31,7 +31,7 @@ class RecordFeedbackTest {
         weatherCondition = "맑음",
         weatherTemperature = 24,
         memo = "배수 확인",
-        entryMode = "MANUAL",
+        entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
     )
 
     @Test

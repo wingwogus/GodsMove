@@ -28,7 +28,7 @@ class RecordFeedbackRetrievalQueryPlannerTest {
         val queries = planner.plan(readFixture("today-record-feedback-pest-control.json")).map { it.query }
 
         assertThat(queries).contains(
-            "인삼 병해충 방제 재배 관리 약용작물",
+            "인삼 병해충 관리 재배 관리 약용작물",
             "인삼 점무늬병 방제"
         )
     }
@@ -44,10 +44,24 @@ class RecordFeedbackRetrievalQueryPlannerTest {
     }
 
     @Test
+    fun `harvest context without recorded medicinal part keeps only generic harvest timing query`() {
+        val base = readFixture("today-record-feedback-harvest.json")
+        val detail = base.record.detail as HarvestFeedbackDetail
+        val context = base.copy(
+            record = base.record.copy(detail = detail.copy(medicinalPart = null)),
+        )
+
+        val queries = planner.plan(context).map { it.query }
+
+        assertThat(queries).contains("약용작물 수확 적기 오미자")
+        assertThat(queries).noneMatch { it.contains("열매/과실") }
+    }
+
+    @Test
     fun `reduced weather context does not create weather query`() {
         val queries = planner.plan(readFixture("today-record-feedback-no-cycle.json"))
 
-        assertThat(queries.map { it.query }).contains("참당귀 제초 재배 관리 약용작물")
+        assertThat(queries.map { it.query }).contains("참당귀 잡초 관리 재배 관리 약용작물")
         assertThat(queries.map { it.reason }).doesNotContain(
             "rain_wet_weather",
             "hot_weather",

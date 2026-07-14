@@ -68,9 +68,12 @@ class CycleReportStatisticsCalculatorTest {
     }
 
     @Test
-    fun `fertilizing groups stable categories and nullable methods`() {
+    fun `fertilizing groups material names and nullable methods`() {
         val result = calculator.calculate(
-            listOf(fertilizing("NPK", "10", "SOIL"), fertilizing("NPK", "5", null)),
+            listOf(
+                fertilizing("복합비료", "10000", "G", "10", "SOIL"),
+                fertilizing("복합비료", "5000", "G", "5", null),
+            ),
         ).fertilizing
 
         assertThat(result.totalAmountKg).isEqualByComparingTo("15.0000")
@@ -81,15 +84,43 @@ class CycleReportStatisticsCalculatorTest {
         assertThat(result.methodDistribution.map { it.code to it.count })
             .containsExactlyInAnyOrder("SOIL" to 1, "MISSING" to 1)
         assertThat(result.categoryMethods.map { Triple(it.categoryCode, it.methodCode, it.recordCount) })
-            .containsExactly(Triple("NPK", "MISSING", 1), Triple("NPK", "SOIL", 1))
+            .containsExactly(Triple("복합비료", "MISSING", 1), Triple("복합비료", "SOIL", 1))
+    }
+
+    @Test
+    fun `fertilizer mass statistics include G but exclude ML`() {
+        val result = calculator.calculate(
+            listOf(
+                fertilizing("유기질비료", "500", "G", "0.5000", "SOIL"),
+                fertilizing("액상비료", "250", "ML", null, "SOIL"),
+            ),
+        ).fertilizing
+
+        assertThat(result.totalAmountKg).isEqualByComparingTo("0.5000")
+        assertThat(result.amountCoverage).isEqualTo(Coverage(recordedCount = 1, targetCount = 2))
+        assertThat(result.materialDistribution.map { it.label to it.count })
+            .containsExactlyInAnyOrder("유기질비료" to 1, "액상비료" to 1)
+    }
+
+    @Test
+    fun `fertilizer sums sub gram amounts before rounding kilograms`() {
+        val result = calculator.calculate(
+            listOf(
+                fertilizing("유기질비료", "0.06", "G", "0.00006", "SOIL", day = 1),
+                fertilizing("유기질비료", "0.06", "G", "0.00006", "SOIL", day = 2),
+            ),
+        ).fertilizing
+
+        assertThat(result.totalAmountKg).isEqualByComparingTo("0.0001")
+        assertThat(result.materialCategories.single().amountKg).isEqualByComparingTo("0.0001")
     }
 
     @Test
     fun `pesticide ML and G remain separate`() {
         val result = calculator.calculate(
             listOf(
-                pest("FUNGICIDE", "10", "ML", "100"),
-                pest("FUNGICIDE", "5", "G", "50"),
+                pest("가가방", "10", "ML", "100"),
+                pest("가가방", "5", "G", "50"),
             ),
         ).pestControl
 
@@ -100,10 +131,27 @@ class CycleReportStatisticsCalculatorTest {
             )
         assertThat(result.categoryAmounts.map { Triple(it.categoryCode, it.unit, it.amount) })
             .containsExactly(
-                Triple("FUNGICIDE", "G", BigDecimal("5.0000")),
-                Triple("FUNGICIDE", "ML", BigDecimal("10.0000")),
+                Triple(id("91").toString(), "G", BigDecimal("5.0000")),
+                Triple(id("91").toString(), "ML", BigDecimal("10.0000")),
             )
         assertThat(result.totalSprayAmountLiters).isEqualByComparingTo("150.0000")
+    }
+
+    @Test
+    fun `pesticides with the same brand name remain separate products`() {
+        val firstId = id("901")
+        val secondId = id("902")
+        val result = calculator.calculate(
+            listOf(
+                pest("같은이름", "10", "ML", "100", day = 1, pesticideId = firstId),
+                pest("같은이름", "20", "ML", "100", day = 2, pesticideId = secondId),
+            ),
+        ).pestControl
+
+        assertThat(result.categoryDistribution.map { it.code to it.count })
+            .containsExactlyInAnyOrder(firstId.toString() to 1, secondId.toString() to 1)
+        assertThat(result.categoryAmounts.map { it.categoryCode to it.recordCount })
+            .containsExactlyInAnyOrder(firstId.toString() to 1, secondId.toString() to 1)
     }
 
     @Test
@@ -153,8 +201,8 @@ class CycleReportStatisticsCalculatorTest {
         listOf(
             seedPlanting("100", day = 1),
             watering(day = 2),
-            fertilizing("NPK", "10", "SOIL", day = 3),
-            pest("FUNGICIDE", "5", "ML", "50", day = 4),
+            fertilizing("복합비료", "10000", "G", "10", "SOIL", day = 3),
+            pest("가가방", "5", "ML", "50", day = 4),
             weeding(day = 5),
             baseRecord("06", 6, WorkType.PRUNING),
             harvest("30", "ROOT_BARK", 12, final = true, day = 7, hasPhoto = true),
@@ -167,7 +215,8 @@ class CycleReportStatisticsCalculatorTest {
             day = day,
             workType = WorkType.PLANTING,
             planting = PlantingReportSource(
-                propagationMethod = CategoryRef("SEED", "종자"),
+                plantingMethod = CategoryRef("SEED", "씨앗 심기"),
+                propagationMethod = null,
                 quantity = BigDecimal(amount),
                 quantityUnit = "G",
             ),
@@ -179,6 +228,7 @@ class CycleReportStatisticsCalculatorTest {
             day = day,
             workType = WorkType.PLANTING,
             planting = PlantingReportSource(
+                plantingMethod = CategoryRef("SEEDLING", "모종 심기"),
                 propagationMethod = CategoryRef("CUTTING", "삽목"),
                 quantity = BigDecimal(seedlingCount),
                 quantityUnit = "JU",
@@ -201,7 +251,9 @@ class CycleReportStatisticsCalculatorTest {
         )
 
     private fun fertilizing(
-        category: String,
+        materialName: String,
+        amount: String,
+        amountUnit: String,
         amountKg: String?,
         method: String?,
         day: Int = 1,
@@ -211,29 +263,33 @@ class CycleReportStatisticsCalculatorTest {
             day = day,
             workType = WorkType.FERTILIZING,
             fertilizing = FertilizingReportSource(
-                materialCategory = CategoryRef(category, category),
+                materialName = materialName,
+                amount = BigDecimal(amount),
+                amountUnit = amountUnit,
                 amountKg = amountKg?.let(::BigDecimal),
                 applicationMethod = method?.let { CategoryRef(it, fertilizingMethodLabel(it)) },
             ),
         )
 
     private fun pest(
-        category: String,
+        pesticideName: String,
         amount: String?,
         unit: String,
         sprayAmountLiters: String?,
         day: Int = 1,
+        pesticideId: UUID = id("9$day"),
     ): CycleReportSourceRecord =
         baseRecord(
             number = "5$day",
             day = day,
             workType = WorkType.PEST_CONTROL,
             pestControl = PestControlReportSource(
-                pesticideCategory = CategoryRef(category, pesticideCategoryLabel(category)),
+                pesticideId = pesticideId,
+                pesticideName = pesticideName,
                 pesticideAmount = amount?.let(::BigDecimal),
                 pesticideAmountUnit = unit,
                 totalSprayAmountLiters = sprayAmountLiters?.let(::BigDecimal),
-                pestTarget = "진딧물",
+                pestName = "진딧물",
             ),
         )
 
@@ -261,8 +317,10 @@ class CycleReportStatisticsCalculatorTest {
             harvest = HarvestReportSource(
                 amountKg = amountKg?.let(::BigDecimal),
                 medicinalPart = CategoryRef(part, harvestPartLabel(part)),
+                growthPeriod = growthMonths,
+                growthPeriodUnit = "MONTH",
                 growthPeriodMonths = growthMonths,
-                isFinalHarvest = final,
+                isLastHarvest = final,
             ),
         )
 
@@ -316,12 +374,6 @@ class CycleReportStatisticsCalculatorTest {
     private fun fertilizingMethodLabel(code: String): String =
         when (code) {
             "SOIL" -> "토양시비"
-            else -> code
-        }
-
-    private fun pesticideCategoryLabel(code: String): String =
-        when (code) {
-            "FUNGICIDE" -> "살균제"
             else -> code
         }
 

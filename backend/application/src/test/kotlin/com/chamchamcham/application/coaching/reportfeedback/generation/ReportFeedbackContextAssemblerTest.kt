@@ -217,7 +217,7 @@ class ReportFeedbackContextAssemblerTest {
             amountKg = BigDecimal("5.0"),
             medicinalPart = CategoryRef("ROOT_BARK", "뿌리/근피"),
             growthPeriodMonths = 12,
-            isFinalHarvest = isFinal,
+            isLastHarvest = isFinal,
         ),
     )
 
@@ -241,7 +241,7 @@ class ReportFeedbackContextAssemblerTest {
             weatherCondition = "맑음",
             weatherTemperature = 24,
             memo = "최종 수확",
-            entryMode = "MANUAL",
+            entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
         )
         return FarmingCycleReport.create(
             member = member,

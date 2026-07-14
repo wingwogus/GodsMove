@@ -56,7 +56,7 @@ class ReportFeedbackLifecycleServiceTest {
         val finalHarvest = FarmingRecord(
             id = UUID.randomUUID(), member = member, farm = farm, crop = crop,
             workType = WorkType.HARVEST, workedAt = LocalDateTime.of(2026, 7, 1, 9, 0),
-            weatherCondition = "맑음", weatherTemperature = 24, memo = "최종 수확", entryMode = "MANUAL",
+            weatherCondition = "맑음", weatherTemperature = 24, memo = "최종 수확", entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
         )
         report = FarmingCycleReport.create(
             member = member,

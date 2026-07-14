@@ -121,15 +121,17 @@ class ReportFeedbackContextAssembler(
         put("weatherTemperature", weatherTemperature)
         put("hasPhoto", hasPhoto)
         when (workType) {
-            WorkType.PLANTING -> planting?.let { put("planting", it) }
-            WorkType.WATERING -> watering?.let { put("watering", it) }
-            WorkType.FERTILIZING -> fertilizing?.let { put("fertilizing", it) }
-            WorkType.PEST_CONTROL -> pestControl?.let { put("pestControl", it) }
-            WorkType.WEEDING -> weeding?.let { put("weeding", it) }
-            WorkType.HARVEST -> harvest?.let { put("harvest", it) }
+            WorkType.PLANTING -> planting?.let { put("planting", it.toDetailMap()) }
+            WorkType.WATERING -> watering?.let { put("watering", it.toDetailMap()) }
+            WorkType.FERTILIZING -> fertilizing?.let { put("fertilizing", it.toDetailMap()) }
+            WorkType.PEST_CONTROL -> pestControl?.let { put("pestControl", it.toDetailMap()) }
+            WorkType.WEEDING -> weeding?.let { put("weeding", it.toDetailMap()) }
+            WorkType.HARVEST -> harvest?.let { put("harvest", it.toDetailMap()) }
             WorkType.PRUNING, WorkType.ETC -> Unit
         }
     }
+
+    private fun Any.toDetailMap(): Map<String, Any?> = objectMapper.convertValue(this, MAP_TYPE)
 
     private companion object {
         val MAP_TYPE = object : TypeReference<Map<String, Any?>>() {}

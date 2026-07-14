@@ -101,6 +101,7 @@ class FarmingCycleReportProjectionServiceTest {
         val saved = capturedSavedReports().single()
         assertThat(saved.status).isEqualTo(FarmingCycleReportStatus.ACTIVE)
         assertThat(saved.statistics.watering.recordCount).isEqualTo(1)
+        assertThat(saved.statisticsSchemaVersion).isEqualTo(2)
         assertThat(saved.sourceRevision).isEqualTo(1)
     }
 
@@ -257,6 +258,7 @@ class FarmingCycleReportProjectionServiceTest {
             finalRecordId = finalHarvestRecordId,
             startsAt = baseTime.plusDays(1),
             endsAt = baseTime.plusDays(10),
+            statisticsSchemaVersion = 2,
         )
         val revision = completed.sourceRevision
         stubScope(existing = listOf(completed))
@@ -355,7 +357,7 @@ class FarmingCycleReportProjectionServiceTest {
                 amountKg = null,
                 medicinalPart = CategoryRef("ROOT_BARK", "뿌리·껍질"),
                 growthPeriodMonths = 12,
-                isFinalHarvest = true,
+                isLastHarvest = true,
             ),
         )
 
@@ -380,6 +382,7 @@ class FarmingCycleReportProjectionServiceTest {
         finalRecordId: UUID,
         startsAt: LocalDateTime = baseTime.plusDays(1),
         endsAt: LocalDateTime = baseTime.plusDays(10),
+        statisticsSchemaVersion: Int = 1,
     ): FarmingCycleReport = persistedReport(
         id = id,
         projection = FarmingCycleReportProjection(
@@ -388,7 +391,7 @@ class FarmingCycleReportProjectionServiceTest {
             endsAt = endsAt,
             startBasis = FarmingCycleStartBasis.FIRST_RECORD,
             finalHarvestRecord = referenceRecord(finalRecordId, day = 10),
-            statisticsSchemaVersion = 1,
+            statisticsSchemaVersion = statisticsSchemaVersion,
             statistics = CycleReportStatisticsCalculator().calculate(
                 listOf(wateringRecord(day = 1), finalHarvestRecord(finalRecordId, day = 10)),
             ),
@@ -418,7 +421,7 @@ class FarmingCycleReportProjectionServiceTest {
             weatherCondition = "맑음",
             weatherTemperature = 20,
             memo = "memo",
-            entryMode = "MANUAL",
+            entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
         )
 
     private fun capturedSavedReports(): List<FarmingCycleReport> {

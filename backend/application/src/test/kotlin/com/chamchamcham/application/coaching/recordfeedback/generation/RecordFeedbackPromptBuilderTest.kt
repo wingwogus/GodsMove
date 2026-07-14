@@ -3,13 +3,11 @@ package com.chamchamcham.application.coaching.recordfeedback.generation
 import com.chamchamcham.application.coaching.common.CoachingTextPolicy
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.PesticideAmountUnit
-import com.chamchamcham.domain.farming.PesticideCategory
-import com.chamchamcham.domain.farming.PropagationMethod
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
 import com.chamchamcham.domain.farming.SprayAmountUnit
@@ -115,43 +113,44 @@ class RecordFeedbackPromptBuilderTest {
         val base = readFixture("today-record-feedback-watering.json")
         val cases = listOf(
             PlantingFeedbackDetail(
-                seedAmount = BigDecimal("1.2500"),
-                seedAmountUnit = SeedAmountUnit.KG,
-                seedlingCount = 18,
-                seedlingUnit = SeedlingUnit.JU,
-                propagationMethod = PropagationMethod.SEED,
-            ) to listOf("씨앗 양: 1.2500킬로그램", "모종 수: 18포기", "심은 방법: 씨앗을 뿌림"),
+                plantingMethod = PlantingMethod.SEED,
+                seedAmount = BigDecimal("1250.0000"),
+                seedAmountUnit = SeedAmountUnit.G,
+                seedlingCount = null,
+                seedlingUnit = null,
+                propagationMethod = null,
+            ) to listOf("심기: 씨앗을 심음", "씨앗 양: 1250.0000그램"),
             FertilizingFeedbackDetail(
-                materialCategory = FertilizerMaterialCategory.ORGANIC_FERTILIZER,
-                amount = BigDecimal("2.5000"),
-                amountUnit = FertilizerAmountUnit.KG,
+                materialName = "유기질비료",
+                amount = BigDecimal("2500.0000"),
+                amountUnit = FertilizerAmountUnit.G,
                 applicationMethod = FertilizingMethod.SOIL,
             ) to listOf(
-                "거름 종류: 동식물 재료로 만든 거름",
-                "거름 양: 2.5000킬로그램",
+                "거름 이름: 유기질비료",
+                "거름 양: 2500.0000그램",
                 "거름을 준 방법: 흙에 거름을 줌",
             ),
             PestControlFeedbackDetail(
-                pesticideCategory = PesticideCategory.FUNGICIDE,
+                pesticideName = "가가방",
                 pesticideAmount = BigDecimal("120.0000"),
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal("20.0000"),
                 totalSprayAmountUnit = SprayAmountUnit.L,
-                pestTarget = "점무늬병",
+                pestName = "점무늬병",
             ) to listOf(
-                "약 종류: 병을 막는 약",
+                "약 이름: 가가방",
                 "약 사용량: 120.0000밀리리터",
                 "약을 섞은 물의 양: 20.0000리터",
             ),
             WeedingFeedbackDetail(WeedingMethod.HAND) to listOf("풀을 정리한 방법: 손으로 풀을 뽑음"),
             HarvestFeedbackDetail(
-                harvestAmountKg = BigDecimal("82.0000"),
+                harvestAmount = BigDecimal("82.0000"),
                 amountUnknown = false,
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 6,
                 growthPeriodUnit = GrowthPeriodUnit.MONTH,
-                isFinalHarvest = true,
+                isLastHarvest = true,
             ) to listOf(
                 "수확량: 82.0000킬로그램",
                 "수확한 부위: 뿌리와 껍질",
@@ -169,6 +168,50 @@ class RecordFeedbackPromptBuilderTest {
             )
 
             assertThat(prompt.user).contains(*expected.toTypedArray())
+        }
+    }
+
+    @Test
+    fun `prompt omits optional record details when they were not recorded`() {
+        val base = readFixture("today-record-feedback-watering.json")
+        val cases = listOf(
+            WateringFeedbackDetail(null, null) to listOf("물 준 양", "물을 준 방법"),
+            FertilizingFeedbackDetail(
+                materialName = "유기질비료",
+                amount = BigDecimal("250"),
+                amountUnit = FertilizerAmountUnit.ML,
+                applicationMethod = null,
+            ) to listOf("거름을 준 방법"),
+            PestControlFeedbackDetail(
+                pesticideName = "가가방",
+                pesticideAmount = BigDecimal("120"),
+                pesticideAmountUnit = PesticideAmountUnit.ML,
+                totalSprayAmount = BigDecimal("20"),
+                totalSprayAmountUnit = SprayAmountUnit.L,
+                pestName = null,
+            ) to listOf("관리 대상"),
+            WeedingFeedbackDetail(null) to listOf("풀을 정리한 방법"),
+            HarvestFeedbackDetail(
+                harvestAmount = null,
+                amountUnknown = true,
+                medicinalPart = null,
+                harvestSource = HarvestSource.CULTIVATED,
+                growthPeriod = null,
+                growthPeriodUnit = null,
+                isLastHarvest = false,
+            ) to listOf("수확량", "수확한 부위", "기른 기간"),
+        )
+
+        cases.forEach { (detail, omittedLabels) ->
+            val prompt = builder.build(
+                context = base.copy(record = base.record.copy(detail = detail)),
+                queries = emptyList(),
+                evidence = emptyList(),
+            )
+
+            assertThat(prompt.user)
+                .doesNotContain(*omittedLabels.toTypedArray())
+                .doesNotContain("미상", "모름")
         }
     }
 

@@ -135,43 +135,48 @@ class RecordFeedbackPromptBuilder {
     private fun formatDetail(detail: RecordFeedbackWorkDetail): String {
         return when (detail) {
             is PlantingFeedbackDetail -> buildList {
+                add("심기: ${detail.plantingMethod.toCoachingText()}")
                 detail.seedAmount?.let { amount ->
                     add("씨앗 양: $amount${detail.seedAmountUnit?.toCoachingText().orEmpty()}")
                 }
                 detail.seedlingCount?.let { count ->
                     add("모종 수: $count${detail.seedlingUnit?.toCoachingText().orEmpty()}")
                 }
-                add("심은 방법: ${detail.propagationMethod.toCoachingText()}")
+                detail.propagationMethod?.let { add("모종 만든 방법: ${it.toCoachingText()}") }
             }.joinToString(", ")
 
-            is WateringFeedbackDetail -> listOf(
-                "물 준 양: ${detail.irrigationAmount?.toCoachingText() ?: "미상"}",
-                "물을 준 방법: ${detail.irrigationMethod?.toCoachingText() ?: "미상"}",
-            ).joinToString(", ")
+            is WateringFeedbackDetail -> buildList {
+                detail.irrigationAmount?.let { add("물 준 양: ${it.toCoachingText()}") }
+                detail.irrigationMethod?.let { add("물을 준 방법: ${it.toCoachingText()}") }
+            }.joinToString(", ")
 
-            is FertilizingFeedbackDetail -> listOf(
-                "거름 종류: ${detail.materialCategory.toCoachingText()}",
-                "거름 양: ${detail.amount}${detail.amountUnit.toCoachingText()}",
-                "거름을 준 방법: ${detail.applicationMethod?.toCoachingText() ?: "미상"}",
-            ).joinToString(", ")
+            is FertilizingFeedbackDetail -> buildList {
+                add("거름 이름: ${detail.materialName}")
+                add("거름 양: ${detail.amount}${detail.amountUnit.toCoachingText()}")
+                detail.applicationMethod?.let { add("거름을 준 방법: ${it.toCoachingText()}") }
+            }.joinToString(", ")
 
-            is PestControlFeedbackDetail -> listOf(
-                "약 종류: ${detail.pesticideCategory.toCoachingText()}",
-                "약 사용량: ${detail.pesticideAmount}${detail.pesticideAmountUnit.toCoachingText()}",
-                "약을 섞은 물의 양: ${detail.totalSprayAmount}${detail.totalSprayAmountUnit.toCoachingText()}",
-                "관리 대상: ${detail.pestTarget ?: "미상"}",
-            ).joinToString(", ")
+            is PestControlFeedbackDetail -> buildList {
+                add("약 이름: ${detail.pesticideName}")
+                add("약 사용량: ${detail.pesticideAmount}${detail.pesticideAmountUnit.toCoachingText()}")
+                add("약을 섞은 물의 양: ${detail.totalSprayAmount}${detail.totalSprayAmountUnit.toCoachingText()}")
+                detail.pestName?.let { add("관리 대상: $it") }
+            }.joinToString(", ")
 
             is WeedingFeedbackDetail ->
-                "풀을 정리한 방법: ${detail.weedingMethod?.toCoachingText() ?: "미상"}"
+                detail.weedingMethod?.let { "풀을 정리한 방법: ${it.toCoachingText()}" }.orEmpty()
 
-            is HarvestFeedbackDetail -> listOf(
-                "수확량: ${detail.harvestAmountKg?.let { "${it}킬로그램" } ?: "모름"}",
-                "수확한 부위: ${detail.medicinalPart.toCoachingText()}",
-                "기른 곳: ${detail.harvestSource.toCoachingText()}",
-                "기른 기간: ${detail.growthPeriod}${detail.growthPeriodUnit.toCoachingText()}",
-                "마지막 수확: ${if (detail.isFinalHarvest) "네" else "아니요"}",
-            ).joinToString(", ")
+            is HarvestFeedbackDetail -> buildList {
+                detail.harvestAmount?.let { add("수확량: ${it}킬로그램") }
+                detail.medicinalPart?.let { add("수확한 부위: ${it.toCoachingText()}") }
+                add("기른 곳: ${detail.harvestSource.toCoachingText()}")
+                detail.growthPeriod?.let { period ->
+                    detail.growthPeriodUnit?.let { unit ->
+                        add("기른 기간: $period${unit.toCoachingText()}")
+                    }
+                }
+                add("마지막 수확: ${if (detail.isLastHarvest) "네" else "아니요"}")
+            }.joinToString(", ")
 
             CommonFeedbackDetail -> "공통 상세 없음"
         }

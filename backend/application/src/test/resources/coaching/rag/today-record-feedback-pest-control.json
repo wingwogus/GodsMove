@@ -24,12 +24,12 @@
     "workType": "PEST_CONTROL",
     "detail": {
       "type": "PEST_CONTROL",
-      "pesticideCategory": "FUNGICIDE",
+      "pesticideName": "가가방",
       "pesticideAmount": 20.0,
       "pesticideAmountUnit": "ML",
       "totalSprayAmount": 20.0,
       "totalSprayAmountUnit": "L",
-      "pestTarget": "점무늬병"
+      "pestName": "점무늬병"
     },
     "recordedWeatherCondition": "비",
     "recordedTemperatureC": 25,

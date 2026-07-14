@@ -24,13 +24,13 @@
     "workType": "HARVEST",
     "detail": {
       "type": "HARVEST",
-      "harvestAmountKg": 12.0,
+      "harvestAmount": 12.0,
       "amountUnknown": false,
       "medicinalPart": "FRUIT",
       "harvestSource": "CULTIVATED",
       "growthPeriod": 16,
       "growthPeriodUnit": "MONTH",
-      "isFinalHarvest": false
+      "isLastHarvest": false
     },
     "recordedWeatherCondition": "맑음",
     "recordedTemperatureC": 31,

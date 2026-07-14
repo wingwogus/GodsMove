@@ -1,6 +1,7 @@
 package com.chamchamcham.application.coaching.reportfeedback.generation
 
 import com.chamchamcham.application.coaching.common.CoachingTextPolicy
+import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.WorkType
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
@@ -82,6 +83,120 @@ class ReportFeedbackPromptBuilderTest {
         val prompt = ReportFeedbackPromptBuilder().build(context, emptyList())
 
         assertThat(prompt.user).doesNotContain("NEW_METHOD", "새 방식")
+    }
+
+    @Test
+    fun `planting statistics include seed and seedling as easy planting descriptions`() {
+        val base = context()
+        val plantingContext = base.copy(
+            workType = WorkType.PLANTING,
+            report = base.report.copy(
+                statistics = mapOf(
+                    "recordCount" to 2,
+                    "propagationMethods" to listOf(
+                        mapOf("code" to "SEED", "recordCount" to 1),
+                        mapOf("code" to "SEEDLING", "recordCount" to 1),
+                    ),
+                ),
+            ),
+            records = emptyList(),
+            previousReport = null,
+        )
+
+        val prompt = ReportFeedbackPromptBuilder().build(plantingContext, emptyList())
+
+        assertThat(prompt.user)
+            .contains("심은 방법: 씨앗을 심음 1회")
+            .contains("심은 방법: 모종을 심음 1회")
+            .doesNotContain("SEED", "SEEDLING")
+    }
+
+    @Test
+    fun `fertilizer statistics keep liquid fertilizer names in the prompt`() {
+        val base = context()
+        val fertilizingContext = base.copy(
+            workType = WorkType.FERTILIZING,
+            report = base.report.copy(
+                statistics = mapOf(
+                    "recordCount" to 1,
+                    "materialDistribution" to listOf(
+                        mapOf("code" to "액상비료", "label" to "액상비료", "count" to 1),
+                    ),
+                ),
+            ),
+            records = emptyList(),
+            previousReport = null,
+        )
+
+        val prompt = ReportFeedbackPromptBuilder().build(fertilizingContext, emptyList())
+
+        assertThat(prompt.user).contains("거름 이름: 액상비료 1회")
+    }
+
+    @Test
+    fun `pesticide statistics show the product label without exposing its id`() {
+        val pesticideId = UUID.randomUUID()
+        val base = context()
+        val pestControlContext = base.copy(
+            workType = WorkType.PEST_CONTROL,
+            report = base.report.copy(
+                statistics = mapOf(
+                    "recordCount" to 1,
+                    "categoryDistribution" to listOf(
+                        mapOf("code" to pesticideId.toString(), "label" to "가가방", "count" to 1),
+                    ),
+                ),
+            ),
+            records = emptyList(),
+            previousReport = null,
+        )
+
+        val prompt = ReportFeedbackPromptBuilder().build(pestControlContext, emptyList())
+
+        assertThat(prompt.user)
+            .contains("약 이름: 가가방 1회")
+            .doesNotContain(pesticideId.toString())
+    }
+
+    @Test
+    fun `harvest records distinguish cultivated crops from wild collection in easy language`() {
+        val cultivatedPrompt = ReportFeedbackPromptBuilder().build(
+            harvestContext(HarvestSource.CULTIVATED),
+            emptyList(),
+        )
+        val foragedPrompt = ReportFeedbackPromptBuilder().build(
+            harvestContext(HarvestSource.FORAGED),
+            emptyList(),
+        )
+
+        assertThat(cultivatedPrompt.user)
+            .contains("수확한 곳: 밭에서 기름")
+            .doesNotContain("산이나 들에서 얻음", HarvestSource.CULTIVATED.name)
+        assertThat(foragedPrompt.user)
+            .contains("수확한 곳: 산이나 들에서 얻음")
+            .doesNotContain("밭에서 기름", HarvestSource.FORAGED.name)
+    }
+
+    private fun harvestContext(harvestSource: HarvestSource): ReportFeedbackContext {
+        val base = context()
+        return base.copy(
+            workType = WorkType.HARVEST,
+            report = base.report.copy(statistics = mapOf("recordCount" to 1)),
+            records = listOf(
+                base.records.single().copy(
+                    workType = WorkType.HARVEST,
+                    details = mapOf(
+                        "harvest" to mapOf(
+                            "harvestSource" to mapOf(
+                                "code" to harvestSource.name,
+                                "label" to harvestSource.label,
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+            previousReport = null,
+        )
     }
 
     private fun context() = ReportFeedbackContext(

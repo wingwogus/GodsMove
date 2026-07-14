@@ -2,14 +2,13 @@ package com.chamchamcham.application.coaching.common
 
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
-import com.chamchamcham.domain.farming.PesticideCategory
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
@@ -38,18 +37,24 @@ class CoachingPromptLabelsTest {
 
     @Test
     fun `maps every planting value to an easy coaching label`() {
+        assertThat(PlantingMethod.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
+            mapOf(
+                PlantingMethod.SEED to "씨앗을 심음",
+                PlantingMethod.SEEDLING to "모종을 심음",
+            ),
+        )
         assertThat(PropagationMethod.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
             mapOf(
-                PropagationMethod.SEED to "씨앗을 뿌림",
                 PropagationMethod.CUTTING to "가지를 잘라 심음",
                 PropagationMethod.GRAFTING to "서로 다른 줄기를 이어 붙임",
                 PropagationMethod.LAYERING to "가지를 흙에 묻어 뿌리내림",
                 PropagationMethod.DIVISION to "포기를 나눠 심음",
                 PropagationMethod.TISSUE_CULTURE to "작은 조직을 키운 모종을 심음",
+                PropagationMethod.PURCHASED to "구입한 모종을 심음",
             ),
         )
         assertThat(SeedAmountUnit.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
-            mapOf(SeedAmountUnit.KG to "킬로그램", SeedAmountUnit.G to "그램"),
+            mapOf(SeedAmountUnit.G to "그램"),
         )
         assertThat(SeedlingUnit.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
             mapOf(SeedlingUnit.JU to "포기"),
@@ -68,27 +73,14 @@ class CoachingPromptLabelsTest {
         assertThat(IrrigationMethod.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
             mapOf(
                 IrrigationMethod.DRIP to "호스로 조금씩 물을 줌",
-                IrrigationMethod.SPRINKLER to "물을 뿌리는 장치로 줌",
                 IrrigationMethod.SPRAYING to "물을 넓게 뿌려 줌",
-                IrrigationMethod.MANUAL to "손으로 물을 줌",
+                IrrigationMethod.ETC to "다른 방법으로 물을 줌",
             ),
         )
     }
 
     @Test
     fun `maps every fertilizing value to an easy coaching label`() {
-        assertThat(FertilizerMaterialCategory.entries.associateWith { it.toCoachingText() })
-            .containsExactlyEntriesOf(
-                mapOf(
-                    FertilizerMaterialCategory.COMPOUND_FERTILIZER to "여러 성분이 든 거름",
-                    FertilizerMaterialCategory.NITROGEN_FERTILIZER to "잎과 줄기가 자라도록 돕는 거름",
-                    FertilizerMaterialCategory.PHOSPHATE_FERTILIZER to "뿌리가 자라도록 돕는 거름",
-                    FertilizerMaterialCategory.POTASSIUM_FERTILIZER to "작물이 튼튼하게 자라도록 돕는 거름",
-                    FertilizerMaterialCategory.ORGANIC_FERTILIZER to "동식물 재료로 만든 거름",
-                    FertilizerMaterialCategory.LIME_FERTILIZER to "흙의 신맛을 줄이는 거름",
-                    FertilizerMaterialCategory.OTHER to "기타 거름",
-                ),
-            )
         assertThat(FertilizingMethod.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
             mapOf(
                 FertilizingMethod.SOIL to "흙에 거름을 줌",
@@ -96,22 +88,12 @@ class CoachingPromptLabelsTest {
             ),
         )
         assertThat(FertilizerAmountUnit.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
-            mapOf(FertilizerAmountUnit.KG to "킬로그램"),
+            mapOf(FertilizerAmountUnit.G to "그램", FertilizerAmountUnit.ML to "밀리리터"),
         )
     }
 
     @Test
     fun `maps every pest control value to an easy coaching label`() {
-        assertThat(PesticideCategory.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
-            mapOf(
-                PesticideCategory.FUNGICIDE to "병을 막는 약",
-                PesticideCategory.INSECTICIDE to "벌레를 막는 약",
-                PesticideCategory.HERBICIDE to "풀을 없애는 약",
-                PesticideCategory.ACARICIDE to "응애를 막는 약",
-                PesticideCategory.BIOPESTICIDE to "생물에서 얻은 재료로 만든 약",
-                PesticideCategory.OTHER to "기타 약",
-            ),
-        )
         assertThat(PesticideAmountUnit.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
             mapOf(PesticideAmountUnit.ML to "밀리리터", PesticideAmountUnit.G to "그램"),
         )
@@ -155,12 +137,11 @@ class CoachingPromptLabelsTest {
     fun `coaching labels never expose English or raw enum names`() {
         val labels = buildList {
             addAll(WorkType.entries.map { it.toCoachingText() })
+            addAll(PlantingMethod.entries.map { it.toCoachingText() })
             addAll(PropagationMethod.entries.map { it.toCoachingText() })
             addAll(IrrigationAmount.entries.map { it.toCoachingText() })
             addAll(IrrigationMethod.entries.map { it.toCoachingText() })
-            addAll(FertilizerMaterialCategory.entries.map { it.toCoachingText() })
             addAll(FertilizingMethod.entries.map { it.toCoachingText() })
-            addAll(PesticideCategory.entries.map { it.toCoachingText() })
             addAll(WeedingMethod.entries.map { it.toCoachingText() })
             addAll(CropUsePartCategory.entries.map { it.toCoachingText() })
             addAll(HarvestSource.entries.map { it.toCoachingText() })

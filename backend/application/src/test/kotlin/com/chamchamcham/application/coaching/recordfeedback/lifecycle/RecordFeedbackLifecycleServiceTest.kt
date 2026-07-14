@@ -13,6 +13,7 @@ import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.ArgumentCaptor
+import org.mockito.Mockito.inOrder
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
@@ -33,30 +34,48 @@ class RecordFeedbackLifecycleServiceTest {
     private val record = FarmingRecord(
         id = UUID.randomUUID(), member = member, farm = farm, crop = crop, workType = WorkType.WATERING,
         workedAt = LocalDateTime.of(2026, 7, 11, 9, 0), weatherCondition = "맑음", weatherTemperature = 25,
-        memo = "관수 기록", entryMode = "MANUAL", sourceRevision = 3,
+        memo = "관수 기록", entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
     )
 
     private val service by lazy { RecordFeedbackLifecycleService(feedbackRepository, eventPublisher) }
 
     @Test
-    fun `enqueue reuses feedback for the same record revision`() {
-        val current = feedback()
-        `when`(feedbackRepository.findByRecord_IdAndSourceRevision(record.id!!, record.sourceRevision)).thenReturn(current)
+    fun `enqueue locks the parent record before reading feedback revisions`() {
+        val recordId = requireNotNull(record.id)
+        val saved = feedback(sourceRevision = 1)
+        `when`(feedbackRepository.findRecordByIdForFeedbackUpdate(recordId)).thenReturn(record)
+        `when`(feedbackRepository.findAllByRecord_IdOrderBySourceRevisionDesc(recordId)).thenReturn(emptyList())
+        `when`(feedbackRepository.save(org.mockito.Mockito.any(RecordFeedback::class.java))).thenReturn(saved)
 
-        val result = service.enqueue(record)
+        service.enqueue(record)
 
-        assertThat(result).isSameAs(current)
-        verify(feedbackRepository, never()).save(org.mockito.Mockito.any())
-        verify(eventPublisher, never()).publishEvent(org.mockito.Mockito.any())
+        inOrder(feedbackRepository).apply {
+            verify(feedbackRepository).findRecordByIdForFeedbackUpdate(recordId)
+            verify(feedbackRepository).findAllByRecord_IdOrderBySourceRevisionDesc(recordId)
+        }
     }
 
     @Test
-    fun `enqueue stales active feedback and publishes preparation for the new revision`() {
-        val active = feedback(status = RecordFeedbackStatus.READY)
-        val saved = feedback(id = UUID.randomUUID())
-        `when`(feedbackRepository.findByRecord_IdAndSourceRevision(record.id!!, record.sourceRevision)).thenReturn(null)
-        `when`(feedbackRepository.findAllByRecord_IdAndStatusIn(record.id!!, listOf(RecordFeedbackStatus.PENDING, RecordFeedbackStatus.READY)))
-            .thenReturn(listOf(active))
+    fun `enqueue assigns the first feedback revision`() {
+        val saved = feedback(sourceRevision = 1)
+        `when`(feedbackRepository.findRecordByIdForFeedbackUpdate(record.id!!)).thenReturn(record)
+        `when`(feedbackRepository.findAllByRecord_IdOrderBySourceRevisionDesc(record.id!!)).thenReturn(emptyList())
+        `when`(feedbackRepository.save(org.mockito.Mockito.any(RecordFeedback::class.java))).thenReturn(saved)
+
+        val result = service.enqueue(record)
+
+        assertThat(result.sourceRevision).isEqualTo(1)
+        val eventCaptor = ArgumentCaptor.forClass(RecordFeedbackPreparationRequested::class.java)
+        verify(eventPublisher).publishEvent(eventCaptor.capture())
+        assertThat(eventCaptor.value.sourceRevision).isEqualTo(1)
+    }
+
+    @Test
+    fun `enqueue stales active feedback and increments the feedback revision`() {
+        val active = feedback(status = RecordFeedbackStatus.READY, sourceRevision = 3)
+        val saved = feedback(id = UUID.randomUUID(), sourceRevision = 4)
+        `when`(feedbackRepository.findRecordByIdForFeedbackUpdate(record.id!!)).thenReturn(record)
+        `when`(feedbackRepository.findAllByRecord_IdOrderBySourceRevisionDesc(record.id!!)).thenReturn(listOf(active))
         `when`(feedbackRepository.save(org.mockito.Mockito.any(RecordFeedback::class.java))).thenReturn(saved)
 
         service.enqueue(record)
@@ -65,7 +84,7 @@ class RecordFeedbackLifecycleServiceTest {
         val eventCaptor = ArgumentCaptor.forClass(RecordFeedbackPreparationRequested::class.java)
         verify(eventPublisher).publishEvent(eventCaptor.capture())
         assertThat(eventCaptor.value.feedbackId).isEqualTo(saved.id)
-        assertThat(eventCaptor.value.sourceRevision).isEqualTo(record.sourceRevision)
+        assertThat(eventCaptor.value.sourceRevision).isEqualTo(4)
     }
 
     @Test
@@ -83,8 +102,9 @@ class RecordFeedbackLifecycleServiceTest {
     private fun feedback(
         id: UUID = UUID.randomUUID(),
         status: RecordFeedbackStatus = RecordFeedbackStatus.PENDING,
+        sourceRevision: Long = 1,
     ): RecordFeedback {
-        val feedback = RecordFeedback(id = id, member = member, record = record, status = RecordFeedbackStatus.PENDING, sourceRevision = record.sourceRevision)
+        val feedback = RecordFeedback(id = id, member = member, record = record, status = RecordFeedbackStatus.PENDING, sourceRevision = sourceRevision)
         if (status == RecordFeedbackStatus.READY) {
             feedback.markReady("관수 기록", "관수 기록이 구체적입니다.", actions(), emptyList(), "PASS", emptyList(), "chat", "embed")
         }

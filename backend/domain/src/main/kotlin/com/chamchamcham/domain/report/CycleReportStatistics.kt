@@ -133,6 +133,7 @@ data class FertilizingStatistics(
     val totalAmountKg: BigDecimal? = null,
     val averageAmountKg: BigDecimal? = null,
     val amountCoverage: Coverage = Coverage(0, 0),
+    val materialDistribution: List<CountDistribution> = emptyList(),
     val materialCategories: List<MaterialCategoryStatistics> = emptyList(),
     val methodDistribution: List<CountDistribution> = emptyList(),
     val categoryMethods: List<CategoryMethodStatistics> = emptyList(),

@@ -13,6 +13,7 @@ import com.chamchamcham.domain.farming.WateringRecordRepository
 import com.chamchamcham.domain.farming.WeedingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
 import java.util.UUID
@@ -30,11 +31,13 @@ class RecordFeedbackContextAssembler(
     private val weatherPort: RecordFeedbackWeatherPort,
     private val clock: Clock = Clock.systemDefaultZone(),
 ) {
-    fun assemble(memberId: UUID, recordId: UUID): RecordFeedbackContext {
-        val record = recordRepository.findContextSourceByIdAndMemberId(recordId, memberId)
+    @Transactional(readOnly = true)
+    fun assemble(memberId: UUID, recordId: UUID, sourceRevision: Long): RecordFeedbackContext {
+        val record = recordRepository.findByIdAndMember_Id(recordId, memberId)
+            ?.takeUnless(FarmingRecord::isDeleted)
             ?: throw BusinessException(ErrorCode.FARMING_RECORD_NOT_FOUND)
         val detail = record.toDetail(recordId)
-        val photoCount = mediaRepository.countByRecord_Id(recordId).toInt()
+        val photoCount = mediaRepository.findByRecord_Id(recordId).size
         val (weather, warnings) = fetchWeather(record)
 
         return RecordFeedbackContext(
@@ -57,7 +60,7 @@ class RecordFeedbackContextAssembler(
             ),
             record = RecordFeedbackRecordContext(
                 recordId = record.id ?: recordId,
-                sourceRevision = record.sourceRevision,
+                sourceRevision = sourceRevision,
                 workedAt = record.workedAt,
                 workType = record.workType,
                 detail = detail,
@@ -76,6 +79,7 @@ class RecordFeedbackContextAssembler(
             WorkType.PLANTING -> plantingRecordRepository.findByRecord_Id(recordId)
                 ?.let {
                     PlantingFeedbackDetail(
+                        plantingMethod = it.plantingMethod,
                         seedAmount = it.seedAmount,
                         seedAmountUnit = it.seedAmountUnit,
                         seedlingCount = it.seedlingCount,
@@ -91,7 +95,7 @@ class RecordFeedbackContextAssembler(
             WorkType.FERTILIZING -> fertilizingRecordRepository.findByRecord_Id(recordId)
                 ?.let {
                     FertilizingFeedbackDetail(
-                        materialCategory = it.materialCategory,
+                        materialName = it.materialName,
                         amount = it.amount,
                         amountUnit = it.amountUnit,
                         applicationMethod = it.applicationMethod,
@@ -101,12 +105,12 @@ class RecordFeedbackContextAssembler(
             WorkType.PEST_CONTROL -> pestControlRecordRepository.findByRecord_Id(recordId)
                 ?.let {
                     PestControlFeedbackDetail(
-                        pesticideCategory = it.pesticideCategory,
+                        pesticideName = it.pesticide.brandName,
                         pesticideAmount = it.pesticideAmount,
                         pesticideAmountUnit = it.pesticideAmountUnit,
                         totalSprayAmount = it.totalSprayAmount,
                         totalSprayAmountUnit = it.totalSprayAmountUnit,
-                        pestTarget = it.pestTarget,
+                        pestName = it.pest?.name,
                     )
                 } ?: throw BusinessException(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
 
@@ -119,13 +123,13 @@ class RecordFeedbackContextAssembler(
             WorkType.HARVEST -> harvestRecordRepository.findByRecord_Id(recordId)
                 ?.let {
                     HarvestFeedbackDetail(
-                        harvestAmountKg = it.harvestAmount,
+                        harvestAmount = it.harvestAmount,
                         amountUnknown = it.harvestAmount == null,
                         medicinalPart = it.medicinalPart,
                         harvestSource = it.harvestSource,
                         growthPeriod = it.growthPeriod,
                         growthPeriodUnit = it.growthPeriodUnit,
-                        isFinalHarvest = it.isFinalHarvest,
+                        isLastHarvest = it.isLastHarvest,
                     )
                 } ?: throw BusinessException(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
 

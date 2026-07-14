@@ -3,11 +3,11 @@ package com.chamchamcham.application.coaching.reportfeedback.generation
 import com.chamchamcham.application.coaching.common.CoachingTextPolicy
 import com.chamchamcham.application.coaching.common.toCoachingText
 import com.chamchamcham.domain.crop.CropUsePartCategory
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
+import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
-import com.chamchamcham.domain.farming.PesticideCategory
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.WeedingMethod
 import com.chamchamcham.domain.farming.WorkType
@@ -98,8 +98,10 @@ class ReportFeedbackPromptBuilder {
 
         when (workType) {
             WorkType.PLANTING -> details.nested("planting")?.let { detail ->
+                detail.categoryCode("plantingMethod")?.plantingMethodText()
+                    ?.let { add("심기: $it") }
                 detail.categoryCode("propagationMethod")?.propagationText()
-                    ?.let { add("심은 방법: $it") }
+                    ?.let { add("모종 만든 방법: $it") }
                 detail.number("quantity")?.let { quantity ->
                     detail["quantityUnit"]?.toString()?.unitText()?.let { unit ->
                         add("심은 양: $quantity$unit")
@@ -115,16 +117,20 @@ class ReportFeedbackPromptBuilder {
             }
 
             WorkType.FERTILIZING -> details.nested("fertilizing")?.let { detail ->
-                detail.categoryCode("materialCategory")?.fertilizerMaterialText()
-                    ?.let { add("거름 종류: $it") }
-                detail.number("amountKg")?.let { add("거름 양: ${it}킬로그램") }
+                detail["materialName"]?.toString()?.takeIf(String::isNotBlank)
+                    ?.let { add("거름 이름: $it") }
+                detail.number("amount")?.let { amount ->
+                    detail["amountUnit"]?.toString()?.unitText()?.let { unit ->
+                        add("거름 양: $amount$unit")
+                    }
+                }
                 detail.categoryCode("applicationMethod")?.fertilizingMethodText()
                     ?.let { add("거름을 준 방법: $it") }
             }
 
             WorkType.PEST_CONTROL -> details.nested("pestControl")?.let { detail ->
-                detail.categoryCode("pesticideCategory")?.pesticideCategoryText()
-                    ?.let { add("약 종류: $it") }
+                detail["pesticideName"]?.toString()?.takeIf(String::isNotBlank)
+                    ?.let { add("약 이름: $it") }
                 detail.number("pesticideAmount")?.let { amount ->
                     detail["pesticideAmountUnit"]?.toString()?.unitText()?.let { unit ->
                         add("약 사용량: $amount$unit")
@@ -132,7 +138,7 @@ class ReportFeedbackPromptBuilder {
                 }
                 detail.number("totalSprayAmountLiters")
                     ?.let { add("약을 섞은 물의 양: ${it}리터") }
-                detail["pestTarget"]?.toString()?.takeIf(String::isNotBlank)
+                detail["pestName"]?.toString()?.takeIf(String::isNotBlank)
                     ?.let { add("관리 대상: $it") }
             }
 
@@ -145,8 +151,14 @@ class ReportFeedbackPromptBuilder {
                 detail.number("amountKg")?.let { add("수확량: ${it}킬로그램") }
                 detail.categoryCode("medicinalPart")?.cropPartText()
                     ?.let { add("수확한 부위: $it") }
-                detail.number("growthPeriodMonths")?.let { add("기른 기간: ${it.toInt()}개월") }
-                (detail["isFinalHarvest"] as? Boolean)
+                detail.categoryCode("harvestSource")?.harvestSourceText()
+                    ?.let { add("수확한 곳: $it") }
+                detail.number("growthPeriod")?.let { period ->
+                    detail["growthPeriodUnit"]?.toString()?.growthPeriodUnitText()?.let { unit ->
+                        add("기른 기간: ${period.toInt()}$unit")
+                    }
+                }
+                (detail["isLastHarvest"] as? Boolean)
                     ?.let { add("마지막 수확: ${if (it) "네" else "아니요"}") }
             }
 
@@ -169,7 +181,12 @@ class ReportFeedbackPromptBuilder {
 
         when (workType) {
             WorkType.PLANTING -> addAll(
-                statistics.distribution("propagationMethods", "code", prefix, { it.propagationText() }),
+                statistics.distribution(
+                    "propagationMethods",
+                    "code",
+                    prefix,
+                    { it.plantingMethodText() ?: it.propagationText() },
+                ),
             )
 
             WorkType.WATERING -> {
@@ -198,11 +215,11 @@ class ReportFeedbackPromptBuilder {
                 statistics.number("averageAmountKg")?.let { add("${prefix}한 번 평균 거름 양: ${it}킬로그램") }
                 addAll(
                     statistics.distribution(
-                        "materialCategories",
-                        "code",
+                        "materialDistribution",
+                        "label",
                         prefix,
-                        { it.fertilizerMaterialText() },
-                        label = "거름 종류",
+                        { it.takeIf(String::isNotBlank) },
+                        label = "거름 이름",
                     ),
                 )
                 addAll(
@@ -220,10 +237,10 @@ class ReportFeedbackPromptBuilder {
                 addAll(
                     statistics.distribution(
                         "categoryDistribution",
-                        "code",
+                        "label",
                         prefix,
-                        { it.pesticideCategoryText() },
-                        label = "약 종류",
+                        { it.takeIf(String::isNotBlank) },
+                        label = "약 이름",
                     ),
                 )
                 statistics.listOfMaps("pesticideAmounts").forEach { item ->
@@ -304,26 +321,32 @@ class ReportFeedbackPromptBuilder {
     private fun String.propagationText(): String? =
         PropagationMethod.entries.firstOrNull { it.name == this }?.toCoachingText()
 
+    private fun String.plantingMethodText(): String? =
+        PlantingMethod.entries.firstOrNull { it.name == this }?.toCoachingText()
+
     private fun String.irrigationAmountText(): String? =
         IrrigationAmount.entries.firstOrNull { it.name == this }?.toCoachingText()
 
     private fun String.irrigationMethodText(): String? =
         IrrigationMethod.entries.firstOrNull { it.name == this }?.toCoachingText()
 
-    private fun String.fertilizerMaterialText(): String? =
-        FertilizerMaterialCategory.entries.firstOrNull { it.name == this }?.toCoachingText()
-
     private fun String.fertilizingMethodText(): String? =
         FertilizingMethod.entries.firstOrNull { it.name == this }?.toCoachingText()
-
-    private fun String.pesticideCategoryText(): String? =
-        PesticideCategory.entries.firstOrNull { it.name == this }?.toCoachingText()
 
     private fun String.weedingMethodText(): String? =
         WeedingMethod.entries.firstOrNull { it.name == this }?.toCoachingText()
 
     private fun String.cropPartText(): String? =
         CropUsePartCategory.entries.firstOrNull { it.name == this }?.toCoachingText()
+
+    private fun String.harvestSourceText(): String? =
+        HarvestSource.entries.firstOrNull { it.name == this }?.toCoachingText()
+
+    private fun String.growthPeriodUnitText(): String? = when (this) {
+        "YEAR" -> "년"
+        "MONTH" -> "개월"
+        else -> null
+    }
 
     private fun String.unitText(): String? = when (this) {
         "KG" -> "킬로그램"

@@ -32,7 +32,7 @@ class RecordFeedbackPreparationService(
         }
 
         val snapshotResult = try {
-            val context = contextAssembler.assemble(event.memberId, event.recordId)
+            val context = contextAssembler.assemble(event.memberId, event.recordId, event.sourceRevision)
             Result.success(objectMapper.convertValue(context, SNAPSHOT_TYPE))
         } catch (exception: RuntimeException) {
             Result.failure(exception)

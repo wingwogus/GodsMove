@@ -56,7 +56,7 @@ class RecordFeedbackGenerationProcessorTest {
     private val record = FarmingRecord(
         id = UUID.randomUUID(), member = member, farm = farm, crop = crop, workType = WorkType.PRUNING,
         workedAt = LocalDateTime.of(2026, 7, 11, 9, 0), weatherCondition = "맑음", weatherTemperature = 25,
-        memo = "웃자란 가지를 정리했습니다.", entryMode = "MANUAL", sourceRevision = 3,
+        memo = "웃자란 가지를 정리했습니다.", entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
     )
     private lateinit var processor: RecordFeedbackGenerationProcessor
 
@@ -169,7 +169,7 @@ class RecordFeedbackGenerationProcessorTest {
         member = RecordFeedbackMemberContext(member.id!!, null, null),
         farm = RecordFeedbackFarmContext(farm.id!!, farm.name, farm.roadAddress, null, null),
         crop = RecordFeedbackCropContext(crop.id!!, crop.name, crop.usePartCategory),
-        record = RecordFeedbackRecordContext(record.id!!, record.sourceRevision, record.workedAt, record.workType, CommonFeedbackDetail, record.weatherCondition, record.weatherTemperature, record.memo, 0),
+        record = RecordFeedbackRecordContext(record.id!!, SOURCE_REVISION, record.workedAt, record.workType, CommonFeedbackDetail, record.weatherCondition, record.weatherTemperature, record.memo, 0),
         weather = null,
     )
 
@@ -196,6 +196,7 @@ class RecordFeedbackGenerationProcessorTest {
     }
 
     private companion object {
+        const val SOURCE_REVISION = 3L
         val SNAPSHOT_TYPE = object : TypeReference<Map<String, Any?>>() {}
     }
 }

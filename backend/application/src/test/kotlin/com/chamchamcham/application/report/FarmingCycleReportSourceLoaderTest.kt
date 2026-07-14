@@ -6,8 +6,8 @@ import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farming.FarmingCycleReportSourceRepository
 import com.chamchamcham.domain.farming.FarmingCycleReportSourceSnapshot
 import com.chamchamcham.domain.farming.FarmingRecord
+import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.FertilizingRecord
 import com.chamchamcham.domain.farming.GrowthPeriodUnit
@@ -16,10 +16,9 @@ import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
-import com.chamchamcham.domain.farming.PesticideCategory
 import com.chamchamcham.domain.farming.PestControlRecord
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PlantingRecord
-import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SprayAmountUnit
 import com.chamchamcham.domain.farming.WateringRecord
@@ -27,6 +26,8 @@ import com.chamchamcham.domain.farming.WeedingMethod
 import com.chamchamcham.domain.farming.WeedingRecord
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.pesticide.Pest
+import com.chamchamcham.domain.pesticide.Pesticide
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -56,12 +57,14 @@ class FarmingCycleReportSourceLoaderTest {
             .isEqualTo("G")
         assertThat(records.single { it.workType == WorkType.WATERING }.watering!!.amount)
             .isEqualTo(CategoryRef("NORMAL", "보통"))
-        assertThat(records.single { it.workType == WorkType.FERTILIZING }
-            .fertilizing!!.materialCategory.code)
-            .isEqualTo("COMPOUND_FERTILIZER")
-        assertThat(records.single { it.workType == WorkType.FERTILIZING }
-            .fertilizing!!.amountKg)
-            .isEqualByComparingTo("3.0000")
+        val fertilizing = records.single { it.workType == WorkType.FERTILIZING }.fertilizing!!
+        assertThat(fertilizing.materialName).isEqualTo("유기질비료")
+        assertThat(fertilizing.amount).isEqualByComparingTo("250")
+        assertThat(fertilizing.amountUnit).isEqualTo("ML")
+        assertThat(fertilizing.amountKg).isNull()
+        val pestControl = records.single { it.workType == WorkType.PEST_CONTROL }.pestControl!!
+        assertThat(pestControl.pesticideName).isEqualTo("가가방")
+        assertThat(pestControl.pestName).isEqualTo("진딧물")
         assertThat(records.single { it.workType == WorkType.PEST_CONTROL }
             .pestControl!!.pesticideAmountUnit)
             .isEqualTo("ML")
@@ -69,15 +72,39 @@ class FarmingCycleReportSourceLoaderTest {
             .pestControl!!.totalSprayAmountLiters)
             .isEqualByComparingTo("10.0000")
         assertThat(records.single { it.workType == WorkType.WEEDING }.weeding!!.method)
-            .isEqualTo(CategoryRef("HAND", "손제초"))
+            .isEqualTo(CategoryRef("HAND", "손으로 뽑기"))
         assertThat(records.single { it.workType == WorkType.HARVEST }.harvest!!.amountKg)
             .isNull()
         assertThat(records.single { it.workType == WorkType.HARVEST }.harvest!!.growthPeriodMonths)
             .isEqualTo(24)
-        assertThat(records.single { it.workType == WorkType.HARVEST }.harvest!!.isFinalHarvest)
+        assertThat(records.single { it.workType == WorkType.HARVEST }.harvest!!.isLastHarvest)
             .isTrue()
         assertThat(records.single { it.workType == WorkType.PRUNING }.planting).isNull()
         assertThat(records.single { it.workType == WorkType.ETC }.hasPhoto).isTrue()
+    }
+
+    @Test
+    fun `loader preserves sub gram precision before report aggregation`() {
+        val fertilizing = record("00000000-0000-0000-0000-000000000209", WorkType.FERTILIZING, hour = 9)
+        val snapshot = emptySnapshot(records = listOf(fertilizing)).copy(
+            fertilizingByRecordId = mapOf(
+                requireNotNull(fertilizing.id) to FertilizingRecord(
+                    record = fertilizing,
+                    materialName = "유기질비료",
+                    amount = BigDecimal("0.01"),
+                    amountUnit = FertilizerAmountUnit.G,
+                    applicationMethod = null,
+                ),
+            ),
+        )
+
+        val source = FarmingCycleReportSourceLoader(FakeSourceRepository(snapshot))
+            .load(scope)
+            .single()
+            .fertilizing!!
+
+        assertThat(source.amount).isEqualByComparingTo("0.0100")
+        assertThat(source.amountKg).isEqualByComparingTo("0.00001")
     }
 
     @Test
@@ -108,9 +135,9 @@ class FarmingCycleReportSourceLoaderTest {
             plantingByRecordId = mapOf(
                 requireNotNull(planting.id) to PlantingRecord(
                     record = planting,
-                    seedAmount = BigDecimal("1.2500"),
-                    seedAmountUnit = SeedAmountUnit.KG,
-                    propagationMethod = PropagationMethod.SEED,
+                    plantingMethod = PlantingMethod.SEED,
+                    seedAmount = BigDecimal("1250.0000"),
+                    seedAmountUnit = SeedAmountUnit.G,
                 )
             ),
             wateringByRecordId = mapOf(
@@ -123,21 +150,28 @@ class FarmingCycleReportSourceLoaderTest {
             fertilizingByRecordId = mapOf(
                 requireNotNull(fertilizing.id) to FertilizingRecord(
                     record = fertilizing,
-                    materialCategory = FertilizerMaterialCategory.COMPOUND_FERTILIZER,
-                    amount = BigDecimal("3.0000"),
-                    amountUnit = FertilizerAmountUnit.KG,
+                    materialName = "유기질비료",
+                    amount = BigDecimal("250.0000"),
+                    amountUnit = FertilizerAmountUnit.ML,
                     applicationMethod = FertilizingMethod.SOIL,
                 )
             ),
             pestControlByRecordId = mapOf(
                 requireNotNull(pestControl.id) to PestControlRecord(
                     record = pestControl,
-                    pesticideCategory = PesticideCategory.FUNGICIDE,
+                    pesticide = Pesticide(
+                        id = uuid("00000000-0000-0000-0000-000000000301"),
+                        itemName = "만코제브 수화제",
+                        brandName = "가가방",
+                    ),
                     pesticideAmount = BigDecimal("30.0000"),
                     pesticideAmountUnit = PesticideAmountUnit.ML,
                     totalSprayAmount = BigDecimal("10.0000"),
                     totalSprayAmountUnit = SprayAmountUnit.L,
-                    pestTarget = "진딧물",
+                    pest = Pest(
+                        id = uuid("00000000-0000-0000-0000-000000000302"),
+                        name = "진딧물",
+                    ),
                 )
             ),
             weedingByRecordId = mapOf(
@@ -154,7 +188,7 @@ class FarmingCycleReportSourceLoaderTest {
                     harvestSource = HarvestSource.CULTIVATED,
                     growthPeriod = 2,
                     growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                    isFinalHarvest = true,
+                    isLastHarvest = true,
                 )
             ),
             mediaRecordIds = setOf(requireNotNull(etc.id)),
@@ -184,7 +218,7 @@ class FarmingCycleReportSourceLoaderTest {
             weatherCondition = "맑음",
             weatherTemperature = 24,
             memo = "memo",
-            entryMode = "MANUAL",
+            entryMode = EntryMode.MANUAL,
         )
 
     private fun uuid(value: String): UUID = UUID.fromString(value)

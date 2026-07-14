@@ -32,7 +32,7 @@ class FarmingCycleReportTest {
         weatherCondition = "맑음",
         weatherTemperature = 24,
         memo = "최종 수확",
-        entryMode = "MANUAL",
+        entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
     )
 
     @Test

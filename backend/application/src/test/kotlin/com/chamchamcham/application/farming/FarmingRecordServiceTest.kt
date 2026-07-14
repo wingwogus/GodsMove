@@ -1,8 +1,10 @@
 package com.chamchamcham.application.farming
 
 import com.chamchamcham.application.common.OpaqueCursorCodec
+import com.chamchamcham.application.coaching.recordfeedback.lifecycle.RecordFeedbackLifecycleService
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.application.report.FarmingCycleReportProjectionService
 import com.chamchamcham.domain.common.BaseTimeEntity
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
@@ -92,6 +94,8 @@ class FarmingRecordServiceTest {
     @Mock private lateinit var pesticideRepository: PesticideRepository
     @Mock private lateinit var pestRepository: PestRepository
     @Mock private lateinit var detailValidator: FarmingRecordDetailValidator
+    @Mock private lateinit var reportProjectionService: FarmingCycleReportProjectionService
+    @Mock private lateinit var recordFeedbackLifecycleService: RecordFeedbackLifecycleService
 
     private lateinit var service: FarmingRecordService
     private lateinit var member: Member
@@ -121,6 +125,8 @@ class FarmingRecordServiceTest {
             pestRepository = pestRepository,
             detailValidator = detailValidator,
             cursorCodec = cursorCodec,
+            reportProjectionService = reportProjectionService,
+            recordFeedbackLifecycleService = recordFeedbackLifecycleService,
         )
         member = Member(id = memberId, email = "$memberId@example.com", passwordHash = null)
         otherMember = Member(id = otherMemberId, email = "$otherMemberId@example.com", passwordHash = null)

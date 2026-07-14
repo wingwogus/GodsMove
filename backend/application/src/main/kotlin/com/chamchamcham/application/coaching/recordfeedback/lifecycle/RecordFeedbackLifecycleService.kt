@@ -17,19 +17,20 @@ class RecordFeedbackLifecycleService(
     @Transactional
     fun enqueue(record: FarmingRecord): RecordFeedback {
         val recordId = requireNotNull(record.id) { "Persisted farming record id is required" }
-        val current = feedbackRepository.findByRecord_IdAndSourceRevision(recordId, record.sourceRevision)
-        if (current != null) {
-            return current
+        val revisionParent = checkNotNull(feedbackRepository.findRecordByIdForFeedbackUpdate(recordId)) {
+            "Farming record not found while allocating feedback revision: $recordId"
         }
+        val previousFeedbacks = feedbackRepository.findAllByRecord_IdOrderBySourceRevisionDesc(recordId)
+        val nextRevision = (previousFeedbacks.firstOrNull()?.sourceRevision ?: 0L) + 1L
 
-        feedbackRepository.findAllByRecord_IdAndStatusIn(recordId, ACTIVE_STATUSES)
+        previousFeedbacks.filter { it.status in ACTIVE_STATUSES }
             .forEach(RecordFeedback::markStale)
 
         val saved = feedbackRepository.save(
             RecordFeedback.pending(
-                member = record.member,
-                record = record,
-                sourceRevision = record.sourceRevision,
+                member = revisionParent.member,
+                record = revisionParent,
+                sourceRevision = nextRevision,
             ),
         )
         publishPreparation(saved)
@@ -38,7 +39,8 @@ class RecordFeedbackLifecycleService(
 
     @Transactional
     fun staleFor(recordId: UUID) {
-        feedbackRepository.findAllByRecord_IdAndStatusIn(recordId, ACTIVE_STATUSES)
+        feedbackRepository.findAllByRecord_IdOrderBySourceRevisionDesc(recordId)
+            .filter { it.status in ACTIVE_STATUSES }
             .forEach(RecordFeedback::markStale)
     }
 

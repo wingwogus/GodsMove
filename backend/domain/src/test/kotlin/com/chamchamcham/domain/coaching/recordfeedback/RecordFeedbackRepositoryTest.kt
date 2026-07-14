@@ -1,17 +1,13 @@
-package com.chamchamcham.domain.coaching.reportfeedback
+package com.chamchamcham.domain.coaching.recordfeedback
 
 import com.chamchamcham.domain.common.BaseTimeEntity
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm
+import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.Member
-import com.chamchamcham.domain.report.CycleReportStatistics
-import com.chamchamcham.domain.report.FarmingCycleReport
-import com.chamchamcham.domain.report.FarmingCycleReportProjection
-import com.chamchamcham.domain.report.FarmingCycleReportStatus
-import com.chamchamcham.domain.report.FarmingCycleStartBasis
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.hibernate.type.descriptor.WrapperOptions
@@ -33,19 +29,19 @@ import java.time.LocalDateTime
 
 @DataJpaTest(
     properties = [
-        "spring.datasource.url=jdbc:h2:mem:report-feedback-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS JSON",
-        "spring.jpa.properties.hibernate.type.json_format_mapper=com.chamchamcham.domain.coaching.reportfeedback.TestReportFeedbackJsonFormatMapper",
+        "spring.datasource.url=jdbc:h2:mem:record-feedback-test;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS JSON",
+        "spring.jpa.properties.hibernate.type.json_format_mapper=com.chamchamcham.domain.coaching.recordfeedback.TestRecordFeedbackJsonFormatMapper",
     ],
 )
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
-class ReportFeedbackRepositoryTest @Autowired constructor(
+class RecordFeedbackRepositoryTest @Autowired constructor(
     private val entityManager: TestEntityManager,
-    private val repository: ReportFeedbackRepository,
+    private val repository: RecordFeedbackRepository,
 ) {
-    private val completedAt = LocalDateTime.of(2026, 7, 1, 9, 0)
+    private val workedAt = LocalDateTime.of(2026, 7, 1, 9, 0)
     private lateinit var member: Member
-    private lateinit var report: FarmingCycleReport
+    private lateinit var record: FarmingRecord
 
     @BeforeEach
     fun setUp() {
@@ -54,82 +50,63 @@ class ReportFeedbackRepositoryTest @Autowired constructor(
         val crop = persist(
             Crop(externalNo = 422, name = "황기", usePartCategory = CropUsePartCategory.ROOT_BARK),
         )
-        val finalHarvest = persist(
+        record = persist(
             FarmingRecord(
                 member = member,
                 farm = farm,
                 crop = crop,
-                workType = WorkType.HARVEST,
-                workedAt = completedAt,
+                workType = WorkType.WATERING,
+                workedAt = workedAt,
                 weatherCondition = "맑음",
                 weatherTemperature = 24,
-                memo = "최종 수확",
-                entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
-            ),
-        )
-        report = persist(
-            FarmingCycleReport.create(
-                member = member,
-                farm = farm,
-                crop = crop,
-                projection = FarmingCycleReportProjection(
-                    status = FarmingCycleReportStatus.COMPLETED,
-                    startsAt = completedAt.minusMonths(6),
-                    endsAt = completedAt,
-                    startBasis = FarmingCycleStartBasis.FIRST_RECORD,
-                    finalHarvestRecord = finalHarvest,
-                    statisticsSchemaVersion = 1,
-                    statistics = CycleReportStatistics.empty(),
-                ),
+                memo = "물을 줬습니다.",
+                entryMode = EntryMode.MANUAL,
             ),
         )
     }
 
     @Test
-    fun `different work types coexist for the same report`() {
-        repository.saveAll(
-            listOf(
-                pendingFeedback(WorkType.WATERING),
-                pendingFeedback(WorkType.HARVEST),
-            ),
-        )
-        repository.flush()
-        entityManager.clear()
-
-        val feedbacks = repository.findAllByReport_IdAndMember_Id(
-            requireNotNull(report.id),
-            requireNotNull(member.id),
-        )
-
-        assertThat(feedbacks.map { it.workType })
-            .containsExactlyInAnyOrder(WorkType.WATERING, WorkType.HARVEST)
-    }
-
-    @Test
-    fun `the same work type cannot be duplicated for one report`() {
-        repository.saveAndFlush(pendingFeedback(WorkType.WATERING))
-        repository.save(pendingFeedback(WorkType.WATERING))
+    fun `the same source revision cannot be duplicated for one record`() {
+        repository.saveAndFlush(pendingFeedback(1))
+        repository.save(pendingFeedback(1))
 
         assertThatThrownBy { repository.flush() }
             .isInstanceOf(DataIntegrityViolationException::class.java)
     }
+
+    @Test
+    fun `feedback rows are locked and returned newest first`() {
+        repository.saveAllAndFlush(listOf(pendingFeedback(1), pendingFeedback(2)))
+        entityManager.clear()
+
+        val feedbacks = repository.findAllByRecord_IdOrderBySourceRevisionDesc(requireNotNull(record.id))
+
+        assertThat(feedbacks.map { it.sourceRevision }).containsExactly(2L, 1L)
+    }
+
+    @Test
+    fun `feedback revision allocation exposes a parent record lock`() {
+        val lockedRecord = repository.findRecordByIdForFeedbackUpdate(requireNotNull(record.id))
+
+        assertThat(lockedRecord?.id).isEqualTo(record.id)
+    }
+
+    private fun pendingFeedback(sourceRevision: Long): RecordFeedback =
+        RecordFeedback.pending(member, record, sourceRevision).also(::setTimestamps)
 
     private fun <T : BaseTimeEntity> persist(entity: T): T {
         setTimestamps(entity)
         return entityManager.persistAndFlush(entity)
     }
 
-    private fun pendingFeedback(workType: WorkType): ReportFeedback =
-        ReportFeedback.pending(member, report, workType).also(::setTimestamps)
-
     private fun setTimestamps(entity: BaseTimeEntity) {
         BaseTimeEntity::class.java.getDeclaredField("createdAt").apply {
             isAccessible = true
-            set(entity, completedAt)
+            set(entity, workedAt)
         }
         BaseTimeEntity::class.java.getDeclaredField("updatedAt").apply {
             isAccessible = true
-            set(entity, completedAt)
+            set(entity, workedAt)
         }
     }
 }
@@ -138,16 +115,15 @@ class ReportFeedbackRepositoryTest @Autowired constructor(
 @EnableAutoConfiguration
 @EntityScan(basePackages = ["com.chamchamcham.domain"])
 @EnableJpaRepositories(basePackages = ["com.chamchamcham.domain"])
-private class ReportFeedbackRepositoryTestApplication
+private class RecordFeedbackRepositoryTestApplication
 
-class TestReportFeedbackJsonFormatMapper : FormatMapper {
+class TestRecordFeedbackJsonFormatMapper : FormatMapper {
     @Suppress("UNCHECKED_CAST")
     override fun <T : Any?> fromString(
         charSequence: CharSequence,
         javaType: JavaType<T>,
         wrapperOptions: WrapperOptions,
     ): T = when {
-        javaType.javaTypeClass == CycleReportStatistics::class.java -> CycleReportStatistics.empty() as T
         Map::class.java.isAssignableFrom(javaType.javaTypeClass) -> emptyMap<String, Any?>() as T
         List::class.java.isAssignableFrom(javaType.javaTypeClass) -> emptyList<Any?>() as T
         else -> javaType.fromString(charSequence)
@@ -158,7 +134,7 @@ class TestReportFeedbackJsonFormatMapper : FormatMapper {
         javaType: JavaType<T>,
         wrapperOptions: WrapperOptions,
     ): String = when (value) {
-        is CycleReportStatistics, is Map<*, *> -> "{}"
+        is Map<*, *> -> "{}"
         is List<*> -> "[]"
         else -> javaType.toString(value)
     }

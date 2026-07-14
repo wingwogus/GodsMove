@@ -6,10 +6,10 @@ import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farming.FarmingRecord
+import com.chamchamcham.domain.farming.FarmingRecordMedia
 import com.chamchamcham.domain.farming.FarmingRecordMediaRepository
 import com.chamchamcham.domain.farming.FarmingRecordRepository
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
-import com.chamchamcham.domain.farming.FertilizerMaterialCategory
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.FertilizingRecord
 import com.chamchamcham.domain.farming.FertilizingRecordRepository
@@ -22,7 +22,7 @@ import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PestControlRecord
 import com.chamchamcham.domain.farming.PestControlRecordRepository
 import com.chamchamcham.domain.farming.PesticideAmountUnit
-import com.chamchamcham.domain.farming.PesticideCategory
+import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PlantingRecord
 import com.chamchamcham.domain.farming.PlantingRecordRepository
 import com.chamchamcham.domain.farming.PropagationMethod
@@ -37,6 +37,8 @@ import com.chamchamcham.domain.farming.WeedingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.ManagementType
 import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.pesticide.Pest
+import com.chamchamcham.domain.pesticide.Pesticide
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
@@ -44,7 +46,7 @@ import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
-import org.mockito.Mockito.never
+import org.mockito.Mockito.mock
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -93,31 +95,31 @@ class RecordFeedbackContextAssemblerTest {
     }
 
     @Test
-    fun `planting maps actual seed seedling and propagation fields`() {
+    fun `planting maps planting method and optional propagation fields`() {
         stubOwnedRecord(WorkType.PLANTING)
         `when`(plantingRecordRepository.findByRecord_Id(recordId)).thenReturn(
             PlantingRecord(
                 record = record,
-                seedAmount = BigDecimal("1.2500"),
-                seedAmountUnit = SeedAmountUnit.KG,
+                plantingMethod = PlantingMethod.SEEDLING,
                 seedlingCount = 18,
                 seedlingUnit = SeedlingUnit.JU,
-                propagationMethod = PropagationMethod.SEED,
+                propagationMethod = PropagationMethod.CUTTING,
             )
         )
         stubSharedContext()
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertBaseContext(context)
         assertThat(context.record.workType).isEqualTo(WorkType.PLANTING)
         assertThat(context.record.detail).isEqualTo(
             PlantingFeedbackDetail(
-                seedAmount = BigDecimal("1.2500"),
-                seedAmountUnit = SeedAmountUnit.KG,
+                plantingMethod = PlantingMethod.SEEDLING,
+                seedAmount = null,
+                seedAmountUnit = null,
                 seedlingCount = 18,
                 seedlingUnit = SeedlingUnit.JU,
-                propagationMethod = PropagationMethod.SEED,
+                propagationMethod = PropagationMethod.CUTTING,
             )
         )
         verify(plantingRecordRepository).findByRecord_Id(recordId)
@@ -136,7 +138,7 @@ class RecordFeedbackContextAssemblerTest {
         )
         stubSharedContext()
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.record.workType).isEqualTo(WorkType.WATERING)
         assertThat(context.record.detail).isEqualTo(
@@ -152,7 +154,7 @@ class RecordFeedbackContextAssemblerTest {
         `when`(wateringRecordRepository.findByRecord_Id(recordId)).thenReturn(null)
         stubSharedContext()
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.record.detail).isEqualTo(WateringFeedbackDetail(null, null))
         verify(wateringRecordRepository).findByRecord_Id(recordId)
@@ -160,27 +162,27 @@ class RecordFeedbackContextAssemblerTest {
     }
 
     @Test
-    fun `fertilizing maps actual category amount unit and method without statistics`() {
+    fun `fertilizing maps actual material amount unit and method without statistics`() {
         stubOwnedRecord(WorkType.FERTILIZING)
         `when`(fertilizingRecordRepository.findByRecord_Id(recordId)).thenReturn(
             FertilizingRecord(
                 record = record,
-                materialCategory = FertilizerMaterialCategory.ORGANIC_FERTILIZER,
-                amount = BigDecimal("2.5000"),
-                amountUnit = FertilizerAmountUnit.KG,
+                materialName = "유기질비료",
+                amount = BigDecimal("2500.0000"),
+                amountUnit = FertilizerAmountUnit.G,
                 applicationMethod = FertilizingMethod.SOIL,
             )
         )
         stubSharedContext(photoCount = 2)
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.record.workType).isEqualTo(WorkType.FERTILIZING)
         assertThat(context.record.detail).isEqualTo(
             FertilizingFeedbackDetail(
-                FertilizerMaterialCategory.ORGANIC_FERTILIZER,
-                BigDecimal("2.5000"),
-                FertilizerAmountUnit.KG,
+                "유기질비료",
+                BigDecimal("2500.0000"),
+                FertilizerAmountUnit.G,
                 FertilizingMethod.SOIL,
             )
         )
@@ -188,32 +190,39 @@ class RecordFeedbackContextAssemblerTest {
         assertThat(RecordFeedbackContext::class.java.declaredFields.map { it.name })
             .doesNotContain("recentRecords", "workTypeStats", "cropCycle")
         verify(fertilizingRecordRepository).findByRecord_Id(recordId)
-        verify(mediaRepository, never()).findByRecord_Id(recordId)
+        verify(mediaRepository).findByRecord_Id(recordId)
         verifyOnlyFertilizingRepositoryUsed()
     }
 
     @Test
-    fun `pest control maps category amounts spray amount and target`() {
+    fun `pest control maps pesticide amounts spray amount and pest`() {
         stubOwnedRecord(WorkType.PEST_CONTROL)
         `when`(pestControlRecordRepository.findByRecord_Id(recordId)).thenReturn(
             PestControlRecord(
                 record = record,
-                pesticideCategory = PesticideCategory.FUNGICIDE,
+                pesticide = Pesticide(
+                    id = UUID.fromString("00000000-0000-0000-0000-000000000010"),
+                    itemName = "만코제브 수화제",
+                    brandName = "가가방",
+                ),
                 pesticideAmount = BigDecimal("120.0000"),
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal("20.0000"),
                 totalSprayAmountUnit = SprayAmountUnit.L,
-                pestTarget = "점무늬병",
+                pest = Pest(
+                    id = UUID.fromString("00000000-0000-0000-0000-000000000011"),
+                    name = "점무늬병",
+                ),
             )
         )
         stubSharedContext()
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.record.workType).isEqualTo(WorkType.PEST_CONTROL)
         assertThat(context.record.detail).isEqualTo(
             PestControlFeedbackDetail(
-                PesticideCategory.FUNGICIDE,
+                "가가방",
                 BigDecimal("120.0000"),
                 PesticideAmountUnit.ML,
                 BigDecimal("20.0000"),
@@ -233,7 +242,7 @@ class RecordFeedbackContextAssemblerTest {
         )
         stubSharedContext()
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.record.workType).isEqualTo(WorkType.WEEDING)
         assertThat(context.record.detail).isEqualTo(WeedingFeedbackDetail(WeedingMethod.HAND))
@@ -247,7 +256,7 @@ class RecordFeedbackContextAssemblerTest {
         `when`(weedingRecordRepository.findByRecord_Id(recordId)).thenReturn(null)
         stubSharedContext()
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.record.detail).isEqualTo(WeedingFeedbackDetail(null))
         verify(weedingRecordRepository).findByRecord_Id(recordId)
@@ -259,7 +268,7 @@ class RecordFeedbackContextAssemblerTest {
         stubOwnedRecord(WorkType.PRUNING)
         stubSharedContext()
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.record.workType).isEqualTo(WorkType.PRUNING)
         assertThat(context.record.detail).isEqualTo(CommonFeedbackDetail)
@@ -277,23 +286,23 @@ class RecordFeedbackContextAssemblerTest {
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 18,
                 growthPeriodUnit = GrowthPeriodUnit.MONTH,
-                isFinalHarvest = true,
+                isLastHarvest = true,
             )
         )
         stubSharedContext()
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.record.workType).isEqualTo(WorkType.HARVEST)
         assertThat(context.record.detail).isEqualTo(
             HarvestFeedbackDetail(
-                harvestAmountKg = BigDecimal("4.2000"),
+                harvestAmount = BigDecimal("4.2000"),
                 amountUnknown = false,
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 18,
                 growthPeriodUnit = GrowthPeriodUnit.MONTH,
-                isFinalHarvest = true,
+                isLastHarvest = true,
             )
         )
         verify(harvestRecordRepository).findByRecord_Id(recordId)
@@ -307,26 +316,26 @@ class RecordFeedbackContextAssemblerTest {
             HarvestRecord(
                 record = record,
                 harvestAmount = null,
-                medicinalPart = CropUsePartCategory.ROOT_BARK,
+                medicinalPart = null,
                 harvestSource = HarvestSource.FORAGED,
-                growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = false,
+                growthPeriod = null,
+                growthPeriodUnit = null,
+                isLastHarvest = false,
             )
         )
         stubSharedContext()
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.record.detail).isEqualTo(
             HarvestFeedbackDetail(
-                harvestAmountKg = null,
+                harvestAmount = null,
                 amountUnknown = true,
-                medicinalPart = CropUsePartCategory.ROOT_BARK,
+                medicinalPart = null,
                 harvestSource = HarvestSource.FORAGED,
-                growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = false,
+                growthPeriod = null,
+                growthPeriodUnit = null,
+                isLastHarvest = false,
             )
         )
         verifyOnlyHarvestRepositoryUsed()
@@ -337,7 +346,7 @@ class RecordFeedbackContextAssemblerTest {
         stubOwnedRecord(WorkType.ETC)
         stubSharedContext()
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.record.workType).isEqualTo(WorkType.ETC)
         assertThat(context.record.memo).isEqualTo("오전 작업 기록")
@@ -347,9 +356,9 @@ class RecordFeedbackContextAssemblerTest {
 
     @Test
     fun `another member record returns farming record not found`() {
-        `when`(recordRepository.findContextSourceByIdAndMemberId(recordId, memberId)).thenReturn(null)
+        `when`(recordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(null)
 
-        assertThatThrownBy { assembler.assemble(memberId, recordId) }
+        assertThatThrownBy { assembler.assemble(memberId, recordId, SOURCE_REVISION) }
             .isInstanceOfSatisfying(BusinessException::class.java) {
                 assertThat(it.errorCode).isEqualTo(ErrorCode.FARMING_RECORD_NOT_FOUND)
             }
@@ -359,9 +368,10 @@ class RecordFeedbackContextAssemblerTest {
 
     @Test
     fun `soft deleted record returns farming record not found`() {
-        `when`(recordRepository.findContextSourceByIdAndMemberId(recordId, memberId)).thenReturn(null)
+        stubOwnedRecord(WorkType.PRUNING)
+        record.softDelete()
 
-        assertThatThrownBy { assembler.assemble(memberId, recordId) }
+        assertThatThrownBy { assembler.assemble(memberId, recordId, SOURCE_REVISION) }
             .isInstanceOfSatisfying(BusinessException::class.java) {
                 assertThat(it.errorCode).isEqualTo(ErrorCode.FARMING_RECORD_NOT_FOUND)
             }
@@ -372,7 +382,7 @@ class RecordFeedbackContextAssemblerTest {
         stubOwnedRecord(WorkType.FERTILIZING)
         `when`(fertilizingRecordRepository.findByRecord_Id(recordId)).thenReturn(null)
 
-        assertThatThrownBy { assembler.assemble(memberId, recordId) }
+        assertThatThrownBy { assembler.assemble(memberId, recordId, SOURCE_REVISION) }
             .isInstanceOfSatisfying(BusinessException::class.java) {
                 assertThat(it.errorCode).isEqualTo(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
             }
@@ -385,7 +395,7 @@ class RecordFeedbackContextAssemblerTest {
         stubOwnedRecord(WorkType.PLANTING)
         `when`(plantingRecordRepository.findByRecord_Id(recordId)).thenReturn(null)
 
-        assertThatThrownBy { assembler.assemble(memberId, recordId) }
+        assertThatThrownBy { assembler.assemble(memberId, recordId, SOURCE_REVISION) }
             .isInstanceOfSatisfying(BusinessException::class.java) {
                 assertThat(it.errorCode).isEqualTo(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
             }
@@ -398,7 +408,7 @@ class RecordFeedbackContextAssemblerTest {
         stubOwnedRecord(WorkType.PEST_CONTROL)
         `when`(pestControlRecordRepository.findByRecord_Id(recordId)).thenReturn(null)
 
-        assertThatThrownBy { assembler.assemble(memberId, recordId) }
+        assertThatThrownBy { assembler.assemble(memberId, recordId, SOURCE_REVISION) }
             .isInstanceOfSatisfying(BusinessException::class.java) {
                 assertThat(it.errorCode).isEqualTo(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
             }
@@ -411,7 +421,7 @@ class RecordFeedbackContextAssemblerTest {
         stubOwnedRecord(WorkType.HARVEST)
         `when`(harvestRecordRepository.findByRecord_Id(recordId)).thenReturn(null)
 
-        assertThatThrownBy { assembler.assemble(memberId, recordId) }
+        assertThatThrownBy { assembler.assemble(memberId, recordId, SOURCE_REVISION) }
             .isInstanceOfSatisfying(BusinessException::class.java) {
                 assertThat(it.errorCode).isEqualTo(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
             }
@@ -422,9 +432,9 @@ class RecordFeedbackContextAssemblerTest {
     @Test
     fun `no coordinate weather produces warning without fetching provider`() {
         stubOwnedRecord(WorkType.PRUNING, latitude = null, longitude = null)
-        `when`(mediaRepository.countByRecord_Id(recordId)).thenReturn(0)
+        `when`(mediaRepository.findByRecord_Id(recordId)).thenReturn(emptyList())
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.weather).isNull()
         assertThat(context.warnings).containsExactly("weather_location_unavailable")
@@ -434,11 +444,11 @@ class RecordFeedbackContextAssemblerTest {
     @Test
     fun `provider business failure produces reduced context warning`() {
         stubOwnedRecord(WorkType.PRUNING)
-        `when`(mediaRepository.countByRecord_Id(recordId)).thenReturn(0)
+        `when`(mediaRepository.findByRecord_Id(recordId)).thenReturn(emptyList())
         `when`(weatherPort.fetch(37.1, 128.2, 7))
             .thenThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.weather).isNull()
         assertThat(context.warnings).containsExactly("weather_provider_unavailable")
@@ -447,10 +457,10 @@ class RecordFeedbackContextAssemblerTest {
     @Test
     fun `provider runtime failure produces reduced context warning`() {
         stubOwnedRecord(WorkType.PRUNING)
-        `when`(mediaRepository.countByRecord_Id(recordId)).thenReturn(0)
+        `when`(mediaRepository.findByRecord_Id(recordId)).thenReturn(emptyList())
         `when`(weatherPort.fetch(37.1, 128.2, 7)).thenThrow(IllegalStateException("provider down"))
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.weather).isNull()
         assertThat(context.warnings).containsExactly("weather_provider_unavailable")
@@ -462,10 +472,10 @@ class RecordFeedbackContextAssemblerTest {
             workType = WorkType.PRUNING,
             workedAt = LocalDateTime.of(2026, 7, 1, 9, 0),
         )
-        `when`(mediaRepository.countByRecord_Id(recordId)).thenReturn(0)
+        `when`(mediaRepository.findByRecord_Id(recordId)).thenReturn(emptyList())
         `when`(weatherPort.fetch(37.1, 128.2, 7)).thenReturn(liveWeather())
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.weather).isEqualTo(liveWeather())
         assertThat(context.warnings).isEmpty()
@@ -478,9 +488,9 @@ class RecordFeedbackContextAssemblerTest {
             workType = WorkType.PRUNING,
             workedAt = LocalDateTime.of(2026, 6, 30, 9, 0),
         )
-        `when`(mediaRepository.countByRecord_Id(recordId)).thenReturn(0)
+        `when`(mediaRepository.findByRecord_Id(recordId)).thenReturn(emptyList())
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.weather).isNull()
         assertThat(context.warnings).containsExactly("weather_skipped_for_historical_record")
@@ -493,9 +503,9 @@ class RecordFeedbackContextAssemblerTest {
             workType = WorkType.PRUNING,
             workedAt = LocalDateTime.of(2026, 7, 9, 9, 0),
         )
-        `when`(mediaRepository.countByRecord_Id(recordId)).thenReturn(0)
+        `when`(mediaRepository.findByRecord_Id(recordId)).thenReturn(emptyList())
 
-        val context = assembler.assemble(memberId, recordId)
+        val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
         assertThat(context.weather).isNull()
         assertThat(context.warnings).containsExactly("weather_skipped_for_historical_record")
@@ -539,15 +549,15 @@ class RecordFeedbackContextAssemblerTest {
             weatherCondition = "맑음",
             weatherTemperature = 27,
             memo = "오전 작업 기록",
-            entryMode = "MANUAL",
-            sourceRevision = 4,
+            entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
             isDeleted = false,
         )
-        `when`(recordRepository.findContextSourceByIdAndMemberId(recordId, memberId)).thenReturn(record)
+        `when`(recordRepository.findByIdAndMember_Id(recordId, memberId)).thenReturn(record)
     }
 
-    private fun stubSharedContext(photoCount: Long = 0) {
-        `when`(mediaRepository.countByRecord_Id(recordId)).thenReturn(photoCount)
+    private fun stubSharedContext(photoCount: Int = 0) {
+        `when`(mediaRepository.findByRecord_Id(recordId))
+            .thenReturn(List(photoCount) { mock(FarmingRecordMedia::class.java) })
         `when`(weatherPort.fetch(37.1, 128.2, 7)).thenReturn(liveWeather())
     }
 
@@ -565,7 +575,7 @@ class RecordFeedbackContextAssemblerTest {
         assertThat(context.crop.name).isEqualTo("참당귀")
         assertThat(context.crop.usePartCategory).isEqualTo(CropUsePartCategory.ROOT_BARK)
         assertThat(context.record.recordId).isEqualTo(recordId)
-        assertThat(context.record.sourceRevision).isEqualTo(4)
+        assertThat(context.record.sourceRevision).isEqualTo(SOURCE_REVISION)
         assertThat(context.record.workedAt).isEqualTo(LocalDateTime.of(2026, 7, 1, 8, 30))
         assertThat(context.record.recordedWeatherCondition).isEqualTo("맑음")
         assertThat(context.record.recordedTemperatureC).isEqualTo(27)
@@ -596,6 +606,10 @@ class RecordFeedbackContextAssemblerTest {
             ),
             source = "fake",
         )
+    }
+
+    private companion object {
+        const val SOURCE_REVISION = 4L
     }
 
     private fun verifyOnlyPlantingRepositoryUsed() {

@@ -149,6 +149,6 @@ class CoachingContextProviderTest {
         weatherCondition = "맑음",
         weatherTemperature = 24,
         memo = "점적 관수를 진행했다.",
-        entryMode = "MANUAL"
+        entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL
     )
 }

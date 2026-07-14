@@ -17,12 +17,21 @@ import jakarta.persistence.ManyToOne
 import jakarta.persistence.OneToMany
 import jakarta.persistence.OrderBy
 import jakarta.persistence.Table
+import jakarta.persistence.UniqueConstraint
 import org.hibernate.annotations.JdbcTypeCode
 import org.hibernate.type.SqlTypes
 import java.util.UUID
 
 @Entity
-@Table(name = "record_feedback")
+@Table(
+    name = "record_feedback",
+    uniqueConstraints = [
+        UniqueConstraint(
+            name = "uk_record_feedback_record_revision",
+            columnNames = ["record_id", "source_revision"],
+        ),
+    ],
+)
 class RecordFeedback(
     @Id
     @GeneratedValue(strategy = GenerationType.UUID)

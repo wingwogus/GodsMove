@@ -40,7 +40,7 @@ class RecordFeedbackQueryServiceTest {
     private val record = FarmingRecord(
         id = UUID.randomUUID(), member = member, farm = farm, crop = crop, workType = WorkType.WATERING,
         workedAt = LocalDateTime.of(2026, 7, 11, 9, 0), weatherCondition = "맑음", weatherTemperature = 25,
-        memo = "관수 기록", entryMode = "MANUAL", sourceRevision = 3,
+        memo = "관수 기록", entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
     )
     private lateinit var service: RecordFeedbackQueryService
 
@@ -53,7 +53,7 @@ class RecordFeedbackQueryServiceTest {
     fun `ready feedback maps stored columns and action rows to response content`() {
         stubOwnedRecord()
         val feedback = readyFeedback()
-        `when`(feedbackRepository.findByRecord_IdAndSourceRevision(record.id!!, record.sourceRevision)).thenReturn(feedback)
+        `when`(feedbackRepository.findTopByRecord_IdOrderBySourceRevisionDesc(record.id!!)).thenReturn(feedback)
 
         val result = service.get(member.id!!, record.id!!)
 
@@ -70,11 +70,10 @@ class RecordFeedbackQueryServiceTest {
     }
 
     @Test
-    fun `get falls back to stale feedback when current revision is absent`() {
+    fun `get returns the latest stale feedback`() {
         stubOwnedRecord()
         val stale = feedback(status = RecordFeedbackStatus.STALE, sourceRevision = 2)
-        `when`(feedbackRepository.findByRecord_IdAndSourceRevision(record.id!!, record.sourceRevision)).thenReturn(null)
-        `when`(feedbackRepository.findTopByRecord_IdAndStatusOrderByUpdatedAtDesc(record.id!!, RecordFeedbackStatus.STALE)).thenReturn(stale)
+        `when`(feedbackRepository.findTopByRecord_IdOrderBySourceRevisionDesc(record.id!!)).thenReturn(stale)
 
         val result = service.get(member.id!!, record.id!!)
 
@@ -87,7 +86,7 @@ class RecordFeedbackQueryServiceTest {
         stubOwnedRecord()
         val failed = feedback(status = RecordFeedbackStatus.FAILED, failureCode = "CONTEXT_ASSEMBLY_FAILED")
         val retried = feedback()
-        `when`(feedbackRepository.findByRecord_IdAndSourceRevision(record.id!!, record.sourceRevision)).thenReturn(failed)
+        `when`(feedbackRepository.findTopByRecord_IdOrderBySourceRevisionDesc(record.id!!)).thenReturn(failed)
         `when`(lifecycleService.retry(failed)).thenReturn(retried)
 
         val result = service.regenerate(member.id!!, record.id!!)
@@ -99,9 +98,20 @@ class RecordFeedbackQueryServiceTest {
     @Test
     fun `get rejects a record not owned by the member`() {
         val otherMemberId = UUID.randomUUID()
-        `when`(farmingRecordRepository.findContextSourceByIdAndMemberId(record.id!!, otherMemberId)).thenReturn(null)
+        `when`(farmingRecordRepository.findByIdAndMember_Id(record.id!!, otherMemberId)).thenReturn(null)
 
         assertThatThrownBy { service.get(otherMemberId, record.id!!) }
+            .isInstanceOf(BusinessException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.FARMING_RECORD_NOT_FOUND)
+    }
+
+    @Test
+    fun `get rejects a soft deleted record`() {
+        record.softDelete()
+        `when`(farmingRecordRepository.findByIdAndMember_Id(record.id!!, member.id!!)).thenReturn(record)
+
+        assertThatThrownBy { service.get(member.id!!, record.id!!) }
             .isInstanceOf(BusinessException::class.java)
             .extracting("errorCode")
             .isEqualTo(ErrorCode.FARMING_RECORD_NOT_FOUND)
@@ -121,7 +131,7 @@ class RecordFeedbackQueryServiceTest {
 
     private fun feedback(
         status: RecordFeedbackStatus = RecordFeedbackStatus.PENDING,
-        sourceRevision: Long = record.sourceRevision,
+        sourceRevision: Long = 3,
         failureCode: String? = null,
     ): RecordFeedback {
         val feedback = RecordFeedback(id = UUID.randomUUID(), member = member, record = record, status = RecordFeedbackStatus.PENDING, sourceRevision = sourceRevision)
@@ -136,6 +146,6 @@ class RecordFeedbackQueryServiceTest {
     }
 
     private fun stubOwnedRecord() {
-        `when`(farmingRecordRepository.findContextSourceByIdAndMemberId(record.id!!, member.id!!)).thenReturn(record)
+        `when`(farmingRecordRepository.findByIdAndMember_Id(record.id!!, member.id!!)).thenReturn(record)
     }
 }

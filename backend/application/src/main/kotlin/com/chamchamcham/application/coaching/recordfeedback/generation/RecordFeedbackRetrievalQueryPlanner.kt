@@ -122,7 +122,7 @@ class RecordFeedbackRetrievalQueryPlanner {
         if (context.record.workType != WorkType.PEST_CONTROL) {
             return null
         }
-        val target = (context.record.detail as? PestControlFeedbackDetail)?.pestTarget
+        val target = (context.record.detail as? PestControlFeedbackDetail)?.pestName
             ?.trim()
             ?.takeIf { it.isNotBlank() }
             ?: return null
@@ -136,8 +136,12 @@ class RecordFeedbackRetrievalQueryPlanner {
         if (context.record.workType != WorkType.HARVEST) {
             return null
         }
+        val medicinalPart = (context.record.detail as? HarvestFeedbackDetail)
+            ?.medicinalPart
+            ?.recordFeedbackLabel()
+        val cropName = context.crop.name.trim()
         return RecordFeedbackRetrievalQuery(
-            query = "약용작물 ${context.crop.usePartCategory.recordFeedbackLabel()} 수확 적기 ${context.crop.name.trim()}",
+            query = listOfNotNull("약용작물", medicinalPart, "수확 적기", cropName).joinToString(" "),
             reason = "harvest_use_part"
         )
     }

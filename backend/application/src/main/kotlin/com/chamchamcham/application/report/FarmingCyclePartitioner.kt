@@ -18,7 +18,7 @@ class FarmingCyclePartitioner {
 
         sorted.forEach { record ->
             current += record
-            if (record.harvest?.isFinalHarvest == true) {
+            if (record.harvest?.isLastHarvest == true) {
                 result += CycleSlice(
                     status = FarmingCycleReportStatus.COMPLETED,
                     startBasis = if (hasPreviousFinalHarvest) {

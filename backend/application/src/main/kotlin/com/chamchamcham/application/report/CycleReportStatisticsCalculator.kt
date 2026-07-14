@@ -54,7 +54,7 @@ class CycleReportStatisticsCalculator {
             weatherDistribution = common.weatherDistribution,
             averageTemperatureC = common.averageTemperatureC,
             propagationMethods = details
-                .groupBy { it.propagationMethod }
+                .groupBy { it.propagationMethod ?: it.plantingMethod }
                 .map { (method, items) ->
                     val knownQuantities = items.mapNotNull { it.quantity }
                     PropagationStatistics(
@@ -63,7 +63,7 @@ class CycleReportStatisticsCalculator {
                         recordCount = items.size,
                         recordRatePct = requireNotNull(StatisticsMath.percentage(items.size, records.size)),
                         totalQuantity = knownQuantities.sumOrNullScale4(),
-                        quantityUnit = if (method.code == "SEED") "G" else "JU",
+                        quantityUnit = items.mapNotNull { it.quantityUnit }.distinct().singleOrNull(),
                         quantityCoverage = Coverage(knownQuantities.size, items.size),
                     )
                 }
@@ -106,6 +106,10 @@ class CycleReportStatisticsCalculator {
             totalAmountKg = totalAmount,
             averageAmountKg = StatisticsMath.average(knownAmounts),
             amountCoverage = Coverage(knownAmounts.size, records.size),
+            materialDistribution = distribution(
+                details.map { CategoryRef(it.materialName, it.materialName) },
+                records.size,
+            ),
             materialCategories = calculateMaterialCategories(details, records.size, totalAmount),
             methodDistribution = distribution(records.map { it.fertilizing?.applicationMethod }, records.size),
             categoryMethods = calculateCategoryMethods(details),
@@ -126,7 +130,10 @@ class CycleReportStatisticsCalculator {
             photoAttachmentRatePct = common.photoAttachmentRatePct,
             weatherDistribution = common.weatherDistribution,
             averageTemperatureC = common.averageTemperatureC,
-            categoryDistribution = distribution(details.map { it.pesticideCategory }, records.size),
+            categoryDistribution = distribution(
+                details.map { CategoryRef(it.pesticideId.toString(), it.pesticideName) },
+                records.size,
+            ),
             pesticideAmounts = details
                 .groupBy { it.pesticideAmountUnit }
                 .map { (unit, items) ->
@@ -139,7 +146,7 @@ class CycleReportStatisticsCalculator {
                 }
                 .sortedBy { it.unit },
             categoryAmounts = details
-                .groupBy { it.pesticideCategory to it.pesticideAmountUnit }
+                .groupBy { CategoryRef(it.pesticideId.toString(), it.pesticideName) to it.pesticideAmountUnit }
                 .map { (key, items) ->
                     val (category, unit) = key
                     val knownAmounts = items.mapNotNull { it.pesticideAmount }
@@ -156,7 +163,7 @@ class CycleReportStatisticsCalculator {
             totalSprayAmountLiters = knownSprayAmounts.sumOrNullScale4(),
             sprayAmountCoverage = Coverage(knownSprayAmounts.size, records.size),
             targets = details
-                .mapNotNull { it.pestTarget?.trim()?.takeIf(String::isNotEmpty) }
+                .mapNotNull { it.pestName?.trim()?.takeIf(String::isNotEmpty) }
                 .groupingBy { it }
                 .eachCount()
                 .map { (target, count) -> TargetCount(target, count) }
@@ -205,10 +212,10 @@ class CycleReportStatisticsCalculator {
             finalGrowthPeriodMonths = records
                 .sortedWith(compareBy(CycleReportSourceRecord::workedAt, CycleReportSourceRecord::id))
                 .mapNotNull { it.harvest }
-                .lastOrNull { it.isFinalHarvest }
+                .lastOrNull { it.isLastHarvest }
                 ?.growthPeriodMonths,
             growthPeriodRangeMonths = details
-                .map { it.growthPeriodMonths }
+                .mapNotNull { it.growthPeriodMonths }
                 .takeIf { it.isNotEmpty() }
                 ?.let { GrowthPeriodRange(requireNotNull(it.minOrNull()), requireNotNull(it.maxOrNull())) },
         )
@@ -236,12 +243,13 @@ class CycleReportStatisticsCalculator {
     ): List<MaterialCategoryStatistics> {
         if (totalAmount == null || totalAmount.compareTo(BigDecimal.ZERO) == 0) return emptyList()
         return details
-            .groupBy { it.materialCategory }
-            .map { (category, items) ->
+            .filter { it.amountKg != null }
+            .groupBy { it.materialName }
+            .map { (materialName, items) ->
                 val amount = items.mapNotNull { it.amountKg }.sumScale4()
                 MaterialCategoryStatistics(
-                    code = category.code,
-                    label = category.label,
+                    code = materialName,
+                    label = materialName,
                     recordCount = items.size,
                     recordRatePct = requireNotNull(StatisticsMath.percentage(items.size, recordCount)),
                     amountKg = amount,
@@ -255,21 +263,21 @@ class CycleReportStatisticsCalculator {
         details: List<FertilizingReportSource>,
     ): List<CategoryMethodStatistics> =
         details
-            .groupBy { it.materialCategory }
-            .toSortedMap(compareBy<CategoryRef> { it.code }.thenBy { it.label })
-            .flatMap { (category, categoryItems) ->
-                categoryItems
+            .groupBy { it.materialName }
+            .toSortedMap()
+            .flatMap { (materialName, materialItems) ->
+                materialItems
                     .map { it.applicationMethod ?: CategoryRef("MISSING", "미입력") }
                     .groupingBy { it }
                     .eachCount()
                     .map { (method, count) ->
                         CategoryMethodStatistics(
-                            categoryCode = category.code,
-                            categoryLabel = category.label,
+                            categoryCode = materialName,
+                            categoryLabel = materialName,
                             methodCode = method.code,
                             methodLabel = method.label,
                             recordCount = count,
-                            recordRatePct = requireNotNull(StatisticsMath.percentage(count, categoryItems.size)),
+                            recordRatePct = requireNotNull(StatisticsMath.percentage(count, materialItems.size)),
                         )
                     }
                     .sortedBy { it.methodCode }
@@ -281,7 +289,8 @@ class CycleReportStatisticsCalculator {
         totalAmount: BigDecimal?,
     ): List<HarvestPartStatistics> =
         details
-            .groupBy { it.medicinalPart }
+            .mapNotNull { detail -> detail.medicinalPart?.let { it to detail } }
+            .groupBy(keySelector = { it.first }, valueTransform = { it.second })
             .map { (part, items) ->
                 val knownAmounts = items.mapNotNull { it.amountKg }
                 val partAmount = knownAmounts.sumOrNullScale4()

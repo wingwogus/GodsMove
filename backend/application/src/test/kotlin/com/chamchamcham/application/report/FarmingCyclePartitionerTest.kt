@@ -65,7 +65,7 @@ class FarmingCyclePartitionerTest {
                 amountKg = null,
                 medicinalPart = CategoryRef("ROOT_BARK", "뿌리·껍질"),
                 growthPeriodMonths = 12,
-                isFinalHarvest = final,
+                isLastHarvest = final,
             ),
         )
 

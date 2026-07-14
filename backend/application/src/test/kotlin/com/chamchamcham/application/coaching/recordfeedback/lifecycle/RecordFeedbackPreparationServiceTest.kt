@@ -48,7 +48,7 @@ class RecordFeedbackPreparationServiceTest {
     private val record = FarmingRecord(
         id = UUID.randomUUID(), member = member, farm = farm, crop = crop, workType = WorkType.WATERING,
         workedAt = LocalDateTime.of(2026, 7, 11, 9, 0), weatherCondition = "맑음", weatherTemperature = 25,
-        memo = "관수 기록", entryMode = "MANUAL", sourceRevision = 3,
+        memo = "관수 기록", entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
     )
 
     @Test
@@ -57,7 +57,7 @@ class RecordFeedbackPreparationServiceTest {
         val event = event(feedback)
         `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
         `when`(feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)).thenReturn(feedback)
-        `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenReturn(context())
+        `when`(contextAssembler.assemble(event.memberId, event.recordId, event.sourceRevision)).thenReturn(context())
         val service = service()
 
         service.prepare(event)
@@ -73,7 +73,7 @@ class RecordFeedbackPreparationServiceTest {
         val transactionManager = RecordingTransactionManager()
         `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
         `when`(feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)).thenReturn(feedback)
-        `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenReturn(context())
+        `when`(contextAssembler.assemble(event.memberId, event.recordId, event.sourceRevision)).thenReturn(context())
         doAnswer {
             assertThat(transactionManager.resourcesCleanedUp).isTrue()
             null
@@ -100,7 +100,8 @@ class RecordFeedbackPreparationServiceTest {
         val event = event(feedback)
         `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
         `when`(feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)).thenReturn(feedback)
-        `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenThrow(IllegalStateException("weather unavailable"))
+        `when`(contextAssembler.assemble(event.memberId, event.recordId, event.sourceRevision))
+            .thenThrow(IllegalStateException("weather unavailable"))
 
         service().prepare(event)
 
@@ -115,7 +116,7 @@ class RecordFeedbackPreparationServiceTest {
         val event = event(feedback)
         `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
         `when`(feedbackRepository.findByIdAndMemberIdForUpdate(event.feedbackId, event.memberId)).thenReturn(feedback)
-        `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenAnswer {
+        `when`(contextAssembler.assemble(event.memberId, event.recordId, event.sourceRevision)).thenAnswer {
             feedback.markStale()
             context()
         }
@@ -132,7 +133,7 @@ class RecordFeedbackPreparationServiceTest {
         val feedback = feedback()
         val event = event(feedback)
         `when`(feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId)).thenReturn(feedback)
-        `when`(contextAssembler.assemble(event.memberId, event.recordId)).thenThrow(AssertionError("fatal"))
+        `when`(contextAssembler.assemble(event.memberId, event.recordId, event.sourceRevision)).thenThrow(AssertionError("fatal"))
 
         assertThrows(AssertionError::class.java) { service().prepare(event) }
     }
@@ -142,18 +143,18 @@ class RecordFeedbackPreparationServiceTest {
     )
 
     private fun feedback() = RecordFeedback(
-        id = UUID.randomUUID(), member = member, record = record, status = RecordFeedbackStatus.PENDING, sourceRevision = record.sourceRevision,
+        id = UUID.randomUUID(), member = member, record = record, status = RecordFeedbackStatus.PENDING, sourceRevision = SOURCE_REVISION,
     )
 
     private fun event(feedback: RecordFeedback) = RecordFeedbackPreparationRequested(
-        feedbackId = feedback.id!!, memberId = member.id!!, recordId = record.id!!, sourceRevision = record.sourceRevision,
+        feedbackId = feedback.id!!, memberId = member.id!!, recordId = record.id!!, sourceRevision = feedback.sourceRevision,
     )
 
     private fun context() = RecordFeedbackContext(
         member = RecordFeedbackMemberContext(member.id!!, null, null),
         farm = RecordFeedbackFarmContext(farm.id!!, farm.name, farm.roadAddress, null, null),
         crop = RecordFeedbackCropContext(crop.id!!, crop.name, crop.usePartCategory),
-        record = RecordFeedbackRecordContext(record.id!!, record.sourceRevision, record.workedAt, record.workType, CommonFeedbackDetail, record.weatherCondition, record.weatherTemperature, record.memo, 0),
+        record = RecordFeedbackRecordContext(record.id!!, SOURCE_REVISION, record.workedAt, record.workType, CommonFeedbackDetail, record.weatherCondition, record.weatherTemperature, record.memo, 0),
         weather = null,
     )
 
@@ -175,5 +176,9 @@ class RecordFeedbackPreparationServiceTest {
         override fun doCleanupAfterCompletion(transaction: Any) {
             resourcesCleanedUp = true
         }
+    }
+
+    private companion object {
+        const val SOURCE_REVISION = 3L
     }
 }

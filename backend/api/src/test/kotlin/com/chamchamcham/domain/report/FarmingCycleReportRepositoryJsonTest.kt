@@ -5,6 +5,7 @@ import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farming.FarmingRecord
+import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.Member
 import org.assertj.core.api.Assertions.assertThat
@@ -59,7 +60,7 @@ class FarmingCycleReportRepositoryJsonTest @Autowired constructor(
                 weatherCondition = "맑음",
                 weatherTemperature = 24,
                 memo = "최종 수확",
-                entryMode = "MANUAL",
+                entryMode = EntryMode.MANUAL,
             ),
         )
     }

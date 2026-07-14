@@ -16,7 +16,8 @@ data class ReportScope(
 data class CategoryRef(val code: String, val label: String)
 
 data class PlantingReportSource(
-    val propagationMethod: CategoryRef,
+    val plantingMethod: CategoryRef,
+    val propagationMethod: CategoryRef?,
     val quantity: BigDecimal?,
     val quantityUnit: String?,
 )
@@ -27,26 +28,32 @@ data class WateringReportSource(
 )
 
 data class FertilizingReportSource(
-    val materialCategory: CategoryRef,
+    val materialName: String,
+    val amount: BigDecimal,
+    val amountUnit: String,
     val amountKg: BigDecimal?,
     val applicationMethod: CategoryRef?,
 )
 
 data class PestControlReportSource(
-    val pesticideCategory: CategoryRef,
+    val pesticideId: UUID,
+    val pesticideName: String,
     val pesticideAmount: BigDecimal?,
     val pesticideAmountUnit: String,
     val totalSprayAmountLiters: BigDecimal?,
-    val pestTarget: String?,
+    val pestName: String?,
 )
 
 data class WeedingReportSource(val method: CategoryRef?)
 
 data class HarvestReportSource(
     val amountKg: BigDecimal?,
-    val medicinalPart: CategoryRef,
-    val growthPeriodMonths: Int,
-    val isFinalHarvest: Boolean,
+    val medicinalPart: CategoryRef?,
+    val harvestSource: CategoryRef = CategoryRef("CULTIVATED", "재배"),
+    val growthPeriod: Int? = null,
+    val growthPeriodUnit: String? = null,
+    val growthPeriodMonths: Int?,
+    val isLastHarvest: Boolean,
 )
 
 data class CycleReportSourceRecord(
@@ -71,6 +78,6 @@ data class CycleSlice(
     val records: List<CycleReportSourceRecord>,
 ) {
     val finalHarvestRecordId: UUID? = records.lastOrNull()
-        ?.takeIf { it.harvest?.isFinalHarvest == true }
+        ?.takeIf { it.harvest?.isLastHarvest == true }
         ?.id
 }

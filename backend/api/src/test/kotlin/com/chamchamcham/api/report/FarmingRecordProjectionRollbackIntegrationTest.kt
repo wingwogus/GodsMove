@@ -132,7 +132,7 @@ class FarmingRecordProjectionRollbackIntegrationTest @Autowired constructor(
         memo = "롤백 관수",
         watering = FarmingRecordCommand.WateringDetail(
             irrigationAmount = IrrigationAmount.NORMAL,
-            irrigationMethod = IrrigationMethod.MANUAL,
+            irrigationMethod = IrrigationMethod.DRIP,
         ),
         mediaIds = if (withMedia) listOf(mediaId) else emptyList(),
     )

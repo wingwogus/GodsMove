@@ -4,6 +4,8 @@ import com.chamchamcham.ApiApplication
 import com.chamchamcham.application.farming.FarmingRecordCommand
 import com.chamchamcham.application.farming.FarmingRecordService
 import com.chamchamcham.application.report.FarmingCycleReportQueryService
+import com.chamchamcham.domain.coaching.recordfeedback.RecordFeedbackRepository
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackRepository
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
@@ -44,6 +46,8 @@ import java.util.UUID
 class FarmingCycleReportIntegrationTest @Autowired constructor(
     private val farmingRecordService: FarmingRecordService,
     private val queryService: FarmingCycleReportQueryService,
+    private val recordFeedbackRepository: RecordFeedbackRepository,
+    private val reportFeedbackRepository: ReportFeedbackRepository,
     private val reportRepository: FarmingCycleReportRepository,
     private val farmingRecordRepository: FarmingRecordRepository,
     private val wateringRecordRepository: WateringRecordRepository,
@@ -67,7 +71,9 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
 
     @BeforeEach
     fun setUp() {
+        reportFeedbackRepository.deleteAllInBatch()
         reportRepository.deleteAllInBatch()
+        recordFeedbackRepository.deleteAllInBatch()
         farmingRecordMediaRepository.deleteAllInBatch()
         wateringRecordRepository.deleteAllInBatch()
         harvestRecordRepository.deleteAllInBatch()
@@ -99,7 +105,7 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
         assertThat(active!!.statistics.watering.recordCount).isEqualTo(1)
 
         val finalHarvestId = farmingRecordService.create(
-            harvestCommand(isFinalHarvest = true, amountKg = "30"),
+            harvestCommand(isLastHarvest = true, amountKg = "30"),
         ).id
 
         assertThat(
@@ -129,6 +135,33 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
             .isGreaterThan(requireNotNull(current.previous?.sourceRevision))
     }
 
+    @Test
+    fun `unknown final harvest values still complete the cycle with empty nullable statistics`() {
+        val finalHarvestId = farmingRecordService.create(
+            harvestCommand(
+                isLastHarvest = true,
+                amountKg = null,
+                amountUnknown = true,
+                medicinalPart = null,
+                growthPeriod = null,
+                growthPeriodUnit = null,
+            ),
+        ).id
+
+        val completed = queryService.getCurrent(memberId, farmId, cropId).previous
+
+        assertThat(completed?.status).isEqualTo(FarmingCycleReportStatus.COMPLETED)
+        assertThat(completed?.finalHarvestRecordId).isEqualTo(finalHarvestId)
+        assertThat(completed?.statisticsSchemaVersion).isEqualTo(2)
+        assertThat(completed?.statistics?.harvest?.recordCount).isEqualTo(1)
+        assertThat(completed?.statistics?.harvest?.totalAmountKg).isNull()
+        assertThat(completed?.statistics?.harvest?.amountCoverage?.recordedCount).isZero()
+        assertThat(completed?.statistics?.harvest?.amountCoverage?.targetCount).isEqualTo(1)
+        assertThat(completed?.statistics?.harvest?.medicinalParts).isEmpty()
+        assertThat(completed?.statistics?.harvest?.finalGrowthPeriodMonths).isNull()
+        assertThat(completed?.statistics?.harvest?.growthPeriodRangeMonths).isNull()
+    }
+
     private fun wateringCommand() = FarmingRecordCommand.Create(
         memberId = memberId,
         farmId = farmId,
@@ -145,8 +178,12 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
     )
 
     private fun harvestCommand(
-        isFinalHarvest: Boolean,
-        amountKg: String,
+        isLastHarvest: Boolean,
+        amountKg: String?,
+        amountUnknown: Boolean = false,
+        medicinalPart: CropUsePartCategory? = CropUsePartCategory.ROOT_BARK,
+        growthPeriod: Int? = 4,
+        growthPeriodUnit: GrowthPeriodUnit? = GrowthPeriodUnit.MONTH,
     ) = FarmingRecordCommand.Create(
         memberId = memberId,
         farmId = farmId,
@@ -157,12 +194,13 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
         weatherTemperature = 25,
         memo = "마지막 수확",
         harvest = FarmingRecordCommand.HarvestDetail(
-            harvestAmount = BigDecimal(amountKg),
-            medicinalPart = CropUsePartCategory.ROOT_BARK,
+            harvestAmount = amountKg?.let(::BigDecimal),
+            amountUnknown = amountUnknown,
+            medicinalPart = medicinalPart,
             harvestSource = HarvestSource.CULTIVATED,
-            growthPeriod = 4,
-            growthPeriodUnit = GrowthPeriodUnit.MONTH,
-            isFinalHarvest = isFinalHarvest,
+            growthPeriod = growthPeriod,
+            growthPeriodUnit = growthPeriodUnit,
+            isLastHarvest = isLastHarvest,
         ),
     )
 }

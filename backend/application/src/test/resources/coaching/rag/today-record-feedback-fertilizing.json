@@ -24,9 +24,9 @@
     "workType": "FERTILIZING",
     "detail": {
       "type": "FERTILIZING",
-      "materialCategory": "ORGANIC_FERTILIZER",
-      "amount": 2.5,
-      "amountUnit": "KG",
+      "materialName": "유기질비료",
+      "amount": 2500,
+      "amountUnit": "G",
       "applicationMethod": "SOIL"
     },
     "recordedWeatherCondition": "흐림",

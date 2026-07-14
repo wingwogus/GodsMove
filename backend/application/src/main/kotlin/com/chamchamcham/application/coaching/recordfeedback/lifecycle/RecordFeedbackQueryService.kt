@@ -20,20 +20,13 @@ class RecordFeedbackQueryService(
     @Transactional(readOnly = true)
     fun get(memberId: UUID, recordId: UUID): RecordFeedbackDetailResult {
         val record = findOwnedActiveRecord(memberId, recordId)
-        return findCurrentOrStale(record).toDetailResult()
+        return findLatest(record).toDetailResult()
     }
 
     @Transactional
     fun regenerate(memberId: UUID, recordId: UUID): RecordFeedbackDetailResult {
         val record = findOwnedActiveRecord(memberId, recordId)
-        val current = findCurrent(record)
-
-        if (current == null) {
-            if (findLatestStale(record) != null) {
-                throw BusinessException(ErrorCode.RECORD_FEEDBACK_REGENERATION_NOT_ALLOWED)
-            }
-            throw BusinessException(ErrorCode.RECORD_FEEDBACK_NOT_FOUND)
-        }
+        val current = findLatest(record)
 
         if (current.status != RecordFeedbackStatus.FAILED) {
             throw BusinessException(ErrorCode.RECORD_FEEDBACK_REGENERATION_NOT_ALLOWED)
@@ -43,22 +36,13 @@ class RecordFeedbackQueryService(
     }
 
     private fun findOwnedActiveRecord(memberId: UUID, recordId: UUID): FarmingRecord =
-        farmingRecordRepository.findContextSourceByIdAndMemberId(recordId, memberId)
+        farmingRecordRepository.findByIdAndMember_Id(recordId, memberId)
+            ?.takeUnless(FarmingRecord::isDeleted)
             ?: throw BusinessException(ErrorCode.FARMING_RECORD_NOT_FOUND)
 
-    private fun findCurrentOrStale(record: FarmingRecord): RecordFeedback =
-        findCurrent(record)
-            ?: findLatestStale(record)
+    private fun findLatest(record: FarmingRecord): RecordFeedback =
+        feedbackRepository.findTopByRecord_IdOrderBySourceRevisionDesc(requireNotNull(record.id))
             ?: throw BusinessException(ErrorCode.RECORD_FEEDBACK_NOT_FOUND)
-
-    private fun findCurrent(record: FarmingRecord): RecordFeedback? =
-        feedbackRepository.findByRecord_IdAndSourceRevision(requireNotNull(record.id), record.sourceRevision)
-
-    private fun findLatestStale(record: FarmingRecord): RecordFeedback? =
-        feedbackRepository.findTopByRecord_IdAndStatusOrderByUpdatedAtDesc(
-            requireNotNull(record.id),
-            RecordFeedbackStatus.STALE,
-        )
 
     private fun RecordFeedback.toDetailResult(): RecordFeedbackDetailResult = RecordFeedbackDetailResult(
         feedbackId = requireNotNull(id),

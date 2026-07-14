@@ -377,7 +377,7 @@ class FarmingCycleReportQueryServiceTest {
             weatherCondition = "맑음",
             weatherTemperature = 20,
             memo = "최종 수확",
-            entryMode = "MANUAL",
+            entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
         )
 
     private fun day(day: Long): LocalDateTime = baseTime.plusDays(day)

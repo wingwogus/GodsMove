@@ -32,6 +32,7 @@ import com.chamchamcham.domain.crop.MemberCrop
 import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
+import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.farming.FarmingRecordRepository
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
@@ -45,8 +46,13 @@ import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.mock.mockito.MockBean
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.transaction.PlatformTransactionManager
+import org.springframework.transaction.support.TransactionTemplate
 import java.time.LocalDateTime
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
 import java.util.UUID
 import org.mockito.Mockito.times
@@ -69,9 +75,9 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
     private val memberCropRepository: MemberCropRepository,
     private val farmRepository: FarmRepository,
     private val cropRepository: CropRepository,
-    private val lifecycleService: RecordFeedbackLifecycleService,
     private val generationProcessor: RecordFeedbackGenerationProcessor,
     private val queryService: RecordFeedbackQueryService,
+    private val transactionManager: PlatformTransactionManager,
 ) {
     @MockBean
     private lateinit var projectionService: FarmingCycleReportProjectionService
@@ -106,10 +112,9 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
     fun `create commits a ready feedback with an entity derived input snapshot`() {
         val recordId = farmingRecordService.create(wateringCreateCommand()).id
 
-        val record = farmingRecordRepository.findById(recordId).orElseThrow()
         val feedback = awaitReadyFeedback(recordId, 1)
 
-        assertThat(record.sourceRevision).isEqualTo(1)
+        assertThat(feedback.sourceRevision).isEqualTo(1)
         assertThat(feedback.status).isEqualTo(RecordFeedbackStatus.READY)
         assertThat(feedback.inputSnapshot)
             .containsEntry("schemaVersion", "record-feedback-context.v2")
@@ -123,7 +128,6 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
     fun `automatic record feedback keeps one immutable snapshot and exposes only user output`() {
         val recordId = farmingRecordService.create(wateringCreateCommand()).id
 
-        val record = farmingRecordRepository.findById(recordId).orElseThrow()
         val feedback = awaitReadyFeedback(recordId, 1)
         val feedbackId = requireNotNull(feedback.id)
         val snapshot = requireNotNull(feedback.inputSnapshot)
@@ -154,7 +158,6 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
             RecordFeedbackActionCategory.IRRIGATION,
         )
 
-        lifecycleService.enqueue(record)
         generationProcessor.generate(
             RecordFeedbackGenerationRequested(
                 feedbackId = feedbackId,
@@ -181,11 +184,10 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
         farmingRecordService.update(wateringUpdateCommand(recordId))
         val second = awaitReadyFeedback(recordId, 2)
 
-        val record = farmingRecordRepository.findById(recordId).orElseThrow()
         val first = recordFeedbackRepository.findByRecord_IdAndSourceRevision(recordId, 1)
             ?: error("first revision feedback must exist")
 
-        assertThat(record.sourceRevision).isEqualTo(2)
+        assertThat(second.sourceRevision).isEqualTo(2)
         assertThat(first.status).isEqualTo(RecordFeedbackStatus.STALE)
         assertThat(second.status).isEqualTo(RecordFeedbackStatus.READY)
         assertThat(second.inputSnapshot).containsEntry("schemaVersion", "record-feedback-context.v2")
@@ -204,9 +206,59 @@ class RecordFeedbackLifecycleIntegrationTest @Autowired constructor(
             ?: error("initial feedback must exist")
 
         assertThat(record.isDeleted).isTrue()
-        assertThat(record.sourceRevision).isEqualTo(2)
         assertThat(feedback.status).isEqualTo(RecordFeedbackStatus.STALE)
         assertThat(recordFeedbackRepository.findByRecord_IdAndSourceRevision(recordId, 2)).isNull()
+    }
+
+    @Test
+    fun `concurrent first enqueue allocates distinct feedback revisions`() {
+        val record = farmingRecordRepository.saveAndFlush(
+            FarmingRecord(
+                member = member,
+                farm = farm,
+                crop = crop,
+                workType = WorkType.WATERING,
+                workedAt = LocalDateTime.of(2026, 7, 13, 8, 30),
+                weatherCondition = "맑음",
+                weatherTemperature = 23,
+                memo = "동시 코칭 생성 검증 기록입니다.",
+                entryMode = com.chamchamcham.domain.farming.EntryMode.MANUAL,
+            ),
+        )
+        val recordId = requireNotNull(record.id)
+        val lifecycleService = RecordFeedbackLifecycleService(
+            recordFeedbackRepository,
+            ApplicationEventPublisher { },
+        )
+        val ready = CountDownLatch(2)
+        val start = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(2)
+
+        try {
+            val futures = List(2) {
+                executor.submit<Long> {
+                    ready.countDown()
+                    check(start.await(5, TimeUnit.SECONDS)) { "concurrent enqueue start timed out" }
+                    checkNotNull(TransactionTemplate(transactionManager).execute {
+                        val currentRecord = farmingRecordRepository.findById(recordId).orElseThrow()
+                        lifecycleService.enqueue(currentRecord).sourceRevision
+                    })
+                }
+            }
+
+            check(ready.await(5, TimeUnit.SECONDS)) { "concurrent enqueue workers did not become ready" }
+            start.countDown()
+
+            assertThat(futures.map { it.get(5, TimeUnit.SECONDS) })
+                .containsExactlyInAnyOrder(1L, 2L)
+            assertThat(
+                recordFeedbackRepository.findAll()
+                    .filter { it.record.id == recordId }
+                    .map { it.sourceRevision },
+            ).containsExactlyInAnyOrder(1L, 2L)
+        } finally {
+            executor.shutdownNow()
+        }
     }
 
     private fun awaitReadyFeedback(recordId: UUID, revision: Long): RecordFeedback {

@@ -9,6 +9,8 @@ import com.chamchamcham.domain.media.UploadedMediaStatus
 import com.chamchamcham.domain.media.UploadedMediaType
 import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.pesticide.Pest
+import com.chamchamcham.domain.pesticide.Pesticide
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -61,7 +63,7 @@ class FarmingCycleReportSourceRepositoryTest @Autowired constructor(
         val weeding = persistRecord(WorkType.WEEDING, workedAt = now.plusHours(5))
         persistWeeding(weeding)
         val harvest = persistRecord(WorkType.HARVEST, workedAt = now.plusHours(7))
-        persistHarvest(harvest, isFinalHarvest = true)
+        persistHarvest(harvest, isLastHarvest = true)
         val etc = persistRecord(WorkType.ETC, workedAt = now.plusHours(8))
         persistMedia(etc, displayOrder = 0)
         persistMedia(etc, displayOrder = 1)
@@ -94,7 +96,7 @@ class FarmingCycleReportSourceRepositoryTest @Autowired constructor(
         assertThat(snapshot.fertilizingByRecordId).containsKey(fertilizing.id)
         assertThat(snapshot.pestControlByRecordId).containsKey(pestControl.id)
         assertThat(snapshot.weedingByRecordId).containsKey(weeding.id)
-        assertThat(snapshot.harvestByRecordId[harvest.id]?.isFinalHarvest).isTrue()
+        assertThat(snapshot.harvestByRecordId[harvest.id]?.isLastHarvest).isTrue()
         assertThat(snapshot.mediaRecordIds).containsExactly(requireNotNull(etc.id))
     }
 
@@ -116,7 +118,7 @@ class FarmingCycleReportSourceRepositoryTest @Autowired constructor(
                 weatherCondition = "맑음",
                 weatherTemperature = 24,
                 memo = "memo",
-                entryMode = "MANUAL",
+                entryMode = EntryMode.MANUAL,
                 isDeleted = isDeleted,
             ),
             now,
@@ -126,9 +128,9 @@ class FarmingCycleReportSourceRepositoryTest @Autowired constructor(
         persist(
             PlantingRecord(
                 record = record,
+                plantingMethod = PlantingMethod.SEED,
                 seedAmount = BigDecimal("1.2500"),
-                seedAmountUnit = SeedAmountUnit.KG,
-                propagationMethod = PropagationMethod.SEED,
+                seedAmountUnit = SeedAmountUnit.G,
             ),
             now,
         )
@@ -149,9 +151,9 @@ class FarmingCycleReportSourceRepositoryTest @Autowired constructor(
         persist(
             FertilizingRecord(
                 record = record,
-                materialCategory = FertilizerMaterialCategory.COMPOUND_FERTILIZER,
+                materialName = "유기질 비료",
                 amount = BigDecimal("3.0000"),
-                amountUnit = FertilizerAmountUnit.KG,
+                amountUnit = FertilizerAmountUnit.G,
                 applicationMethod = FertilizingMethod.SOIL,
             ),
             now,
@@ -159,15 +161,17 @@ class FarmingCycleReportSourceRepositoryTest @Autowired constructor(
     }
 
     private fun persistPestControl(record: FarmingRecord) {
+        val pesticide = persist(Pesticide(itemName = "살충제", brandName = "참참약"), now)
+        val pest = persist(Pest(name = "진딧물"), now)
         persist(
             PestControlRecord(
                 record = record,
-                pesticideCategory = PesticideCategory.FUNGICIDE,
+                pesticide = pesticide,
                 pesticideAmount = BigDecimal("30.0000"),
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal("10.0000"),
                 totalSprayAmountUnit = SprayAmountUnit.L,
-                pestTarget = "진딧물",
+                pest = pest,
             ),
             now,
         )
@@ -177,7 +181,7 @@ class FarmingCycleReportSourceRepositoryTest @Autowired constructor(
         persist(WeedingRecord(record = record, weedingMethod = WeedingMethod.HAND), now)
     }
 
-    private fun persistHarvest(record: FarmingRecord, isFinalHarvest: Boolean) {
+    private fun persistHarvest(record: FarmingRecord, isLastHarvest: Boolean) {
         persist(
             HarvestRecord(
                 record = record,
@@ -186,7 +190,7 @@ class FarmingCycleReportSourceRepositoryTest @Autowired constructor(
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isFinalHarvest = isFinalHarvest,
+                isLastHarvest = isLastHarvest,
             ),
             now,
         )
