@@ -27,7 +27,24 @@ class FarmingRecordQueryRepositoryImpl(
         )
     }
 
-    private fun findRecords(condition: FarmingRecordQueryRepository.SearchCondition): List<FarmingRecord> {
+    override fun count(condition: FarmingRecordQueryRepository.SearchCondition): Long {
+        val (where, params) = buildFilterPredicates(condition)
+
+        val query = entityManager.createQuery(
+            """
+            select count(r)
+            from FarmingRecord r
+            where ${where.joinToString(" and ")}
+            """.trimIndent(),
+            Long::class.javaObjectType
+        )
+        params.forEach(query::setParameter)
+        return query.singleResult
+    }
+
+    private fun buildFilterPredicates(
+        condition: FarmingRecordQueryRepository.SearchCondition
+    ): Pair<MutableList<String>, MutableMap<String, Any>> {
         val where = mutableListOf("r.isDeleted = false", "r.member.id = :memberId")
         val params = mutableMapOf<String, Any>("memberId" to condition.memberId)
 
@@ -67,6 +84,12 @@ class FarmingRecordQueryRepositoryImpl(
         if (keywordPredicates.isNotEmpty()) {
             where += "(${keywordPredicates.joinToString(" or ")})"
         }
+
+        return where to params
+    }
+
+    private fun findRecords(condition: FarmingRecordQueryRepository.SearchCondition): List<FarmingRecord> {
+        val (where, params) = buildFilterPredicates(condition)
 
         condition.cursor?.let { cursor ->
             where += "(r.workedAt < :cursorWorkedAt or (r.workedAt = :cursorWorkedAt and r.id < :cursorId))"

@@ -261,6 +261,44 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         assertThat(result.rows).isEmpty()
     }
 
+    @Test
+    fun `count returns total matching records ignoring cursor and size`() {
+        persistRecord(crop = hwanggiCrop)
+        persistRecord(crop = hwanggiCrop)
+        persistRecord(crop = ginsengCrop)
+        entityManager.flush()
+        entityManager.clear()
+
+        val total = queryRepository.count(condition(cropId = hwanggiCropId, size = 1))
+
+        assertThat(total).isEqualTo(2)
+    }
+
+    @Test
+    fun `count applies keyword and structural filters same as search`() {
+        persistRecord(crop = hwanggiCrop, memo = "황기 관수 완료")
+        persistRecord(crop = ginsengCrop, memo = "관수 완료")
+        entityManager.flush()
+        entityManager.clear()
+
+        val total = queryRepository.count(condition(cropId = hwanggiCropId, keyword = "관수"))
+
+        assertThat(total).isEqualTo(1)
+    }
+
+    @Test
+    fun `count excludes other members and deleted records`() {
+        persistRecord(owner = member)
+        persistRecord(owner = otherMember)
+        persistRecord(owner = member, isDeleted = true)
+        entityManager.flush()
+        entityManager.clear()
+
+        val total = queryRepository.count(condition())
+
+        assertThat(total).isEqualTo(1)
+    }
+
     private fun persistRecord(
         owner: Member = member,
         crop: Crop = hwanggiCrop,

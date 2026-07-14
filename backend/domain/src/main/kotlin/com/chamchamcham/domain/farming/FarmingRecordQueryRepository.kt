@@ -7,6 +7,8 @@ import java.util.UUID
 interface FarmingRecordQueryRepository {
     fun search(condition: SearchCondition): SearchResult
 
+    fun count(condition: SearchCondition): Long
+
     data class SearchCondition(
         val memberId: UUID,
         val cropId: UUID?,
