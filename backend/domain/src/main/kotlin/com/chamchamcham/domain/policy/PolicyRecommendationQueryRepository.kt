@@ -10,6 +10,8 @@ interface PolicyRecommendationQueryRepository {
 
     fun searchByMember(condition: MemberSearchCondition): List<PolicyRecommendation>
 
+    fun countByMember(condition: MemberSearchCondition): Long
+
     data class SearchCondition(
         val memberId: UUID,
         val source: PolicySource,
