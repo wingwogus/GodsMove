@@ -97,8 +97,15 @@ provides.
   color, text typography, and spacing. Do not introduce an equivalent raw value
   or duplicate token when the design system already defines it.
 - Outside the foundation, do not add raw app colors, raw text-font styling, or
-  component-specific overrides merely to chase a Figma value. System icon glyph
-  sizing and genuinely missing one-off layout measurements are the exceptions.
+  component-specific overrides merely to chase a Figma value. Genuinely missing
+  one-off layout measurements are the exception.
+- Icon glyphs: check `Assets.xcassets/icon/` first and use the matching custom
+  SVG (via `AppIconSource.asset("name")` / `AppIconView`) before reaching for an
+  SF Symbol placeholder. Figma capture docs under `docs/figma/<feature>/` record
+  the exact `icon/<name>` used per screen — follow that mapping instead of
+  guessing a semantically-close glyph. Only fall back to an SF Symbol
+  (`AppIconSource.system("name")` / a plain string literal) when no custom
+  asset exists yet for that glyph, and note the gap so it can be added later.
 - If Figma conflicts with the design system, keep the existing design-system
   value and report the mismatch. Do not modify foundations, component token
   mappings, or public component APIs without explicit user authorization.
