@@ -360,8 +360,8 @@ import SwiftUI
             AppCard(
                 size: .large,
                 title: "타이틀",
-                captions: ["캡션", "캡션"],
-                badges: ["레이블"]
+                captions: ["mm.dd", "mm.dd"],
+                badges: ["레이블", "레이블"]
             )
         }
         .padding()

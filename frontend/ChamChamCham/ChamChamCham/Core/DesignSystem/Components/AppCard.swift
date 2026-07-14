@@ -20,7 +20,7 @@ struct AppCard<Thumbnail: View>: View {
             case .xsmall: CGSize(width: 168, height: 168)
             case .small: CGSize(width: 350, height: 180)
             case .medium: CGSize(width: 258, height: 261)
-            case .large: CGSize(width: 350, height: 334)
+            case .large: CGSize(width: 350, height: 304)
             }
         }
 
@@ -208,7 +208,27 @@ struct AppCard<Thumbnail: View>: View {
 
     private var largeLayout: some View {
         VStack(alignment: .leading, spacing: 16) {
-            imageArea(height: 178, overlayHeight: 56, badgePadding: 10, dateInset: 12)
+            media
+                .frame(maxWidth: .infinity)
+                .frame(height: 178)
+                .overlay(alignment: .top) {
+                    LinearGradient(
+                        colors: [Color(hex: 0x343434).opacity(0.64), .clear],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                    .frame(height: 56)
+                    .overlay(alignment: .topLeading) {
+                        HStack(spacing: 8) {
+                            ForEach(Array(badges.prefix(2).enumerated()), id: \.offset) { _, badge in
+                                imageBadge(badge, horizontalPadding: 10, height: 32)
+                            }
+                        }
+                        .padding(12)
+                    }
+                }
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 12))
 
             VStack(alignment: .leading, spacing: 8) {
                 Text(title)
@@ -216,14 +236,17 @@ struct AppCard<Thumbnail: View>: View {
                     .foregroundStyle(Color.Text.subtle)
                     .lineLimit(1)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    ForEach(Array(captions.prefix(2).enumerated()), id: \.offset) { _, caption in
+                HStack(spacing: 2) {
+                    ForEach(Array(captions.prefix(2).enumerated()), id: \.offset) { index, caption in
+                        if index > 0 {
+                            Text("~")
+                        }
                         Text(caption)
-                            .appTypography(.titleMedium)
-                            .foregroundStyle(Color.Text.muted)
-                            .lineLimit(1)
                     }
                 }
+                .appTypography(.titleMedium)
+                .foregroundStyle(Color.Text.muted)
+                .lineLimit(1)
             }
         }
     }
@@ -239,8 +262,6 @@ struct AppCard<Thumbnail: View>: View {
         media
             .frame(maxWidth: .infinity)
             .frame(height: height)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 12))
             .overlay(alignment: .top) {
                 LinearGradient(
                     colors: [Color(hex: 0x343434).opacity(0.64), .clear],
@@ -271,6 +292,8 @@ struct AppCard<Thumbnail: View>: View {
                     }
                 }
             }
+            .clipped()
+            .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
     @ViewBuilder private var media: some View {
@@ -332,9 +355,10 @@ struct AppCard<Thumbnail: View>: View {
     }
 
     static func borderColor(size: Size, isSelected: Bool) -> Color {
-        usesSelectedStyle(size: size, isSelected: isSelected)
-            ? Color.Border.primary
-            : Color.Border.default
+        if usesSelectedStyle(size: size, isSelected: isSelected) {
+            return Color.Border.primary
+        }
+        return size == .large ? Color.Border.subtle : Color.Border.default
     }
 
     static func titleColor(size: Size, isSelected: Bool) -> Color {
@@ -397,7 +421,7 @@ extension AppCard where Thumbnail == EmptyView {
             AppCard(size: .xsmall, title: "타이틀", captions: ["캡션", "캡션"])
             AppCard(size: .small, title: "비료 주기", captions: ["캡션"], badges: ["레이블", "레이블"])
             AppCard(size: .medium, title: "타이틀", captions: ["캡션", "캡션"], badges: ["레이블"])
-            AppCard(size: .large, title: "타이틀", captions: ["캡션", "캡션"], badges: ["레이블"])
+            AppCard(size: .large, title: "타이틀", captions: ["mm.dd", "mm.dd"], badges: ["레이블", "레이블"])
         }
         .padding()
         .background(Color.Background.subtle)
