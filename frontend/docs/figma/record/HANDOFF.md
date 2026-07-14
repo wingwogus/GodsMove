@@ -235,11 +235,14 @@ workType 8종)**까지 구현 완료 (빌드 성공).
 - ⚠️ **작성(쓰기)은 미배포 `origin/dev` 계약 기준 선구현** — dev 배포 + Swagger
   재동기화 전엔 실제 제출 실패 가능 (`backend-conflicts.md` C-2/C-9/C-14 등).
 - 음성은 스피드다이얼에 렌더하되 비활성.
-- **상세 읽기(RecordDetailView) 구현 완료(2026-07-14)** — 리스트 row 탭 → push. `GET /farming-records/{id}`,
-  workType 8종 작업정보 관용 매핑, AI 코칭 placeholder(C-18), ⋮ inert. 계획:
-  [상세 구현 계획](2026-07-14-record-detail-implementation-plan.md), 캡처: [상세](2026-07-14-record-detail-planting-seed.md).
+- **상세 읽기 + 삭제 구현 완료(2026-07-14)** — 리스트 row 탭 → push. `GET /farming-records/{id}`,
+  workType 8종 작업정보 관용 매핑, AI 코칭 placeholder(C-18). ⋮ → iOS 네이티브 확인 다이얼로그로
+  `DELETE` (별도 UI 없음). 계획: [상세 구현 계획](2026-07-14-record-detail-implementation-plan.md),
+  캡처: [상세](2026-07-14-record-detail-planting-seed.md).
+- **수정(edit) 보류** — 상세 응답에 media id가 없어 편집 시 기존 사진 보존 불가([C-19](2026-07-13-record-backend-conflicts.md)).
+  백엔드 반영 후 착수. ⋮ 메뉴는 현재 삭제만.
 - 미구현(캡처 대기): 리포트 탭(placeholder), 검색/알림 아이콘(inert),
-  상세의 수정/삭제(⋮ 이후 디자인 미캡처), AI 코칭 실데이터, 음성 기록.
+  AI 코칭 실데이터, 음성 기록.
 
 **API 대조로 확정된 배포 계약 이슈:**
 1. **필터 단일 선택**: 리스트 API의 `cropId`/`workType`은 각각 **단일 값**만 받음.

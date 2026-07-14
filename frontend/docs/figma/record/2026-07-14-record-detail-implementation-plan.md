@@ -19,10 +19,19 @@
   `RecordListView`에 `NavigationStack` + row `NavigationLink` + `navigationDestination`(상세 push, 탭바 숨김).
 - 신규 DS 컴포넌트 0(전부 기존 토큰/컴포넌트 재사용). 색·타이포는 `Color.Text/Object/Border` + `AppTypography` 매핑, raw 0.
 - **AI 코칭 = placeholder 카드**(`Color.Object.secondarySubtle`), 실데이터 미연결(C-18).
-- **⋮ 메뉴 inert**(수정/삭제 캡처 전까지), 사진 0장 시 섹션 숨김, 로딩/에러/재시도 상태 구현.
+- 사진 0장 시 섹션 숨김, 로딩/에러/재시도 상태 구현.
 - 테스트: `RecordDetailLabelsTests`(12) — workType 8종 매핑 + 배포/dev enum 관용(SPRINKLER/PURCHASED/KG) +
   미입력 숨김 + 미상 fallback. 전부 통과. clean build 성공(iPhone 17).
-- **미구현(후속)**: 수정/삭제(Figma 캡처 후), AI 코칭 실데이터, 오프라인 캐시. 런타임 시각 QA는 인증 게이트 뒤 → 로그인 세션 필요.
+
+**삭제 구현 완료(2026-07-14, iOS 네이티브 — 별도 UI 없음)**: ⋮ → `confirmationDialog`(삭제) → 삭제 확인
+`confirmationDialog` → `DELETE /farming-records/{id}` → pop + 리스트 `reload()`. 실패 시 `alert`, 진행 중 오버레이.
+`RecordEndpoint.deleteRecord` + `RecordRepository.deleteRecord`(EmptyDTO) 추가.
+
+**수정(edit) 보류(2026-07-14, 사용자 확정)**: 상세 응답에 media id가 없어 편집 시 기존 사진 보존 불가
+(→ [C-19](2026-07-13-record-backend-conflicts.md), 데이터 손실). 백엔드가 상세 응답에 media id를 반환하거나
+PATCH 부분 업데이트를 지원한 뒤 구현. 그때까지 ⋮ 메뉴는 **삭제만** 노출.
+
+- **미구현(후속)**: 수정(C-19 해소 후), AI 코칭 실데이터(C-18), 오프라인 캐시. 런타임 시각 QA는 인증 게이트 뒤 → 로그인 세션 필요.
 
 ---
 
@@ -147,9 +156,9 @@ isDeleting: Bool / deleteConfirm 표시
 1. **[이번 구현] 상세 읽기(RecordDetailView + VM + Detail DTO 관용 매핑)** — 리스트 row 탭 연결.
    로딩/에러/재시도. 작업 정보 workType 8종 라벨 매핑. AI 코칭은 **placeholder 카드**.
    ⋮ 메뉴는 렌더하되 inert(수정/삭제 캡처 전까지). (배포 API로 오늘 동작 가능)
-2. **삭제**: ⋮ → 확인 → `DELETE` → 리스트 갱신. (**Figma 캡처 후** — 나중에)
-3. **수정**: `RecordComposeView` 편집 모드(초기값 + `PATCH`). ⚠️ dev-계약 쓰기 필드는 배포 전 제출 실패 가능.
-   (**Figma 캡처 후** — 나중에)
+2. **[완료] 삭제**: ⋮ → 네이티브 확인 다이얼로그 → `DELETE` → pop + 리스트 갱신. (별도 UI 없음)
+3. **수정 (보류)**: `RecordComposeView` 편집 모드(초기값 + `PATCH`) 예정이나, **C-19(사진 보존 불가)로 보류**.
+   백엔드가 상세 응답에 media id 반환 or PATCH 부분 업데이트 지원 후 착수. dev-계약 쓰기 caveat도 동일 적용.
 4. **AI 코칭**: 백엔드 코칭 필드/생성 확정 후 placeholder → 실데이터 교체.
 
 ## 10. 착수 전 확정 필요
