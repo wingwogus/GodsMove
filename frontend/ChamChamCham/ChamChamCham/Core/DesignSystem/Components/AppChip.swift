@@ -22,9 +22,9 @@ struct AppChip: View {
     let label: String
     var isSelected: Bool = false
     var style: Style = .solidPastel
-    var systemImage: String? = nil
-    var leadingSystemImage: String? = nil
-    var trailingSystemImage: String? = nil
+    var systemImage: AppIconSource? = nil
+    var leadingSystemImage: AppIconSource? = nil
+    var trailingSystemImage: AppIconSource? = nil
     var action: () -> Void = {}
 
     var body: some View {
@@ -71,13 +71,12 @@ struct AppChip: View {
         Self.borderColor(style: style, isSelected: isSelected)
     }
 
-    private var trailingIcon: String? {
+    private var trailingIcon: AppIconSource? {
         trailingSystemImage ?? systemImage
     }
 
-    private func icon(_ systemImage: String) -> some View {
-        Image(systemName: systemImage)
-            .font(.system(size: 16))
+    private func icon(_ source: AppIconSource) -> some View {
+        AppIconView(source: source, size: 16)
             .foregroundStyle(textColor)
             .frame(width: 24, height: 24)
     }

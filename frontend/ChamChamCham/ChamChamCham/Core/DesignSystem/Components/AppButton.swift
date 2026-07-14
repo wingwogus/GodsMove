@@ -35,6 +35,10 @@ struct AppButton: View {
     var size: Size = .medium
     /// Stretch label buttons to fill available width (icon-only buttons ignore this).
     var fullWidth: Bool = false
+    /// Renders the disabled appearance (grey fill / muted text) while keeping the button tappable.
+    /// Use for submit buttons that should stay pressable to surface validation errors even when the
+    /// form isn't yet valid. `.disabled(_:)` still fully disables both look and interaction.
+    var appearsDisabled: Bool = false
     let action: () -> Void
 
     @Environment(\.isEnabled) private var isEnabled
@@ -45,6 +49,7 @@ struct AppButton: View {
         variant: Variant = .primary,
         size: Size = .medium,
         fullWidth: Bool = false,
+        appearsDisabled: Bool = false,
         action: @escaping () -> Void
     ) {
         self.title = title
@@ -52,8 +57,12 @@ struct AppButton: View {
         self.variant = variant
         self.size = size
         self.fullWidth = fullWidth
+        self.appearsDisabled = appearsDisabled
         self.action = action
     }
+
+    /// True when either the environment disabled the button or the caller asked for a disabled look.
+    private var rendersDisabled: Bool { !isEnabled || appearsDisabled }
 
     var body: some View {
         Button(action: action) {
@@ -115,7 +124,7 @@ struct AppButton: View {
     // MARK: - Colors
 
     private var foreground: Color {
-        if !isEnabled { return Color.Text.muted }
+        if rendersDisabled { return Color.Text.muted }
         switch variant {
         case .primary, .secondary: return Color.Text.inverse
         case .tertiary: return Color.Text.primary
@@ -124,7 +133,7 @@ struct AppButton: View {
     }
 
     private var background: Color {
-        if !isEnabled {
+        if rendersDisabled {
             return variant == .neutral ? Color.Object.subtle : Color.Object.disabled
         }
         switch variant {

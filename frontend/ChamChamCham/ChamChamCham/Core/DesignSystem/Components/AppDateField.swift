@@ -43,8 +43,7 @@ struct AppDateField: View {
                 .foregroundStyle(valueColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            Image(systemName: "calendar")
-                .font(.system(size: 22))
+            AppIconView(source: .asset("calendar_month"), size: 22)
                 .foregroundStyle(iconColor)
                 .frame(width: 24, height: 24)
         }

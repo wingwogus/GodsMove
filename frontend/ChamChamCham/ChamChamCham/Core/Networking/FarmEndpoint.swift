@@ -17,7 +17,7 @@ enum FarmEndpoint: Endpoint {
         case .list, .create:
             "api/v1/farms"
         case let .delete(id):
-            "api/v1/farms/\(id.uuidString.lowercased())"
+            "api/v1/farms/\(id.uuidString)"
         }
     }
 

@@ -1,0 +1,83 @@
+//
+//  RecordModels.swift
+//  ChamChamCham
+//
+//  Created by iyungui on 7/13/26.
+//
+
+import Foundation
+
+/// 영농 활동 유형. Mirrors the backend `SaveRecordRequest.workType` / `RecordSummaryResponse.workType` enum.
+///
+/// Note: the Figma 영농 활동 filter shows nine chips including `가공`, but the deployed API enum has only these
+/// eight (no processing/가공). We follow the deployed contract and omit 가공 until the backend adds it — see
+/// `docs/figma/record/2026-07-13-record-filter-bottom-sheets.md`.
+enum WorkType: String, Sendable, Hashable, CaseIterable {
+    case planting = "PLANTING"
+    case watering = "WATERING"
+    case fertilizing = "FERTILIZING"
+    case pestControl = "PEST_CONTROL"
+    case weeding = "WEEDING"
+    case pruning = "PRUNING"
+    case harvest = "HARVEST"
+    case etc = "ETC"
+
+    /// Korean label. Authoritative wording confirmed by the product owner (2026-07-13); supersedes the earlier
+    /// Figma filter-chip wording (거름·비료 / 병해충 방제 / 제초). See
+    /// `docs/figma/record/2026-07-13-record-work-type-labels.md`.
+    var label: String {
+        switch self {
+        case .planting: "심기"
+        case .watering: "물주기"
+        case .fertilizing: "비료 주기"
+        case .pestControl: "병해충 관리"
+        case .weeding: "잡초 관리"
+        case .pruning: "가지·순 정리"
+        case .harvest: "수확"
+        case .etc: "기타"
+        }
+    }
+}
+
+/// A crop the member is actively growing, sourced from `GET /members/me/farm-crops`. Used as the "진행중인 작물"
+/// filter options. De-duplicated by `id` across farms in the repository.
+struct ActiveCrop: Identifiable, Hashable, Sendable {
+    let id: UUID
+    let name: String
+}
+
+/// A row in the 영농 기록 list. Projection of the backend `RecordSummaryResponse`. `thumbnailUrl` is optional
+/// because a record may have no photo (BR-RECORD-009: 사진은 보조 정보).
+struct FarmingRecordSummary: Identifiable, Hashable, Sendable {
+    let id: UUID
+    let cropId: UUID
+    let cropName: String
+    let workType: WorkType
+    let memoPreview: String
+    let thumbnailUrl: String?
+    let weatherCondition: String
+    let weatherTemperature: Int
+    let workedAt: Date
+}
+
+/// One cursor page of records. `nextCursor == nil` means there are no more pages.
+struct RecordPage: Sendable {
+    let items: [FarmingRecordSummary]
+    let nextCursor: String?
+}
+
+/// The three-axis filter for the record list. All axes optional (nil == 미적용).
+///
+/// The deployed list endpoint accepts a **single** `cropId` and a **single** `workType`, so these are scalars
+/// even though the Figma sheets suggest multi-select. Multi-select needs backend support first — see the
+/// capture doc's conflict section.
+struct RecordFilter: Equatable, Sendable {
+    var cropId: UUID?
+    var workType: WorkType?
+    var startDate: Date?
+    var endDate: Date?
+
+    var isEmpty: Bool {
+        cropId == nil && workType == nil && startDate == nil && endDate == nil
+    }
+}
