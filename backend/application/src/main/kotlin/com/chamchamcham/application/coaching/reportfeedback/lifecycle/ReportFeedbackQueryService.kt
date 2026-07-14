@@ -78,6 +78,7 @@ data class ReportFeedbackResultContent(
     val strengths: List<ReportFeedbackItemResult>,
     val improvements: List<ReportFeedbackItemResult>,
     val nextActions: List<ReportFeedbackItemResult>,
+    val comparisons: List<ReportFeedbackItemResult> = emptyList(),
 )
 
 data class ReportFeedbackItemResult(

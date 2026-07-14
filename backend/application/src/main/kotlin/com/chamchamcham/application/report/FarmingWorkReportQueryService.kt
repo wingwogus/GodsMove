@@ -1,14 +1,31 @@
 package com.chamchamcham.application.report
 
 import com.chamchamcham.application.common.OpaqueCursorCodec
+import com.chamchamcham.application.coaching.common.toCoachingText
+import com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackQueryService
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.farming.FarmingWorkReportSourceRepository
 import com.chamchamcham.domain.farming.FarmingWorkReportSourceSnapshot
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.report.FarmingCycleReportQueryRepository
+import com.chamchamcham.domain.report.CommonOnlyStatistics
+import com.chamchamcham.domain.report.CycleReportStatistics
+import com.chamchamcham.domain.report.FarmingCycleReportRepository
+import com.chamchamcham.domain.report.FarmingCycleReportStatus
+import com.chamchamcham.domain.report.FertilizingStatistics
+import com.chamchamcham.domain.report.HarvestStatistics
+import com.chamchamcham.domain.report.PestControlStatistics
+import com.chamchamcham.domain.report.PlantingStatistics
+import com.chamchamcham.domain.report.WateringStatistics
+import com.chamchamcham.domain.report.WeedingStatistics
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
+import java.math.BigDecimal
+import java.time.LocalDate
 
 @Service
 @Transactional(readOnly = true)
@@ -17,6 +34,8 @@ class FarmingWorkReportQueryService(
     private val sourceRepository: FarmingWorkReportSourceRepository,
     private val partitioner: FarmingCyclePartitioner,
     private val cursorCodec: OpaqueCursorCodec,
+    private val reportRepository: FarmingCycleReportRepository,
+    private val feedbackQueryService: ReportFeedbackQueryService,
 ) {
     fun list(condition: FarmingWorkReportSearchCondition): FarmingWorkReportResult.Page {
         val result = queryRepository.searchCompletedWorkItems(
@@ -48,6 +67,39 @@ class FarmingWorkReportQueryService(
             } else {
                 null
             },
+        )
+    }
+
+    fun getDetail(
+        memberId: UUID,
+        reportId: UUID,
+        workType: WorkType,
+    ): FarmingWorkReportResult.Detail {
+        val report = reportRepository.findByIdAndMember_Id(reportId, memberId)
+            ?.takeIf { it.status == FarmingCycleReportStatus.COMPLETED }
+            ?: throw BusinessException(ErrorCode.REPORT_NOT_FOUND)
+        val statistics = report.statistics.forWorkType(workType)
+        if (statistics.common.recordCount == 0) {
+            throw BusinessException(ErrorCode.WORK_REPORT_NOT_FOUND)
+        }
+        val feedback = feedbackQueryService.get(memberId, reportId).feedbacks
+            .firstOrNull { it.workType == workType }
+
+        return FarmingWorkReportResult.Detail(
+            reportId = requireNotNull(report.id) { "Persisted farming cycle report id is required" },
+            workType = workType,
+            workTypeLabel = workType.toCoachingText(),
+            farmId = requireNotNull(report.farm.id) { "Persisted farm id is required" },
+            farmName = report.farm.name,
+            cropId = requireNotNull(report.crop.id) { "Persisted crop id is required" },
+            cropName = report.crop.name,
+            startsAt = report.startsAt,
+            endsAt = requireNotNull(report.endsAt) { "Completed report endsAt is required" },
+            statistics = statistics,
+            feedback = FarmingWorkReportResult.FeedbackStatus(
+                status = feedback?.status ?: ReportFeedbackStatus.PENDING,
+                content = feedback?.content,
+            ),
         )
     }
 
@@ -122,6 +174,7 @@ class FarmingWorkReportQueryService(
             endsAt = endsAt,
             finalHarvestRecordId = finalHarvestRecordId,
             workType = workType,
+            workTypeLabel = workType.toCoachingText(),
             recordCount = recordCount,
             lastWorkedOn = lastWorkedOn,
             thumbnailUrl = thumbnailUrl,
@@ -164,3 +217,127 @@ class FarmingWorkReportQueryService(
         val cropId: UUID,
     )
 }
+
+private fun CycleReportStatistics.forWorkType(workType: WorkType): FarmingWorkReportResult.WorkStatistics =
+    when (workType) {
+        WorkType.PLANTING -> FarmingWorkReportResult.WorkStatistics(
+            common = planting.toCommon(),
+            planting = planting,
+        )
+        WorkType.WATERING -> FarmingWorkReportResult.WorkStatistics(
+            common = watering.toCommon(),
+            watering = watering,
+        )
+        WorkType.FERTILIZING -> FarmingWorkReportResult.WorkStatistics(
+            common = fertilizing.toCommon(),
+            fertilizing = fertilizing,
+        )
+        WorkType.PEST_CONTROL -> FarmingWorkReportResult.WorkStatistics(
+            common = pestControl.toCommon(),
+            pestControl = pestControl,
+        )
+        WorkType.WEEDING -> FarmingWorkReportResult.WorkStatistics(
+            common = weeding.toCommon(),
+            weeding = weeding,
+        )
+        WorkType.PRUNING -> FarmingWorkReportResult.WorkStatistics(common = pruning)
+        WorkType.HARVEST -> FarmingWorkReportResult.WorkStatistics(
+            common = harvest.toCommon(),
+            harvest = harvest,
+        )
+        WorkType.ETC -> FarmingWorkReportResult.WorkStatistics(common = etc)
+    }
+
+private fun PlantingStatistics.toCommon() = common(
+    recordCount,
+    firstWorkedOn,
+    lastWorkedOn,
+    workedDayCount,
+    averageIntervalDays,
+    photoAttachedRecordCount,
+    photoAttachmentRatePct,
+    weatherDistribution,
+    averageTemperatureC,
+)
+
+private fun WateringStatistics.toCommon() = common(
+    recordCount,
+    firstWorkedOn,
+    lastWorkedOn,
+    workedDayCount,
+    averageIntervalDays,
+    photoAttachedRecordCount,
+    photoAttachmentRatePct,
+    weatherDistribution,
+    averageTemperatureC,
+)
+
+private fun FertilizingStatistics.toCommon() = common(
+    recordCount,
+    firstWorkedOn,
+    lastWorkedOn,
+    workedDayCount,
+    averageIntervalDays,
+    photoAttachedRecordCount,
+    photoAttachmentRatePct,
+    weatherDistribution,
+    averageTemperatureC,
+)
+
+private fun PestControlStatistics.toCommon() = common(
+    recordCount,
+    firstWorkedOn,
+    lastWorkedOn,
+    workedDayCount,
+    averageIntervalDays,
+    photoAttachedRecordCount,
+    photoAttachmentRatePct,
+    weatherDistribution,
+    averageTemperatureC,
+)
+
+private fun WeedingStatistics.toCommon() = common(
+    recordCount,
+    firstWorkedOn,
+    lastWorkedOn,
+    workedDayCount,
+    averageIntervalDays,
+    photoAttachedRecordCount,
+    photoAttachmentRatePct,
+    weatherDistribution,
+    averageTemperatureC,
+)
+
+private fun HarvestStatistics.toCommon() = common(
+    recordCount,
+    firstWorkedOn,
+    lastWorkedOn,
+    workedDayCount,
+    averageIntervalDays,
+    photoAttachedRecordCount,
+    photoAttachmentRatePct,
+    weatherDistribution,
+    averageTemperatureC,
+)
+
+private fun common(
+    recordCount: Int,
+    firstWorkedOn: LocalDate?,
+    lastWorkedOn: LocalDate?,
+    workedDayCount: Int,
+    averageIntervalDays: BigDecimal?,
+    photoAttachedRecordCount: Int,
+    photoAttachmentRatePct: BigDecimal?,
+    weatherDistribution: List<com.chamchamcham.domain.report.CountDistribution>,
+    averageTemperatureC: BigDecimal?,
+) = CommonOnlyStatistics(
+    recordCount = recordCount,
+    firstWorkedOn = firstWorkedOn,
+    lastWorkedOn = lastWorkedOn,
+    workedDayCount = workedDayCount,
+    averageIntervalDays = averageIntervalDays,
+    photoAttachedRecordCount = photoAttachedRecordCount,
+    photoAttachmentRatePct = photoAttachmentRatePct,
+    weatherDistribution = weatherDistribution,
+    averageTemperatureC = averageTemperatureC,
+)

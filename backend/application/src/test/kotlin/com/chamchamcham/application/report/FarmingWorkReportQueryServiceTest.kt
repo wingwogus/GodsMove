@@ -1,7 +1,15 @@
 package com.chamchamcham.application.report
 
 import com.chamchamcham.application.common.OpaqueCursorCodec
+import com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackDetailResult
+import com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackItemResult
+import com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackListResult
+import com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackQueryService
+import com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackResultContent
+import com.chamchamcham.application.exception.ErrorCode
+import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.common.BaseTimeEntity
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm
@@ -12,13 +20,22 @@ import com.chamchamcham.domain.farming.FarmingWorkReportSourceSnapshot
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.report.FarmingCycleReportQueryRepository
+import com.chamchamcham.domain.report.CycleReportStatistics
+import com.chamchamcham.domain.report.FarmingCycleReport
+import com.chamchamcham.domain.report.FarmingCycleReportProjection
+import com.chamchamcham.domain.report.FarmingCycleReportRepository
+import com.chamchamcham.domain.report.FarmingCycleReportStatus
+import com.chamchamcham.domain.report.FarmingCycleStartBasis
+import com.chamchamcham.domain.report.WateringStatistics
 import org.assertj.core.api.Assertions.assertThat
+import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import java.time.LocalDate
@@ -46,6 +63,8 @@ class FarmingWorkReportQueryServiceTest {
 
     @Mock private lateinit var queryRepository: FarmingCycleReportQueryRepository
     @Mock private lateinit var sourceRepository: FarmingWorkReportSourceRepository
+    @Mock private lateinit var reportRepository: FarmingCycleReportRepository
+    @Mock private lateinit var feedbackQueryService: ReportFeedbackQueryService
 
     private lateinit var service: FarmingWorkReportQueryService
 
@@ -56,7 +75,152 @@ class FarmingWorkReportQueryServiceTest {
             sourceRepository = sourceRepository,
             partitioner = FarmingCyclePartitioner(),
             cursorCodec = cursorCodec,
+            reportRepository = reportRepository,
+            feedbackQueryService = feedbackQueryService,
         )
+    }
+
+    @Test
+    fun `detail returns one typed statistics branch and ready feedback for an owned completed work`() {
+        val report = report(
+            status = FarmingCycleReportStatus.COMPLETED,
+            statistics = CycleReportStatistics(
+                watering = WateringStatistics(
+                    recordCount = 3,
+                    firstWorkedOn = LocalDate.of(2026, 1, 2),
+                    lastWorkedOn = LocalDate.of(2026, 1, 4),
+                    workedDayCount = 3,
+                ),
+            ),
+        )
+        val feedbackContent = ReportFeedbackResultContent(
+            summary = "물 주기 작업을 안정적으로 이어갔어요.",
+            strengths = listOf(ReportFeedbackItemResult("흙 상태를 꾸준히 살폈어요.")),
+            improvements = emptyList(),
+            nextActions = listOf(ReportFeedbackItemResult("내일 흙을 다시 확인하세요.")),
+        )
+        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(report)
+        `when`(feedbackQueryService.get(memberId, reportId)).thenReturn(
+            feedbacks(
+                feedback(
+                    workType = WorkType.WATERING,
+                    status = ReportFeedbackStatus.READY,
+                    content = feedbackContent,
+                ),
+            ),
+        )
+
+        val detail = service.getDetail(memberId, reportId, WorkType.WATERING)
+
+        assertThat(detail.reportId).isEqualTo(reportId)
+        assertThat(detail.workType).isEqualTo(WorkType.WATERING)
+        assertThat(detail.workTypeLabel).isEqualTo("물 주기")
+        assertThat(detail.farmId).isEqualTo(farmId)
+        assertThat(detail.farmName).isEqualTo("약초농장")
+        assertThat(detail.cropId).isEqualTo(cropId)
+        assertThat(detail.cropName).isEqualTo("황기")
+        assertThat(detail.startsAt).isEqualTo(day(1))
+        assertThat(detail.endsAt).isEqualTo(day(5))
+        assertThat(detail.statistics.common.recordCount).isEqualTo(3)
+        assertThat(detail.statistics.watering?.recordCount).isEqualTo(3)
+        assertThat(detail.statistics.planting).isNull()
+        assertThat(detail.statistics.fertilizing).isNull()
+        assertThat(detail.statistics.pestControl).isNull()
+        assertThat(detail.statistics.weeding).isNull()
+        assertThat(detail.statistics.harvest).isNull()
+        assertThat(detail.feedback.status).isEqualTo(ReportFeedbackStatus.READY)
+        assertThat(detail.feedback.content).isSameAs(feedbackContent)
+        assertThat(detail.feedback.content?.comparisons).isEmpty()
+        verify(feedbackQueryService).get(memberId, reportId)
+    }
+
+    @Test
+    fun `detail hides a report outside the member scope`() {
+        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(null)
+
+        assertDetailError(WorkType.WATERING, ErrorCode.REPORT_NOT_FOUND)
+
+        verifyNoInteractions(feedbackQueryService)
+    }
+
+    @Test
+    fun `detail hides active and superseded reports`() {
+        listOf(FarmingCycleReportStatus.ACTIVE, FarmingCycleReportStatus.SUPERSEDED).forEach { status ->
+            `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(report(status))
+
+            assertDetailError(WorkType.WATERING, ErrorCode.REPORT_NOT_FOUND)
+        }
+
+        verifyNoInteractions(feedbackQueryService)
+    }
+
+    @Test
+    fun `detail reports an absent work only after owned completed report validation`() {
+        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(
+            report(
+                status = FarmingCycleReportStatus.COMPLETED,
+                statistics = CycleReportStatistics.empty(),
+            ),
+        )
+
+        assertDetailError(WorkType.WATERING, ErrorCode.WORK_REPORT_NOT_FOUND)
+
+        verifyNoInteractions(feedbackQueryService)
+    }
+
+    @Test
+    fun `detail exposes common only statistics for pruning`() {
+        val report = report(
+            status = FarmingCycleReportStatus.COMPLETED,
+            statistics = CycleReportStatistics(
+                pruning = com.chamchamcham.domain.report.CommonOnlyStatistics(
+                    recordCount = 2,
+                    workedDayCount = 2,
+                ),
+            ),
+        )
+        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(report)
+        `when`(feedbackQueryService.get(memberId, reportId)).thenReturn(feedbacks())
+
+        val detail = service.getDetail(memberId, reportId, WorkType.PRUNING)
+
+        assertThat(detail.workTypeLabel).isEqualTo("가지 정리")
+        assertThat(detail.statistics.common.recordCount).isEqualTo(2)
+        assertThat(detail.statistics.planting).isNull()
+        assertThat(detail.statistics.watering).isNull()
+        assertThat(detail.statistics.fertilizing).isNull()
+        assertThat(detail.statistics.pestControl).isNull()
+        assertThat(detail.statistics.weeding).isNull()
+        assertThat(detail.statistics.harvest).isNull()
+    }
+
+    @Test
+    fun `detail keeps pending failed and transiently absent feedback content null`() {
+        val report = report(
+            status = FarmingCycleReportStatus.COMPLETED,
+            statistics = CycleReportStatistics(
+                watering = WateringStatistics(recordCount = 1),
+            ),
+        )
+        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(report)
+
+        listOf(ReportFeedbackStatus.PENDING, ReportFeedbackStatus.FAILED).forEach { status ->
+            `when`(feedbackQueryService.get(memberId, reportId)).thenReturn(
+                feedbacks(feedback(WorkType.WATERING, status, content = null)),
+            )
+
+            val detail = service.getDetail(memberId, reportId, WorkType.WATERING)
+
+            assertThat(detail.feedback.status).isEqualTo(status)
+            assertThat(detail.feedback.content).isNull()
+        }
+
+        `when`(feedbackQueryService.get(memberId, reportId)).thenReturn(feedbacks())
+
+        val transientlyAbsent = service.getDetail(memberId, reportId, WorkType.WATERING)
+
+        assertThat(transientlyAbsent.feedback.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(transientlyAbsent.feedback.content).isNull()
     }
 
     @Test
@@ -382,6 +546,67 @@ class FarmingWorkReportQueryServiceTest {
             recordCount = recordCount,
             lastWorkedOn = LocalDate.of(2026, 1, 5),
         )
+
+    private fun assertDetailError(workType: WorkType, expected: ErrorCode) {
+        assertThatThrownBy { service.getDetail(memberId, reportId, workType) }
+            .isInstanceOf(BusinessException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(expected)
+    }
+
+    private fun report(
+        status: FarmingCycleReportStatus,
+        statistics: CycleReportStatistics = CycleReportStatistics(
+            watering = WateringStatistics(recordCount = 1),
+        ),
+    ): FarmingCycleReport {
+        val sourceStatus = if (status == FarmingCycleReportStatus.ACTIVE) {
+            FarmingCycleReportStatus.ACTIVE
+        } else {
+            FarmingCycleReportStatus.COMPLETED
+        }
+        return FarmingCycleReport.create(
+            member = member,
+            farm = farm,
+            crop = crop,
+            projection = FarmingCycleReportProjection(
+                status = sourceStatus,
+                startsAt = day(1),
+                endsAt = if (sourceStatus == FarmingCycleReportStatus.COMPLETED) day(5) else null,
+                startBasis = FarmingCycleStartBasis.FIRST_RECORD,
+                finalHarvestRecord = if (sourceStatus == FarmingCycleReportStatus.COMPLETED) {
+                    record("406", WorkType.HARVEST, day = 5)
+                } else {
+                    null
+                },
+                statisticsSchemaVersion = 1,
+                statistics = statistics,
+            ),
+        ).also { report ->
+            org.springframework.test.util.ReflectionTestUtils.setField(report, "id", reportId)
+            if (status == FarmingCycleReportStatus.SUPERSEDED) {
+                report.supersede()
+            }
+        }
+    }
+
+    private fun feedbacks(vararg feedbacks: ReportFeedbackDetailResult) =
+        ReportFeedbackListResult(reportId = reportId, feedbacks = feedbacks.toList())
+
+    private fun feedback(
+        workType: WorkType,
+        status: ReportFeedbackStatus,
+        content: ReportFeedbackResultContent?,
+    ) = ReportFeedbackDetailResult(
+        feedbackId = id("701"),
+        workType = workType,
+        status = status,
+        inputPrepared = status != ReportFeedbackStatus.PENDING,
+        failureCode = if (status == ReportFeedbackStatus.FAILED) "STRUCTURED_OUTPUT_INVALID" else null,
+        content = content,
+        createdAt = day(6),
+        updatedAt = day(6),
+    )
 
     private fun record(
         suffix: String,

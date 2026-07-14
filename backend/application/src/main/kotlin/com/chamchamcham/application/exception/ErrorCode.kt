@@ -15,6 +15,7 @@ enum class ErrorCode(
     CROP_NOT_FOUND("CROP_001", "error.crop_not_found", 404),
     FARM_NOT_FOUND("FARM_001", "error.farm_not_found", 404),
     REPORT_NOT_FOUND("REPORT_001", "error.report_not_found", 404),
+    WORK_REPORT_NOT_FOUND("REPORT_002", "error.work_report_not_found", 404),
     FARM_IN_USE("FARM_002", "error.farm_in_use", 409),
     FARM_CROP_IN_USE("FARM_003", "error.farm_crop_in_use", 409),
     MEDIA_NOT_FOUND("MEDIA_001", "error.media_not_found", 404),
