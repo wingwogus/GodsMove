@@ -62,12 +62,14 @@ class PolicyRecommendationSearcherTest {
                 nextCursor = "cursor-2"
             )
         )
+        `when`(policyRecommendationService.countSearchRecommendations(memberId, "황기")).thenReturn(9L)
 
         val page = searcher.search(
             SearchQuery(memberId = memberId, keyword = "황기", cursor = "cursor-1", size = 10)
         )
 
         assertThat(page.nextCursor).isEqualTo("cursor-2")
+        assertThat(page.totalCount).isEqualTo(9L)
         val item = page.items.single()
         assertThat(item.category).isEqualTo(SearchCategory.POLICY)
         assertThat(item.id).isEqualTo(policyProgramId)

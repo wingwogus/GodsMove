@@ -26,6 +26,7 @@ class SearchService(
                     category = searcher.category(),
                     items = page.items,
                     hasMore = page.nextCursor != null,
+                    totalCount = page.totalCount,
                 )
             }
         return SearchResult.Sections(sections = sections)

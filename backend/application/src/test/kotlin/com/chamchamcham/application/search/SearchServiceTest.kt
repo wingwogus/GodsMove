@@ -39,9 +39,12 @@ class SearchServiceTest {
     fun `search dispatches to the matching category searcher`() {
         val recordSearcher = StubSearcher(
             SearchCategory.RECORD,
-            SearchResult.Page(items = listOf(item(SearchCategory.RECORD)), nextCursor = "next")
+            SearchResult.Page(items = listOf(item(SearchCategory.RECORD)), nextCursor = "next", totalCount = 1)
         )
-        val postSearcher = StubSearcher(SearchCategory.POST, SearchResult.Page(items = emptyList(), nextCursor = null))
+        val postSearcher = StubSearcher(
+            SearchCategory.POST,
+            SearchResult.Page(items = emptyList(), nextCursor = null, totalCount = 0)
+        )
         val service = SearchService(listOf(recordSearcher, postSearcher))
 
         val query = SearchQuery(memberId = memberId, keyword = "황기", cursor = null, size = 10)
@@ -68,11 +71,11 @@ class SearchServiceTest {
     fun `searchAll returns one preview section per registered category ordered record then post`() {
         val recordSearcher = StubSearcher(
             SearchCategory.RECORD,
-            SearchResult.Page(items = listOf(item(SearchCategory.RECORD)), nextCursor = "more")
+            SearchResult.Page(items = listOf(item(SearchCategory.RECORD)), nextCursor = "more", totalCount = 12)
         )
         val postSearcher = StubSearcher(
             SearchCategory.POST,
-            SearchResult.Page(items = listOf(item(SearchCategory.POST)), nextCursor = null)
+            SearchResult.Page(items = listOf(item(SearchCategory.POST)), nextCursor = null, totalCount = 1)
         )
         val service = SearchService(listOf(postSearcher, recordSearcher))
 
@@ -81,6 +84,8 @@ class SearchServiceTest {
         assertThat(sections.map { it.category }).containsExactly(SearchCategory.RECORD, SearchCategory.POST)
         assertThat(sections[0].hasMore).isTrue()
         assertThat(sections[1].hasMore).isFalse()
+        assertThat(sections[0].totalCount).isEqualTo(12)
+        assertThat(sections[1].totalCount).isEqualTo(1)
         assertThat(recordSearcher.lastQuery?.size).isEqualTo(3)
         assertThat(recordSearcher.lastQuery?.cursor).isNull()
     }

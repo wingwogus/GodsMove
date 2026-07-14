@@ -68,12 +68,27 @@ class FarmingRecordSearcherTest {
                 nextCursor = "cursor-2"
             )
         )
+        `when`(
+            farmingRecordService.count(
+                FarmingRecordSearchCondition(
+                    memberId = memberId,
+                    cropId = null,
+                    workType = null,
+                    startDate = null,
+                    endDate = null,
+                    keyword = "황기",
+                    cursor = "cursor-1",
+                    size = 10
+                )
+            )
+        ).thenReturn(7L)
 
         val page = searcher.search(
             SearchQuery(memberId = memberId, keyword = "황기", cursor = "cursor-1", size = 10)
         )
 
         assertThat(page.nextCursor).isEqualTo("cursor-2")
+        assertThat(page.totalCount).isEqualTo(7L)
         val item = page.items.single()
         assertThat(item.category).isEqualTo(SearchCategory.RECORD)
         assertThat(item.id).isEqualTo(recordId)
