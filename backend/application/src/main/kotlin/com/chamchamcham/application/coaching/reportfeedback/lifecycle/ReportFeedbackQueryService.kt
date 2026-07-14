@@ -18,12 +18,11 @@ import java.util.UUID
 class ReportFeedbackQueryService(
     private val reportRepository: FarmingCycleReportRepository,
     private val feedbackRepository: ReportFeedbackRepository,
+    private val lifecycleService: ReportFeedbackLifecycleService,
 ) {
     @Transactional(readOnly = true)
     fun get(memberId: UUID, reportId: UUID): ReportFeedbackListResult {
-        val report = reportRepository.findByIdAndMember_Id(reportId, memberId)
-            ?.takeIf { it.status == FarmingCycleReportStatus.COMPLETED }
-            ?: throw BusinessException(ErrorCode.REPORT_NOT_FOUND)
+        val report = findCompletedReport(memberId, reportId)
         return ReportFeedbackListResult(
             reportId = requireNotNull(report.id),
             feedbacks = feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId)
@@ -31,6 +30,27 @@ class ReportFeedbackQueryService(
                 .map { it.toDetailResult() },
         )
     }
+
+    @Transactional
+    fun regenerate(
+        memberId: UUID,
+        reportId: UUID,
+        workType: WorkType,
+    ): ReportFeedbackDetailResult {
+        findCompletedReport(memberId, reportId)
+        val feedback = feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId)
+            .firstOrNull { it.workType == workType }
+            ?: throw BusinessException(ErrorCode.REPORT_FEEDBACK_NOT_FOUND)
+        if (feedback.status != ReportFeedbackStatus.FAILED) {
+            throw BusinessException(ErrorCode.REPORT_FEEDBACK_REGENERATION_NOT_ALLOWED)
+        }
+        return lifecycleService.retry(feedback).toDetailResult()
+    }
+
+    private fun findCompletedReport(memberId: UUID, reportId: UUID) =
+        reportRepository.findByIdAndMember_Id(reportId, memberId)
+            ?.takeIf { it.status == FarmingCycleReportStatus.COMPLETED }
+            ?: throw BusinessException(ErrorCode.REPORT_NOT_FOUND)
 
     private fun ReportFeedback.toDetailResult() = ReportFeedbackDetailResult(
         feedbackId = requireNotNull(id),

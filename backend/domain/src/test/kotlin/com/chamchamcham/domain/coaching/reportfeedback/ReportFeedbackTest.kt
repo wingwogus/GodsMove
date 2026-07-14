@@ -141,6 +141,19 @@ class ReportFeedbackTest {
         }.isInstanceOf(IllegalArgumentException::class.java)
     }
 
+    @Test
+    fun `failed feedback can retry with its previous input cleared`() {
+        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING)
+        feedback.attachInputSnapshot(mapOf("schemaVersion" to 3))
+        feedback.markFailed("STRUCTURED_OUTPUT_INVALID")
+
+        feedback.retry()
+
+        assertThat(feedback.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(feedback.failureCode).isNull()
+        assertThat(feedback.inputSnapshot).isNull()
+    }
+
     private fun item(
         section: ReportFeedbackItemSection,
         basis: String,

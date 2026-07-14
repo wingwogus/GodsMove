@@ -44,6 +44,7 @@ class ReportFeedbackQueryServiceTest {
 
     @Mock private lateinit var reportRepository: FarmingCycleReportRepository
     @Mock private lateinit var feedbackRepository: ReportFeedbackRepository
+    @Mock private lateinit var lifecycleService: ReportFeedbackLifecycleService
 
     private lateinit var service: ReportFeedbackQueryService
     private lateinit var member: Member
@@ -51,7 +52,7 @@ class ReportFeedbackQueryServiceTest {
 
     @BeforeEach
     fun setUp() {
-        service = ReportFeedbackQueryService(reportRepository, feedbackRepository)
+        service = ReportFeedbackQueryService(reportRepository, feedbackRepository, lifecycleService)
         member = Member(id = memberId, email = "member@example.com", passwordHash = null)
         completedReport = report(FarmingCycleReportStatus.COMPLETED)
     }
@@ -138,6 +139,36 @@ class ReportFeedbackQueryServiceTest {
 
         assertReportNotFound()
         verifyNoInteractions(feedbackRepository)
+    }
+
+    @Test
+    fun `regenerate retries only failed feedback for the requested work type`() {
+        val failed = failedFeedback()
+        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(completedReport)
+        `when`(feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId)).thenReturn(listOf(failed))
+        `when`(lifecycleService.retry(failed)).thenAnswer {
+            failed.retry()
+            failed
+        }
+
+        val result = service.regenerate(memberId, reportId, WorkType.HARVEST)
+
+        assertThat(result.workType).isEqualTo(WorkType.HARVEST)
+        assertThat(result.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(result.inputPrepared).isFalse()
+        assertThat(result.failureCode).isNull()
+    }
+
+    @Test
+    fun `regenerate rejects feedback that is not failed`() {
+        val ready = readyFeedback()
+        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(completedReport)
+        `when`(feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId)).thenReturn(listOf(ready))
+
+        assertThatThrownBy { service.regenerate(memberId, reportId, WorkType.WATERING) }
+            .isInstanceOf(BusinessException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.REPORT_FEEDBACK_REGENERATION_NOT_ALLOWED)
     }
 
     private fun assertReportNotFound() {

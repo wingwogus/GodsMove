@@ -38,16 +38,26 @@ class ReportFeedbackLifecycleService(
             .filter(workTypes::contains)
             .map { ReportFeedback.pending(report.member, report, it) }
         val saved = feedbackRepository.saveAll(feedbacks)
-        saved.forEach { feedback ->
-            eventPublisher.publishEvent(
-                ReportFeedbackPreparationRequested(
-                    feedbackId = requireNotNull(feedback.id) { "Persisted report feedback id is required" },
-                    memberId = memberId,
-                    reportId = reportId,
-                    workType = feedback.workType,
-                ),
-            )
-        }
+        saved.forEach(::publishPreparation)
         return saved
+    }
+
+    @Transactional
+    fun retry(feedback: ReportFeedback): ReportFeedback {
+        feedback.retry()
+        val saved = feedbackRepository.save(feedback)
+        publishPreparation(saved)
+        return saved
+    }
+
+    private fun publishPreparation(feedback: ReportFeedback) {
+        eventPublisher.publishEvent(
+            ReportFeedbackPreparationRequested(
+                feedbackId = requireNotNull(feedback.id) { "Persisted report feedback id is required" },
+                memberId = requireNotNull(feedback.member.id) { "Persisted member id is required" },
+                reportId = requireNotNull(feedback.report.id) { "Persisted report id is required" },
+                workType = feedback.workType,
+            ),
+        )
     }
 }

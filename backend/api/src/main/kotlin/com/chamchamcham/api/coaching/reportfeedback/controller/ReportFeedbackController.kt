@@ -5,10 +5,12 @@ import com.chamchamcham.api.coaching.reportfeedback.dto.ReportFeedbackResponses
 import com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackQueryService
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
+import com.chamchamcham.domain.farming.WorkType
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
+import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import java.util.UUID
@@ -25,6 +27,16 @@ class ReportFeedbackController(
     ): ResponseEntity<ApiResponse<ReportFeedbackResponses.ListResponse>> {
         val result = queryService.get(parseMemberId(memberId), reportId)
         return ResponseEntity.ok(ApiResponse.ok(ReportFeedbackResponses.ListResponse.from(result)))
+    }
+
+    @PostMapping("/{workType}/regenerate")
+    fun regenerate(
+        @AuthenticationPrincipal memberId: String?,
+        @PathVariable reportId: UUID,
+        @PathVariable workType: WorkType,
+    ): ResponseEntity<ApiResponse<ReportFeedbackResponses.StatusResponse>> {
+        val result = queryService.regenerate(parseMemberId(memberId), reportId, workType)
+        return ResponseEntity.ok(ApiResponse.ok(ReportFeedbackResponses.StatusResponse.from(result)))
     }
 
     private fun parseMemberId(memberId: String?): UUID {

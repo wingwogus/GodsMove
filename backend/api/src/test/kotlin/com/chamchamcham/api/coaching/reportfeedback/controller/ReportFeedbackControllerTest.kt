@@ -24,6 +24,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.RequestPostProcessor
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
@@ -159,6 +160,48 @@ class ReportFeedbackControllerTest(
         )
             .andExpect(status().isNotFound)
             .andExpect(jsonPath("$.error.code", equalTo("REPORT_001")))
+    }
+
+    @Test
+    fun `failed work type feedback can be regenerated`() {
+        `when`(queryService.regenerate(memberId, reportId, WorkType.HARVEST)).thenReturn(
+            feedback(
+                feedbackId = harvestFeedbackId,
+                workType = WorkType.HARVEST,
+                status = ReportFeedbackStatus.PENDING,
+            ),
+        )
+
+        mockMvc.perform(
+            post(
+                "/api/v1/farming-reports/{reportId}/feedback/{workType}/regenerate",
+                reportId,
+                WorkType.HARVEST,
+            ).with(authenticatedMember(memberId.toString())),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.feedbackId", equalTo(harvestFeedbackId.toString())))
+            .andExpect(jsonPath("$.data.workType", equalTo("HARVEST")))
+            .andExpect(jsonPath("$.data.status", equalTo("PENDING")))
+            .andExpect(jsonPath("$.data.inputPrepared", equalTo(false)))
+            .andExpect(jsonPath("$.data.failureCode").isEmpty())
+            .andExpect(jsonPath("$.data.feedback").isEmpty())
+    }
+
+    @Test
+    fun `regeneration conflict is returned when work type feedback is not failed`() {
+        `when`(queryService.regenerate(memberId, reportId, WorkType.WATERING))
+            .thenThrow(BusinessException(ErrorCode.REPORT_FEEDBACK_REGENERATION_NOT_ALLOWED))
+
+        mockMvc.perform(
+            post(
+                "/api/v1/farming-reports/{reportId}/feedback/{workType}/regenerate",
+                reportId,
+                WorkType.WATERING,
+            ).with(authenticatedMember(memberId.toString())),
+        )
+            .andExpect(status().isConflict)
+            .andExpect(jsonPath("$.error.code", equalTo("COACHING_004")))
     }
 
     private fun feedback(

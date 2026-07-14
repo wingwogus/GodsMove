@@ -109,6 +109,13 @@ class ReportFeedback(
         failureCode = code
     }
 
+    fun retry() {
+        check(status == ReportFeedbackStatus.FAILED) { "only failed feedback can retry" }
+        status = ReportFeedbackStatus.PENDING
+        failureCode = null
+        inputSnapshot = null
+    }
+
     fun markReady(
         summary: String,
         items: List<ReportFeedbackItemDraft>,

@@ -2,6 +2,7 @@ package com.chamchamcham.application.coaching.reportfeedback.lifecycle
 
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedback
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackRepository
+import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farm.Farm
@@ -113,6 +114,35 @@ class ReportFeedbackLifecycleServiceTest {
 
         verify(feedbackRepository, never()).saveAll(Mockito.anyList<ReportFeedback>())
         verify(eventPublisher, never()).publishEvent(Mockito.any())
+    }
+
+    @Test
+    fun `retry moves failed feedback to pending and republishes preparation`() {
+        val feedback = ReportFeedback(
+            id = wateringFeedbackId,
+            member = member,
+            report = report,
+            workType = WorkType.WATERING,
+            status = ReportFeedbackStatus.PENDING,
+        ).also {
+            it.attachInputSnapshot(mapOf("schemaVersion" to 3))
+            it.markFailed("STRUCTURED_OUTPUT_INVALID")
+        }
+        `when`(feedbackRepository.save(feedback)).thenReturn(feedback)
+
+        val retried = service.retry(feedback)
+
+        assertThat(retried.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(retried.inputSnapshot).isNull()
+        verify(feedbackRepository).save(feedback)
+        verify(eventPublisher).publishEvent(
+            ReportFeedbackPreparationRequested(
+                feedbackId = wateringFeedbackId,
+                memberId = memberId,
+                reportId = reportId,
+                workType = WorkType.WATERING,
+            ),
+        )
     }
 
     private fun setId(target: Any, id: UUID) {
