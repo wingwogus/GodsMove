@@ -6,8 +6,8 @@ import org.junit.jupiter.api.Test
 class CoachingTextPolicyTest {
     @Test
     fun `allows friendly Korean text with Korean units`() {
-        assertThat(CoachingTextPolicy.hasDisallowedLanguage("뿌리 쪽 흙을 살펴보고 물을 조금 주세요.")).isFalse()
-        assertThat(CoachingTextPolicy.hasDisallowedLanguage("수확량은 96킬로그램이었어요.")).isFalse()
+        assertThat(CoachingTextPolicy.containsEnglishLetter("뿌리 쪽 흙을 살펴보고 물을 조금 주세요.")).isFalse()
+        assertThat(CoachingTextPolicy.containsEnglishLetter("수확량은 96킬로그램이었어요.")).isFalse()
     }
 
     @Test
@@ -17,12 +17,12 @@ class CoachingTextPolicyTest {
             "10kg을 썼어요.",
             "pH를 확인하세요.",
         ).forEach { text ->
-            assertThat(CoachingTextPolicy.hasDisallowedLanguage(text)).isTrue()
+            assertThat(CoachingTextPolicy.containsEnglishLetter(text)).isTrue()
         }
     }
 
     @Test
-    fun `rejects confirmed difficult farming terms`() {
+    fun `allows Korean text including farming terms`() {
         listOf(
             "관수",
             "시비",
@@ -43,12 +43,12 @@ class CoachingTextPolicyTest {
             "살균제",
             "유기질",
         ).forEach { term ->
-            assertThat(CoachingTextPolicy.hasDisallowedLanguage("${term}을 확인하세요.")).isTrue()
+            assertThat(CoachingTextPolicy.containsEnglishLetter("${term}을 확인하세요.")).isFalse()
         }
     }
 
     @Test
     fun `does not reject ambiguous everyday weak expression`() {
-        assertThat(CoachingTextPolicy.hasDisallowedLanguage("잎이 약해 보이면 먼저 살펴보세요.")).isFalse()
+        assertThat(CoachingTextPolicy.containsEnglishLetter("잎이 약해 보이면 먼저 살펴보세요.")).isFalse()
     }
 }

@@ -152,7 +152,7 @@ class CoachingPromptLabelsTest {
     }
 
     @Test
-    fun `coaching labels never expose raw enum names or prohibited language`() {
+    fun `coaching labels never expose English or raw enum names`() {
         val labels = buildList {
             addAll(WorkType.entries.map { it.toCoachingText() })
             addAll(PropagationMethod.entries.map { it.toCoachingText() })
@@ -166,7 +166,7 @@ class CoachingPromptLabelsTest {
             addAll(HarvestSource.entries.map { it.toCoachingText() })
         }
 
-        assertThat(labels).allMatch { !CoachingTextPolicy.hasDisallowedLanguage(it) }
+        assertThat(labels).allMatch { !CoachingTextPolicy.containsEnglishLetter(it) }
         WorkType.entries.forEach { value ->
             assertThat(value.toCoachingText()).isNotEqualTo(value.name)
         }

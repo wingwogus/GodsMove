@@ -129,8 +129,8 @@ class RecordFeedbackGenerationServiceTest {
     }
 
     @Test
-    fun `retries a language violation with a fixed diagnostic code only`() {
-        val generatedText = "DRIP으로 관수한 점은 잘했어요."
+    fun `retries an English violation with a fixed diagnostic code only`() {
+        val generatedText = "DRIP으로 물을 준 점은 잘했어요."
         val invalidResult = validResult("doc-1", context.recordCitationId()).copy(
             goodPoint = validItem(text = generatedText),
         )
@@ -141,14 +141,14 @@ class RecordFeedbackGenerationServiceTest {
 
         assertThat(chatClient.attempts).isEqualTo(2)
         assertThat(chatClient.requestSpec.userTexts.last())
-            .contains("good_point_text_language")
+            .contains("good_point_text_english")
             .doesNotContain(generatedText, "DRIP으로")
     }
 
     @Test
-    fun `two language violations fail as structured output invalid`() {
+    fun `two English violations fail as structured output invalid`() {
         val invalidResult = validResult("doc-1", context.recordCitationId()).copy(
-            goodPoint = validItem(text = "DRIP으로 관수한 점은 잘했어요."),
+            goodPoint = validItem(text = "DRIP으로 물을 준 점은 잘했어요."),
         )
         val chatClient = FakeChatClient(invalidResult, invalidResult)
 

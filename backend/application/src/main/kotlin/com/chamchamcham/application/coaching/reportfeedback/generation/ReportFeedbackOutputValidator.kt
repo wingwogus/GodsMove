@@ -15,8 +15,8 @@ object ReportFeedbackOutputValidator {
         if (!content.summary.hasFriendlyHonorificTone()) {
             warnings += "summary_text_tone"
         }
-        if (CoachingTextPolicy.hasDisallowedLanguage(content.summary)) {
-            warnings += "summary_text_language"
+        if (CoachingTextPolicy.containsEnglishLetter(content.summary)) {
+            warnings += "summary_text_english"
         }
         val items = content.items()
 
@@ -37,8 +37,8 @@ object ReportFeedbackOutputValidator {
             if (!item.text.hasFriendlyHonorificTone()) {
                 warnings += "${structured.section.name.lowercase()}_text_tone"
             }
-            if (CoachingTextPolicy.hasDisallowedLanguage(item.text)) {
-                warnings += "${structured.section.name.lowercase()}_text_language"
+            if (CoachingTextPolicy.containsEnglishLetter(item.text)) {
+                warnings += "${structured.section.name.lowercase()}_text_english"
             }
             if (item.evidenceRefs.none { it.isNotBlank() }) {
                 warnings += "${structured.section.name.lowercase()}_evidence_refs_blank"

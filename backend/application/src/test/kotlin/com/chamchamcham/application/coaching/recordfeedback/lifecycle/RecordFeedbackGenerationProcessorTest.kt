@@ -105,7 +105,7 @@ class RecordFeedbackGenerationProcessorTest {
             RecordFeedbackGenerationFailure(
                 RecordFeedbackFailureCode.STRUCTURED_OUTPUT_INVALID,
                 IllegalStateException(
-                    "invalid product output: next_action_1_text_length,next_action_1_text_language," +
+                    "invalid product output: next_action_1_text_length,next_action_1_text_english," +
                         "unknown_evidence:untrusted-generated-value",
                 ),
             ),
@@ -118,7 +118,7 @@ class RecordFeedbackGenerationProcessorTest {
             .contains("record feedback generation failed")
             .contains("STRUCTURED_OUTPUT_INVALID")
             .contains("next_action_1_text_length")
-            .contains("next_action_1_text_language")
+            .contains("next_action_1_text_english")
             .contains("unknown_evidence")
             .doesNotContain("untrusted-generated-value")
     }

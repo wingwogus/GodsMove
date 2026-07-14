@@ -43,11 +43,11 @@ class RecordFeedbackOutputValidatorTest {
     }
 
     @Test
-    fun `rejects English and difficult farming terms only in public text`() {
+    fun `rejects English only in public text`() {
         val invalid = validResult().copy(
             goodPoint = validItem(
                 basis = "DRIP 관수",
-                text = "DRIP으로 관수한 점은 잘했어요.",
+                text = "DRIP으로 물을 준 점은 잘했어요.",
             ),
             nextActions = listOf(
                 validAction(
@@ -65,8 +65,22 @@ class RecordFeedbackOutputValidatorTest {
         )
 
         assertThat(RecordFeedbackOutputValidator.validate(invalid, context, documents))
-            .contains("good_point_text_language", "next_action_1_text_language")
-            .doesNotContain("good_point_basis_language", "next_action_1_basis_language")
+            .contains("good_point_text_english")
+            .doesNotContain("next_action_1_text_english", "good_point_basis_english")
+    }
+
+    @Test
+    fun `rejects English in next action text`() {
+        val valid = validResult()
+        val invalid = valid.copy(
+            nextActions = listOf(
+                valid.nextActions[0],
+                valid.nextActions[1].copy(text = "DRIP 상태를 다음에 확인하세요."),
+            ),
+        )
+
+        assertThat(RecordFeedbackOutputValidator.validate(invalid, context, documents))
+            .contains("next_action_1_text_english")
     }
 
     @Test

@@ -93,8 +93,8 @@ object RecordFeedbackOutputValidator {
         if (!item.text.hasFriendlyHonorificTone()) {
             warnings += "${prefix}_text_tone"
         }
-        if (CoachingTextPolicy.hasDisallowedLanguage(item.text)) {
-            warnings += "${prefix}_text_language"
+        if (CoachingTextPolicy.containsEnglishLetter(item.text)) {
+            warnings += "${prefix}_text_english"
         }
         item.evidenceRefs
             .filter { it.isNotBlank() }

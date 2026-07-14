@@ -9,30 +9,7 @@ object CoachingTextPolicy {
         농약 때문에 생긴 피해는 약해라고 줄이지 말고 약 때문에 생긴 피해라고 쓴다.
     """.trimIndent()
 
-    fun hasDisallowedLanguage(text: String): Boolean {
-        return ENGLISH_LETTER.containsMatchIn(text) || DISALLOWED_TERMS.any(text::contains)
-    }
+    fun containsEnglishLetter(text: String): Boolean = ENGLISH_LETTER.containsMatchIn(text)
 
     private val ENGLISH_LETTER = Regex("[A-Za-z]")
-
-    private val DISALLOWED_TERMS = setOf(
-        "관수",
-        "시비",
-        "방제",
-        "병해충",
-        "생육",
-        "정식",
-        "파종",
-        "제초",
-        "전정",
-        "과습",
-        "배수",
-        "추대",
-        "하엽",
-        "토양",
-        "수분",
-        "살포",
-        "살균제",
-        "유기질",
-    )
 }

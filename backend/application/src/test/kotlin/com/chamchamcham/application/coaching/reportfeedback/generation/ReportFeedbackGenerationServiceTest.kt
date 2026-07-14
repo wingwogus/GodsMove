@@ -46,8 +46,8 @@ class ReportFeedbackGenerationServiceTest {
     }
 
     @Test
-    fun `language failure is retried with a fixed diagnostic code only`() {
-        val generatedText = "WATERING 관수 흐름을 확인했어요."
+    fun `English failure is retried with a fixed diagnostic code only`() {
+        val generatedText = "WATERING 흐름을 확인했어요."
         val client = FakeChatClient(
             validContent().copy(summary = generatedText),
             validContent(),
@@ -57,13 +57,29 @@ class ReportFeedbackGenerationServiceTest {
 
         assertThat(client.attempts).isEqualTo(2)
         assertThat(client.requestSpec.userTexts.last())
-            .contains("summary_text_language")
-            .doesNotContain(generatedText, "WATERING 관수")
+            .contains("summary_text_english")
+            .doesNotContain(generatedText, "WATERING")
     }
 
     @Test
-    fun `two language failures end as structured output invalid`() {
-        val invalid = validContent().copy(summary = "WATERING 관수 흐름을 확인했어요.")
+    fun `item English failure is retried with a fixed diagnostic code only`() {
+        val generatedText = "DRIP 방식을 다음에도 확인하세요."
+        val client = FakeChatClient(
+            validContent().copy(nextActions = listOf(item(text = generatedText))),
+            validContent(),
+        )
+
+        service(client).generate(context())
+
+        assertThat(client.attempts).isEqualTo(2)
+        assertThat(client.requestSpec.userTexts.last())
+            .contains("next_action_text_english")
+            .doesNotContain(generatedText, "DRIP")
+    }
+
+    @Test
+    fun `two English failures end as structured output invalid`() {
+        val invalid = validContent().copy(summary = "WATERING 흐름을 확인했어요.")
         val client = FakeChatClient(invalid, invalid)
 
         assertThatThrownBy { service(client).generate(context()) }
@@ -194,10 +210,11 @@ class ReportFeedbackGenerationServiceTest {
     )
 
     private fun item(
+        text: String = "물 준 기록을 남겨 작업 흐름을 확인하기 좋았어요.",
         evidenceRefs: List<String> = listOf("record:$recordId"),
     ) = ReportFeedbackContentItem(
         basis = "관수 기록 1회",
-        text = "물 준 기록을 남겨 작업 흐름을 확인하기 좋았어요.",
+        text = text,
         evidenceRefs = evidenceRefs,
     )
 

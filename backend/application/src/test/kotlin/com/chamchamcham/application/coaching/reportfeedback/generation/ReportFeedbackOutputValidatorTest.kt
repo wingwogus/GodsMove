@@ -86,19 +86,32 @@ class ReportFeedbackOutputValidatorTest {
     }
 
     @Test
-    fun `rejects language violations in every public report text`() {
+    fun `rejects English while allowing Korean farming terms in public report text`() {
         val content = ReportFeedbackContent(
-            summary = "WATERING 관수 흐름을 확인했어요.",
-            strengths = listOf(item("DRIP 관수", "DRIP으로 관수한 점은 좋았어요.")),
+            summary = "WATERING 흐름을 확인했어요.",
+            strengths = listOf(item("DRIP 관수", "DRIP으로 물을 준 점은 좋았어요.")),
             improvements = listOf(item("토양", "토양 수분을 더 확인하세요.")),
             nextActions = listOf(item("방제", "병해충을 방제하세요.")),
         )
 
+        assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
+            .contains("summary_text_english", "strength_text_english")
+            .doesNotContain("improvement_text_english", "next_action_text_english")
+    }
+
+    @Test
+    fun `rejects English in every report item section`() {
+        val content = ReportFeedbackContent(
+            summary = "이번 물 주기 기록을 확인했어요.",
+            strengths = listOf(item("기록", "DRIP 방식을 꾸준히 사용했어요.")),
+            improvements = listOf(item("양", "다음에는 kg 단위 대신 한글로 기록하세요.")),
+            nextActions = listOf(item("확인", "pH 대신 흙 상태를 쉬운 말로 적으세요.")),
+        )
+
         assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList())).contains(
-            "summary_text_language",
-            "strength_text_language",
-            "improvement_text_language",
-            "next_action_text_language",
+            "strength_text_english",
+            "improvement_text_english",
+            "next_action_text_english",
         )
     }
 
