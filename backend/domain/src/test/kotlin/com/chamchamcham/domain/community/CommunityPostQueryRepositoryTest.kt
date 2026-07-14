@@ -229,6 +229,46 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
         assertThat(condition.cursor).isEqualTo(cursor)
     }
 
+    @Test
+    fun `count returns total matching posts ignoring cursor and size`() {
+        persistPost(title = "황기 발아율 질문", crop = hwanggiCrop, postType = CommunityPostType.QUESTION)
+        persistPost(title = "황기 자유글", crop = hwanggiCrop, postType = CommunityPostType.GENERAL)
+        persistPost(title = "인삼 발아율 질문", crop = ginsengCrop, postType = CommunityPostType.QUESTION)
+        entityManager.flush()
+        entityManager.clear()
+
+        val total = queryRepository.count(condition(cropId = hwanggiCropId, size = 1))
+
+        assertThat(total).isEqualTo(2)
+    }
+
+    @Test
+    fun `count applies keyword post type and mineOnly likedOnly filters same as search`() {
+        val likedPost = persistPost(title = "황기 발아율 질문", body = "발아가 안 됩니다", crop = hwanggiCrop, postType = CommunityPostType.QUESTION, author = otherMember)
+        persistPost(title = "인삼 발아율 질문", body = "발아가 안 됩니다", crop = ginsengCrop, postType = CommunityPostType.QUESTION)
+        persist(CommunityPostLike(post = likedPost, member = member), LocalDateTime.of(2026, 6, 12, 10, 10))
+        entityManager.flush()
+        entityManager.clear()
+
+        val total = queryRepository.count(condition(cropId = hwanggiCropId, postType = CommunityPostType.QUESTION, keyword = "발아"))
+        val likedTotal = queryRepository.count(condition(likedOnly = true))
+
+        assertThat(total).isEqualTo(1)
+        assertThat(likedTotal).isEqualTo(1)
+    }
+
+    @Test
+    fun `count excludes deleted posts`() {
+        persistPost(title = "정상 글")
+        persistPost(title = "삭제된 글", isDeleted = true)
+        entityManager.flush()
+        entityManager.clear()
+
+        val total = queryRepository.count(condition())
+
+        assertThat(total).isEqualTo(1)
+    }
+
     private fun persistPost(
         title: String,
         body: String = "본문",
