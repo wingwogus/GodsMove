@@ -371,6 +371,10 @@ class FarmingRecordService(
             weatherTemperature = record.weatherTemperature,
             memoPreview = record.memo.take(MEMO_PREVIEW_LENGTH),
             thumbnailUrl = row.thumbnailUrl,
+            irrigationMethod = row.irrigationMethod,
+            harvestAmount = row.harvestAmount,
+            pesticideName = row.pesticideName,
+            weedingMethod = row.weedingMethod,
         )
     }
 

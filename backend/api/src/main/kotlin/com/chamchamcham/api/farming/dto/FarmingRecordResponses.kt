@@ -37,6 +37,10 @@ object FarmingRecordResponses {
         val weatherTemperature: Int,
         val memoPreview: String,
         val thumbnailUrl: String?,
+        val irrigationMethod: IrrigationMethod?,
+        val harvestAmount: BigDecimal?,
+        val pesticideName: String?,
+        val weedingMethod: WeedingMethod?,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.Summary): RecordSummaryResponse = RecordSummaryResponse(
@@ -49,6 +53,10 @@ object FarmingRecordResponses {
                 weatherTemperature = result.weatherTemperature,
                 memoPreview = result.memoPreview,
                 thumbnailUrl = result.thumbnailUrl,
+                irrigationMethod = result.irrigationMethod,
+                harvestAmount = result.harvestAmount,
+                pesticideName = result.pesticideName,
+                weedingMethod = result.weedingMethod,
             )
         }
     }

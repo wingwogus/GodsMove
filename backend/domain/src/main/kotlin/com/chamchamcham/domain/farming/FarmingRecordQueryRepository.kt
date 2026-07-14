@@ -1,6 +1,7 @@
 package com.chamchamcham.domain.farming
 
 import com.chamchamcham.domain.crop.CropUsePartCategory
+import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -27,7 +28,11 @@ interface FarmingRecordQueryRepository {
 
     data class Row(
         val record: FarmingRecord,
-        val thumbnailUrl: String?
+        val thumbnailUrl: String?,
+        val irrigationMethod: IrrigationMethod? = null,
+        val harvestAmount: BigDecimal? = null,
+        val pesticideName: String? = null,
+        val weedingMethod: WeedingMethod? = null,
     )
 
     data class SearchResult(

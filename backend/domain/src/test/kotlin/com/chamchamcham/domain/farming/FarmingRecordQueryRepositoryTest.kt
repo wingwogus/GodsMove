@@ -269,6 +269,80 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
     }
 
     @Test
+    fun `search exposes irrigation method for watering records and leaves other summary fields null`() {
+        val record = persistRecord(workType = WorkType.WATERING)
+        persistWateringDetail(record, irrigationMethod = IrrigationMethod.DRIP)
+        entityManager.flush()
+        entityManager.clear()
+
+        val row = queryRepository.search(condition()).rows.single()
+
+        assertThat(row.irrigationMethod).isEqualTo(IrrigationMethod.DRIP)
+        assertThat(row.harvestAmount).isNull()
+        assertThat(row.pesticideName).isNull()
+        assertThat(row.weedingMethod).isNull()
+    }
+
+    @Test
+    fun `search exposes harvest amount for harvest records and leaves other summary fields null`() {
+        val record = persistRecord(workType = WorkType.HARVEST)
+        persistHarvestDetail(record, medicinalPart = CropUsePartCategory.LEAF)
+        entityManager.flush()
+        entityManager.clear()
+
+        val row = queryRepository.search(condition()).rows.single()
+
+        assertThat(row.harvestAmount).isEqualByComparingTo(BigDecimal.TEN)
+        assertThat(row.irrigationMethod).isNull()
+        assertThat(row.pesticideName).isNull()
+        assertThat(row.weedingMethod).isNull()
+    }
+
+    @Test
+    fun `search exposes pesticide brand name for pest control records and leaves other summary fields null`() {
+        val record = persistRecord(workType = WorkType.PEST_CONTROL)
+        persistPestControlDetail(record, pesticideName = "친환경약제")
+        entityManager.flush()
+        entityManager.clear()
+
+        val row = queryRepository.search(condition()).rows.single()
+
+        assertThat(row.pesticideName).isEqualTo("친환경약제")
+        assertThat(row.irrigationMethod).isNull()
+        assertThat(row.harvestAmount).isNull()
+        assertThat(row.weedingMethod).isNull()
+    }
+
+    @Test
+    fun `search exposes weeding method for weeding records and leaves other summary fields null`() {
+        val record = persistRecord(workType = WorkType.WEEDING)
+        persistWeedingDetail(record, weedingMethod = WeedingMethod.HAND)
+        entityManager.flush()
+        entityManager.clear()
+
+        val row = queryRepository.search(condition()).rows.single()
+
+        assertThat(row.weedingMethod).isEqualTo(WeedingMethod.HAND)
+        assertThat(row.irrigationMethod).isNull()
+        assertThat(row.harvestAmount).isNull()
+        assertThat(row.pesticideName).isNull()
+    }
+
+    @Test
+    fun `search returns null summary fields when record has no matching detail`() {
+        persistRecord(workType = WorkType.PRUNING)
+        entityManager.flush()
+        entityManager.clear()
+
+        val row = queryRepository.search(condition()).rows.single()
+
+        assertThat(row.irrigationMethod).isNull()
+        assertThat(row.harvestAmount).isNull()
+        assertThat(row.pesticideName).isNull()
+        assertThat(row.weedingMethod).isNull()
+    }
+
+    @Test
     fun `search returns empty when keyword matches nothing`() {
         persistRecord(memo = "특이사항 없음")
         entityManager.flush()
@@ -315,6 +389,20 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
             now
         )
         persist(FarmingRecordMedia(record = record, uploadedMedia = media, displayOrder = displayOrder), now)
+    }
+
+    private fun persistWateringDetail(record: FarmingRecord, irrigationMethod: IrrigationMethod) {
+        persist(
+            WateringRecord(record = record, irrigationMethod = irrigationMethod),
+            now
+        )
+    }
+
+    private fun persistWeedingDetail(record: FarmingRecord, weedingMethod: WeedingMethod) {
+        persist(
+            WeedingRecord(record = record, weedingMethod = weedingMethod),
+            now
+        )
     }
 
     private fun persistFertilizingDetail(record: FarmingRecord, materialName: String) {

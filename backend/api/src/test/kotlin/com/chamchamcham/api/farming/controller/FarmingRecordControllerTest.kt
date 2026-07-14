@@ -364,6 +364,7 @@ class FarmingRecordControllerTest(
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.items[0].id", equalTo(recordId.toString())))
+            .andExpect(jsonPath("$.data.items[0].harvestAmount", equalTo(10)))
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-1")))
     }
 
@@ -564,6 +565,7 @@ class FarmingRecordControllerTest(
             weatherTemperature = 28,
             memoPreview = "수확 완료",
             thumbnailUrl = "https://example.test/1.jpg",
+            harvestAmount = BigDecimal.TEN,
         )
 
     private fun detailResult(): FarmingRecordResult.Detail =

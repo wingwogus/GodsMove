@@ -34,6 +34,10 @@ object FarmingRecordResult {
         val weatherTemperature: Int,
         val memoPreview: String,
         val thumbnailUrl: String?,
+        val irrigationMethod: IrrigationMethod? = null,
+        val harvestAmount: BigDecimal? = null,
+        val pesticideName: String? = null,
+        val weedingMethod: WeedingMethod? = null,
     )
 
     data class Page(

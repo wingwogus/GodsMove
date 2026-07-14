@@ -19,6 +19,7 @@ import com.chamchamcham.domain.farming.HarvestRecord
 import com.chamchamcham.domain.farming.HarvestRecordRepository
 import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.HarvestSource
+import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PestControlRecord
 import com.chamchamcham.domain.farming.PestControlRecordRepository
 import com.chamchamcham.domain.farming.PesticideAmountUnit
@@ -28,6 +29,7 @@ import com.chamchamcham.domain.farming.PlantingRecordRepository
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SprayAmountUnit
 import com.chamchamcham.domain.farming.WateringRecordRepository
+import com.chamchamcham.domain.farming.WeedingMethod
 import com.chamchamcham.domain.farming.WeedingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.media.UploadedMedia
@@ -720,6 +722,56 @@ class FarmingRecordServiceTest {
         val nextCursor = cursorCodec.decode(page.nextCursor!!, FarmingRecordCursorPayload::class.java)
         assertEquals(newestRecord.workedAt, nextCursor.workedAt)
         assertEquals(recordId, nextCursor.id)
+    }
+
+    @Test
+    fun `search maps work type summary fields from query repository row`() {
+        val record = existingRecord(id = recordId, workType = WorkType.WATERING)
+
+        `when`(
+            farmingRecordQueryRepository.search(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    cursor = null,
+                    size = 21
+                )
+            )
+        ).thenReturn(
+            FarmingRecordQueryRepository.SearchResult(
+                rows = listOf(
+                    FarmingRecordQueryRepository.Row(
+                        record = record,
+                        thumbnailUrl = null,
+                        irrigationMethod = IrrigationMethod.DRIP,
+                        harvestAmount = BigDecimal.TEN,
+                        pesticideName = "친환경약제",
+                        weedingMethod = WeedingMethod.HAND,
+                    ),
+                )
+            )
+        )
+
+        val page = service.search(
+            FarmingRecordSearchCondition(
+                memberId = memberId,
+                cropIds = emptyList(),
+                workTypes = emptyList(),
+                startDate = null,
+                endDate = null,
+                cursor = null,
+                size = 20
+            )
+        )
+
+        val summary = page.items.single()
+        assertEquals(IrrigationMethod.DRIP, summary.irrigationMethod)
+        assertEquals(0, BigDecimal.TEN.compareTo(summary.harvestAmount))
+        assertEquals("친환경약제", summary.pesticideName)
+        assertEquals(WeedingMethod.HAND, summary.weedingMethod)
     }
 
     @Test
