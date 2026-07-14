@@ -5,12 +5,14 @@ import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import org.springframework.stereotype.Service
+import java.time.LocalDate
 import java.util.UUID
 
 @Service
 class FarmWeatherService(
     private val farmRepository: FarmRepository,
-    private val weatherProvider: WeatherProvider
+    private val weatherProvider: WeatherProvider,
+    private val historicalWeatherProvider: HistoricalWeatherProvider
 ) {
     fun getCurrentWeather(memberId: UUID, farmId: UUID): FarmWeatherResult.CurrentDetail {
         val farm = farmRepository.findByIdAndOwnerId(farmId, memberId)
@@ -35,6 +37,26 @@ class FarmWeatherService(
 
     fun getCurrentWeather(memberId: UUID): FarmWeatherResult.CurrentDetail =
         getCurrentWeather(memberId, resolveDefaultFarm(memberId).id!!)
+
+    fun getDailyWeather(memberId: UUID, farmId: UUID, date: LocalDate): DailyWeatherSummary {
+        val farm = farmRepository.findByIdAndOwnerId(farmId, memberId)
+            ?: throw BusinessException(ErrorCode.FARM_NOT_FOUND)
+
+        val latitude = farm.latitude
+        val longitude = farm.longitude
+        if (latitude == null || longitude == null) {
+            throw BusinessException(ErrorCode.WEATHER_LOCATION_REQUIRED)
+        }
+        if (date.isAfter(LocalDate.now())) {
+            throw BusinessException(ErrorCode.WEATHER_DATE_IN_FUTURE)
+        }
+
+        return historicalWeatherProvider.fetchDailySummary(latitude, longitude, date)
+            ?: throw BusinessException(ErrorCode.WEATHER_DAILY_DATA_NOT_FOUND)
+    }
+
+    fun getDailyWeather(memberId: UUID, date: LocalDate): DailyWeatherSummary =
+        getDailyWeather(memberId, resolveDefaultFarm(memberId).id!!, date)
 
     private fun resolveDefaultFarm(memberId: UUID): Farm =
         farmRepository.findFirstByOwnerIdOrderByCreatedAtAsc(memberId)
