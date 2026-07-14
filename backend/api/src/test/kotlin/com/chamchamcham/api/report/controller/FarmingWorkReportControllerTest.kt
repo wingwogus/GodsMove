@@ -87,6 +87,7 @@ class FarmingWorkReportControllerTest(
             .andExpect(jsonPath("$.data.items[0].cropName", equalTo("황기")))
             .andExpect(jsonPath("$.data.items[0].recordCount", equalTo(3)))
             .andExpect(jsonPath("$.data.items[0].thumbnailUrl", nullValue()))
+            .andExpect(jsonPath("$.data.items[0].finalHarvestRecordId").doesNotExist())
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-2")))
 
         verify(service).list(condition)

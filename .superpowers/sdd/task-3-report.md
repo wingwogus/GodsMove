@@ -129,3 +129,35 @@ task; Kotlin compilation and all configured verification for both modules ran th
 - Gradle/Spring 테스트 출력에는 기존 `MockBean` deprecation 및 Gradle 9 호환성 경고가
   있으나 실패나 이번 변경으로 새로 도입된 런타임 오류는 없다.
 - 정확한 token usage는 현재 실행 표면에서 제공되지 않았다.
+
+## Review Follow-up — 내부 수확 기준 ID 비공개
+
+리뷰에서 작업 목록 API가 설계에 없는 내부 `finalHarvestRecordId`를 공개한다는 지적을
+받았다. 이 값은 application result에 thumbnail 계산 경계용으로 유지하되 API
+`ItemResponse`와 `from` 매핑에서는 제거했다.
+
+RED:
+
+```bash
+cd backend
+./gradlew :api:test --tests 'com.chamchamcham.api.report.controller.FarmingWorkReportControllerTest'
+```
+
+- `$.data.items[0].finalHarvestRecordId`의 `doesNotExist` assertion을 먼저 추가했다.
+- 9개 테스트 중 목록 응답 shape 테스트 1개가 예상대로 실패했다.
+
+GREEN 및 회귀:
+
+```bash
+cd backend
+./gradlew :application:test \
+  --tests 'com.chamchamcham.application.report.FarmingWorkReportQueryServiceTest' \
+  --tests 'com.chamchamcham.application.coaching.reportfeedback.lifecycle.ReportFeedbackQueryServiceTest' \
+  :api:test \
+  --tests 'com.chamchamcham.api.report.controller.FarmingWorkReportControllerTest' \
+  --tests 'com.chamchamcham.api.report.controller.FarmingCycleReportControllerTest' \
+  --tests 'com.chamchamcham.api.coaching.reportfeedback.controller.ReportFeedbackControllerTest'
+```
+
+Result: `BUILD SUCCESSFUL` (4s). API DTO의 필드와 매핑만 제거했으며 application 내부
+result와 thumbnail 계산은 변경하지 않았다.
