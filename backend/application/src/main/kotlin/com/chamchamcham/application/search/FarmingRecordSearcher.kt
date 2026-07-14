@@ -13,8 +13,8 @@ class FarmingRecordSearcher(
     override fun search(query: SearchQuery): SearchResult.Page {
         val condition = FarmingRecordSearchCondition(
             memberId = query.memberId,
-            cropId = null,
-            workType = null,
+            cropIds = emptyList(),
+            workTypes = emptyList(),
             startDate = null,
             endDate = null,
             keyword = query.keyword,

@@ -43,6 +43,8 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         get() = requireNotNull(member.id) { "Persisted member id is required" }
     private val hwanggiCropId: UUID
         get() = requireNotNull(hwanggiCrop.id) { "Persisted crop id is required" }
+    private val ginsengCropId: UUID
+        get() = requireNotNull(ginsengCrop.id) { "Persisted crop id is required" }
 
     private val now = LocalDateTime.of(2026, 6, 12, 7, 0)
 
@@ -89,7 +91,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         entityManager.flush()
         entityManager.clear()
 
-        val result = queryRepository.search(condition(cropId = hwanggiCropId))
+        val result = queryRepository.search(condition(cropIds = listOf(hwanggiCropId)))
 
         assertThat(result.rows).hasSize(1)
         assertThat(result.rows.single().record.crop.id).isEqualTo(hwanggiCropId)
@@ -102,10 +104,26 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         entityManager.flush()
         entityManager.clear()
 
-        val result = queryRepository.search(condition(workType = WorkType.HARVEST))
+        val result = queryRepository.search(condition(workTypes = listOf(WorkType.HARVEST)))
 
         assertThat(result.rows).hasSize(1)
         assertThat(result.rows.single().record.workType).isEqualTo(WorkType.HARVEST)
+    }
+
+    @Test
+    fun `search filters by multiple crop ids and multiple work types`() {
+        persistRecord(crop = hwanggiCrop, workType = WorkType.PLANTING)
+        persistRecord(crop = ginsengCrop, workType = WorkType.HARVEST)
+        persistRecord(crop = ginsengCrop, workType = WorkType.WATERING)
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(
+            condition(cropIds = listOf(hwanggiCropId, ginsengCropId), workTypes = listOf(WorkType.PLANTING, WorkType.HARVEST))
+        )
+
+        assertThat(result.rows).hasSize(2)
+        assertThat(result.rows.map { it.record.workType }).containsExactlyInAnyOrder(WorkType.PLANTING, WorkType.HARVEST)
     }
 
     @Test
@@ -244,10 +262,84 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         entityManager.flush()
         entityManager.clear()
 
-        val result = queryRepository.search(condition(cropId = hwanggiCropId, keyword = "관수"))
+        val result = queryRepository.search(condition(cropIds = listOf(hwanggiCropId), keyword = "관수"))
 
         assertThat(result.rows).hasSize(1)
         assertThat(result.rows.single().record.crop.id).isEqualTo(hwanggiCropId)
+    }
+
+    @Test
+    fun `search exposes irrigation method for watering records and leaves other summary fields null`() {
+        val record = persistRecord(workType = WorkType.WATERING)
+        persistWateringDetail(record, irrigationMethod = IrrigationMethod.DRIP)
+        entityManager.flush()
+        entityManager.clear()
+
+        val row = queryRepository.search(condition()).rows.single()
+
+        assertThat(row.irrigationMethod).isEqualTo(IrrigationMethod.DRIP)
+        assertThat(row.harvestAmount).isNull()
+        assertThat(row.pesticideName).isNull()
+        assertThat(row.weedingMethod).isNull()
+    }
+
+    @Test
+    fun `search exposes harvest amount for harvest records and leaves other summary fields null`() {
+        val record = persistRecord(workType = WorkType.HARVEST)
+        persistHarvestDetail(record, medicinalPart = CropUsePartCategory.LEAF)
+        entityManager.flush()
+        entityManager.clear()
+
+        val row = queryRepository.search(condition()).rows.single()
+
+        assertThat(row.harvestAmount).isEqualByComparingTo(BigDecimal.TEN)
+        assertThat(row.irrigationMethod).isNull()
+        assertThat(row.pesticideName).isNull()
+        assertThat(row.weedingMethod).isNull()
+    }
+
+    @Test
+    fun `search exposes pesticide brand name for pest control records and leaves other summary fields null`() {
+        val record = persistRecord(workType = WorkType.PEST_CONTROL)
+        persistPestControlDetail(record, pesticideName = "친환경약제")
+        entityManager.flush()
+        entityManager.clear()
+
+        val row = queryRepository.search(condition()).rows.single()
+
+        assertThat(row.pesticideName).isEqualTo("친환경약제")
+        assertThat(row.irrigationMethod).isNull()
+        assertThat(row.harvestAmount).isNull()
+        assertThat(row.weedingMethod).isNull()
+    }
+
+    @Test
+    fun `search exposes weeding method for weeding records and leaves other summary fields null`() {
+        val record = persistRecord(workType = WorkType.WEEDING)
+        persistWeedingDetail(record, weedingMethod = WeedingMethod.HAND)
+        entityManager.flush()
+        entityManager.clear()
+
+        val row = queryRepository.search(condition()).rows.single()
+
+        assertThat(row.weedingMethod).isEqualTo(WeedingMethod.HAND)
+        assertThat(row.irrigationMethod).isNull()
+        assertThat(row.harvestAmount).isNull()
+        assertThat(row.pesticideName).isNull()
+    }
+
+    @Test
+    fun `search returns null summary fields when record has no matching detail`() {
+        persistRecord(workType = WorkType.PRUNING)
+        entityManager.flush()
+        entityManager.clear()
+
+        val row = queryRepository.search(condition()).rows.single()
+
+        assertThat(row.irrigationMethod).isNull()
+        assertThat(row.harvestAmount).isNull()
+        assertThat(row.pesticideName).isNull()
+        assertThat(row.weedingMethod).isNull()
     }
 
     @Test
@@ -269,7 +361,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         entityManager.flush()
         entityManager.clear()
 
-        val total = queryRepository.count(condition(cropId = hwanggiCropId, size = 1))
+        val total = queryRepository.count(condition(cropIds = listOf(hwanggiCropId), size = 1))
 
         assertThat(total).isEqualTo(2)
     }
@@ -281,7 +373,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         entityManager.flush()
         entityManager.clear()
 
-        val total = queryRepository.count(condition(cropId = hwanggiCropId, keyword = "관수"))
+        val total = queryRepository.count(condition(cropIds = listOf(hwanggiCropId), keyword = "관수"))
 
         assertThat(total).isEqualTo(1)
     }
@@ -337,6 +429,20 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         persist(FarmingRecordMedia(record = record, uploadedMedia = media, displayOrder = displayOrder), now)
     }
 
+    private fun persistWateringDetail(record: FarmingRecord, irrigationMethod: IrrigationMethod) {
+        persist(
+            WateringRecord(record = record, irrigationMethod = irrigationMethod),
+            now
+        )
+    }
+
+    private fun persistWeedingDetail(record: FarmingRecord, weedingMethod: WeedingMethod) {
+        persist(
+            WeedingRecord(record = record, weedingMethod = weedingMethod),
+            now
+        )
+    }
+
     private fun persistFertilizingDetail(record: FarmingRecord, materialName: String) {
         persist(
             FertilizingRecord(
@@ -361,7 +467,7 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
                 pesticideAmount = BigDecimal.ONE,
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal.TEN,
-                totalSprayAmountUnit = SprayAmountUnit.L,
+                totalSprayAmountUnit = SprayAmountUnit.ML,
             ),
             now
         )
@@ -375,7 +481,6 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
                 medicinalPart = medicinalPart,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 1,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = false,
             ),
             now
@@ -386,8 +491,8 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         Crop(externalNo = externalNo, name = name, usePartCategory = CropUsePartCategory.ROOT_BARK)
 
     private fun condition(
-        cropId: UUID? = null,
-        workType: WorkType? = null,
+        cropIds: List<UUID> = emptyList(),
+        workTypes: List<WorkType> = emptyList(),
         workedAtFrom: LocalDateTime? = null,
         workedAtTo: LocalDateTime? = null,
         keyword: String? = null,
@@ -398,8 +503,8 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
     ): FarmingRecordQueryRepository.SearchCondition =
         FarmingRecordQueryRepository.SearchCondition(
             memberId = memberId,
-            cropId = cropId,
-            workType = workType,
+            cropIds = cropIds,
+            workTypes = workTypes,
             workedAtFrom = workedAtFrom,
             workedAtTo = workedAtTo,
             keyword = keyword,

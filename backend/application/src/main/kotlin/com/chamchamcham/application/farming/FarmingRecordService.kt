@@ -122,8 +122,8 @@ class FarmingRecordService(
         val trimmedKeyword = condition.keyword?.trim()?.takeIf(String::isNotEmpty)
         return FarmingRecordQueryRepository.SearchCondition(
             memberId = condition.memberId,
-            cropId = condition.cropId,
-            workType = condition.workType,
+            cropIds = condition.cropIds,
+            workTypes = condition.workTypes,
             workedAtFrom = condition.startDate?.atStartOfDay(),
             workedAtTo = condition.endDate?.plusDays(1)?.atStartOfDay(),
             keyword = trimmedKeyword,
@@ -251,7 +251,6 @@ class FarmingRecordService(
                         medicinalPart = detail.medicinalPart,
                         harvestSource = detail.harvestSource,
                         growthPeriod = detail.growthPeriod,
-                        growthPeriodUnit = detail.growthPeriodUnit,
                         isLastHarvest = detail.isLastHarvest,
                     )
                 )
@@ -276,9 +275,14 @@ class FarmingRecordService(
 
     private fun toDetail(record: FarmingRecord): FarmingRecordResult.Detail {
         val recordId = requireNotNull(record.id) { "Persisted farming record id is required" }
-        val imageUrls = farmingRecordMediaRepository.findByRecord_Id(recordId)
+        val images = farmingRecordMediaRepository.findByRecord_Id(recordId)
             .sortedBy { it.displayOrder }
-            .map { it.uploadedMedia.fileUrl }
+            .map {
+                FarmingRecordResult.MediaItem(
+                    mediaId = requireNotNull(it.uploadedMedia.id) { "Persisted uploaded media id is required" },
+                    url = it.uploadedMedia.fileUrl,
+                )
+            }
 
         var planting: FarmingRecordResult.PlantingDetail? = null
         var watering: FarmingRecordResult.WateringDetail? = null
@@ -340,7 +344,6 @@ class FarmingRecordService(
                     medicinalPart = it.medicinalPart,
                     harvestSource = it.harvestSource,
                     growthPeriod = it.growthPeriod,
-                    growthPeriodUnit = it.growthPeriodUnit,
                     isLastHarvest = it.isLastHarvest,
                 )
             }
@@ -365,7 +368,7 @@ class FarmingRecordService(
             pestControl = pestControl,
             weeding = weeding,
             harvest = harvest,
-            imageUrls = imageUrls,
+            images = images,
             createdAt = record.createdAt,
             updatedAt = record.updatedAt,
         )
@@ -383,6 +386,10 @@ class FarmingRecordService(
             weatherTemperature = record.weatherTemperature,
             memoPreview = record.memo.take(MEMO_PREVIEW_LENGTH),
             thumbnailUrl = row.thumbnailUrl,
+            irrigationMethod = row.irrigationMethod,
+            harvestAmount = row.harvestAmount,
+            pesticideName = row.pesticideName,
+            weedingMethod = row.weedingMethod,
         )
     }
 

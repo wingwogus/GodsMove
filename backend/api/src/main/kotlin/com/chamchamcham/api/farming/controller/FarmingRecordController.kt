@@ -49,8 +49,8 @@ class FarmingRecordController(
     @GetMapping
     fun listRecords(
         @AuthenticationPrincipal memberId: String?,
-        @RequestParam(required = false) cropId: UUID?,
-        @RequestParam(required = false) workType: WorkType?,
+        @RequestParam(required = false) cropIds: List<UUID>?,
+        @RequestParam(required = false) workTypes: List<WorkType>?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) startDate: LocalDate?,
         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) endDate: LocalDate?,
         @RequestParam(required = false) keyword: String?,
@@ -60,8 +60,8 @@ class FarmingRecordController(
         val page = farmingRecordService.search(
             FarmingRecordSearchCondition(
                 memberId = parseMemberId(memberId),
-                cropId = cropId,
-                workType = workType,
+                cropIds = cropIds ?: emptyList(),
+                workTypes = workTypes ?: emptyList(),
                 startDate = startDate,
                 endDate = endDate,
                 keyword = keyword,

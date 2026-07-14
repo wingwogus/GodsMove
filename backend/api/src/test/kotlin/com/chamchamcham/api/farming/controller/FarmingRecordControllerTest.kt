@@ -7,7 +7,6 @@ import com.chamchamcham.application.farming.FarmingRecordSearchCondition
 import com.chamchamcham.application.farming.FarmingRecordService
 import com.chamchamcham.application.security.TokenProvider
 import com.chamchamcham.domain.crop.CropUsePartCategory
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.WorkType
 import org.hamcrest.Matchers.equalTo
@@ -139,6 +138,18 @@ class FarmingRecordControllerTest(
     }
 
     @Test
+    fun `create record rejects missing growth period`() {
+        mockMvc.perform(
+            post("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(saveRecordJson(growthPeriod = "null"))
+        )
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
+    }
+
+    @Test
     fun `create record rejects blank fertilizing material name`() {
         val json = """
             {
@@ -168,7 +179,7 @@ class FarmingRecordControllerTest(
     }
 
     @Test
-    fun `create record accepts harvest without medicinal part or growth period`() {
+    fun `create record accepts harvest without medicinal part`() {
         val command = FarmingRecordCommand.Create(
             memberId = memberId,
             farmId = farmId,
@@ -181,6 +192,7 @@ class FarmingRecordControllerTest(
             harvest = FarmingRecordCommand.HarvestDetail(
                 harvestAmount = BigDecimal.TEN,
                 harvestSource = HarvestSource.CULTIVATED,
+                growthPeriod = 2,
                 isLastHarvest = true,
             ),
         )
@@ -198,6 +210,7 @@ class FarmingRecordControllerTest(
               "harvest":{
                 "harvestAmount":10,
                 "harvestSource":"CULTIVATED",
+                "growthPeriod":2,
                 "isLastHarvest":true
               }
             }
@@ -229,7 +242,6 @@ class FarmingRecordControllerTest(
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = true,
             ),
         )
@@ -249,7 +261,6 @@ class FarmingRecordControllerTest(
                 "medicinalPart":"ROOT_BARK",
                 "harvestSource":"CULTIVATED",
                 "growthPeriod":2,
-                "growthPeriodUnit":"YEAR",
                 "isLastHarvest":true
               }
             }
@@ -279,8 +290,7 @@ class FarmingRecordControllerTest(
                 "harvestAmount":10,
                 "medicinalPart":"ROOT_BARK",
                 "harvestSource":"CULTIVATED",
-                "growthPeriod":2,
-                "growthPeriodUnit":"YEAR"
+                "growthPeriod":2
               }
             }
         """.trimIndent()
@@ -354,6 +364,7 @@ class FarmingRecordControllerTest(
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.items[0].id", equalTo(recordId.toString())))
+            .andExpect(jsonPath("$.data.items[0].harvestAmount", equalTo(10)))
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-1")))
     }
 
@@ -363,8 +374,8 @@ class FarmingRecordControllerTest(
             farmingRecordService.search(
                 FarmingRecordSearchCondition(
                     memberId = memberId,
-                    cropId = cropId,
-                    workType = WorkType.HARVEST,
+                    cropIds = listOf(cropId),
+                    workTypes = listOf(WorkType.HARVEST),
                     startDate = LocalDate.of(2026, 6, 1),
                     endDate = LocalDate.of(2026, 6, 30),
                     keyword = null,
@@ -377,8 +388,8 @@ class FarmingRecordControllerTest(
         mockMvc.perform(
             get("/api/v1/farming-records")
                 .with(authenticatedMember(memberId.toString()))
-                .param("cropId", cropId.toString())
-                .param("workType", "HARVEST")
+                .param("cropIds", cropId.toString())
+                .param("workTypes", "HARVEST")
                 .param("startDate", "2026-06-01")
                 .param("endDate", "2026-06-30")
                 .param("cursor", "cursor-1")
@@ -394,8 +405,8 @@ class FarmingRecordControllerTest(
             farmingRecordService.search(
                 FarmingRecordSearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     startDate = null,
                     endDate = null,
                     keyword = "수확",
@@ -427,6 +438,8 @@ class FarmingRecordControllerTest(
             .andExpect(jsonPath("$.data.harvest.harvestAmount", equalTo(10)))
             .andExpect(jsonPath("$.data.harvest.amountUnknown", equalTo(false)))
             .andExpect(jsonPath("$.data.harvest.isLastHarvest", equalTo(true)))
+            .andExpect(jsonPath("$.data.images[0].mediaId", equalTo(mediaId.toString())))
+            .andExpect(jsonPath("$.data.images[0].url", equalTo("https://example.test/1.jpg")))
     }
 
     @Test
@@ -487,7 +500,6 @@ class FarmingRecordControllerTest(
                 "medicinalPart":"ROOT_BARK",
                 "harvestSource":"CULTIVATED",
                 "growthPeriod":$growthPeriod,
-                "growthPeriodUnit":"YEAR",
                 "isLastHarvest":true
               },
               "mediaIds":$mediaIdsJson
@@ -510,7 +522,6 @@ class FarmingRecordControllerTest(
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = true,
             ),
             mediaIds = listOf(mediaId),
@@ -532,7 +543,6 @@ class FarmingRecordControllerTest(
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = true,
             ),
             mediaIds = listOf(mediaId),
@@ -555,6 +565,7 @@ class FarmingRecordControllerTest(
             weatherTemperature = 28,
             memoPreview = "수확 완료",
             thumbnailUrl = "https://example.test/1.jpg",
+            harvestAmount = BigDecimal.TEN,
         )
 
     private fun detailResult(): FarmingRecordResult.Detail =
@@ -574,10 +585,9 @@ class FarmingRecordControllerTest(
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = true,
             ),
-            imageUrls = listOf("https://example.test/1.jpg"),
+            images = listOf(FarmingRecordResult.MediaItem(mediaId = mediaId, url = "https://example.test/1.jpg")),
             createdAt = createdAt,
             updatedAt = createdAt,
         )
@@ -585,8 +595,8 @@ class FarmingRecordControllerTest(
     private fun anySearchCondition(): FarmingRecordSearchCondition =
         FarmingRecordSearchCondition(
             memberId = memberId,
-            cropId = null,
-            workType = null,
+            cropIds = emptyList(),
+            workTypes = emptyList(),
             startDate = null,
             endDate = null,
             keyword = null,

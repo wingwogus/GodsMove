@@ -61,17 +61,13 @@ class DefaultFarmingRecordDetailValidator : FarmingRecordDetailValidator {
 
     // 수확량은 kg로 입력하거나, 모르면 amountUnknown=true로 비워둔다. 둘 다 없거나(누락) 둘 다
     // 있으면(모순) 거부한다. 모름은 항상 NULL로 저장되어 0과 구분된다.
-    // 수확 부위(medicinalPart)는 선택이다. 재배기간(growthPeriod)과 그 단위(growthPeriodUnit)는
-    // 둘 다 비어있거나 둘 다 채워져 있어야 한다.
+    // 수확 부위(medicinalPart)는 선택이다. 재배기간(growthPeriod)은 API 경계에서 필수로 강제된다.
     private fun validateHarvest(detail: FarmingRecordCommand.HarvestDetail?) {
         detail ?: return
         if (!detail.amountUnknown && detail.harvestAmount == null) {
             throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
         }
         if (detail.amountUnknown && detail.harvestAmount != null) {
-            throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
-        }
-        if ((detail.growthPeriod == null) != (detail.growthPeriodUnit == null)) {
             throw BusinessException(ErrorCode.FARMING_RECORD_INVALID_DETAIL)
         }
     }

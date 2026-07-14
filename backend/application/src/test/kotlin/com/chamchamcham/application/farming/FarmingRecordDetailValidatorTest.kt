@@ -4,7 +4,6 @@ import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.PesticideAmountUnit
 import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
@@ -230,7 +229,7 @@ class FarmingRecordDetailValidatorTest {
                 pesticideAmount = BigDecimal.ONE,
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal.TEN,
-                totalSprayAmountUnit = SprayAmountUnit.L,
+                totalSprayAmountUnit = SprayAmountUnit.ML,
             ),
         ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
@@ -251,7 +250,6 @@ class FarmingRecordDetailValidatorTest {
                 harvestAmount = BigDecimal.TEN,
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = false,
             ),
         ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
@@ -266,7 +264,6 @@ class FarmingRecordDetailValidatorTest {
                 amountUnknown = true,
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = false,
             ),
         ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
@@ -281,7 +278,6 @@ class FarmingRecordDetailValidatorTest {
                 amountUnknown = false,
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = false,
             ),
         ).forEach { payload ->
@@ -299,7 +295,6 @@ class FarmingRecordDetailValidatorTest {
                 amountUnknown = true,
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = false,
             ),
         ).forEach { payload ->
@@ -309,51 +304,16 @@ class FarmingRecordDetailValidatorTest {
     }
 
     @Test
-    fun `harvest accepts null medicinal part and null growth period together`() {
-        payloads(
-            workType = WorkType.HARVEST,
-            harvest = FarmingRecordCommand.HarvestDetail(
-                harvestAmount = BigDecimal.TEN,
-                medicinalPart = null,
-                growthPeriod = null,
-                growthPeriodUnit = null,
-                isLastHarvest = false,
-            ),
-        ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
-    }
-
-    @Test
-    fun `harvest rejects growth period without growth period unit`() {
+    fun `harvest accepts null medicinal part`() {
         payloads(
             workType = WorkType.HARVEST,
             harvest = FarmingRecordCommand.HarvestDetail(
                 harvestAmount = BigDecimal.TEN,
                 medicinalPart = null,
                 growthPeriod = 2,
-                growthPeriodUnit = null,
                 isLastHarvest = false,
             ),
-        ).forEach { payload ->
-            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
-            assertEquals(ErrorCode.FARMING_RECORD_INVALID_DETAIL, exception.errorCode)
-        }
-    }
-
-    @Test
-    fun `harvest rejects growth period unit without growth period`() {
-        payloads(
-            workType = WorkType.HARVEST,
-            harvest = FarmingRecordCommand.HarvestDetail(
-                harvestAmount = BigDecimal.TEN,
-                medicinalPart = null,
-                growthPeriod = null,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
-                isLastHarvest = false,
-            ),
-        ).forEach { payload ->
-            val exception = assertThrows(BusinessException::class.java) { validator.validate(payload) }
-            assertEquals(ErrorCode.FARMING_RECORD_INVALID_DETAIL, exception.errorCode)
-        }
+        ).forEach { payload -> assertDoesNotThrow { validator.validate(payload) } }
     }
 
     @Test

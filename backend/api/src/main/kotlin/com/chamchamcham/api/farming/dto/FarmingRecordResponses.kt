@@ -4,7 +4,6 @@ import com.chamchamcham.application.farming.FarmingRecordResult
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
@@ -38,6 +37,10 @@ object FarmingRecordResponses {
         val weatherTemperature: Int,
         val memoPreview: String,
         val thumbnailUrl: String?,
+        val irrigationMethod: IrrigationMethod?,
+        val harvestAmount: BigDecimal?,
+        val pesticideName: String?,
+        val weedingMethod: WeedingMethod?,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.Summary): RecordSummaryResponse = RecordSummaryResponse(
@@ -50,6 +53,10 @@ object FarmingRecordResponses {
                 weatherTemperature = result.weatherTemperature,
                 memoPreview = result.memoPreview,
                 thumbnailUrl = result.thumbnailUrl,
+                irrigationMethod = result.irrigationMethod,
+                harvestAmount = result.harvestAmount,
+                pesticideName = result.pesticideName,
+                weedingMethod = result.weedingMethod,
             )
         }
     }
@@ -83,7 +90,7 @@ object FarmingRecordResponses {
         val pestControl: PestControlDetailResponse?,
         val weeding: WeedingDetailResponse?,
         val harvest: HarvestDetailResponse?,
-        val imageUrls: List<String>,
+        val images: List<MediaResponse>,
         val createdAt: LocalDateTime,
         val updatedAt: LocalDateTime,
     ) {
@@ -105,10 +112,20 @@ object FarmingRecordResponses {
                 pestControl = result.pestControl?.let(PestControlDetailResponse::from),
                 weeding = result.weeding?.let(WeedingDetailResponse::from),
                 harvest = result.harvest?.let(HarvestDetailResponse::from),
-                imageUrls = result.imageUrls,
+                images = result.images.map(MediaResponse::from),
                 createdAt = result.createdAt,
                 updatedAt = result.updatedAt,
             )
+        }
+    }
+
+    data class MediaResponse(
+        val mediaId: UUID,
+        val url: String,
+    ) {
+        companion object {
+            fun from(result: FarmingRecordResult.MediaItem): MediaResponse =
+                MediaResponse(mediaId = result.mediaId, url = result.url)
         }
     }
 
@@ -198,8 +215,7 @@ object FarmingRecordResponses {
         val amountUnknown: Boolean,
         val medicinalPart: CropUsePartCategory?,
         val harvestSource: HarvestSource,
-        val growthPeriod: Int?,
-        val growthPeriodUnit: GrowthPeriodUnit?,
+        val growthPeriod: Int,
         val isLastHarvest: Boolean,
     ) {
         companion object {
@@ -209,7 +225,6 @@ object FarmingRecordResponses {
                 medicinalPart = result.medicinalPart,
                 harvestSource = result.harvestSource,
                 growthPeriod = result.growthPeriod,
-                growthPeriodUnit = result.growthPeriodUnit,
                 isLastHarvest = result.isLastHarvest,
             )
         }

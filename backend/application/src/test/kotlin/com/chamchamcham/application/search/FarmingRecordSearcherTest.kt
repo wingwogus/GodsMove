@@ -41,8 +41,8 @@ class FarmingRecordSearcherTest {
             farmingRecordService.search(
                 FarmingRecordSearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     startDate = null,
                     endDate = null,
                     keyword = "황기",
@@ -72,8 +72,8 @@ class FarmingRecordSearcherTest {
             farmingRecordService.count(
                 FarmingRecordSearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     startDate = null,
                     endDate = null,
                     keyword = "황기",

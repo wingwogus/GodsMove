@@ -5,7 +5,6 @@ import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
@@ -131,9 +130,9 @@ object FarmingRecordRequests {
         val medicinalPart: CropUsePartCategory? = null,
         val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
 
+        @field:NotNull(message = "재배기간을 입력해주세요")
         @field:Min(value = 1, message = "재배기간은 1 이상이어야 합니다")
-        val growthPeriod: Int? = null,
-        val growthPeriodUnit: GrowthPeriodUnit? = null,
+        val growthPeriod: Int?,
 
         @field:NotNull(message = "마지막 수확 여부를 선택해주세요")
         val isLastHarvest: Boolean?,
@@ -215,7 +214,6 @@ fun FarmingRecordRequests.HarvestDetailRequest.toCommand(): FarmingRecordCommand
         amountUnknown = harvestAmountUnknown,
         medicinalPart = medicinalPart,
         harvestSource = harvestSource,
-        growthPeriod = growthPeriod,
-        growthPeriodUnit = growthPeriodUnit,
+        growthPeriod = requireNotNull(growthPeriod),
         isLastHarvest = requireNotNull(isLastHarvest),
     )

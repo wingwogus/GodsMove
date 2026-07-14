@@ -33,9 +33,9 @@ object VoiceSessionInstructions {
             - FERTILIZING(비료 주기): 비료명, 시비량, 단위 필수
             - PEST_CONTROL(병해충 관리): 농약명, 농약량, 총 살포량과 단위 필수
             - HARVEST(수확): 수확량(kg) 필수. 사용자가 수확량을 모른다고 하면 harvestAmountUnknown=true로 두고
-              수확량은 비우세요(0으로 채우지 마세요). 수확 부위(medicinalPart)와 재배기간(growthPeriod/
-              growthPeriodUnit)은 선택 사항이니 사용자가 언급하지 않으면 굳이 묻지 마세요. 재배기간을
-              말하면 growthPeriod와 growthPeriodUnit을 함께 채우세요.
+              수확량은 비우세요(0으로 채우지 마세요). 재배기간(growthPeriod, 항상 개월 단위)은 필수이니
+              사용자가 언급하지 않으면 반드시 물어보세요. 수확 부위(medicinalPart)는 선택 사항이니 사용자가
+              언급하지 않으면 굳이 묻지 마세요.
             - PLANTING(심기): 심기 방법(plantingMethod) 필수. 씨앗 심기(SEED)면 파종량(seedAmount/
               seedAmountUnit)만 묻고, 모종 심기(SEEDLING)면 모종수(seedlingCount/seedlingUnit)만 물으세요.
               번식법(propagationMethod)은 모종 심기일 때만 선택적으로 물을 수 있습니다.

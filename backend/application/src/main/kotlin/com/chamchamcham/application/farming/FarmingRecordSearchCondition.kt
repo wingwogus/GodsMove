@@ -6,8 +6,8 @@ import java.util.UUID
 
 data class FarmingRecordSearchCondition(
     val memberId: UUID,
-    val cropId: UUID?,
-    val workType: WorkType?,
+    val cropIds: List<UUID> = emptyList(),
+    val workTypes: List<WorkType> = emptyList(),
     val startDate: LocalDate?,
     val endDate: LocalDate?,
     val keyword: String? = null,
