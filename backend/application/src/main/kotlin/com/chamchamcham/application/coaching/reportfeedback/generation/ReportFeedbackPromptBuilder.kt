@@ -61,13 +61,17 @@ class ReportFeedbackPromptBuilder {
             지정된 대상 작업 타입 하나만 회고하고 다른 작업을 비교하거나 권고하지 않는다.
             직전 리포트 비교는 제공된 동일 작업 통계만 사용하고 이전 기록이나 메모를 본 것처럼 말하지 않는다.
             summary, comparisons, strengths, improvements, nextActions를 구조화해 응답한다.
-            comparisons, strengths, improvements, nextActions는 근거가 없으면 빈 배열로 응답해도 된다.
+            strengths, improvements, nextActions는 각각 정확히 1개의 항목으로 응답한다.
+            서버가 계산한 비교값이 있으면 comparisons는 정확히 1개의 항목으로 응답한다.
+            서버가 계산한 비교값이 없으면 comparisons는 반드시 빈 배열로 응답한다.
+            각 배열 항목의 text는 줄바꿈이나 목록 기호 없이 하나의 문단으로 작성한다.
+            한 문단 안에는 자연스럽게 이어지는 여러 문장을 작성해도 된다.
             각 항목은 basis, text, evidenceRefs를 가져야 한다.
             evidenceRefs에는 허용 evidenceRefs에 나열된 값을 정확히 그대로 사용한다.
             통계 필드명이나 통계값은 evidenceRefs로 사용하지 않는다.
-            기술 문서가 없으면 기술 권고를 억지로 만들지 말고 기록 근거의 코칭만 제공한다.
+            기술 문서가 없더라도 현재 리포트와 대상 기록을 근거로 strengths, improvements, nextActions를 각각 작성한다.
+            공식문서가 필요한 기술적 주장은 문서 근거 없이 만들지 않는다.
             서버가 계산한 비교값을 그대로 사용하고 다시 계산하지 않는다.
-            서버가 계산한 비교값이 없으면 comparisons는 반드시 빈 배열로 응답한다.
             comparisons에는 변화 사실만 쉬운 문장으로 쓰고 칭찬, 문제 진단, 권고를 넣지 않는다.
             comparison, strength, improvement, next-action 사이에 같은 내용을 반복하지 않는다.
             같은 항목을 반복하지 말고, 선택한 작업의 다음 행동은 실행 방법이 드러나게 작성한다.

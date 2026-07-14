@@ -39,6 +39,17 @@ class ReportFeedbackPromptBuilderTest {
             .contains("comparison, strength, improvement, next-action 사이에 같은 내용을 반복하지 않는다.")
             .contains(CoachingTextPolicy.promptInstructions)
             .doesNotContain("다음 사이클 계획")
+        assertThat(prompt.system)
+            .contains(
+                "strengths, improvements, nextActions는 각각 정확히 1개의 항목으로 응답한다.",
+                "서버가 계산한 비교값이 있으면 comparisons는 정확히 1개의 항목으로 응답한다.",
+                "서버가 계산한 비교값이 없으면 comparisons는 반드시 빈 배열로 응답한다.",
+                "각 배열 항목의 text는 줄바꿈이나 목록 기호 없이 하나의 문단으로 작성한다.",
+                "한 문단 안에는 자연스럽게 이어지는 여러 문장을 작성해도 된다.",
+            )
+            .doesNotContain(
+                "comparisons, strengths, improvements, nextActions는 근거가 없으면 빈 배열로 응답해도 된다.",
+            )
         assertThat(prompt.user)
             .contains("대상 작업: 물 주기")
             .contains("기록 횟수: 4회")
