@@ -5,6 +5,8 @@ import com.chamchamcham.application.search.SearchCategory
 import com.chamchamcham.application.search.SearchQuery
 import com.chamchamcham.application.search.SearchResult
 import com.chamchamcham.application.search.SearchService
+import com.chamchamcham.application.search.SearchSuggestionResult
+import com.chamchamcham.application.search.SearchSuggestionService
 import com.chamchamcham.application.security.TokenProvider
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
@@ -36,6 +38,7 @@ class SearchControllerTest(
     private val createdAt = LocalDateTime.of(2026, 6, 1, 9, 0)
 
     @MockBean private lateinit var searchService: SearchService
+    @MockBean private lateinit var searchSuggestionService: SearchSuggestionService
     @MockBean private lateinit var tokenProvider: TokenProvider
 
     @Test
@@ -125,6 +128,28 @@ class SearchControllerTest(
     @Test
     fun `search without auth returns unauthorized`() {
         mockMvc.perform(get("/api/v1/search"))
+            .andExpect(status().isUnauthorized)
+            .andExpect(jsonPath("$.error.code", equalTo("AUTH_001")))
+    }
+
+    @Test
+    fun `suggestions returns keywords from suggestion service`() {
+        `when`(searchSuggestionService.suggest("황기"))
+            .thenReturn(SearchSuggestionResult.Suggestions(keywords = listOf("황기", "황기환", "황기차")))
+
+        mockMvc.perform(
+            get("/api/v1/search/suggestions")
+                .with(authenticatedMember(memberId.toString()))
+                .param("keyword", "황기")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.keywords[0]", equalTo("황기")))
+            .andExpect(jsonPath("$.data.keywords.length()", equalTo(3)))
+    }
+
+    @Test
+    fun `suggestions without auth returns unauthorized`() {
+        mockMvc.perform(get("/api/v1/search/suggestions").param("keyword", "황기"))
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.error.code", equalTo("AUTH_001")))
     }
