@@ -123,6 +123,26 @@ class KmaAsosWeatherProviderTest {
         server.verify()
     }
 
+    @Test
+    fun `resultCode가 00이고 item은 있지만 minTa가 없으면 null을 반환한다`() {
+        expectRequest(withJson(NO_MIN_TA_BODY))
+
+        val summary = provider.fetchDailySummary(37.5665, 126.9780, LocalDate.of(2026, 7, 1))
+
+        assertThat(summary).isNull()
+        server.verify()
+    }
+
+    @Test
+    fun `resultCode가 00이고 item은 있지만 maxTa가 없으면 null을 반환한다`() {
+        expectRequest(withJson(NO_MAX_TA_BODY))
+
+        val summary = provider.fetchDailySummary(37.5665, 126.9780, LocalDate.of(2026, 7, 1))
+
+        assertThat(summary).isNull()
+        server.verify()
+    }
+
     private fun expectRequest(responder: org.springframework.test.web.client.ResponseCreator) {
         server.expect(requestTo(containsString("getWthrDataList"))).andRespond(responder)
     }
@@ -168,6 +188,20 @@ class KmaAsosWeatherProviderTest {
             {"response":{"header":{"resultCode":"00","resultMsg":"NORMAL_SERVICE"},
              "body":{"dataType":"JSON","items":{"item":
                {"stnId":"108","stnNm":"서울","tm":"2026-07-01","minTa":"20.1","maxTa":"29.4","avgRhm":"55.0","avgWs":"2.1","sumRn":"0.0"}
+             },"pageNo":1,"numOfRows":10,"totalCount":1}}}
+        """.trimIndent()
+
+        private val NO_MIN_TA_BODY = """
+            {"response":{"header":{"resultCode":"00","resultMsg":"NORMAL_SERVICE"},
+             "body":{"dataType":"JSON","items":{"item":
+               {"stnId":"108","stnNm":"서울","tm":"2026-07-01","maxTa":"29.4","avgRhm":"55.0","avgWs":"2.1","sumRn":"0.0","avgTca":"1.5"}
+             },"pageNo":1,"numOfRows":10,"totalCount":1}}}
+        """.trimIndent()
+
+        private val NO_MAX_TA_BODY = """
+            {"response":{"header":{"resultCode":"00","resultMsg":"NORMAL_SERVICE"},
+             "body":{"dataType":"JSON","items":{"item":
+               {"stnId":"108","stnNm":"서울","tm":"2026-07-01","minTa":"20.1","avgRhm":"55.0","avgWs":"2.1","sumRn":"0.0","avgTca":"1.5"}
              },"pageNo":1,"numOfRows":10,"totalCount":1}}}
         """.trimIndent()
     }

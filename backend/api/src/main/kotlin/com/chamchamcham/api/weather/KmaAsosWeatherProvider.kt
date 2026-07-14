@@ -60,10 +60,8 @@ class KmaAsosWeatherProvider internal constructor(
         val station = NearestAsosStationResolver.resolve(latitude, longitude)
         val item = requestItem(station.id, date) ?: return null
 
-        val minTemperature = item.minTa?.toDoubleOrNull()?.roundToInt()
-            ?: throw BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE)
-        val maxTemperature = item.maxTa?.toDoubleOrNull()?.roundToInt()
-            ?: throw BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE)
+        val minTemperature = item.minTa?.toDoubleOrNull()?.roundToInt() ?: return null
+        val maxTemperature = item.maxTa?.toDoubleOrNull()?.roundToInt() ?: return null
 
         val skyCondition = AsosSkyConditionMapper.of(
             avgTca = item.avgTca?.toDoubleOrNull(),
