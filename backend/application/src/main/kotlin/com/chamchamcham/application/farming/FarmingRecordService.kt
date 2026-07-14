@@ -261,9 +261,14 @@ class FarmingRecordService(
 
     private fun toDetail(record: FarmingRecord): FarmingRecordResult.Detail {
         val recordId = requireNotNull(record.id) { "Persisted farming record id is required" }
-        val imageUrls = farmingRecordMediaRepository.findByRecord_Id(recordId)
+        val images = farmingRecordMediaRepository.findByRecord_Id(recordId)
             .sortedBy { it.displayOrder }
-            .map { it.uploadedMedia.fileUrl }
+            .map {
+                FarmingRecordResult.MediaItem(
+                    mediaId = requireNotNull(it.uploadedMedia.id) { "Persisted uploaded media id is required" },
+                    url = it.uploadedMedia.fileUrl,
+                )
+            }
 
         var planting: FarmingRecordResult.PlantingDetail? = null
         var watering: FarmingRecordResult.WateringDetail? = null
@@ -350,7 +355,7 @@ class FarmingRecordService(
             pestControl = pestControl,
             weeding = weeding,
             harvest = harvest,
-            imageUrls = imageUrls,
+            images = images,
             createdAt = record.createdAt,
             updatedAt = record.updatedAt,
         )

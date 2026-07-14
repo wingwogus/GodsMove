@@ -658,7 +658,7 @@ class FarmingRecordServiceTest {
         assertEquals(20, detail.weatherTemperature)
         assertEquals(BigDecimal.TEN, detail.harvest?.harvestAmount)
         assertEquals(true, detail.harvest?.isLastHarvest)
-        assertThat(detail.imageUrls).containsExactly(media1.fileUrl)
+        assertThat(detail.images).containsExactly(FarmingRecordResult.MediaItem(mediaId = mediaId1, url = media1.fileUrl))
     }
 
     @Test

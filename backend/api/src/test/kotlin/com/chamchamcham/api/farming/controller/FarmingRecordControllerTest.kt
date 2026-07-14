@@ -427,6 +427,8 @@ class FarmingRecordControllerTest(
             .andExpect(jsonPath("$.data.harvest.harvestAmount", equalTo(10)))
             .andExpect(jsonPath("$.data.harvest.amountUnknown", equalTo(false)))
             .andExpect(jsonPath("$.data.harvest.isLastHarvest", equalTo(true)))
+            .andExpect(jsonPath("$.data.images[0].mediaId", equalTo(mediaId.toString())))
+            .andExpect(jsonPath("$.data.images[0].url", equalTo("https://example.test/1.jpg")))
     }
 
     @Test
@@ -577,7 +579,7 @@ class FarmingRecordControllerTest(
                 growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = true,
             ),
-            imageUrls = listOf("https://example.test/1.jpg"),
+            images = listOf(FarmingRecordResult.MediaItem(mediaId = mediaId, url = "https://example.test/1.jpg")),
             createdAt = createdAt,
             updatedAt = createdAt,
         )

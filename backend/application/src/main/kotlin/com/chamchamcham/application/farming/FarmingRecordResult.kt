@@ -59,9 +59,14 @@ object FarmingRecordResult {
         val pestControl: PestControlDetail? = null,
         val weeding: WeedingDetail? = null,
         val harvest: HarvestDetail? = null,
-        val imageUrls: List<String>,
+        val images: List<MediaItem>,
         val createdAt: LocalDateTime,
         val updatedAt: LocalDateTime,
+    )
+
+    data class MediaItem(
+        val mediaId: UUID,
+        val url: String,
     )
 
     data class PlantingDetail(
