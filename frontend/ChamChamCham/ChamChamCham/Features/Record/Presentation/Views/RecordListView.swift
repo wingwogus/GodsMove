@@ -30,6 +30,12 @@ struct RecordListView: View {
     }
 
     var body: some View {
+        NavigationStack {
+            recordTabContent
+        }
+    }
+
+    private var recordTabContent: some View {
         ZStack(alignment: .bottomTrailing) {
             VStack(spacing: 0) {
                 AppTopAppBar(
@@ -80,6 +86,11 @@ struct RecordListView: View {
                     Task { await viewModel.applyDateFilter(startDate: start, endDate: end) }
                 }
             }
+        }
+        .toolbar(.hidden, for: .navigationBar)
+        .navigationDestination(for: UUID.self) { recordId in
+            RecordDetailView(recordId: recordId, repository: repository)
+                .toolbar(.hidden, for: .tabBar)
         }
     }
 
@@ -138,8 +149,11 @@ struct RecordListView: View {
             } else {
                 LazyVStack(spacing: 0) {
                     ForEach(viewModel.records) { record in
-                        RecordRow(record: record)
-                            .task { await viewModel.loadMoreIfNeeded(currentItem: record) }
+                        NavigationLink(value: record.id) {
+                            RecordRow(record: record)
+                        }
+                        .buttonStyle(.plain)
+                        .task { await viewModel.loadMoreIfNeeded(currentItem: record) }
                     }
                     if viewModel.isLoadingMore {
                         ProgressView().padding(Spacing.md)

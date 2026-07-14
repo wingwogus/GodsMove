@@ -8,10 +8,11 @@
 import Foundation
 
 /// The single async entry point the record presentation layer talks to. Returns domain types (not DTOs),
-/// mirroring `CommunityRepository`. Read-only for now — create/update/delete land with the (not-yet-captured)
-/// record compose flow.
+/// mirroring `CommunityRepository`. List + detail + create are wired; update/delete land with the
+/// (not-yet-captured) 수정/삭제 flow.
 protocol RecordRepository: Sendable {
     func fetchRecords(_ query: RecordQuery) async throws -> RecordPage
+    func fetchDetail(id: UUID) async throws -> RecordDetail
     func fetchActiveCrops() async throws -> [ActiveCrop]
     func fetchFarmCrops() async throws -> [FarmWithCrops]
     func fetchWeather(farmId: UUID) async throws -> CurrentWeather
@@ -27,6 +28,11 @@ struct RemoteRecordRepository: RecordRepository {
 
     func fetchRecords(_ query: RecordQuery) async throws -> RecordPage {
         let dto: RecordPageResponseDTO = try await apiClient.send(RecordEndpoint.listRecords(query))
+        return dto.toDomain()
+    }
+
+    func fetchDetail(id: UUID) async throws -> RecordDetail {
+        let dto: RecordDetailResponseDTO = try await apiClient.send(RecordEndpoint.recordDetail(id: id))
         return dto.toDomain()
     }
 

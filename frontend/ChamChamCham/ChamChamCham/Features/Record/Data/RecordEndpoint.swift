@@ -39,6 +39,7 @@ struct RecordQuery: Sendable, Equatable {
 /// here, so they live in this endpoint for locality.
 enum RecordEndpoint: Endpoint {
     case listRecords(RecordQuery)
+    case recordDetail(id: UUID)
     case activeCrops
     case createRecord(SaveRecordRequestDTO)
     case pesticides(keyword: String?, cursor: String?, size: Int)
@@ -49,6 +50,8 @@ enum RecordEndpoint: Endpoint {
         switch self {
         case .listRecords, .createRecord:
             "api/v1/farming-records"
+        case let .recordDetail(id):
+            "api/v1/farming-records/\(id.uuidString)"
         case .activeCrops:
             "api/v1/members/me/farm-crops"
         case .pesticides:
@@ -64,7 +67,7 @@ enum RecordEndpoint: Endpoint {
         switch self {
         case .createRecord:
             .post
-        case .listRecords, .activeCrops, .pesticides, .pests, .farmWeather:
+        case .listRecords, .recordDetail, .activeCrops, .pesticides, .pests, .farmWeather:
             .get
         }
     }
@@ -112,7 +115,7 @@ enum RecordEndpoint: Endpoint {
                 items.append(URLQueryItem(name: "cursor", value: cursor))
             }
             return items
-        case .activeCrops, .createRecord, .pests, .farmWeather:
+        case .recordDetail, .activeCrops, .createRecord, .pests, .farmWeather:
             return []
         }
     }
