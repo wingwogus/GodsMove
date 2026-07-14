@@ -66,6 +66,11 @@ weather:
     service-key: test-kma-service-key
     connect-timeout-millis: 2000
     read-timeout-millis: 2000
+  asos:
+    base-url: https://apis.data.go.kr/1360000/AsosDalyInfoService
+    service-key: test-kma-service-key
+    connect-timeout-millis: 2000
+    read-timeout-millis: 2000
 
 openai:
   realtime:

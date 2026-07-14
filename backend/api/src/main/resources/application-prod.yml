@@ -63,6 +63,11 @@ weather:
     service-key: ${KMA_SERVICE_KEY}
     connect-timeout-millis: ${KMA_CONNECT_TIMEOUT_MILLIS:2000}
     read-timeout-millis: ${KMA_READ_TIMEOUT_MILLIS:2000}
+  asos:
+    base-url: https://apis.data.go.kr/1360000/AsosDalyInfoService
+    service-key: ${KMA_SERVICE_KEY}
+    connect-timeout-millis: ${KMA_CONNECT_TIMEOUT_MILLIS:2000}
+    read-timeout-millis: ${KMA_READ_TIMEOUT_MILLIS:2000}
 
 psis:
   pesticide:
