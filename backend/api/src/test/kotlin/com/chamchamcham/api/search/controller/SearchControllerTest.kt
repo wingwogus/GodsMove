@@ -60,11 +60,13 @@ class SearchControllerTest(
                             )
                         ),
                         hasMore = true,
+                        totalCount = 12,
                     ),
                     SearchResult.SectionPreview(
                         category = SearchCategory.POST,
                         items = emptyList(),
                         hasMore = false,
+                        totalCount = 0,
                     ),
                 )
             )
@@ -79,6 +81,7 @@ class SearchControllerTest(
             .andExpect(jsonPath("$.data.sections[0].category", equalTo("RECORD")))
             .andExpect(jsonPath("$.data.sections[0].items[0].id", equalTo(recordId.toString())))
             .andExpect(jsonPath("$.data.sections[0].hasMore", equalTo(true)))
+            .andExpect(jsonPath("$.data.sections[0].totalCount", equalTo(12)))
     }
 
     @Test
@@ -100,7 +103,8 @@ class SearchControllerTest(
                         createdAt = createdAt,
                     )
                 ),
-                nextCursor = "cursor-2"
+                nextCursor = "cursor-2",
+                totalCount = 25,
             )
         )
 
@@ -115,6 +119,7 @@ class SearchControllerTest(
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.items[0].id", equalTo(recordId.toString())))
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-2")))
+            .andExpect(jsonPath("$.data.totalCount", equalTo(25)))
     }
 
     @Test
