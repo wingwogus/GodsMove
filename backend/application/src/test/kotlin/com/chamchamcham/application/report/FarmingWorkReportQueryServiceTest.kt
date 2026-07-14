@@ -19,6 +19,7 @@ import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.verify
+import org.mockito.Mockito.verifyNoMoreInteractions
 import org.mockito.junit.jupiter.MockitoExtension
 import java.time.LocalDate
 import java.time.LocalDateTime
@@ -185,19 +186,200 @@ class FarmingWorkReportQueryServiceTest {
         verify(sourceRepository).load(memberId, setOf(farmId), setOf(cropId))
     }
 
+    @Test
+    fun `list isolates thumbnails by exact farm and crop scope from cross product records`() {
+        val otherFarm = Farm(
+            id = id("102"),
+            owner = member,
+            name = "다른 농장",
+            roadAddress = "서울시 서초구",
+        )
+        val otherCrop = Crop(
+            id = id("202"),
+            externalNo = 423,
+            name = "감초",
+            usePartCategory = CropUsePartCategory.ROOT_BARK,
+        )
+        val firstFinalId = id("406")
+        val secondFinalId = id("416")
+        val firstItem = workItem(
+            workType = WorkType.WATERING,
+            recordCount = 1,
+            reportId = id("301"),
+            farm = farm,
+            crop = crop,
+            finalHarvestRecordId = firstFinalId,
+        )
+        val secondItem = workItem(
+            workType = WorkType.WATERING,
+            recordCount = 1,
+            reportId = id("302"),
+            farm = otherFarm,
+            crop = otherCrop,
+            finalHarvestRecordId = secondFinalId,
+        )
+        val expectedCondition = FarmingCycleReportQueryRepository.WorkItemSearchCondition(
+            memberId = memberId,
+            farmId = null,
+            cropId = null,
+            workType = WorkType.WATERING,
+            cursor = null,
+            size = 3,
+        )
+        `when`(queryRepository.searchCompletedWorkItems(expectedCondition)).thenReturn(
+            FarmingCycleReportQueryRepository.WorkItemSearchResult(listOf(firstItem, secondItem)),
+        )
+
+        val firstUnpictured = record("401", WorkType.WATERING, day = 1)
+        val firstFinal = record("406", WorkType.HARVEST, day = 2)
+        val secondPictured = record("411", WorkType.WATERING, day = 1, farm = otherFarm, crop = otherCrop)
+        val secondFinal = record("416", WorkType.HARVEST, day = 2, farm = otherFarm, crop = otherCrop)
+        val temptingCrossProduct = record("421", WorkType.WATERING, day = 3, farm = farm, crop = otherCrop)
+        val crossProductFinal = record("426", WorkType.HARVEST, day = 4, farm = farm, crop = otherCrop)
+        val farmIds = setOf(requireNotNull(farm.id), requireNotNull(otherFarm.id))
+        val cropIds = setOf(requireNotNull(crop.id), requireNotNull(otherCrop.id))
+        `when`(sourceRepository.load(memberId, farmIds, cropIds)).thenReturn(
+            FarmingWorkReportSourceSnapshot(
+                records = listOf(
+                    temptingCrossProduct,
+                    secondFinal,
+                    firstUnpictured,
+                    crossProductFinal,
+                    secondPictured,
+                    firstFinal,
+                ),
+                finalHarvestRecordIds = setOf(
+                    requireNotNull(firstFinal.id),
+                    requireNotNull(secondFinal.id),
+                    requireNotNull(crossProductFinal.id),
+                ),
+                firstImageUrlByRecordId = mapOf(
+                    requireNotNull(secondPictured.id) to "https://img/second-scope.jpg",
+                    requireNotNull(temptingCrossProduct.id) to "https://img/cross-product-newer.jpg",
+                ),
+            ),
+        )
+
+        val page = service.list(
+            FarmingWorkReportSearchCondition(
+                memberId = memberId,
+                farmId = null,
+                cropId = null,
+                workType = WorkType.WATERING,
+                cursor = null,
+                size = 2,
+            ),
+        )
+
+        assertThat(page.items.map { it.thumbnailUrl })
+            .containsExactly(null, "https://img/second-scope.jpg")
+        assertThat(page.nextCursor).isNull()
+        verify(queryRepository).searchCompletedWorkItems(expectedCondition)
+        verify(sourceRepository).load(memberId, farmIds, cropIds)
+    }
+
+    @Test
+    fun `list resolves tied pictured records by created time then record id`() {
+        val expectedCondition = FarmingCycleReportQueryRepository.WorkItemSearchCondition(
+            memberId = memberId,
+            farmId = farmId,
+            cropId = cropId,
+            workType = WorkType.WATERING,
+            cursor = null,
+            size = 2,
+        )
+        val item = workItem(WorkType.WATERING, recordCount = 3)
+        `when`(queryRepository.searchCompletedWorkItems(expectedCondition)).thenReturn(
+            FarmingCycleReportQueryRepository.WorkItemSearchResult(listOf(item)),
+        )
+        val higherIdButOlderCreated = record("499", WorkType.WATERING, day = 3, createdMinute = 1)
+        val lowerTiedId = record("451", WorkType.WATERING, day = 3, createdMinute = 2)
+        val higherTiedId = record("452", WorkType.WATERING, day = 3, createdMinute = 2)
+        val targetFinal = record("406", WorkType.HARVEST, day = 5)
+        `when`(sourceRepository.load(memberId, setOf(farmId), setOf(cropId))).thenReturn(
+            FarmingWorkReportSourceSnapshot(
+                records = listOf(targetFinal, higherTiedId, higherIdButOlderCreated, lowerTiedId),
+                finalHarvestRecordIds = setOf(requireNotNull(targetFinal.id)),
+                firstImageUrlByRecordId = mapOf(
+                    requireNotNull(higherIdButOlderCreated.id) to "https://img/higher-id-older-created.jpg",
+                    requireNotNull(lowerTiedId.id) to "https://img/lower-tied-id.jpg",
+                    requireNotNull(higherTiedId.id) to "https://img/higher-tied-id.jpg",
+                ),
+            ),
+        )
+
+        val page = service.list(
+            FarmingWorkReportSearchCondition(
+                memberId = memberId,
+                farmId = farmId,
+                cropId = cropId,
+                workType = WorkType.WATERING,
+                cursor = null,
+                size = 1,
+            ),
+        )
+
+        assertThat(page.items.single().thumbnailUrl).isEqualTo("https://img/higher-tied-id.jpg")
+        verify(queryRepository).searchCompletedWorkItems(expectedCondition)
+        verify(sourceRepository).load(memberId, setOf(farmId), setOf(cropId))
+    }
+
+    @Test
+    fun `empty projection still performs one fixed source load with empty scopes`() {
+        val expectedCondition = FarmingCycleReportQueryRepository.WorkItemSearchCondition(
+            memberId = memberId,
+            farmId = null,
+            cropId = null,
+            workType = null,
+            cursor = null,
+            size = 11,
+        )
+        `when`(queryRepository.searchCompletedWorkItems(expectedCondition)).thenReturn(
+            FarmingCycleReportQueryRepository.WorkItemSearchResult(emptyList()),
+        )
+        `when`(sourceRepository.load(memberId, emptySet(), emptySet())).thenReturn(
+            FarmingWorkReportSourceSnapshot(
+                records = emptyList(),
+                finalHarvestRecordIds = emptySet(),
+                firstImageUrlByRecordId = emptyMap(),
+            ),
+        )
+
+        val page = service.list(
+            FarmingWorkReportSearchCondition(
+                memberId = memberId,
+                farmId = null,
+                cropId = null,
+                workType = null,
+                cursor = null,
+                size = 10,
+            ),
+        )
+
+        assertThat(page.items).isEmpty()
+        assertThat(page.nextCursor).isNull()
+        verify(queryRepository).searchCompletedWorkItems(expectedCondition)
+        verify(sourceRepository).load(memberId, emptySet(), emptySet())
+        verifyNoMoreInteractions(sourceRepository)
+    }
+
     private fun workItem(
         workType: WorkType,
         recordCount: Int,
+        reportId: UUID = this.reportId,
+        farm: Farm = this.farm,
+        crop: Crop = this.crop,
+        finalHarvestRecordId: UUID = finalHarvestId,
     ): FarmingCycleReportQueryRepository.WorkItem =
         FarmingCycleReportQueryRepository.WorkItem(
             reportId = reportId,
-            farmId = farmId,
+            farmId = requireNotNull(farm.id),
             farmName = farm.name,
-            cropId = cropId,
+            cropId = requireNotNull(crop.id),
             cropName = crop.name,
             startsAt = day(1),
             endsAt = day(5),
-            finalHarvestRecordId = finalHarvestId,
+            finalHarvestRecordId = finalHarvestRecordId,
             workType = workType,
             recordCount = recordCount,
             lastWorkedOn = LocalDate.of(2026, 1, 5),
@@ -208,6 +390,8 @@ class FarmingWorkReportQueryServiceTest {
         workType: WorkType,
         day: Long,
         createdMinute: Long = 0,
+        farm: Farm = this.farm,
+        crop: Crop = this.crop,
     ): FarmingRecord =
         FarmingRecord(
             id = id(suffix),
