@@ -37,6 +37,7 @@ enum class ErrorCode(
     WEATHER_PROVIDER_UNAVAILABLE("WEATHER_002", "error.weather_provider_unavailable", 503),
     WEATHER_DATE_IN_FUTURE("WEATHER_003", "error.weather_date_in_future", 400),
     WEATHER_DAILY_DATA_NOT_FOUND("WEATHER_004", "error.weather_daily_data_not_found", 404),
+    WEATHER_DATE_TOO_OLD("WEATHER_005", "error.weather_date_too_old", 400),
     SEARCH_CATEGORY_NOT_SUPPORTED("SEARCH_001", "error.search_category_not_supported", 400),
     FARMING_RECORD_TOO_MANY_IMAGES("FARMING_005", "error.farming_record_too_many_images", 400),
     PESTICIDE_NOT_FOUND("PESTICIDE_001", "error.pesticide_not_found", 404),
