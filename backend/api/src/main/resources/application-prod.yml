@@ -135,13 +135,12 @@ auth:
 rag:
   embedding:
     model: ${RAG_EMBEDDING_MODEL:bge-m3}
-    dimension: ${RAG_EMBEDDING_DIMENSION:1024}
   chat:
     model: ${RAG_CHAT_MODEL:openclaw/agri-rag-coach}
   retrieval:
     top-k-default: ${RAG_TOP_K_DEFAULT:6}
     top-k-max: ${RAG_TOP_K_MAX:20}
-    low-similarity-threshold: ${RAG_LOW_SIMILARITY_THRESHOLD:0.55}
+    low-similarity-threshold: ${RAG_LOW_SIMILARITY_THRESHOLD:0.5}
   execution:
     core-pool-size: ${RAG_EXECUTOR_CORE_SIZE:2}
     max-pool-size: ${RAG_EXECUTOR_MAX_SIZE:4}

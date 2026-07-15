@@ -3,6 +3,7 @@ package com.chamchamcham.application.coaching.reportfeedback.lifecycle
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackFailureCode
 import com.chamchamcham.application.coaching.reportfeedback.ReportFeedbackGenerationFailure
 import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackContextAssembler
+import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackContextFingerprint
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackRepository
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedbackStatus
 import com.chamchamcham.domain.farming.WorkType
@@ -23,12 +24,14 @@ data class ReportFeedbackGenerationRequested(
     val memberId: UUID,
     val reportId: UUID,
     val workType: WorkType,
+    val sourceFingerprint: String,
 )
 
 @Component
 class ReportFeedbackPreparationHandler(
     private val feedbackRepository: ReportFeedbackRepository,
     private val contextAssembler: ReportFeedbackContextAssembler,
+    private val contextFingerprint: ReportFeedbackContextFingerprint,
     private val objectMapper: ObjectMapper,
     private val eventPublisher: ApplicationEventPublisher,
     transactionManager: PlatformTransactionManager,
@@ -44,13 +47,16 @@ class ReportFeedbackPreparationHandler(
         if (
             feedback.status != ReportFeedbackStatus.PENDING ||
             feedback.report.id != event.reportId ||
-            feedback.workType != event.workType
+            feedback.workType != event.workType ||
+            feedback.sourceFingerprint != event.sourceFingerprint
         ) return
         val snapshotBeforePreparation = feedback.inputSnapshot
         var failureCode: ReportFeedbackFailureCode? = null
         val snapshot = try {
+            val context = contextAssembler.assemble(event.memberId, event.reportId, event.workType)
+            if (contextFingerprint.calculate(context) != event.sourceFingerprint) return
             objectMapper.convertValue(
-                contextAssembler.assemble(event.memberId, event.reportId, event.workType),
+                context,
                 SNAPSHOT_TYPE,
             )
         } catch (failure: ReportFeedbackGenerationFailure) {
@@ -67,6 +73,7 @@ class ReportFeedbackPreparationHandler(
                 locked.status != ReportFeedbackStatus.PENDING ||
                 locked.report.id != event.reportId ||
                 locked.workType != event.workType ||
+                locked.sourceFingerprint != event.sourceFingerprint ||
                 locked.inputSnapshot != snapshotBeforePreparation
             ) return@execute null
             if (snapshot == null) {
@@ -79,6 +86,7 @@ class ReportFeedbackPreparationHandler(
                 memberId = event.memberId,
                 reportId = event.reportId,
                 workType = event.workType,
+                sourceFingerprint = event.sourceFingerprint,
             )
         }
         generationRequest?.let(eventPublisher::publishEvent)

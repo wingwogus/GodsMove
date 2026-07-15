@@ -28,7 +28,7 @@ class AsyncConfigTest {
     }
 
     @Test
-    fun `coaching executor is bounded and saturated work runs on the caller`() {
+    fun `coaching executor is bounded and discards saturated work for timeout recovery`() {
         contextRunner.run { context ->
             assertThat(context).hasBean("coachingTaskExecutor")
             val executor = context.getBean("coachingTaskExecutor", ThreadPoolTaskExecutor::class.java)
@@ -37,7 +37,7 @@ class AsyncConfigTest {
             assertThat(executor.maxPoolSize).isEqualTo(4)
             assertThat(executor.queueCapacity).isEqualTo(32)
             assertThat(executor.threadPoolExecutor.rejectedExecutionHandler)
-                .isInstanceOf(ThreadPoolExecutor.CallerRunsPolicy::class.java)
+                .isInstanceOf(ThreadPoolExecutor.DiscardPolicy::class.java)
         }
     }
 

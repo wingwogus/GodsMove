@@ -1,7 +1,6 @@
 package com.chamchamcham.api.coaching.chat.dto
 
 import com.chamchamcham.application.coaching.chat.CoachingRagCommand
-import com.chamchamcham.domain.coaching.chat.CoachingMode
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
@@ -12,10 +11,8 @@ object CoachingRagRequests {
     data class QueryRequest(
         @field:NotBlank(message = "질문을 입력해주세요")
         val question: String,
-        val mode: CoachingMode = CoachingMode.CHAT,
         val farmId: UUID? = null,
         val cropId: UUID? = null,
-        val workTypeId: UUID? = null,
         val recordId: UUID? = null,
         val periodStart: LocalDate? = null,
         val periodEnd: LocalDate? = null,
@@ -26,11 +23,9 @@ object CoachingRagRequests {
         fun toCommand(memberId: UUID): CoachingRagCommand {
             return CoachingRagCommand(
                 memberId = memberId,
-                mode = mode,
                 question = question,
                 farmId = farmId,
                 cropId = cropId,
-                workTypeId = workTypeId,
                 recordId = recordId,
                 periodStart = periodStart,
                 periodEnd = periodEnd,

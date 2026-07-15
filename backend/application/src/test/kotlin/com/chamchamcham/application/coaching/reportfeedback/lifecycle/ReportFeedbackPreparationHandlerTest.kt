@@ -7,6 +7,7 @@ import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFee
 import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackComparison
 import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackPreviousReport
 import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackContextAssembler
+import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackContextFingerprint
 import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackRecord
 import com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackReport
 import com.chamchamcham.domain.coaching.reportfeedback.ReportFeedback
@@ -55,6 +56,7 @@ class ReportFeedbackPreparationHandlerTest {
     private val reportId = UUID.randomUUID()
     private val feedbackId = UUID.randomUUID()
     private val recordId = UUID.randomUUID()
+    private val previousReportId = UUID.randomUUID()
     private val startsAt = LocalDateTime.of(2026, 3, 1, 9, 0)
     private val endsAt = LocalDateTime.of(2026, 7, 1, 9, 0)
 
@@ -63,6 +65,7 @@ class ReportFeedbackPreparationHandlerTest {
     @Mock private lateinit var eventPublisher: ApplicationEventPublisher
 
     private val objectMapper: ObjectMapper = Jackson2ObjectMapperBuilder.json().build()
+    private val contextFingerprint = ReportFeedbackContextFingerprint(objectMapper)
     private lateinit var member: Member
     private lateinit var report: FarmingCycleReport
     private lateinit var handler: ReportFeedbackPreparationHandler
@@ -106,6 +109,7 @@ class ReportFeedbackPreparationHandlerTest {
         handler = ReportFeedbackPreparationHandler(
             feedbackRepository,
             contextAssembler,
+            contextFingerprint,
             objectMapper,
             eventPublisher,
             NoOpTransactionManager(),
@@ -138,6 +142,7 @@ class ReportFeedbackPreparationHandlerTest {
         val transactionAwareHandler = ReportFeedbackPreparationHandler(
             feedbackRepository,
             contextAssembler,
+            contextFingerprint,
             objectMapper,
             eventPublisher,
             transactionManager,
@@ -187,15 +192,17 @@ class ReportFeedbackPreparationHandlerTest {
                 memberId = memberId,
                 reportId = reportId,
                 workType = WorkType.WATERING,
+                sourceFingerprint = sourceFingerprint(),
             ),
         )
     }
 
     @Test
     fun `preparation preserves an empty comparison list when no previous report exists`() {
-        val feedback = pendingFeedback(WorkType.WATERING)
-        val event = preparationEvent(WorkType.WATERING)
         val noPrevious = context().copy(previousReport = null, comparisons = emptyList())
+        val noPreviousFingerprint = contextFingerprint.calculate(noPrevious)
+        val feedback = pendingFeedback(WorkType.WATERING, sourceFingerprint = noPreviousFingerprint)
+        val event = preparationEvent(WorkType.WATERING, sourceFingerprint = noPreviousFingerprint)
         `when`(feedbackRepository.findByIdAndMember_Id(feedbackId, memberId)).thenReturn(feedback)
         `when`(feedbackRepository.findByIdAndMemberIdForUpdate(feedbackId, memberId)).thenReturn(feedback)
         `when`(contextAssembler.assemble(memberId, reportId, WorkType.WATERING)).thenReturn(noPrevious)
@@ -204,6 +211,22 @@ class ReportFeedbackPreparationHandlerTest {
 
         assertThat(feedback.inputSnapshot?.get("previousReport")).isNull()
         assertThat(feedback.inputSnapshot?.get("comparisons")).isEqualTo(emptyList<Any>())
+    }
+
+    @Test
+    fun `preparation discards an assembled context whose fingerprint no longer matches the request`() {
+        val feedback = pendingFeedback(WorkType.WATERING)
+        val event = preparationEvent(WorkType.WATERING)
+        val changedContext = context().copy(warnings = listOf("input changed"))
+        `when`(feedbackRepository.findByIdAndMember_Id(feedbackId, memberId)).thenReturn(feedback)
+        `when`(contextAssembler.assemble(memberId, reportId, WorkType.WATERING)).thenReturn(changedContext)
+
+        handler.on(event)
+
+        assertThat(feedback.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(feedback.inputSnapshot).isNull()
+        verify(feedbackRepository, never()).findByIdAndMemberIdForUpdate(feedbackId, memberId)
+        verify(eventPublisher, never()).publishEvent(org.mockito.Mockito.any())
     }
 
     @Test
@@ -277,22 +300,26 @@ class ReportFeedbackPreparationHandlerTest {
     private fun pendingFeedback(
         workType: WorkType,
         id: UUID = feedbackId,
+        sourceFingerprint: String = if (workType == WorkType.WATERING) sourceFingerprint() else "f".repeat(64),
     ) = ReportFeedback(
         id = id,
         member = member,
         report = report,
         workType = workType,
         status = ReportFeedbackStatus.PENDING,
+        sourceFingerprint = sourceFingerprint,
     )
 
     private fun preparationEvent(
         workType: WorkType,
         reportId: UUID = this.reportId,
+        sourceFingerprint: String = sourceFingerprint(),
     ) = ReportFeedbackPreparationRequested(
         feedbackId = feedbackId,
         memberId = memberId,
         reportId = reportId,
         workType = workType,
+        sourceFingerprint = sourceFingerprint,
     )
 
     private fun context() = ReportFeedbackContext(
@@ -330,7 +357,7 @@ class ReportFeedbackPreparationHandlerTest {
             ),
         ),
         previousReport = ReportFeedbackPreviousReport(
-            id = UUID.randomUUID(),
+            id = previousReportId,
             sourceRevision = 3,
             startsAt = startsAt.minusYears(1),
             endsAt = endsAt.minusYears(1),
@@ -338,6 +365,8 @@ class ReportFeedbackPreparationHandlerTest {
         ),
         warnings = emptyList(),
     )
+
+    private fun sourceFingerprint(): String = contextFingerprint.calculate(context())
 
     private fun setId(target: Any, id: UUID) {
         val field = target.javaClass.getDeclaredField("id")

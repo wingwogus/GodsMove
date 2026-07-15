@@ -31,7 +31,16 @@ class ReportFeedbackContextAssembler(
     fun assemble(memberId: UUID, reportId: UUID, workType: WorkType): ReportFeedbackContext {
         val report = reportRepository.findByIdAndMember_Id(reportId, memberId)
             ?: throw ReportFeedbackGenerationFailure(ReportFeedbackFailureCode.INVALID_CONTEXT)
-        if (report.status != FarmingCycleReportStatus.COMPLETED || report.endsAt == null) {
+        return assemble(memberId, report, workType)
+    }
+
+    @Transactional(readOnly = true)
+    fun assemble(memberId: UUID, report: FarmingCycleReport, workType: WorkType): ReportFeedbackContext {
+        if (
+            report.member.id != memberId ||
+            report.status != FarmingCycleReportStatus.COMPLETED ||
+            report.endsAt == null
+        ) {
             throw ReportFeedbackGenerationFailure(ReportFeedbackFailureCode.INVALID_CONTEXT)
         }
 
@@ -109,17 +118,6 @@ class ReportFeedbackContextAssembler(
             sourceRevision = sourceRevision,
             statistics = selectedStatistics,
         )
-    }
-
-    private fun CycleReportStatistics.recordCountFor(workType: WorkType): Int = when (workType) {
-        WorkType.PLANTING -> planting.recordCount
-        WorkType.WATERING -> watering.recordCount
-        WorkType.FERTILIZING -> fertilizing.recordCount
-        WorkType.PEST_CONTROL -> pestControl.recordCount
-        WorkType.WEEDING -> weeding.recordCount
-        WorkType.PRUNING -> pruning.recordCount
-        WorkType.HARVEST -> harvest.recordCount
-        WorkType.ETC -> etc.recordCount
     }
 
     private fun CycleReportStatistics.toWorkTypeMap(workType: WorkType): Map<String, Any?> {

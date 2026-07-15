@@ -29,6 +29,7 @@ import org.springframework.ai.tool.ToolCallbackProvider
 import org.springframework.ai.vectorstore.SearchRequest
 import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.ai.vectorstore.filter.Filter
+import org.springframework.ai.vectorstore.filter.FilterExpressionTextParser
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.core.io.Resource
 import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource
@@ -73,9 +74,10 @@ class CoachingRagServiceTest {
         assertThat(result.answer).contains("현재 자료만으로는 판단할 수 없습니다")
         assertThat(result.audit.status).isEqualTo(RagAuditStatus.WARN)
         assertThat(result.audit.warnings).containsExactly("no_retrieved_documents")
-        assertThat(result.savedFeedbackId).isNull()
         assertThat(vectorStore.lastRequest?.query).isEqualTo("과습 위험이 있을까?")
         assertThat(vectorStore.lastRequest?.topK).isEqualTo(3)
+        assertThat(vectorStore.lastRequest?.filterExpression)
+            .isEqualTo(FilterExpressionTextParser().parse("sourceType == 'TECH_DOCUMENT'"))
     }
 
     @Test
@@ -92,7 +94,6 @@ class CoachingRagServiceTest {
         assertThat(result.audit.status).isEqualTo(RagAuditStatus.PASS)
         assertThat(result.audit.citations).containsExactly("doc-1")
         assertThat(result.result.summary).isEqualTo("배수 상태를 확인하세요.")
-        assertThat(result.savedFeedbackId).isNull()
         assertThat(vectorStore.searchCalls).isEqualTo(1)
         assertThat(chatClient.requestSpec.advisorCount).isEqualTo(1)
     }
@@ -184,15 +185,15 @@ class CoachingRagServiceTest {
             ),
             nextActions = listOf(CoachingNextAction(CoachingActionDue.TODAY, "토양 상태 확인", listOf(citationId))),
             followUpQuestions = emptyList(),
-            citations = listOf(CoachingCitationRef(citationId, "영농일지 관수", RagSourceType.FARMING_RECORD))
+            citations = listOf(CoachingCitationRef(citationId, "농업기술길잡이", RagSourceType.TECH_DOCUMENT))
         )
     }
 
     private fun document(id: String): Document {
         return Document.builder()
             .id(id)
-            .text("관수 후 배수 상태를 확인했다.")
-            .metadata("sourceType", RagSourceType.FARMING_RECORD.name)
+            .text("관수 후 토양 배수 상태를 확인한다.")
+            .metadata("sourceType", RagSourceType.TECH_DOCUMENT.name)
             .build()
     }
 

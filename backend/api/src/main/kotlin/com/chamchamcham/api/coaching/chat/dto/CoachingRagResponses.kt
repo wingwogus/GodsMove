@@ -3,28 +3,25 @@ package com.chamchamcham.api.coaching.chat.dto
 import com.chamchamcham.application.coaching.chat.CoachingActionDue
 import com.chamchamcham.application.coaching.chat.CoachingStructuredResult
 import com.chamchamcham.application.coaching.chat.CoachingPriority
+import com.chamchamcham.application.coaching.chat.CoachingRagResult
 import com.chamchamcham.application.coaching.chat.CoachingRecordQuality
 import com.chamchamcham.application.coaching.chat.CoachingRecordQualityScore
 import com.chamchamcham.application.coaching.chat.CoachingRiskLevel
 import com.chamchamcham.application.coaching.common.RagAuditStatus
 import com.chamchamcham.application.coaching.common.RagSourceType
-import com.chamchamcham.application.coaching.chat.CoachingRagResult
-import java.util.UUID
 
 object CoachingRagResponses {
     data class QueryResponse(
         val result: StructuredResultResponse,
         val audit: AuditResponse,
-        val model: ModelResponse,
-        val savedFeedbackId: UUID?
+        val model: ModelResponse
     ) {
         companion object {
             fun from(result: CoachingRagResult): QueryResponse {
                 return QueryResponse(
                     result = StructuredResultResponse.from(result.result),
                     audit = AuditResponse(result.audit.status, result.audit.warnings),
-                    model = ModelResponse(result.model.embedding, result.model.chat),
-                    savedFeedbackId = result.savedFeedbackId
+                    model = ModelResponse(result.model.embedding, result.model.chat)
                 )
             }
         }

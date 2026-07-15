@@ -115,6 +115,55 @@ class ReportFeedbackRepositoryTest @Autowired constructor(
     }
 
     @Test
+    fun `feedback can be locked by report member and work type`() {
+        val saved = repository.saveAndFlush(pendingFeedback(WorkType.WATERING))
+        entityManager.clear()
+
+        val locked = repository.findByReportAndWorkTypeForUpdate(
+            requireNotNull(report.id),
+            requireNotNull(member.id),
+            WorkType.WATERING,
+        )
+
+        assertThat(locked?.id).isEqualTo(saved.id)
+    }
+
+    @Test
+    fun `feedback collection can be locked by report and member`() {
+        repository.saveAllAndFlush(
+            listOf(
+                pendingFeedback(WorkType.WATERING),
+                pendingFeedback(WorkType.HARVEST),
+            ),
+        )
+        entityManager.clear()
+
+        val locked = repository.findAllByReportAndMemberForUpdate(
+            requireNotNull(report.id),
+            requireNotNull(member.id),
+        )
+
+        assertThat(locked.map(ReportFeedback::workType))
+            .containsExactlyInAnyOrder(WorkType.WATERING, WorkType.HARVEST)
+    }
+
+    @Test
+    fun `stale status preserves its source fingerprint`() {
+        val sourceFingerprint = "a".repeat(64)
+        val saved = repository.saveAndFlush(
+            ReportFeedback.pending(member, report, WorkType.WATERING, sourceFingerprint).also(::setTimestamps),
+        )
+
+        saved.markStale()
+        repository.flush()
+        entityManager.clear()
+
+        val reloaded = repository.findById(requireNotNull(saved.id)).orElseThrow()
+        assertThat(reloaded.status).isEqualTo(ReportFeedbackStatus.STALE)
+        assertThat(reloaded.sourceFingerprint).isEqualTo(sourceFingerprint)
+    }
+
+    @Test
     fun `only pending feedback older than the cutoff fails with processing timeout`() {
         val cutoff = completedAt.minusMinutes(2)
         val oldPending = repository.saveAndFlush(
@@ -154,10 +203,10 @@ class ReportFeedbackRepositoryTest @Autowired constructor(
     }
 
     private fun pendingFeedback(workType: WorkType): ReportFeedback =
-        ReportFeedback.pending(member, report, workType).also(::setTimestamps)
+        ReportFeedback.pending(member, report, workType, "a".repeat(64)).also(::setTimestamps)
 
     private fun pendingFeedback(workType: WorkType, updatedAt: LocalDateTime): ReportFeedback =
-        ReportFeedback.pending(member, report, workType).also { setTimestamps(it, updatedAt) }
+        ReportFeedback.pending(member, report, workType, "a".repeat(64)).also { setTimestamps(it, updatedAt) }
 
     private fun setTimestamps(entity: BaseTimeEntity) {
         setTimestamps(entity, completedAt)

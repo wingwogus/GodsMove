@@ -34,7 +34,8 @@ class ReportFeedbackGenerationHandler(
         if (
             feedback.status != ReportFeedbackStatus.PENDING ||
             feedback.report.id != event.reportId ||
-            feedback.workType != event.workType
+            feedback.workType != event.workType ||
+            feedback.sourceFingerprint != event.sourceFingerprint
         ) return
         val snapshot = feedback.inputSnapshot ?: return
         val context = try {
@@ -72,6 +73,7 @@ class ReportFeedbackGenerationHandler(
                 feedback.status != ReportFeedbackStatus.PENDING ||
                 feedback.report.id != event.reportId ||
                 feedback.workType != event.workType ||
+                feedback.sourceFingerprint != event.sourceFingerprint ||
                 feedback.inputSnapshot != expectedSnapshot
             ) return@executeWithoutResult
             feedback.markReady(
@@ -98,6 +100,7 @@ class ReportFeedbackGenerationHandler(
                 feedback.status == ReportFeedbackStatus.PENDING &&
                 feedback.report.id == event.reportId &&
                 feedback.workType == event.workType &&
+                feedback.sourceFingerprint == event.sourceFingerprint &&
                 feedback.inputSnapshot == expectedSnapshot
             ) {
                 feedback.markFailed(code.name)

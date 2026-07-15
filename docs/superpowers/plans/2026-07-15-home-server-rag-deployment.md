@@ -6,7 +6,7 @@
 
 **Architecture:** Keep the API's Spring AI `PgVectorStore` contract on `public.vector_store`, replace the server PostgreSQL container with a digest-pinned pgvector PG16 image backed by a new volume, and add a digest-pinned internal-only Ollama service. The one-time migration uses a verified logical backup/restore and a staged CSV import; the automatic `main` deployment is gated until a server-side `rag-v1` readiness marker is created after candidate API verification.
 
-**Tech Stack:** Kotlin 2.2.21, Spring Boot 3.5.7, Spring AI 1.1.8, PostgreSQL 16, pgvector 0.8.5, Ollama 0.30.8, Docker Compose v2, GitHub Actions, Bash, `psql`, `pg_dump`, `jq`
+**Tech Stack:** Kotlin 2.2.21, Spring Boot 3.5.4, Spring AI 1.1.8, PostgreSQL 16, pgvector 0.8.5, Ollama 0.30.8, Docker Compose v2, GitHub Actions, Bash, `psql`, `pg_dump`, `jq`
 
 ## Global Constraints
 
@@ -38,7 +38,7 @@
 - Modify `.env.example` — documents non-secret production RAG environment keys and internal URLs.
 - Modify `docker-compose.yml` — defines digest-pinned pgvector/Ollama services, new volumes, health checks, and resource limits.
 - Modify `.github/workflows/deploy.yml` — adds manual rerun support and prevents the one-time migration from being bypassed by automatic deployment.
-- Replace `backend/docs/db/rag-index-schema.sql` — removes the unused `rag_index_chunk` contract and defines Spring AI's actual `vector_store` schema.
+- Replace `backend/docs/db/rag-index-schema.sql` — defines Spring AI's actual `public.vector_store` schema for TECH_DOCUMENT vectors.
 - Create `backend/docs/db/coaching-feedback-schema.sql` — defines the four manually managed record/report feedback tables.
 - Create `backend/docs/db/rag-deployment-verify.sql` — fails deployment when extensions, tables, columns, constraints, or HNSW index do not match the runtime contract.
 - Modify `backend/api/src/test/kotlin/com/chamchamcham/api/coaching/recordfeedback/RecordFeedbackGenerationVectorStoreSmokeTest.kt` — removes the stale inactive seed-endpoint instruction.
@@ -158,7 +158,8 @@ RAG_EMBEDDING_MODEL=bge-m3
 RAG_EMBEDDING_DIMENSION=1024
 RAG_CHAT_MODEL=openclaw/agri-rag-coach
 RAG_VECTOR_TABLE=vector_store
-RAG_TIMEOUT_MILLIS=30000
+OPENCLAW_CONNECT_TIMEOUT_MILLIS=3000
+OPENCLAW_READ_TIMEOUT_MILLIS=30000
 ```
 
 - [ ] **Step 4: Run the focused test and configuration search**
@@ -644,13 +645,13 @@ docker exec chamchamcham-postgres dropdb -U chamchamcham rag_deployment_contract
 
 Expected: verifier outputs `embedding_type | vector_rows` as `vector(1024) | 0`; every command exits 0; the disposable database is removed.
 
-- [ ] **Step 6: Confirm the obsolete table contract is gone**
+- [ ] **Step 6: Confirm the runtime table contract is present**
 
 ```bash
-rg -n 'rag_index_chunk' backend/docs backend/api/src/main backend/application/src/main backend/domain/src/main
+rg -n 'public\.vector_store|vector_store_embedding_hnsw_idx' backend/docs/db/rag-index-schema.sql
 ```
 
-Expected: no output.
+Expected: the Spring AI table and HNSW index definitions are shown.
 
 - [ ] **Step 7: Commit the reviewed SQL contract**
 
@@ -658,7 +659,7 @@ Expected: no output.
 git add backend/docs/db/rag-index-schema.sql backend/docs/db/coaching-feedback-schema.sql backend/docs/db/rag-deployment-verify.sql
 git commit \
   -m "fix(rag): 운영 스키마를 실제 런타임과 통일" \
-  -m "사용되지 않는 rag_index_chunk 대신 Spring AI vector_store와 코칭 피드백 테이블을 수동 배포 SQL로 고정한다." \
+  -m "Spring AI public.vector_store와 코칭 피드백 테이블을 수동 배포 SQL로 고정한다." \
   -m $'Constraint: Flyway가 없어 운영 DDL을 명시적으로 적용해야 함\nRejected: Hibernate ddl-auto 활성화 | 운영 스키마 변경이 애플리케이션 시작에 숨겨짐\nConfidence: high\nScope-risk: moderate\nDirective: embedding 차원을 바꾸려면 모델, SQL, Spring 설정, 기존 벡터를 함께 마이그레이션할 것\nTested: 임시 pgvector 데이터베이스에 전체 SQL 적용 및 rag-deployment-verify.sql 통과\nNot-tested: 홈서버 기존 데이터 logical restore'
 ```
 
@@ -886,7 +887,7 @@ Open a server shell:
 ssh -o BatchMode=yes wingwogus@hyunserver.iptime.org
 cd /home/wingwogus/apps/chamchamcham
 chmod 600 .env
-for key in OLLAMA_BASE_URL OPENCLAW_BASE_URL OPENCLAW_API_KEY OPENCLAW_AGENT_ID RAG_EMBEDDING_MODEL RAG_EMBEDDING_DIMENSION RAG_CHAT_MODEL RAG_VECTOR_TABLE RAG_TIMEOUT_MILLIS; do
+for key in OLLAMA_BASE_URL OPENCLAW_BASE_URL OPENCLAW_API_KEY OPENCLAW_AGENT_ID OPENCLAW_CONNECT_TIMEOUT_MILLIS OPENCLAW_READ_TIMEOUT_MILLIS RAG_EMBEDDING_MODEL RAG_EMBEDDING_DIMENSION RAG_CHAT_MODEL RAG_VECTOR_TABLE; do
   grep -q "^${key}=" .env || { printf 'missing env key: %s\n' "$key"; exit 1; }
 done
 stat -c '%a %n' .env

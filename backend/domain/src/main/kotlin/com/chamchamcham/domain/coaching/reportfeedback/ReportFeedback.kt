@@ -55,6 +55,8 @@ class ReportFeedback(
 
     inputSnapshot: Map<String, Any?>? = null,
 
+    sourceFingerprint: String? = null,
+
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(nullable = false, columnDefinition = "jsonb")
     var citations: List<Map<String, Any?>> = emptyList(),
@@ -84,6 +86,10 @@ class ReportFeedback(
     var inputSnapshot: Map<String, Any?>? = inputSnapshot
         private set
 
+    @Column(name = "source_fingerprint", length = 64)
+    var sourceFingerprint: String? = sourceFingerprint
+        private set
+
     @Column(name = "failure_code", length = 128)
     var failureCode: String? = failureCode
         private set
@@ -109,9 +115,31 @@ class ReportFeedback(
         failureCode = code
     }
 
-    fun retry() {
-        check(status == ReportFeedbackStatus.FAILED) { "only failed feedback can retry" }
+    fun markStale() {
+        if (status == ReportFeedbackStatus.STALE) return
+        status = ReportFeedbackStatus.STALE
+        failureCode = null
+        inputSnapshot = null
+    }
+
+    fun backfillSourceFingerprint(sourceFingerprint: String) {
+        requireValidFingerprint(sourceFingerprint)
+        if (this.sourceFingerprint != null) return
+        check(
+            status == ReportFeedbackStatus.PENDING ||
+                status == ReportFeedbackStatus.READY ||
+                status == ReportFeedbackStatus.FAILED,
+        ) { "only non-stale legacy feedback can backfill its source fingerprint" }
+        this.sourceFingerprint = sourceFingerprint
+    }
+
+    fun retry(sourceFingerprint: String) {
+        check(status == ReportFeedbackStatus.FAILED || status == ReportFeedbackStatus.STALE) {
+            "only failed or stale feedback can retry"
+        }
+        requireValidFingerprint(sourceFingerprint)
         status = ReportFeedbackStatus.PENDING
+        this.sourceFingerprint = sourceFingerprint
         failureCode = null
         inputSnapshot = null
     }
@@ -152,13 +180,36 @@ class ReportFeedback(
     }
 
     companion object {
-        fun pending(member: Member, report: FarmingCycleReport, workType: WorkType): ReportFeedback =
-            ReportFeedback(
+        fun pending(
+            member: Member,
+            report: FarmingCycleReport,
+            workType: WorkType,
+            sourceFingerprint: String,
+        ): ReportFeedback {
+            requireValidFingerprint(sourceFingerprint)
+            return ReportFeedback(
                 member = member,
                 report = report,
                 workType = workType,
                 status = ReportFeedbackStatus.PENDING,
+                sourceFingerprint = sourceFingerprint,
+            )
+        }
+
+        fun stalePlaceholder(member: Member, report: FarmingCycleReport, workType: WorkType): ReportFeedback =
+            ReportFeedback(
+                member = member,
+                report = report,
+                workType = workType,
+                status = ReportFeedbackStatus.STALE,
             )
 
+        private val SOURCE_FINGERPRINT_PATTERN = Regex("^[0-9a-f]{64}$")
+
+        private fun requireValidFingerprint(sourceFingerprint: String) {
+            require(SOURCE_FINGERPRINT_PATTERN.matches(sourceFingerprint)) {
+                "source fingerprint must be lowercase SHA-256 hex"
+            }
+        }
     }
 }

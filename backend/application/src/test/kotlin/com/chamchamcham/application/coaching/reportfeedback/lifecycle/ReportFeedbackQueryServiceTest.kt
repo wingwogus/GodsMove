@@ -19,12 +19,17 @@ import com.chamchamcham.domain.report.FarmingCycleReportProjection
 import com.chamchamcham.domain.report.FarmingCycleReportRepository
 import com.chamchamcham.domain.report.FarmingCycleReportStatus
 import com.chamchamcham.domain.report.FarmingCycleStartBasis
+import com.chamchamcham.domain.report.FertilizingStatistics
+import com.chamchamcham.domain.report.HarvestStatistics
+import com.chamchamcham.domain.report.WateringStatistics
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
 import org.mockito.Mock
+import org.mockito.Mockito.never
+import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
@@ -54,7 +59,10 @@ class ReportFeedbackQueryServiceTest {
     fun setUp() {
         service = ReportFeedbackQueryService(reportRepository, feedbackRepository, lifecycleService)
         member = Member(id = memberId, email = "member@example.com", passwordHash = null)
-        completedReport = report(FarmingCycleReportStatus.COMPLETED)
+        completedReport = report(
+            FarmingCycleReportStatus.COMPLETED,
+            statisticsFor(WorkType.WATERING, WorkType.FERTILIZING, WorkType.HARVEST),
+        )
     }
 
     @Test
@@ -116,6 +124,37 @@ class ReportFeedbackQueryServiceTest {
     }
 
     @Test
+    fun `stale feedback hides persisted content and preparation details`() {
+        val stale = readyFeedback().also(ReportFeedback::markStale)
+        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(completedReport)
+        `when`(feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId)).thenReturn(listOf(stale))
+
+        val result = service.get(memberId, reportId).feedbacks.single()
+
+        assertThat(result.status).isEqualTo(ReportFeedbackStatus.STALE)
+        assertThat(result.inputPrepared).isFalse()
+        assertThat(result.failureCode).isNull()
+        assertThat(result.content).isNull()
+    }
+
+    @Test
+    fun `feedback for a removed work type is excluded from the current report response`() {
+        val wateringOnlyReport = report(
+            FarmingCycleReportStatus.COMPLETED,
+            statisticsFor(WorkType.WATERING),
+        )
+        val watering = readyFeedback()
+        val removedHarvest = failedFeedback().also(ReportFeedback::markStale)
+        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(wateringOnlyReport)
+        `when`(feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId))
+            .thenReturn(listOf(removedHarvest, watering))
+
+        val result = service.get(memberId, reportId)
+
+        assertThat(result.feedbacks.map { it.workType }).containsExactly(WorkType.WATERING)
+    }
+
+    @Test
     fun `active report is not exposed as report feedback`() {
         `when`(reportRepository.findByIdAndMember_Id(reportId, memberId))
             .thenReturn(report(FarmingCycleReportStatus.ACTIVE))
@@ -142,33 +181,32 @@ class ReportFeedbackQueryServiceTest {
     }
 
     @Test
-    fun `regenerate retries only failed feedback for the requested work type`() {
-        val failed = failedFeedback()
-        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(completedReport)
-        `when`(feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId)).thenReturn(listOf(failed))
-        `when`(lifecycleService.retry(failed)).thenAnswer {
-            failed.retry()
-            failed
+    fun `regenerate delegates stale feedback to the locked lifecycle`() {
+        val stale = readyFeedback().also(ReportFeedback::markStale)
+        `when`(lifecycleService.regenerate(memberId, reportId, WorkType.WATERING)).thenAnswer {
+            stale.retry("d".repeat(64))
+            stale
         }
 
-        val result = service.regenerate(memberId, reportId, WorkType.HARVEST)
+        val result = service.regenerate(memberId, reportId, WorkType.WATERING)
 
-        assertThat(result.workType).isEqualTo(WorkType.HARVEST)
+        assertThat(result.workType).isEqualTo(WorkType.WATERING)
         assertThat(result.status).isEqualTo(ReportFeedbackStatus.PENDING)
         assertThat(result.inputPrepared).isFalse()
         assertThat(result.failureCode).isNull()
+        verify(reportRepository, never()).findByIdAndMember_Id(reportId, memberId)
     }
 
     @Test
-    fun `regenerate rejects feedback that is not failed`() {
-        val ready = readyFeedback()
-        `when`(reportRepository.findByIdAndMember_Id(reportId, memberId)).thenReturn(completedReport)
-        `when`(feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId)).thenReturn(listOf(ready))
+    fun `regenerate propagates locked lifecycle validation without preloading the report`() {
+        `when`(lifecycleService.regenerate(memberId, reportId, WorkType.HARVEST))
+            .thenThrow(BusinessException(ErrorCode.REPORT_FEEDBACK_NOT_FOUND))
 
-        assertThatThrownBy { service.regenerate(memberId, reportId, WorkType.WATERING) }
+        assertThatThrownBy { service.regenerate(memberId, reportId, WorkType.HARVEST) }
             .isInstanceOf(BusinessException::class.java)
             .extracting("errorCode")
-            .isEqualTo(ErrorCode.REPORT_FEEDBACK_REGENERATION_NOT_ALLOWED)
+            .isEqualTo(ErrorCode.REPORT_FEEDBACK_NOT_FOUND)
+        verify(reportRepository, never()).findByIdAndMember_Id(reportId, memberId)
     }
 
     private fun assertReportNotFound() {
@@ -223,12 +261,16 @@ class ReportFeedbackQueryServiceTest {
             report = completedReport,
             workType = workType,
             status = ReportFeedbackStatus.PENDING,
+            sourceFingerprint = "${workType.ordinal + 1}".repeat(64).take(64),
         ).also {
             ReflectionTestUtils.setField(it, "createdAt", createdAt)
             ReflectionTestUtils.setField(it, "updatedAt", updatedAt)
         }
 
-    private fun report(status: FarmingCycleReportStatus): FarmingCycleReport {
+    private fun report(
+        status: FarmingCycleReportStatus,
+        statistics: CycleReportStatistics = CycleReportStatistics.empty(),
+    ): FarmingCycleReport {
         val farm = Farm(
             id = uuid("000000000301"),
             owner = member,
@@ -269,7 +311,7 @@ class ReportFeedbackQueryServiceTest {
                 startBasis = FarmingCycleStartBasis.FIRST_RECORD,
                 finalHarvestRecord = if (sourceStatus == FarmingCycleReportStatus.COMPLETED) finalHarvest else null,
                 statisticsSchemaVersion = 1,
-                statistics = CycleReportStatistics.empty(),
+                statistics = statistics,
             ),
         )
         ReflectionTestUtils.setField(report, "id", reportId)
@@ -278,6 +320,15 @@ class ReportFeedbackQueryServiceTest {
         }
         return report
     }
+
+    private fun statisticsFor(vararg workTypes: WorkType) = CycleReportStatistics(
+        watering = WateringStatistics(recordCount = WorkType.WATERING.countIn(workTypes)),
+        fertilizing = FertilizingStatistics(recordCount = WorkType.FERTILIZING.countIn(workTypes)),
+        harvest = HarvestStatistics(recordCount = WorkType.HARVEST.countIn(workTypes)),
+    )
+
+    private fun WorkType.countIn(workTypes: Array<out WorkType>): Int =
+        if (this in workTypes) 1 else 0
 
     private fun uuid(tail: String): UUID =
         UUID.fromString("00000000-0000-0000-0000-$tail")

@@ -43,6 +43,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension
 import org.springframework.transaction.TransactionDefinition
 import org.springframework.transaction.support.AbstractPlatformTransactionManager
 import org.springframework.transaction.support.DefaultTransactionStatus
+import org.springframework.test.util.ReflectionTestUtils
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -51,6 +52,7 @@ class ReportFeedbackGenerationHandlerTest {
     private val memberId = UUID.randomUUID()
     private val reportId = UUID.randomUUID()
     private val feedbackId = UUID.randomUUID()
+    private val sourceFingerprint = "a".repeat(64)
     private val startsAt = LocalDateTime.of(2026, 3, 1, 9, 0)
     private val endsAt = LocalDateTime.of(2026, 7, 1, 9, 0)
 
@@ -192,12 +194,41 @@ class ReportFeedbackGenerationHandlerTest {
     }
 
     @Test
+    fun `generation ignores an event whose fingerprint does not match the target row`() {
+        val target = pendingFeedback(WorkType.WATERING)
+        val event = generationEvent(WorkType.WATERING, sourceFingerprint = "b".repeat(64))
+        `when`(feedbackRepository.findByIdAndMember_Id(feedbackId, memberId)).thenReturn(target)
+
+        handler.on(event)
+
+        assertThat(target.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        verify(generationService, never()).generate(anyContext())
+        verify(feedbackRepository, never()).findByIdAndMemberIdForUpdate(feedbackId, memberId)
+    }
+
+    @Test
     fun `generation result is discarded when the snapshot changes before the final write`() {
         val target = pendingFeedback(WorkType.WATERING)
         val event = generationEvent(WorkType.WATERING)
         stubTarget(event, target)
         `when`(generationService.generate(anyContext())).thenAnswer {
             target.attachInputSnapshot(snapshot(context().copy(warnings = listOf("snapshot replaced"))))
+            emptyItemResult()
+        }
+
+        handler.on(event)
+
+        assertThat(target.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(target.summary).isNull()
+    }
+
+    @Test
+    fun `generation result is discarded when the source fingerprint changes before the final write`() {
+        val target = pendingFeedback(WorkType.WATERING)
+        val event = generationEvent(WorkType.WATERING)
+        stubTarget(event, target)
+        `when`(generationService.generate(anyContext())).thenAnswer {
+            ReflectionTestUtils.setField(target, "sourceFingerprint", "b".repeat(64))
             emptyItemResult()
         }
 
@@ -222,6 +253,22 @@ class ReportFeedbackGenerationHandlerTest {
         assertThat(target.status).isEqualTo(ReportFeedbackStatus.FAILED)
         assertThat(target.failureCode).isEqualTo(ReportFeedbackFailureCode.CHAT_UNAVAILABLE.name)
         assertThat(sibling.status).isEqualTo(ReportFeedbackStatus.PENDING)
+    }
+
+    @Test
+    fun `generation failure is discarded when the source fingerprint changes before the final write`() {
+        val target = pendingFeedback(WorkType.WATERING)
+        val event = generationEvent(WorkType.WATERING)
+        stubTarget(event, target)
+        `when`(generationService.generate(anyContext())).thenAnswer {
+            ReflectionTestUtils.setField(target, "sourceFingerprint", "b".repeat(64))
+            throw ReportFeedbackGenerationFailure(ReportFeedbackFailureCode.CHAT_UNAVAILABLE)
+        }
+
+        handler.on(event)
+
+        assertThat(target.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(target.failureCode).isNull()
     }
 
     @Test
@@ -263,6 +310,7 @@ class ReportFeedbackGenerationHandlerTest {
             report = report,
             workType = WorkType.WATERING,
             status = ReportFeedbackStatus.PENDING,
+            sourceFingerprint = sourceFingerprint,
         ).also { it.attachInputSnapshot(mapOf("schemaVersion" to "invalid")) }
         val sibling = pendingFeedback(WorkType.FERTILIZING, UUID.randomUUID(), context(WorkType.FERTILIZING))
         val event = generationEvent(WorkType.WATERING)
@@ -302,16 +350,19 @@ class ReportFeedbackGenerationHandlerTest {
         report = report,
         workType = workType,
         status = ReportFeedbackStatus.PENDING,
+        sourceFingerprint = sourceFingerprint,
     ).also { it.attachInputSnapshot(snapshot(context)) }
 
     private fun generationEvent(
         workType: WorkType,
         reportId: UUID = this.reportId,
+        sourceFingerprint: String = this.sourceFingerprint,
     ) = ReportFeedbackGenerationRequested(
         feedbackId = feedbackId,
         memberId = memberId,
         reportId = reportId,
         workType = workType,
+        sourceFingerprint = sourceFingerprint,
     )
 
     private fun stubTarget(event: ReportFeedbackGenerationRequested, target: ReportFeedback) {

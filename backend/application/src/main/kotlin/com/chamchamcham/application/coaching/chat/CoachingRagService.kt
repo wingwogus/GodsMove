@@ -27,7 +27,7 @@ class CoachingRagService(
         val topK = normalizeTopK(command.topK)
         validatePeriod(command)
 
-        val filterExpression = filterBuilder.build(command)
+        val filterExpression = filterBuilder.build()
         val retrievedDocuments = vectorStore.similaritySearch(
             SearchRequest.builder()
                 .query(normalizedQuestion)
@@ -38,7 +38,7 @@ class CoachingRagService(
 
         if (retrievedDocuments.isEmpty()) {
             val result = CoachingStructuredResult.insufficientEvidence(
-                "현재 자료만으로는 판단할 수 없습니다. 영농일지나 기술문서 색인 상태를 확인해주세요."
+                "현재 자료만으로는 판단할 수 없습니다. 기술문서 색인 상태를 확인해주세요."
             )
             return CoachingRagResult(
                 result = result,
@@ -70,8 +70,7 @@ class CoachingRagService(
         return CoachingRagResult(
             result = result,
             audit = audit,
-            model = modelInfo(),
-            savedFeedbackId = null
+            model = modelInfo()
         )
     }
 

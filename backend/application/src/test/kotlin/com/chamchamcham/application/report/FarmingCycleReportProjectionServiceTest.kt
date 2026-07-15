@@ -121,7 +121,7 @@ class FarmingCycleReportProjectionServiceTest {
         assertThat(active.finalHarvestRecord?.id).isEqualTo(finalHarvestRecordId)
         assertThat(active.endsAt).isEqualTo(baseTime.plusDays(10))
         verify(reportRepository).save(active)
-        verify(reportFeedbackLifecycleService).enqueue(
+        verify(reportFeedbackLifecycleService).reconcile(
             active,
             setOf(WorkType.WATERING, WorkType.HARVEST),
         )
@@ -272,6 +272,10 @@ class FarmingCycleReportProjectionServiceTest {
 
         assertThat(completed.sourceRevision).isEqualTo(revision)
         verify(reportRepository).save(completed)
+        verify(reportFeedbackLifecycleService).reconcile(
+            completed,
+            setOf(WorkType.WATERING, WorkType.HARVEST),
+        )
     }
 
     @Test

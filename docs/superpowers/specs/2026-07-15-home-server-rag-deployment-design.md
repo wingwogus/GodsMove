@@ -96,7 +96,8 @@ RAG_EMBEDDING_MODEL=bge-m3
 RAG_EMBEDDING_DIMENSION=1024
 RAG_CHAT_MODEL=openclaw/agri-rag-coach
 RAG_VECTOR_TABLE=vector_store
-RAG_TIMEOUT_MILLIS=30000
+OPENCLAW_CONNECT_TIMEOUT_MILLIS=3000
+OPENCLAW_READ_TIMEOUT_MILLIS=30000
 ```
 
 - `.env` 권한은 `600`을 유지한다.
@@ -119,7 +120,7 @@ RAG_TIMEOUT_MILLIS=30000
 
 ## 6. 데이터베이스 계약
 
-현재 `backend/docs/db/rag-index-schema.sql`의 `rag_index_chunk`는 런타임이 읽는 테이블이 아니다. 배포 계약은 Spring AI 1.1.8의 `public.vector_store`로 통일한다.
+`backend/docs/db/rag-index-schema.sql`과 런타임의 배포 계약은 Spring AI 1.1.8의 `public.vector_store`로 통일한다. 이 테이블에는 이전 대상으로 검증된 `TECH_DOCUMENT` 벡터만 적재한다.
 
 필수 확장:
 
@@ -248,5 +249,5 @@ RAG_TIMEOUT_MILLIS=30000
 - N100 CPU에서는 동시에 여러 임베딩 요청이 들어오면 응답이 느려질 수 있다.
 - OpenClaw browser가 순간적으로 CPU 한 코어를 모두 사용할 수 있으므로 Ollama 동시성을 제한해야 한다.
 - 맥북과 서버의 `bge-m3` 모델 digest가 다르면 동일한 벡터 공간을 보장할 수 없다.
-- Spring AI `vector_store`와 기존 문서의 `rag_index_chunk` 계약 불일치는 구현 단계에서 반드시 제거해야 한다.
+- Spring AI `public.vector_store` DDL과 애플리케이션의 1024차원 cosine/HNSW 설정은 항상 함께 변경해야 한다.
 - 애플리케이션에 PDF 재인덱싱 기능이 없으므로 이후 문서 갱신은 별도 작업이 필요하다.

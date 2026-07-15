@@ -1,5 +1,6 @@
 package com.chamchamcham.domain.report
 
+import com.chamchamcham.domain.farming.WorkType
 import java.math.BigDecimal
 import java.time.LocalDate
 
@@ -216,6 +217,17 @@ data class CycleReportStatistics(
     val harvest: HarvestStatistics = HarvestStatistics.empty(),
     val etc: CommonOnlyStatistics = CommonOnlyStatistics.empty(),
 ) {
+    fun recordCountFor(workType: WorkType): Int = when (workType) {
+        WorkType.PLANTING -> planting.recordCount
+        WorkType.WATERING -> watering.recordCount
+        WorkType.FERTILIZING -> fertilizing.recordCount
+        WorkType.PEST_CONTROL -> pestControl.recordCount
+        WorkType.WEEDING -> weeding.recordCount
+        WorkType.PRUNING -> pruning.recordCount
+        WorkType.HARVEST -> harvest.recordCount
+        WorkType.ETC -> etc.recordCount
+    }
+
     companion object {
         fun empty() = CycleReportStatistics()
     }

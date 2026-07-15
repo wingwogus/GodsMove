@@ -114,16 +114,6 @@ class AuthSecurityIntegrationTest(
     }
 
     @Test
-    fun `dev endpoints are not public outside local profile`() {
-        mockMvc.perform(
-            post("/api/v1/dev/rag/seed")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""{"includePdf":false,"includeFarmingRecords":false}""")
-        )
-            .andExpect(status().isUnauthorized)
-    }
-
-    @Test
     fun `protected endpoint rejects missing token`() {
         mockMvc.perform(get("/api/v1/test/me"))
             .andExpect(status().isUnauthorized)

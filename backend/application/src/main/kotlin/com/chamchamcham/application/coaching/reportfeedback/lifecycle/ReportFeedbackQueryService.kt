@@ -26,6 +26,7 @@ class ReportFeedbackQueryService(
         return ReportFeedbackListResult(
             reportId = requireNotNull(report.id),
             feedbacks = feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId)
+                .filter { report.statistics.recordCountFor(it.workType) > 0 }
                 .sortedBy { it.workType.ordinal }
                 .map { it.toDetailResult() },
         )
@@ -37,14 +38,7 @@ class ReportFeedbackQueryService(
         reportId: UUID,
         workType: WorkType,
     ): ReportFeedbackDetailResult {
-        findCompletedReport(memberId, reportId)
-        val feedback = feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId)
-            .firstOrNull { it.workType == workType }
-            ?: throw BusinessException(ErrorCode.REPORT_FEEDBACK_NOT_FOUND)
-        if (feedback.status != ReportFeedbackStatus.FAILED) {
-            throw BusinessException(ErrorCode.REPORT_FEEDBACK_REGENERATION_NOT_ALLOWED)
-        }
-        return lifecycleService.retry(feedback).toDetailResult()
+        return lifecycleService.regenerate(memberId, reportId, workType).toDetailResult()
     }
 
     private fun findCompletedReport(memberId: UUID, reportId: UUID) =

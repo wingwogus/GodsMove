@@ -10,8 +10,7 @@ data class RagProperties(
     val execution: Execution = Execution(),
 ) {
     data class Embedding(
-        val model: String = "bge-m3",
-        val dimension: Int = 1024
+        val model: String = "bge-m3"
     )
 
     data class Chat(
@@ -21,7 +20,7 @@ data class RagProperties(
     data class Retrieval(
         val topKDefault: Int = 6,
         val topKMax: Int = 20,
-        val lowSimilarityThreshold: Double = 0.55
+        val lowSimilarityThreshold: Double = 0.5
     )
 
     data class Execution(

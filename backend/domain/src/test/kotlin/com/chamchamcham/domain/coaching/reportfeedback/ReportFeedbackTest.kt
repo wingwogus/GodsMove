@@ -7,10 +7,17 @@ import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.report.CycleReportStatistics
+import com.chamchamcham.domain.report.CommonOnlyStatistics
+import com.chamchamcham.domain.report.FertilizingStatistics
 import com.chamchamcham.domain.report.FarmingCycleReport
 import com.chamchamcham.domain.report.FarmingCycleReportProjection
 import com.chamchamcham.domain.report.FarmingCycleReportStatus
 import com.chamchamcham.domain.report.FarmingCycleStartBasis
+import com.chamchamcham.domain.report.HarvestStatistics
+import com.chamchamcham.domain.report.PestControlStatistics
+import com.chamchamcham.domain.report.PlantingStatistics
+import com.chamchamcham.domain.report.WateringStatistics
+import com.chamchamcham.domain.report.WeedingStatistics
 import org.assertj.core.api.Assertions.assertThat
 import org.assertj.core.api.Assertions.assertThatThrownBy
 import org.junit.jupiter.api.Test
@@ -18,6 +25,7 @@ import java.time.LocalDateTime
 import java.util.UUID
 
 class ReportFeedbackTest {
+    private val sourceFingerprint = "a".repeat(64)
     private val member = Member(id = UUID.randomUUID(), email = "member@example.com", passwordHash = null)
     private val farm = Farm(id = UUID.randomUUID(), owner = member, name = "약초농장", roadAddress = "강원도 평창군")
     private val crop = Crop(
@@ -56,16 +64,17 @@ class ReportFeedbackTest {
 
     @Test
     fun `pending feedback belongs to one report work type`() {
-        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING)
+        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING, sourceFingerprint)
 
         assertThat(feedback.workType).isEqualTo(WorkType.WATERING)
         assertThat(feedback.report).isSameAs(report)
         assertThat(feedback.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(feedback.sourceFingerprint).isEqualTo(sourceFingerprint)
     }
 
     @Test
     fun `ready feedback stores one work type summary and ordered items without a section count cap`() {
-        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING)
+        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING, sourceFingerprint)
 
         feedback.markReady(
             summary = "이번 관수 작업은 간격을 안정적으로 유지했어요.",
@@ -98,7 +107,7 @@ class ReportFeedbackTest {
 
     @Test
     fun `ready feedback permits a summary without forced items`() {
-        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING)
+        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING, sourceFingerprint)
 
         feedback.markReady(
             summary = "이번 관수 기록의 흐름을 확인했어요.",
@@ -117,7 +126,7 @@ class ReportFeedbackTest {
     @Test
     fun `ready feedback rejects blank summary and blank item values`() {
         assertThatThrownBy {
-            ReportFeedback.pending(member, report, WorkType.WATERING).markReady(
+            ReportFeedback.pending(member, report, WorkType.WATERING, sourceFingerprint).markReady(
                 summary = " ",
                 items = listOf(item(ReportFeedbackItemSection.STRENGTH, "관수", "관수 기록이 좋습니다.")),
                 citations = emptyList(),
@@ -129,7 +138,7 @@ class ReportFeedbackTest {
         }.isInstanceOf(IllegalArgumentException::class.java)
 
         assertThatThrownBy {
-            ReportFeedback.pending(member, report, WorkType.WATERING).markReady(
+            ReportFeedback.pending(member, report, WorkType.WATERING, sourceFingerprint).markReady(
                 summary = "요약",
                 items = listOf(item(ReportFeedbackItemSection.STRENGTH, " ", "관수 기록이 좋습니다.")),
                 citations = emptyList(),
@@ -143,15 +152,120 @@ class ReportFeedbackTest {
 
     @Test
     fun `failed feedback can retry with its previous input cleared`() {
-        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING)
+        val latestFingerprint = "b".repeat(64)
+        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING, sourceFingerprint)
         feedback.attachInputSnapshot(mapOf("schemaVersion" to 3))
         feedback.markFailed("STRUCTURED_OUTPUT_INVALID")
 
-        feedback.retry()
+        feedback.retry(latestFingerprint)
 
         assertThat(feedback.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(feedback.sourceFingerprint).isEqualTo(latestFingerprint)
         assertThat(feedback.failureCode).isNull()
         assertThat(feedback.inputSnapshot).isNull()
+    }
+
+    @Test
+    fun `ready feedback becomes stale and retries with the latest fingerprint`() {
+        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING, sourceFingerprint)
+        feedback.attachInputSnapshot(mapOf("schemaVersion" to 3))
+        feedback.markReady(
+            summary = "관수 작업 요약",
+            items = emptyList(),
+            citations = emptyList(),
+            auditStatus = "PASS",
+            auditWarnings = emptyList(),
+            modelName = "test-chat",
+            embeddingModel = "test-embedding",
+        )
+
+        feedback.markStale()
+
+        assertThat(feedback.status).isEqualTo(ReportFeedbackStatus.STALE)
+        assertThat(feedback.sourceFingerprint).isEqualTo(sourceFingerprint)
+        assertThat(feedback.failureCode).isNull()
+        assertThat(feedback.inputSnapshot).isNull()
+
+        val latestFingerprint = "b".repeat(64)
+        feedback.retry(latestFingerprint)
+
+        assertThat(feedback.status).isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(feedback.sourceFingerprint).isEqualTo(latestFingerprint)
+        assertThat(feedback.inputSnapshot).isNull()
+    }
+
+    @Test
+    fun `stale placeholder has no source fingerprint or prepared input`() {
+        val feedback = ReportFeedback.stalePlaceholder(member, report, WorkType.FERTILIZING)
+
+        assertThat(feedback.status).isEqualTo(ReportFeedbackStatus.STALE)
+        assertThat(feedback.sourceFingerprint).isNull()
+        assertThat(feedback.inputSnapshot).isNull()
+        assertThat(feedback.failureCode).isNull()
+    }
+
+    @Test
+    fun `legacy feedback backfills a valid fingerprint without changing ready status`() {
+        val legacy = ReportFeedback(
+            member = member,
+            report = report,
+            workType = WorkType.WATERING,
+            status = ReportFeedbackStatus.PENDING,
+        )
+        legacy.attachInputSnapshot(mapOf("schemaVersion" to 3))
+        legacy.markReady(
+            summary = "관수 작업 요약",
+            items = emptyList(),
+            citations = emptyList(),
+            auditStatus = "PASS",
+            auditWarnings = emptyList(),
+            modelName = "test-chat",
+            embeddingModel = "test-embedding",
+        )
+
+        legacy.backfillSourceFingerprint(sourceFingerprint)
+
+        assertThat(legacy.sourceFingerprint).isEqualTo(sourceFingerprint)
+        assertThat(legacy.status).isEqualTo(ReportFeedbackStatus.READY)
+        assertThat(legacy.inputSnapshot).isEqualTo(mapOf("schemaVersion" to 3))
+    }
+
+    @Test
+    fun `fingerprint backfill never overwrites an existing value`() {
+        val feedback = ReportFeedback.pending(member, report, WorkType.WATERING, sourceFingerprint)
+
+        feedback.backfillSourceFingerprint("b".repeat(64))
+
+        assertThat(feedback.sourceFingerprint).isEqualTo(sourceFingerprint)
+        assertThat(feedback.status).isEqualTo(ReportFeedbackStatus.PENDING)
+    }
+
+    @Test
+    fun `pending and retry reject malformed fingerprints`() {
+        assertThatThrownBy {
+            ReportFeedback.pending(member, report, WorkType.WATERING, "not-a-sha256")
+        }.isInstanceOf(IllegalArgumentException::class.java)
+
+        val stale = ReportFeedback.stalePlaceholder(member, report, WorkType.WATERING)
+        assertThatThrownBy { stale.retry("A".repeat(64)) }
+            .isInstanceOf(IllegalArgumentException::class.java)
+    }
+
+    @Test
+    fun `statistics returns the record count for every work type`() {
+        val statistics = CycleReportStatistics(
+            planting = PlantingStatistics(recordCount = 1),
+            watering = WateringStatistics(recordCount = 2),
+            fertilizing = FertilizingStatistics(recordCount = 3),
+            pestControl = PestControlStatistics(recordCount = 4),
+            weeding = WeedingStatistics(recordCount = 5),
+            pruning = CommonOnlyStatistics(recordCount = 6),
+            harvest = HarvestStatistics(recordCount = 7),
+            etc = CommonOnlyStatistics(recordCount = 8),
+        )
+
+        assertThat(WorkType.entries.map(statistics::recordCountFor))
+            .containsExactly(1, 2, 3, 4, 5, 6, 7, 8)
     }
 
     private fun item(

@@ -1,5 +1,7 @@
 package com.chamchamcham.api.coaching.chat.controller
 
+import com.chamchamcham.api.coaching.chat.dto.CoachingRagRequests
+import com.chamchamcham.api.coaching.chat.dto.CoachingRagResponses
 import com.chamchamcham.api.exception.GlobalExceptionHandler
 import com.chamchamcham.application.coaching.chat.CoachingRagCommand
 import com.chamchamcham.application.coaching.chat.CoachingRagResult
@@ -17,6 +19,7 @@ import com.chamchamcham.application.coaching.common.RagAuditStatus
 import com.chamchamcham.application.coaching.common.RagModelInfo
 import com.chamchamcham.application.coaching.common.RagSourceType
 import com.chamchamcham.application.security.TokenProvider
+import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
 import org.mockito.ArgumentMatchers.any
@@ -71,6 +74,14 @@ class CoachingRagControllerTest(
             .andExpect(jsonPath("$.data.result.nextActions[0].citationLabels[0]", equalTo("근거 1: 농업기술길잡이 007 약용작물")))
             .andExpect(jsonPath("$.data.result.citations[0].displayLabel", equalTo("근거 1")))
             .andExpect(jsonPath("$.data.savedFeedbackId").doesNotExist())
+    }
+
+    @Test
+    fun `query contract omits unused mode work type and saved feedback fields`() {
+        assertThat(CoachingRagRequests.QueryRequest::class.java.declaredFields.map { it.name })
+            .doesNotContain("mode", "workTypeId")
+        assertThat(CoachingRagResponses.QueryResponse::class.java.declaredFields.map { it.name })
+            .doesNotContain("savedFeedbackId")
     }
 
     @Test

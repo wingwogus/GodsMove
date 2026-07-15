@@ -22,7 +22,7 @@ class AsyncConfig {
             maxPoolSize = execution.maxPoolSize
             setQueueCapacity(execution.queueCapacity)
             setThreadNamePrefix("coaching-")
-            setRejectedExecutionHandler(ThreadPoolExecutor.CallerRunsPolicy())
+            setRejectedExecutionHandler(ThreadPoolExecutor.DiscardPolicy())
         }
     }
 

@@ -39,6 +39,7 @@ import java.util.concurrent.ConcurrentHashMap
 class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
     private val entityManager: TestEntityManager,
     private val repository: FarmingCycleReportQueryRepository,
+    private val reportRepository: FarmingCycleReportRepository,
 ) {
     private lateinit var member: Member
     private lateinit var otherMember: Member
@@ -79,6 +80,22 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
 
         assertThat(result.rows.map { it.endsAt })
             .containsExactly(day(30), day(20))
+    }
+
+    @Test
+    fun `report can be locked only by its id and owning member`() {
+        val report = persistCompleted(endedAt = day(30))
+        entityManager.flush()
+        entityManager.clear()
+
+        val locked = reportRepository.findByIdAndMemberIdForUpdate(requireNotNull(report.id), memberId)
+        val outsideOwner = reportRepository.findByIdAndMemberIdForUpdate(
+            requireNotNull(report.id),
+            requireNotNull(otherMember.id),
+        )
+
+        assertThat(locked?.id).isEqualTo(report.id)
+        assertThat(outsideOwner).isNull()
     }
 
     @Test
