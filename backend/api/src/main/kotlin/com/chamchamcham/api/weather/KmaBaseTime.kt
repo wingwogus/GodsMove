@@ -5,10 +5,11 @@ import java.time.Clock
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
+data class KmaBaseDateTime(val baseDate: String, val baseTime: String)
+
 /**
  * 기상청 발표시각(base_date/base_time/tmFc/time) 계산. 전부 순수 로직이지만 "지금"이 필요해서
  * Clock을 주입받는다(인자 없는 now() 금지 — Asia/Seoul 고정 Clock 전제, ClockConfig 참고).
- * base_date/base_time 쌍은 기존 [KmaBaseDateTime]을 그대로 재사용한다.
  */
 @Component
 class KmaBaseTime(private val clock: Clock) {

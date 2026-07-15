@@ -60,29 +60,8 @@ policy:
     base-url: https://www.nongupez.go.kr
     timeout-millis: 10000
 
-weather:
-  kma:
-    base-url: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
-    service-key: test-kma-service-key
-    connect-timeout-millis: 2000
-    read-timeout-millis: 2000
-  asos:
-    base-url: https://apis.data.go.kr/1360000/AsosDalyInfoService
-    service-key: test-kma-service-key
-    connect-timeout-millis: 2000
-    read-timeout-millis: 2000
-  uv:
-    base-url: https://apis.data.go.kr/1360000/LivingWthrIdxServiceV5
-    service-key: test-kma-service-key
-    connect-timeout-millis: 2000
-    read-timeout-millis: 2000
-  mid-fcst:
-    base-url: https://apis.data.go.kr/1360000/MidFcstInfoService
-    service-key: test-kma-service-key
-    connect-timeout-millis: 2000
-    read-timeout-millis: 2000
 
-# 재설계 KmaProperties(prefix=kma)용 신규 블록. 옛 weather.kma/asos/uv/mid-fcst는 어댑터 삭제 단계에서 정리한다.
+# 기상청 4개 서비스가 인증키/타임아웃을 공유하므로 base-url만 나눠 한 벌로 둔다.
 kma:
   service-key: test-kma-service-key
   connect-timeout-millis: 2000
