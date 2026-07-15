@@ -1,0 +1,77 @@
+{
+  "schemaVersion": "record-feedback-context.v2",
+  "member": {
+    "memberId": "20000000-0000-0000-0000-000000000001",
+    "experienceLevel": 1,
+    "managementType": "NON_REGISTERED_FARMER"
+  },
+  "farm": {
+    "farmId": "20000000-0000-0000-0000-000000000002",
+    "name": "청년약초밭",
+    "roadAddress": "전라남도 구례군",
+    "latitude": 35.2,
+    "longitude": 127.5
+  },
+  "crop": {
+    "cropId": "20000000-0000-0000-0000-000000000003",
+    "name": "오미자",
+    "usePartCategory": "FRUIT"
+  },
+  "record": {
+    "recordId": "20000000-0000-0000-0000-000000000004",
+    "sourceRevision": 2,
+    "workedAt": "2026-07-03T07:40:00",
+    "workType": "HARVEST",
+    "detail": {
+      "type": "HARVEST",
+      "harvestAmount": 12.0,
+      "amountUnknown": false,
+      "medicinalPart": "FRUIT",
+      "harvestSource": "CULTIVATED",
+      "growthPeriod": 16,
+      "growthPeriodUnit": "MONTH",
+      "isLastHarvest": false
+    },
+    "recordedWeatherCondition": "맑음",
+    "recordedTemperatureC": 31,
+    "memo": "붉게 익은 열매 위주로 선별 수확함.",
+    "photoCount": 3
+  },
+  "weather": {
+    "current": {
+      "temperatureC": 31,
+      "skyCondition": "맑음",
+      "observedAt": "2026-07-03T09:00:00"
+    },
+    "forecastDays": [
+      {
+        "date": "2026-07-04",
+        "rainfallMm": 0.0,
+        "rainProbabilityPct": 20,
+        "maxTemperatureC": 32.5,
+        "minTemperatureC": 23.0,
+        "humidityPct": 72.0,
+        "windSpeedMs": 2.2,
+        "riskFlags": [
+          "HOT",
+          "DRY"
+        ]
+      },
+      {
+        "date": "2026-07-06",
+        "rainfallMm": 16.0,
+        "rainProbabilityPct": 75,
+        "maxTemperatureC": 29.0,
+        "minTemperatureC": 22.5,
+        "humidityPct": 87.0,
+        "windSpeedMs": 3.1,
+        "riskFlags": [
+          "RAIN",
+          "HIGH_HUMIDITY"
+        ]
+      }
+    ],
+    "source": "FAKE_WEATHER_PORT"
+  },
+  "warnings": []
+}

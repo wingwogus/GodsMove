@@ -1,0 +1,83 @@
+{
+  "schemaVersion": "record-feedback-context.v2",
+  "member": {
+    "memberId": "10000000-0000-0000-0000-000000000001",
+    "experienceLevel": 1,
+    "managementType": "NON_REGISTERED_FARMER"
+  },
+  "farm": {
+    "farmId": "10000000-0000-0000-0000-000000000002",
+    "name": "청년약초밭",
+    "roadAddress": "강원특별자치도 평창군 진부면",
+    "latitude": 37.1,
+    "longitude": 128.2
+  },
+  "crop": {
+    "cropId": "10000000-0000-0000-0000-000000000003",
+    "name": "참당귀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  "record": {
+    "recordId": "10000000-0000-0000-0000-000000000004",
+    "sourceRevision": 1,
+    "workedAt": "2026-07-03T08:30:00",
+    "workType": "WATERING",
+    "detail": {
+      "type": "WATERING",
+      "irrigationAmount": "NORMAL",
+      "irrigationMethod": "DRIP"
+    },
+    "recordedWeatherCondition": "맑음",
+    "recordedTemperatureC": 30,
+    "memo": "오전 흙 표면이 말라 보여 점적 관수함.",
+    "photoCount": 1
+  },
+  "weather": {
+    "current": {
+      "temperatureC": 30,
+      "skyCondition": "구름많음",
+      "observedAt": "2026-07-03T09:00:00"
+    },
+    "forecastDays": [
+      {
+        "date": "2026-07-04",
+        "rainfallMm": 22.0,
+        "rainProbabilityPct": 80,
+        "maxTemperatureC": 28.8,
+        "minTemperatureC": 21.4,
+        "humidityPct": 88.0,
+        "windSpeedMs": 3.2,
+        "riskFlags": [
+          "HEAVY_RAIN",
+          "HIGH_HUMIDITY"
+        ]
+      },
+      {
+        "date": "2026-07-05",
+        "rainfallMm": 8.0,
+        "rainProbabilityPct": 60,
+        "maxTemperatureC": 29.4,
+        "minTemperatureC": 22.1,
+        "humidityPct": 84.0,
+        "windSpeedMs": 2.8,
+        "riskFlags": [
+          "RAIN"
+        ]
+      },
+      {
+        "date": "2026-07-06",
+        "rainfallMm": 0.0,
+        "rainProbabilityPct": 20,
+        "maxTemperatureC": 31.2,
+        "minTemperatureC": 22.8,
+        "humidityPct": 70.0,
+        "windSpeedMs": 2.1,
+        "riskFlags": [
+          "HOT"
+        ]
+      }
+    ],
+    "source": "FAKE_WEATHER_PORT"
+  },
+  "warnings": []
+}

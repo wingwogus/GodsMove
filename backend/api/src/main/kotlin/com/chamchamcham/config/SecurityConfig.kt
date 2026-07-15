@@ -14,7 +14,6 @@ import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter
 import org.springframework.web.cors.CorsConfiguration
 
-
 @Configuration
 @EnableWebSecurity
 class SecurityConfig(
@@ -22,7 +21,7 @@ class SecurityConfig(
     private val authenticationEntryPoint: CustomAuthenticationEntryPoint,
     private val jwtAuthenticationFilter: JwtAuthenticationFilter,
     private val mdcLoggingFilter: MDCLoggingFilter,
-    @Value("\${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173}")
+    @Value("\${app.cors.allowed-origins:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}")
     allowedCorsOrigins: String
 ) {
     private val corsAllowedOrigins = parseCorsOrigins(allowedCorsOrigins)
@@ -115,5 +114,4 @@ class SecurityConfig(
             .map(String::trim)
             .filter(String::isNotEmpty)
     }
-
 }

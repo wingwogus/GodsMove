@@ -49,6 +49,13 @@ class KmaBaseTimeResolverTest {
     }
 
     @Test
+    fun `동네예보는 첫 발표시각 전이면 전날 23시를 사용한다`() {
+        val result = KmaBaseTimeResolver.resolveVilageFcst(LocalDateTime.of(2026, 7, 11, 2, 9))
+
+        assertThat(result).isEqualTo(KmaBaseDateTime(baseDate = "20260710", baseTime = "2300"))
+    }
+
+    @Test
     fun `단기예보는 발표시각 10분 전이면 직전 스케줄을 사용한다`() {
         val result = KmaBaseTimeResolver.resolveVilageFcst(LocalDateTime.of(2026, 7, 8, 17, 9))
 
@@ -67,13 +74,6 @@ class KmaBaseTimeResolverTest {
         val result = KmaBaseTimeResolver.resolveVilageFcst(LocalDateTime.of(2026, 7, 8, 16, 59))
 
         assertThat(result).isEqualTo(KmaBaseDateTime(baseDate = "20260708", baseTime = "1400"))
-    }
-
-    @Test
-    fun `단기예보는 자정 이후 첫 스케줄 이전이면 전날 23시 스케줄로 롤오버한다`() {
-        val result = KmaBaseTimeResolver.resolveVilageFcst(LocalDateTime.of(2026, 7, 8, 1, 30))
-
-        assertThat(result).isEqualTo(KmaBaseDateTime(baseDate = "20260707", baseTime = "2300"))
     }
 
     @Test

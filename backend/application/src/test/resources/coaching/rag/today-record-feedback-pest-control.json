@@ -1,0 +1,63 @@
+{
+  "schemaVersion": "record-feedback-context.v2",
+  "member": {
+    "memberId": "40000000-0000-0000-0000-000000000001",
+    "experienceLevel": 1,
+    "managementType": "NON_REGISTERED_FARMER"
+  },
+  "farm": {
+    "farmId": "40000000-0000-0000-0000-000000000002",
+    "name": "청년약초밭",
+    "roadAddress": "경상북도 영주시 풍기읍",
+    "latitude": 36.8,
+    "longitude": 128.6
+  },
+  "crop": {
+    "cropId": "40000000-0000-0000-0000-000000000003",
+    "name": "인삼",
+    "usePartCategory": "ROOT_BARK"
+  },
+  "record": {
+    "recordId": "40000000-0000-0000-0000-000000000004",
+    "sourceRevision": 1,
+    "workedAt": "2026-07-03T16:00:00",
+    "workType": "PEST_CONTROL",
+    "detail": {
+      "type": "PEST_CONTROL",
+      "pesticideName": "가가방",
+      "pesticideAmount": 20.0,
+      "pesticideAmountUnit": "ML",
+      "totalSprayAmount": 20.0,
+      "totalSprayAmountUnit": "L",
+      "pestName": "점무늬병"
+    },
+    "recordedWeatherCondition": "비",
+    "recordedTemperatureC": 25,
+    "memo": "아랫잎에 반점이 보여 등록약제를 희석해 살포함.",
+    "photoCount": 2
+  },
+  "weather": {
+    "current": {
+      "temperatureC": 25,
+      "skyCondition": "비",
+      "observedAt": "2026-07-03T16:00:00"
+    },
+    "forecastDays": [
+      {
+        "date": "2026-07-04",
+        "rainfallMm": 18.0,
+        "rainProbabilityPct": 75,
+        "maxTemperatureC": 30.2,
+        "minTemperatureC": 23.4,
+        "humidityPct": 91.0,
+        "windSpeedMs": 3.0,
+        "riskFlags": [
+          "RAIN",
+          "HIGH_HUMIDITY"
+        ]
+      }
+    ],
+    "source": "FAKE_WEATHER_PORT"
+  },
+  "warnings": []
+}

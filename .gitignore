@@ -9,7 +9,6 @@ build/
 out/
 *.iml
 
-
 # =========================================================
 # Xcode / iOS
 # =========================================================
@@ -70,9 +69,12 @@ pnpm-debug.log*
 /data/
 /outputs/
 .superpowers/
+.worktrees/
 
 # Local-only dev/seed code: runs only with the local profile and is not committed.
 /local-tools/
+# Local QA console: keep personal tokens and test data out of Git.
+/frontend/dev-rag-test.html
 backend/api/src/main/kotlin/com/chamchamcham/api/dev/
 backend/api/src/test/kotlin/com/chamchamcham/api/dev/
 backend/application/src/main/kotlin/com/chamchamcham/application/coaching/rag/seed/

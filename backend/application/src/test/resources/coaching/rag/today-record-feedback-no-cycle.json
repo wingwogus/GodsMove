@@ -1,0 +1,38 @@
+{
+  "schemaVersion": "record-feedback-context.v2",
+  "member": {
+    "memberId": "50000000-0000-0000-0000-000000000001",
+    "experienceLevel": 1,
+    "managementType": "NON_REGISTERED_FARMER"
+  },
+  "farm": {
+    "farmId": "50000000-0000-0000-0000-000000000002",
+    "name": "청년약초밭",
+    "roadAddress": "강원특별자치도 평창군 진부면",
+    "latitude": null,
+    "longitude": null
+  },
+  "crop": {
+    "cropId": "50000000-0000-0000-0000-000000000003",
+    "name": "참당귀",
+    "usePartCategory": "ROOT_BARK"
+  },
+  "record": {
+    "recordId": "50000000-0000-0000-0000-000000000004",
+    "sourceRevision": 1,
+    "workedAt": "2026-07-03T08:30:00",
+    "workType": "WEEDING",
+    "detail": {
+      "type": "WEEDING",
+      "weedingMethod": "HAND"
+    },
+    "recordedWeatherCondition": "맑음",
+    "recordedTemperatureC": 30,
+    "memo": "작물 주변 잡초를 손으로 제거함.",
+    "photoCount": 0
+  },
+  "weather": null,
+  "warnings": [
+    "weather_location_unavailable"
+  ]
+}
