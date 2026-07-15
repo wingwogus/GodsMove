@@ -7,6 +7,7 @@ import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecordRepository
 import com.chamchamcham.domain.member.MemberRepository
 import org.springframework.stereotype.Component
+import org.springframework.transaction.annotation.Transactional
 
 data class CoachingContext(
     val text: String
@@ -19,6 +20,7 @@ class CoachingContextProvider(
     private val cropRepository: CropRepository,
     private val farmingRecordRepository: FarmingRecordRepository
 ) {
+    @Transactional(readOnly = true)
     fun build(command: CoachingRagCommand): CoachingContext {
         val member = memberRepository.findById(command.memberId).orElseThrow {
             BusinessException(ErrorCode.MEMBER_NOT_FOUND)

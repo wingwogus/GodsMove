@@ -7,6 +7,7 @@ enum class ReportFeedbackFailureCode {
     RETRIEVAL_FAILED,
     CHAT_UNAVAILABLE,
     STRUCTURED_OUTPUT_INVALID,
+    PROCESSING_TIMEOUT,
     UNEXPECTED,
 }
 

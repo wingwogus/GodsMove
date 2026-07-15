@@ -12,7 +12,6 @@ import org.springframework.ai.rag.retrieval.search.DocumentRetriever
 import org.springframework.ai.vectorstore.SearchRequest
 import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 @Service
 class CoachingRagService(
@@ -23,7 +22,6 @@ class CoachingRagService(
     private val validator: CoachingStructuredOutputValidator,
     private val ragProperties: RagProperties
 ) {
-    @Transactional
     fun answer(command: CoachingRagCommand): CoachingRagResult {
         val normalizedQuestion = normalizeQuestion(command.question)
         val topK = normalizeTopK(command.topK)

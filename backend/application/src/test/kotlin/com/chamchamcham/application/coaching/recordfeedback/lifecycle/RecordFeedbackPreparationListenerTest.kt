@@ -18,7 +18,8 @@ class RecordFeedbackPreparationListenerTest {
             RecordFeedbackGenerationRequested::class.java,
         )
 
-        assertThat(preparationOn.isAnnotationPresent(Async::class.java)).isTrue()
+        assertThat(preparationOn.getAnnotation(Async::class.java).value)
+            .isEqualTo("coachingTaskExecutor")
         assertThat(generationOn.isAnnotationPresent(Async::class.java)).isFalse()
         assertThat(generationOn.isAnnotationPresent(EventListener::class.java)).isTrue()
         assertThat(generationOn.isAnnotationPresent(TransactionalEventListener::class.java)).isFalse()

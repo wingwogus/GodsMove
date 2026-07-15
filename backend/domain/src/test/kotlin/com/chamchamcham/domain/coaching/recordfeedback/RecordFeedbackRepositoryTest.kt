@@ -91,8 +91,39 @@ class RecordFeedbackRepositoryTest @Autowired constructor(
         assertThat(lockedRecord?.id).isEqualTo(record.id)
     }
 
+    @Test
+    fun `only pending feedback older than the cutoff fails with processing timeout`() {
+        val cutoff = workedAt.minusMinutes(2)
+        val oldPending = repository.saveAndFlush(pendingFeedback(1, workedAt.minusMinutes(3)))
+        val recentPending = repository.saveAndFlush(pendingFeedback(2, workedAt.minusMinutes(1)))
+        val oldFailed = repository.saveAndFlush(
+            pendingFeedback(3, workedAt.minusMinutes(3)).also { it.markFailed("OTHER_FAILURE") },
+        )
+        entityManager.clear()
+
+        val expiredCount = repository.failPendingUpdatedBefore(
+            cutoff,
+            workedAt,
+            "PROCESSING_TIMEOUT",
+        )
+        entityManager.clear()
+
+        assertThat(expiredCount).isEqualTo(1)
+        assertThat(repository.findById(requireNotNull(oldPending.id)).orElseThrow().status)
+            .isEqualTo(RecordFeedbackStatus.FAILED)
+        assertThat(repository.findById(requireNotNull(oldPending.id)).orElseThrow().failureCode)
+            .isEqualTo("PROCESSING_TIMEOUT")
+        assertThat(repository.findById(requireNotNull(recentPending.id)).orElseThrow().status)
+            .isEqualTo(RecordFeedbackStatus.PENDING)
+        assertThat(repository.findById(requireNotNull(oldFailed.id)).orElseThrow().failureCode)
+            .isEqualTo("OTHER_FAILURE")
+    }
+
     private fun pendingFeedback(sourceRevision: Long): RecordFeedback =
         RecordFeedback.pending(member, record, sourceRevision).also(::setTimestamps)
+
+    private fun pendingFeedback(sourceRevision: Long, updatedAt: LocalDateTime): RecordFeedback =
+        RecordFeedback.pending(member, record, sourceRevision).also { setTimestamps(it, updatedAt) }
 
     private fun <T : BaseTimeEntity> persist(entity: T): T {
         setTimestamps(entity)
@@ -100,13 +131,17 @@ class RecordFeedbackRepositoryTest @Autowired constructor(
     }
 
     private fun setTimestamps(entity: BaseTimeEntity) {
+        setTimestamps(entity, workedAt)
+    }
+
+    private fun setTimestamps(entity: BaseTimeEntity, updatedAt: LocalDateTime) {
         BaseTimeEntity::class.java.getDeclaredField("createdAt").apply {
             isAccessible = true
-            set(entity, workedAt)
+            set(entity, updatedAt)
         }
         BaseTimeEntity::class.java.getDeclaredField("updatedAt").apply {
             isAccessible = true
-            set(entity, workedAt)
+            set(entity, updatedAt)
         }
     }
 }

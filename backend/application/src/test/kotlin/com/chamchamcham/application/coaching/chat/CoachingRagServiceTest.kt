@@ -31,6 +31,7 @@ import org.springframework.ai.vectorstore.VectorStore
 import org.springframework.ai.vectorstore.filter.Filter
 import org.springframework.core.ParameterizedTypeReference
 import org.springframework.core.io.Resource
+import org.springframework.transaction.annotation.AnnotationTransactionAttributeSource
 import java.nio.charset.Charset
 import java.time.LocalDate
 import java.util.UUID
@@ -38,6 +39,27 @@ import java.util.function.Consumer
 
 class CoachingRagServiceTest {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
+
+    @Test
+    fun `answer does not keep remote calls inside a transaction`() {
+        val method = CoachingRagService::class.java.getMethod("answer", CoachingRagCommand::class.java)
+
+        val transaction = AnnotationTransactionAttributeSource()
+            .getTransactionAttribute(method, CoachingRagService::class.java)
+
+        assertThat(transaction).isNull()
+    }
+
+    @Test
+    fun `context lookup uses a read only transaction`() {
+        val method = CoachingContextProvider::class.java.getMethod("build", CoachingRagCommand::class.java)
+
+        val transaction = AnnotationTransactionAttributeSource()
+            .getTransactionAttribute(method, CoachingContextProvider::class.java)
+
+        assertThat(transaction).isNotNull
+        assertThat(transaction?.isReadOnly).isTrue()
+    }
 
     @Test
     fun `answer returns insufficient evidence response when no documents are found`() {

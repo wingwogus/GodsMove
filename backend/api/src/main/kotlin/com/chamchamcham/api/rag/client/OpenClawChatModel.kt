@@ -1,5 +1,6 @@
 package com.chamchamcham.api.rag.client
 
+import com.chamchamcham.application.coaching.common.RagProperties
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.config.OpenClawProperties
@@ -12,6 +13,7 @@ import org.springframework.ai.chat.prompt.Prompt
 import org.springframework.context.annotation.Primary
 import org.springframework.http.HttpHeaders
 import org.springframework.http.MediaType
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.RestClient
 import org.springframework.web.client.RestClientException
@@ -20,9 +22,18 @@ import org.springframework.web.client.RestClientException
 @Primary
 class OpenClawChatModel(
     restClientBuilder: RestClient.Builder,
-    private val properties: OpenClawProperties
+    private val properties: OpenClawProperties,
+    private val ragProperties: RagProperties
 ) : ChatModel {
-    private val restClient = restClientBuilder.baseUrl(properties.baseUrl.trimEnd('/')).build()
+    private val restClient = restClientBuilder
+        .requestFactory(
+            SimpleClientHttpRequestFactory().apply {
+                setConnectTimeout(properties.connectTimeoutMillis)
+                setReadTimeout(properties.readTimeoutMillis)
+            }
+        )
+        .baseUrl(properties.baseUrl.trimEnd('/'))
+        .build()
 
     override fun call(prompt: Prompt): ChatResponse {
         if (properties.apiKey.isBlank() || properties.agentId.isBlank()) {
@@ -37,7 +48,7 @@ class OpenClawChatModel(
                 .header("x-openclaw-agent-id", properties.agentId)
                 .body(
                     OpenClawCompletionRequest(
-                        model = properties.model,
+                        model = ragProperties.chat.model,
                         messages = prompt.instructions.map { it.toOpenClawMessage() }
                     )
                 )

@@ -37,7 +37,7 @@ class ReportFeedbackPreparationHandler(
         propagationBehavior = TransactionDefinition.PROPAGATION_REQUIRES_NEW
     }
 
-    @Async
+    @Async("coachingTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun on(event: ReportFeedbackPreparationRequested) {
         val feedback = feedbackRepository.findByIdAndMember_Id(event.feedbackId, event.memberId) ?: return

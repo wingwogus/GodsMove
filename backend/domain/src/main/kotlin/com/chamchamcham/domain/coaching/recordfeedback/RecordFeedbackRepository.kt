@@ -4,8 +4,10 @@ import com.chamchamcham.domain.farming.FarmingRecord
 import jakarta.persistence.LockModeType
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Lock
+import org.springframework.data.jpa.repository.Modifying
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
+import java.time.LocalDateTime
 import java.util.UUID
 
 interface RecordFeedbackRepository : JpaRepository<RecordFeedback, UUID> {
@@ -33,4 +35,19 @@ interface RecordFeedbackRepository : JpaRepository<RecordFeedback, UUID> {
         @Param("id") id: UUID,
         @Param("memberId") memberId: UUID,
     ): RecordFeedback?
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query(
+        value = """
+            update record_feedback
+            set status = 'FAILED', failure_code = :failureCode, updated_at = :failedAt
+            where status = 'PENDING' and updated_at < :cutoff
+        """,
+        nativeQuery = true,
+    )
+    fun failPendingUpdatedBefore(
+        @Param("cutoff") cutoff: LocalDateTime,
+        @Param("failedAt") failedAt: LocalDateTime,
+        @Param("failureCode") failureCode: String,
+    ): Int
 }

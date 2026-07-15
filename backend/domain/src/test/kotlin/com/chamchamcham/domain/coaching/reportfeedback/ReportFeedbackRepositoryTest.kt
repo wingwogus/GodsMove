@@ -114,6 +114,40 @@ class ReportFeedbackRepositoryTest @Autowired constructor(
             .isInstanceOf(DataIntegrityViolationException::class.java)
     }
 
+    @Test
+    fun `only pending feedback older than the cutoff fails with processing timeout`() {
+        val cutoff = completedAt.minusMinutes(2)
+        val oldPending = repository.saveAndFlush(
+            pendingFeedback(WorkType.WATERING, completedAt.minusMinutes(3)),
+        )
+        val recentPending = repository.saveAndFlush(
+            pendingFeedback(WorkType.HARVEST, completedAt.minusMinutes(1)),
+        )
+        val oldFailed = repository.saveAndFlush(
+            pendingFeedback(WorkType.FERTILIZING, completedAt.minusMinutes(3)).also {
+                it.markFailed("OTHER_FAILURE")
+            },
+        )
+        entityManager.clear()
+
+        val expiredCount = repository.failPendingUpdatedBefore(
+            cutoff,
+            completedAt,
+            "PROCESSING_TIMEOUT",
+        )
+        entityManager.clear()
+
+        assertThat(expiredCount).isEqualTo(1)
+        assertThat(repository.findById(requireNotNull(oldPending.id)).orElseThrow().status)
+            .isEqualTo(ReportFeedbackStatus.FAILED)
+        assertThat(repository.findById(requireNotNull(oldPending.id)).orElseThrow().failureCode)
+            .isEqualTo("PROCESSING_TIMEOUT")
+        assertThat(repository.findById(requireNotNull(recentPending.id)).orElseThrow().status)
+            .isEqualTo(ReportFeedbackStatus.PENDING)
+        assertThat(repository.findById(requireNotNull(oldFailed.id)).orElseThrow().failureCode)
+            .isEqualTo("OTHER_FAILURE")
+    }
+
     private fun <T : BaseTimeEntity> persist(entity: T): T {
         setTimestamps(entity)
         return entityManager.persistAndFlush(entity)
@@ -122,14 +156,21 @@ class ReportFeedbackRepositoryTest @Autowired constructor(
     private fun pendingFeedback(workType: WorkType): ReportFeedback =
         ReportFeedback.pending(member, report, workType).also(::setTimestamps)
 
+    private fun pendingFeedback(workType: WorkType, updatedAt: LocalDateTime): ReportFeedback =
+        ReportFeedback.pending(member, report, workType).also { setTimestamps(it, updatedAt) }
+
     private fun setTimestamps(entity: BaseTimeEntity) {
+        setTimestamps(entity, completedAt)
+    }
+
+    private fun setTimestamps(entity: BaseTimeEntity, updatedAt: LocalDateTime) {
         BaseTimeEntity::class.java.getDeclaredField("createdAt").apply {
             isAccessible = true
-            set(entity, completedAt)
+            set(entity, updatedAt)
         }
         BaseTimeEntity::class.java.getDeclaredField("updatedAt").apply {
             isAccessible = true
-            set(entity, completedAt)
+            set(entity, updatedAt)
         }
     }
 }

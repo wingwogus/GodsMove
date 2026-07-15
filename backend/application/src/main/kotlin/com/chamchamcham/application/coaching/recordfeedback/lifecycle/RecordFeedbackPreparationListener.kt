@@ -10,7 +10,7 @@ import org.springframework.transaction.event.TransactionalEventListener
 class RecordFeedbackPreparationListener(
     private val preparationService: RecordFeedbackPreparationService,
 ) {
-    @Async
+    @Async("coachingTaskExecutor")
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun on(event: RecordFeedbackPreparationRequested) {
         runCatching { preparationService.prepare(event) }
