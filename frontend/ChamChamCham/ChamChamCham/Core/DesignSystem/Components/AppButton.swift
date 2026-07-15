@@ -128,7 +128,7 @@ struct AppButton: View {
         switch variant {
         case .primary, .secondary: return Color.Text.inverse
         case .tertiary: return Color.Text.primary
-        case .neutral: return Color.Text.default
+        case .neutral: return Color.Text.subtle
         }
     }
 
@@ -140,7 +140,7 @@ struct AppButton: View {
         case .primary: return Color.Object.primary
         case .secondary: return Color.Object.bold
         case .tertiary: return Color.Object.secondary
-        case .neutral: return Color.Object.subtle
+        case .neutral: return Color.Object.default
         }
     }
 

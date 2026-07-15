@@ -34,7 +34,7 @@ struct AppChip: View {
                     icon(leadingSystemImage)
                 }
                 Text(label)
-                    .appTypography(.labelMedium)
+                    .appTypography(isSelected ? .labelMediumEmphasized : .labelMedium)
                     .foregroundStyle(textColor)
                 if let trailingIcon {
                     icon(trailingIcon)
@@ -76,9 +76,8 @@ struct AppChip: View {
     }
 
     private func icon(_ source: AppIconSource) -> some View {
-        AppIconView(source: source, size: 16)
+        AppIconView(source: source, size: 24)
             .foregroundStyle(textColor)
-            .frame(width: 24, height: 24)
     }
 
     static func leadingPadding(hasLeadingIcon: Bool) -> CGFloat {

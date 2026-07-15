@@ -54,7 +54,7 @@ struct AppToast: View {
 }
 
 #Preview {
-    HStack(spacing: Spacing.md) {
+    VStack(spacing: Spacing.md) {
         AppToast(message: "메시지가 표시됩니다.")
             .frame(width: 350)
         AppToast(message: "메시지가 표시됩니다.", variant: .error)
