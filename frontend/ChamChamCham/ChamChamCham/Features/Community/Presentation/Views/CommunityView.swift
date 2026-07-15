@@ -201,7 +201,7 @@ struct CommunityView: View {
 
     private var writeButton: some View {
         AppButton(
-            systemImage: "pencil",
+            icon: .system("pencil"),
             variant: .primary,
             size: .xlarge
         ) {
@@ -247,8 +247,9 @@ struct CommunityPostRow: View {
         }
     }
 
-    private var badges: [String] {
-        post.postType == .question ? [post.cropName, "Q&A"] : [post.cropName]
+    private var badges: [AppListItemBadge] {
+        let category = AppListItemBadge(post.cropName)
+        return post.postType == .question ? [category, AppListItemBadge("Q&A")] : [category]
     }
 
     private func rowDateText(_ date: Date) -> String {

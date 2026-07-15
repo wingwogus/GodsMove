@@ -38,6 +38,7 @@ struct HomeView: View {
             VStack(spacing: 0) {
                 AppTopAppBar(
                     title: "홈",
+                    background: .subtle,
                     showBorder: false,
                     trailing: [.init(.asset("search")), .init(.asset("notifications"))]
                 )
@@ -53,7 +54,15 @@ struct HomeView: View {
                     .padding(.bottom, Spacing.lg)
                 }
                 .background(Color.Background.subtle)
-                .refreshable { await viewModel.reload() }
+                .refreshable {
+                    // `reload()` sets each section's state to `.loading` before awaiting its fetch, which
+                    // triggers a body rebuild. If that rebuild happens on the same Task `.refreshable` owns,
+                    // SwiftUI cancels it mid-flight — the in-flight URLSession call then throws
+                    // `URLError(.cancelled)`, which surfaces as "네트워크 연결을 확인해주세요" even though
+                    // nothing was actually wrong. Running the reload on its own unstructured Task keeps it
+                    // outside that cancellation path.
+                    await Task { await viewModel.reload() }.value
+                }
             }
             .navigationBarHidden(true)
             .navigationDestination(for: HomeRoute.self) { route in
@@ -155,13 +164,7 @@ struct HomeView: View {
     /// (BR/Swagger both silent, see home backend-conflicts C-7). Replace once that logic exists.
     private var tipCard: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("tip")
-                .appTypography(.labelMedium)
-                .foregroundStyle(Color.Text.inverse)
-                .padding(.horizontal, Spacing.sm)
-                .padding(.vertical, 4)
-                .background(Color.Object.primary)
-                .clipShape(Capsule())
+            AppBadge(label: "tip", size: .small, style: .solid, variant: .primary)
             Text("오늘 날씨엔 관수가 잘 맞아요.\n작물 상태를 살펴보는 건 어떨까요?")
                 .appTypography(.bodyMedium)
                 .foregroundStyle(Color.Text.primary)
@@ -190,8 +193,8 @@ struct HomeView: View {
                         ForEach(records) { record in
                             AppCard(
                                 size: .medium,
-                                title: record.memoPreview.isEmpty ? record.workType.label : record.memoPreview,
-                                captions: [record.workType.label, weatherCaption(for: record)],
+                                title: record.workType.label,
+                                captions: [record.memoPreview],
                                 badges: [record.cropName],
                                 dateText: dateText(record.workedAt)
                             ) {
@@ -204,7 +207,7 @@ struct HomeView: View {
                 emptyStateText(message)
             }
 
-            AppButton("새로 작성하기", systemImage: "plus", variant: .secondary, size: .small, fullWidth: true) {
+            AppButton("새로 작성하기", icon: .asset("add"), variant: .secondary, size: .small, fullWidth: true) {
                 showCompose = true
             }
         }
@@ -309,8 +312,10 @@ struct HomeView: View {
         }
     }
 
-    private func postBadges(_ post: CommunityPostSummary) -> [String] {
-        post.postType == .question ? ["Q&A", post.cropName] : [post.cropName]
+    private func postBadges(_ post: CommunityPostSummary) -> [AppListItemBadge] {
+        let category = AppListItemBadge(post.cropName, style: .solidPastel, variant: .primary)
+        guard post.postType == .question else { return [category] }
+        return [AppListItemBadge("Q&A", style: .solid, variant: .primary), category]
     }
 
     // MARK: - Shared section chrome
