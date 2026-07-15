@@ -68,12 +68,23 @@ struct PolicyListView: View {
         .background(Color.Background.subtle)
     }
 
-    /// Only one sort option ("추천순"/RECOMMENDED) is confirmed from the capture — no dropdown menu
-    /// wired yet since alternate options aren't defined. Static display for now.
+    private var sortSelection: Binding<PolicySort> {
+        Binding(
+            get: { viewModel.sort },
+            set: { newValue in Task { await viewModel.selectSort(newValue) } }
+        )
+    }
+
     private var sortRow: some View {
         HStack {
             Spacer()
-            AppSortButton(title: "추천순")
+            Picker(selection: sortSelection) {
+                Text("추천순").tag(PolicySort.recommended)
+                Text("최신순").tag(PolicySort.latest)
+            } label: {
+                AppSortButton(title: viewModel.sort == .latest ? "최신순" : "추천순")
+            }
+            .pickerStyle(.menu)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, Spacing.sm)
