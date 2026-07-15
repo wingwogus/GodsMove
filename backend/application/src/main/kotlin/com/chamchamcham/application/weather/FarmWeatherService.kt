@@ -58,8 +58,36 @@ class FarmWeatherService(
             throw BusinessException(ErrorCode.WEATHER_DATE_IN_FUTURE)
         }
 
+        if (date.isEqual(LocalDate.now())) {
+            return resolveTodayWeather(latitude, longitude, date)
+                ?: throw BusinessException(ErrorCode.WEATHER_DAILY_DATA_NOT_FOUND)
+        }
+
         return historicalWeatherProvider.fetchDailySummary(latitude, longitude, date)
             ?: throw BusinessException(ErrorCode.WEATHER_DAILY_DATA_NOT_FOUND)
+    }
+
+    /**
+     * ASOS 일자료(실측)는 그 날이 마감돼야 확정되는 경우가 많아 "오늘" 조회에 쓸 수 없다.
+     * 대신 이미 호출 중인 단기예보 패널(getVilageFcst)의 오늘 항목을 사용한다.
+     */
+    private fun resolveTodayWeather(latitude: Double, longitude: Double, date: LocalDate): DailyWeatherSummary? {
+        val today = runCatching { weatherProvider.fetchForecastPanel(latitude, longitude) }
+            .getOrNull()
+            ?.dailyForecasts
+            ?.firstOrNull { it.date == date }
+            ?: return null
+
+        val skyCondition = today.skyCondition ?: return null
+        val minTemperature = today.minTemperature ?: return null
+        val maxTemperature = today.maxTemperature ?: return null
+
+        return DailyWeatherSummary(
+            date = date,
+            skyCondition = skyCondition,
+            minTemperature = minTemperature,
+            maxTemperature = maxTemperature
+        )
     }
 
     fun getDailyWeather(memberId: UUID, date: LocalDate): DailyWeatherSummary =

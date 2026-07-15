@@ -394,7 +394,7 @@ class FarmWeatherServiceTest {
     }
 
     @Test
-    fun `과거 날씨 조회 시 조회 대상 날짜가 오늘이면 예외를 던지지 않는다`() {
+    fun `과거 날씨 조회 시 조회 대상 날짜가 오늘이면 ASOS 대신 예보 패널의 오늘 항목을 사용한다`() {
         val farm = Farm(
             id = farmId,
             owner = member,
@@ -403,19 +403,103 @@ class FarmWeatherServiceTest {
             latitude = 37.5665,
             longitude = 126.9780
         )
-        val summary = DailyWeatherSummary(
-            date = LocalDate.now(),
-            skyCondition = "맑음",
-            minTemperature = 18,
-            maxTemperature = 29
+        val dailyForecasts = listOf(
+            DailyForecast(
+                date = LocalDate.now(),
+                minTemperature = 18,
+                maxTemperature = 29,
+                skyCondition = "맑음"
+            )
         )
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
-        `when`(historicalWeatherProvider.fetchDailySummary(37.5665, 126.9780, LocalDate.now()))
-            .thenReturn(summary)
+        `when`(weatherProvider.fetchForecastPanel(37.5665, 126.9780))
+            .thenReturn(WeatherForecast(precipitationProbability = null, dailyForecasts = dailyForecasts))
 
         val result = service.getDailyWeather(memberId, farmId, LocalDate.now())
 
-        assertThat(result).isEqualTo(summary)
+        assertThat(result).isEqualTo(
+            DailyWeatherSummary(
+                date = LocalDate.now(),
+                skyCondition = "맑음",
+                minTemperature = 18,
+                maxTemperature = 29
+            )
+        )
+        verifyNoInteractions(historicalWeatherProvider)
+    }
+
+    @Test
+    fun `오늘 날씨 조회 시 예보 패널에 오늘 항목이 없으면 WEATHER_DAILY_DATA_NOT_FOUND를 던진다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780
+        )
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchForecastPanel(37.5665, 126.9780))
+            .thenReturn(WeatherForecast(precipitationProbability = null, dailyForecasts = emptyList()))
+
+        assertThatThrownBy { service.getDailyWeather(memberId, farmId, LocalDate.now()) }
+            .isInstanceOf(BusinessException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.WEATHER_DAILY_DATA_NOT_FOUND)
+
+        verifyNoInteractions(historicalWeatherProvider)
+    }
+
+    @Test
+    fun `오늘 날씨 조회 시 오늘 항목의 최저_최고 기온이 없으면 WEATHER_DAILY_DATA_NOT_FOUND를 던진다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780
+        )
+        val dailyForecasts = listOf(
+            DailyForecast(
+                date = LocalDate.now(),
+                minTemperature = null,
+                maxTemperature = null,
+                skyCondition = "맑음"
+            )
+        )
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchForecastPanel(37.5665, 126.9780))
+            .thenReturn(WeatherForecast(precipitationProbability = null, dailyForecasts = dailyForecasts))
+
+        assertThatThrownBy { service.getDailyWeather(memberId, farmId, LocalDate.now()) }
+            .isInstanceOf(BusinessException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.WEATHER_DAILY_DATA_NOT_FOUND)
+
+        verifyNoInteractions(historicalWeatherProvider)
+    }
+
+    @Test
+    fun `오늘 날씨 조회 시 예보 패널 조회가 실패해도 WEATHER_DAILY_DATA_NOT_FOUND로 처리한다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780
+        )
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchForecastPanel(37.5665, 126.9780))
+            .thenThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+
+        assertThatThrownBy { service.getDailyWeather(memberId, farmId, LocalDate.now()) }
+            .isInstanceOf(BusinessException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.WEATHER_DAILY_DATA_NOT_FOUND)
+
+        verifyNoInteractions(historicalWeatherProvider)
     }
 
     @Test
