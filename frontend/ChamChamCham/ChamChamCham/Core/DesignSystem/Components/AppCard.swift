@@ -19,7 +19,7 @@ struct AppCard<Thumbnail: View>: View {
             switch self {
             case .xsmall: CGSize(width: 168, height: 168)
             case .small: CGSize(width: 350, height: 180)
-            case .medium: CGSize(width: 258, height: 261)
+            case .medium: CGSize(width: 258, height: 232)
             case .large: CGSize(width: 350, height: 304)
             }
         }
@@ -196,13 +196,11 @@ struct AppCard<Thumbnail: View>: View {
                     .foregroundStyle(Color.Text.subtle)
                     .lineLimit(1)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    ForEach(Array(captions.prefix(2).enumerated()), id: \.offset) { _, caption in
-                        Text(caption)
-                            .appTypography(.bodyLarge)
-                            .foregroundStyle(Color.Text.muted)
-                            .lineLimit(1)
-                    }
+                if let caption = captions.first {
+                    Text(caption)
+                        .appTypography(.bodyLarge)
+                        .foregroundStyle(Color.Text.muted)
+                        .lineLimit(1)
                 }
             }
         }
@@ -422,7 +420,7 @@ extension AppCard where Thumbnail == EmptyView {
         VStack(spacing: Spacing.lg) {
             AppCard(size: .xsmall, title: "타이틀", captions: ["캡션", "캡션"])
             AppCard(size: .small, title: "비료 주기", captions: ["캡션"], badges: ["레이블", "레이블"])
-            AppCard(size: .medium, title: "타이틀", captions: ["캡션", "캡션"], badges: ["레이블"])
+            AppCard(size: .medium, title: "타이틀", captions: ["캡션"], badges: ["레이블"])
             AppCard(size: .large, title: "타이틀", captions: ["mm.dd", "mm.dd"], badges: ["레이블", "레이블"])
         }
         .padding()

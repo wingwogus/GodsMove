@@ -8,12 +8,12 @@
 import SwiftUI
 
 /// Figma `button`. One view covering the full component set: 4 variants × 4 sizes × 3 types
-/// (label / icon / label+icon). The type is derived from which of `title` / `systemImage` are
+/// (label / icon / label+icon). The type is derived from which of `title` / `icon` are
 /// provided. Disabled state comes from the `.disabled(_:)` environment.
 ///
-/// Icons are SF Symbols for now — the Figma custom icon set isn't in the codebase yet; swap to it
-/// once that component lands. `xlarge` is an icon-only size in the design; label variants fall back
-/// to `large` metrics.
+/// `icon` accepts either a custom `Assets.xcassets/icon/` asset or an SF Symbol fallback
+/// (`AppIconSource`) — prefer `.asset(_:)` whenever a matching glyph exists. `xlarge` is an
+/// icon-only size in the design; label variants fall back to `large` metrics.
 struct AppButton: View {
     enum Variant {
         case primary
@@ -30,7 +30,7 @@ struct AppButton: View {
     }
 
     let title: String?
-    var systemImage: String?
+    var icon: AppIconSource?
     var variant: Variant = .primary
     var size: Size = .medium
     /// Stretch label buttons to fill available width (icon-only buttons ignore this).
@@ -45,7 +45,7 @@ struct AppButton: View {
 
     init(
         _ title: String? = nil,
-        systemImage: String? = nil,
+        icon: AppIconSource? = nil,
         variant: Variant = .primary,
         size: Size = .medium,
         fullWidth: Bool = false,
@@ -53,7 +53,7 @@ struct AppButton: View {
         action: @escaping () -> Void
     ) {
         self.title = title
-        self.systemImage = systemImage
+        self.icon = icon
         self.variant = variant
         self.size = size
         self.fullWidth = fullWidth
@@ -84,7 +84,7 @@ struct AppButton: View {
     private enum Kind { case label, icon, labelIcon }
 
     private var kind: Kind {
-        switch (title, systemImage) {
+        switch (title, icon) {
         case (.some, .some): return .labelIcon
         case (.none, .some): return .icon
         default: return .label
@@ -94,8 +94,7 @@ struct AppButton: View {
     @ViewBuilder private var content: some View {
         switch kind {
         case .icon:
-            Image(systemName: systemImage ?? "")
-                .font(.system(size: iconGlyphSize))
+            AppIconView(source: icon ?? .system(""), size: iconGlyphSize)
                 .frame(width: iconButtonSize, height: iconButtonSize)
         case .label:
             Text(title ?? "")
@@ -105,8 +104,7 @@ struct AppButton: View {
                 .frame(maxWidth: fullWidth ? .infinity : nil)
         case .labelIcon:
             HStack(spacing: gap) {
-                Image(systemName: systemImage ?? "")
-                    .font(.system(size: iconGlyphSize))
+                AppIconView(source: icon ?? .system(""), size: iconGlyphSize)
                 Text(title ?? "")
                     .appTypography(font)
             }
@@ -226,16 +224,16 @@ private struct PressableButtonStyle: ButtonStyle {
     ScrollView {
         VStack(alignment: .leading, spacing: Spacing.md) {
             AppButton("레이블", variant: .primary, size: .large) {}
-            AppButton("레이블", systemImage: "checkmark", variant: .secondary, size: .medium) {}
+            AppButton("레이블", icon: .system("checkmark"), variant: .secondary, size: .medium) {}
             AppButton("레이블", variant: .tertiary, size: .medium) {}
             AppButton("레이블", variant: .neutral, size: .small) {}
             AppButton("레이블", variant: .primary, size: .medium) {}.disabled(true)
             AppButton("전폭 버튼", variant: .primary, size: .medium, fullWidth: true) {}
             HStack(spacing: Spacing.sm) {
-                AppButton(systemImage: "plus", variant: .primary, size: .small) {}
-                AppButton(systemImage: "plus", variant: .secondary, size: .medium) {}
-                AppButton(systemImage: "plus", variant: .tertiary, size: .large) {}
-                AppButton(systemImage: "plus", variant: .primary, size: .xlarge) {}
+                AppButton(icon: .asset("add"), variant: .primary, size: .small) {}
+                AppButton(icon: .asset("add"), variant: .secondary, size: .medium) {}
+                AppButton(icon: .asset("add"), variant: .tertiary, size: .large) {}
+                AppButton(icon: .asset("add"), variant: .primary, size: .xlarge) {}
             }
         }
         .padding()
