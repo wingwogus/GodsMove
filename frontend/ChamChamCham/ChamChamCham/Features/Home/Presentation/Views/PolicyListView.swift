@@ -49,21 +49,23 @@ struct PolicyListView: View {
     private var categoryChipRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Spacing.sm) {
-                AppChip(label: "전체", isSelected: viewModel.selectedCategory == nil, style: .solid) {
+                let isAllSelected = viewModel.selectedCategory == nil
+                AppChip(label: "전체", isSelected: isAllSelected, style: isAllSelected ? .solid : .solidPastel) {
                     Task { await viewModel.selectCategory(nil) }
                 }
                 ForEach(PolicyCategory.allCases) { category in
+                    let isSelected = viewModel.selectedCategory == category
                     AppChip(
                         label: category.rawValue,
-                        isSelected: viewModel.selectedCategory == category,
-                        style: .solid
+                        isSelected: isSelected,
+                        style: isSelected ? .solid : .solidPastel
                     ) {
                         Task { await viewModel.selectCategory(category) }
                     }
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, Spacing.sm)
+            .padding(.vertical, Spacing.md)
         }
         .background(Color.Background.subtle)
     }
@@ -85,9 +87,10 @@ struct PolicyListView: View {
                 AppSortButton(title: viewModel.sort == .latest ? "최신순" : "추천순")
             }
             .pickerStyle(.menu)
+            .tint(Color.Text.subtle)
         }
+        .frame(height: 48)
         .padding(.horizontal, 20)
-        .padding(.vertical, Spacing.sm)
     }
 
     @ViewBuilder private var listContent: some View {
@@ -125,7 +128,6 @@ struct PolicyListView: View {
                         .task { await viewModel.loadMoreIfNeeded(currentItem: item) }
                     }
                 }
-                .padding(.horizontal, 20)
             }
         }
     }

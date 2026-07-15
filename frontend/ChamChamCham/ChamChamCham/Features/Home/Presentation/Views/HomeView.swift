@@ -137,7 +137,7 @@ struct HomeView: View {
         case let .loaded(value):
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
-                    AppIconView(source: .asset(WeatherIconMapping.assetName(for: value.weather.condition)), size: 40)
+                    AppIconView(source: .asset(WeatherIconMapping.assetName(for: value.weather.condition)), size: 40, renderingMode: .original)
                     Text("\(value.weather.temperature)°")
                         .appTypography(.headlineLarge)
                         .foregroundStyle(Color.Text.default)
