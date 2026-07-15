@@ -45,8 +45,9 @@ spring:
     vectorstore:
       pgvector:
         initialize-schema: false
+        schema-validation: true
         schema-name: public
-        table-name: vector_store
+        table-name: ${RAG_VECTOR_TABLE:vector_store}
         dimensions: ${RAG_EMBEDDING_DIMENSION:1024}
         distance-type: COSINE_DISTANCE
         index-type: HNSW

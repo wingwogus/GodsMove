@@ -53,7 +53,7 @@ class RecordFeedbackGenerationVectorStoreSmokeTest @Autowired constructor(
 
         assertThat(queries.map { it.query }).contains("참당귀 관수 재배 관리 약용작물")
         assertThat(retrieved)
-            .withFailMessage("Seed real PDF chunks first with the local dev RAG seed endpoint in TECH_DOCUMENT-only mode.")
+            .withFailMessage("Import verified TECH_DOCUMENT vectors into public.vector_store before running this smoke test.")
             .isNotEmpty
         assertThat(retrieved).allSatisfy { document ->
             assertThat(document.metadata["sourceType"]).isEqualTo(RagSourceType.TECH_DOCUMENT.name)

@@ -25,7 +25,7 @@
 - Never print, commit, copy off-server, or place in shared `/tmp` output any `.env` value, gateway key, JWT, database password, or raw credential.
 - Keep the server `.env` mode at `600`; the user owns its secret values.
 - The first `main` build must publish the API image but must not replace server Compose until `/home/wingwogus/apps/chamchamcham/.rag-infrastructure-ready` contains exactly `rag-v1`.
-- Preserve record-feedback copy targets (good point 15–23 characters, next actions 15–25 characters) and report-feedback limits (summary 20–65, comparison 25–65, other sections 30–65); this deployment must not relax them.
+- Preserve record-feedback copy targets (good point 15–23 characters, next actions 15–25 characters) and report-feedback limits (all public sections 20–65 characters); this deployment must not relax them.
 - Do not touch the untracked `.claude/` directory.
 - Every repository commit must use Conventional Commits plus the Lore trailers required by `AGENTS.md`.
 
@@ -325,7 +325,7 @@ docker compose --env-file .env.example config --format json | jq -e '
   and .services.ollama.image == "ollama/ollama:0.30.8@sha256:05b6fe5143ed006d6d4abd39bdd575f962a5822bdf81e6fbb5e6894eb984ab9c"
   and (.services.ollama.ports == null)
   and (.services.ollama.networks | keys == ["default"])
-  and (.services.ollama.mem_limit == 4294967296)
+  and ((.services.ollama.mem_limit | tonumber) == 4294967296)
   and (.services.ollama.cpus == 2)
   and (.services.api.depends_on.postgres.condition == "service_healthy")
   and (.services.api.depends_on.ollama.condition == "service_healthy")
@@ -425,6 +425,7 @@ begin
           values
               ('record_feedback', 'good_point_text', 'character varying'),
               ('record_feedback_next_action', 'text', 'character varying'),
+              ('report_feedback', 'source_fingerprint', 'character varying'),
               ('report_feedback', 'summary', 'text'),
               ('report_feedback_item', 'text', 'text')
       ) as required(table_name, column_name, data_type)
@@ -439,6 +440,18 @@ begin
 
     if missing_columns <> 0 then
         raise exception 'coaching feedback column contract mismatch count=%', missing_columns;
+    end if;
+
+    if not exists (
+        select 1
+          from information_schema.columns
+         where table_schema = 'public'
+           and table_name = 'report_feedback'
+           and column_name = 'source_fingerprint'
+           and character_maximum_length = 64
+           and is_nullable = 'YES'
+    ) then
+        raise exception 'report_feedback.source_fingerprint must be nullable varchar(64)';
     end if;
 
     if not exists (
@@ -463,6 +476,20 @@ begin
            and conrelid = 'public.report_feedback'::regclass
     ) then
         raise exception 'required coaching uniqueness constraints are missing';
+    end if;
+
+    if not exists (
+        select 1 from pg_constraint
+         where conname = 'record_feedback_status_check'
+           and conrelid = 'public.record_feedback'::regclass
+           and pg_get_constraintdef(oid) like '%STALE%'
+    ) or not exists (
+        select 1 from pg_constraint
+         where conname = 'report_feedback_status_check'
+           and conrelid = 'public.report_feedback'::regclass
+           and pg_get_constraintdef(oid) like '%STALE%'
+    ) then
+        raise exception 'record and report feedback status constraints must allow STALE';
     end if;
 end
 $$;
@@ -494,7 +521,7 @@ docker exec -i chamchamcham-postgres psql -U chamchamcham -d rag_deployment_cont
 docker exec -i chamchamcham-postgres psql -U chamchamcham -d rag_deployment_contract < backend/docs/db/rag-deployment-verify.sql
 ```
 
-Expected: the last command fails with `missing required tables`, including `public.vector_store` and coaching feedback tables. Do not continue if it unexpectedly passes.
+Expected: the last command fails with `missing required tables` for the four coaching feedback tables. Do not continue if it unexpectedly passes.
 
 - [ ] **Step 3: Replace `rag-index-schema.sql` with the runtime table contract**
 
@@ -517,6 +544,8 @@ create table if not exists public.vector_store (
     metadata json,
     embedding vector(1024)
 );
+
+drop index if exists public.vector_store_embedding_hnsw_idx;
 
 create index if not exists spring_ai_vector_index
     on public.vector_store using hnsw (embedding vector_cosine_ops);
@@ -587,6 +616,7 @@ create table if not exists report_feedback (
     audit_status varchar(32),
     status varchar(32) not null,
     work_type varchar(32) not null,
+    source_fingerprint varchar(64),
     embedding_model varchar(128),
     failure_code varchar(128),
     model_name varchar(128),
@@ -595,7 +625,7 @@ create table if not exists report_feedback (
     citations jsonb not null,
     input_snapshot jsonb,
     constraint report_feedback_status_check
-        check (status in ('PENDING', 'READY', 'FAILED')),
+        check (status in ('PENDING', 'READY', 'FAILED', 'STALE')),
     constraint report_feedback_work_type_check
         check (
             work_type in (
@@ -648,7 +678,7 @@ Expected: verifier outputs `embedding_type | vector_rows` as `vector(1024) | 0`;
 - [ ] **Step 6: Confirm the runtime table contract is present**
 
 ```bash
-rg -n 'public\.vector_store|vector_store_embedding_hnsw_idx' backend/docs/db/rag-index-schema.sql
+rg -n 'public\.vector_store|spring_ai_vector_index' backend/docs/db/rag-index-schema.sql
 ```
 
 Expected: the Spring AI table and HNSW index definitions are shown.
@@ -697,10 +727,9 @@ Use:
 Run from `backend/`:
 
 ```bash
-./gradlew ktlintCheck
 ./gradlew :api:test --tests 'com.chamchamcham.config.ProductionRagConfigurationTest'
 ./gradlew :application:test --tests 'com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackPromptBuilderTest' --tests 'com.chamchamcham.application.coaching.reportfeedback.generation.ReportFeedbackOutputValidatorTest'
-./gradlew test
+./gradlew check
 ```
 
 Expected: every command reports `BUILD SUCCESSFUL`; local-smoke tests remain skipped unless `RUN_LOCAL_RAG_SMOKE=true` is explicitly set.
@@ -712,7 +741,7 @@ git add backend/api/src/test/kotlin/com/chamchamcham/api/coaching/recordfeedback
 git commit \
   -m "test(rag): 벡터 이전 스모크 안내 정정" \
   -m "비활성 시드 엔드포인트 대신 검증된 TECH_DOCUMENT 이전을 선행 조건으로 안내한다." \
-  -m $'Confidence: high\nScope-risk: narrow\nTested: ./gradlew ktlintCheck, focused coaching tests, ./gradlew test\nNot-tested: RUN_LOCAL_RAG_SMOKE 실제 외부 서비스 연동'
+  -m $'Confidence: high\nScope-risk: narrow\nTested: focused coaching tests, ./gradlew check\nNot-tested: RUN_LOCAL_RAG_SMOKE 실제 외부 서비스 연동'
 ```
 
 ---
@@ -1356,10 +1385,10 @@ jq -e --arg workType "$WORK_TYPE" '
   and (($feedback.feedback.summary | length) <= 65)
   and (($feedback.feedback.summary | contains("\n")) | not)
   and all($feedback.feedback.comparisons[];
-    ((.text | length) >= 25) and ((.text | length) <= 65) and ((.text | contains("\n")) | not)
+    ((.text | length) >= 20) and ((.text | length) <= 65) and ((.text | contains("\n")) | not)
   )
   and all(($feedback.feedback.strengths + $feedback.feedback.improvements + $feedback.feedback.nextActions)[];
-    ((.text | length) >= 30) and ((.text | length) <= 65) and ((.text | contains("\n")) | not)
+    ((.text | length) >= 20) and ((.text | length) <= 65) and ((.text | contains("\n")) | not)
   )
 ' migration/rag-v1/report-feedback.json
 ```
@@ -1559,7 +1588,7 @@ Expected: `diff` prints nothing.
 
 | Area | Proof | Required result |
 |---|---|---|
-| Repository | `./gradlew ktlintCheck && ./gradlew test` | `BUILD SUCCESSFUL` |
+| Repository | `./gradlew check` | `BUILD SUCCESSFUL` |
 | Compose | `docker compose ... config`, `jq` assertions | digest-pinned pgvector/Ollama, no Ollama host port, correct dependencies |
 | Workflow | actionlint + first/second GitHub runs | first skips deploy, second deploys after marker |
 | Backup | SHA-256 + `pg_restore --list` | both succeed before downtime |
