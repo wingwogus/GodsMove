@@ -2,15 +2,16 @@
 
 - Source title: `ChamChamCham API`
 - Version: `v1`
-- SHA-256: `c92cfa6e518ae661d386fd29fb94dbf9ec7e04eee3bae5dd55d9040ebc8643b3`
-- Paths: `37`
-- Operations: `46`
-- Schemas: `102`
+- SHA-256: `5715356eacc78c14154bc91c497d7bb1a3a790958e39f0acb0d5da75f36fab81`
+- Paths: `48`
+- Operations: `57`
+- Schemas: `134`
 
 ## Operations
 
 | Method | Path | operationId |
 | --- | --- | --- |
+| POST | `/api/v1/admin/pesticide-sync` | `sync` |
 | POST | `/api/v1/admin/policies/sync-jobs` | `createJob` |
 | GET | `/api/v1/admin/policies/sync-jobs/{jobId}` | `getJob` |
 | POST | `/api/v1/auth/apple/login` | `appleLogin` |
@@ -43,27 +44,41 @@
 | PATCH | `/api/v1/farming-records/{recordId}` | `updateRecord` |
 | GET | `/api/v1/farms` | `list` |
 | POST | `/api/v1/farms` | `create` |
+| GET | `/api/v1/farms/weather` | `getCurrentWeatherForDefaultFarm` |
+| GET | `/api/v1/farms/weather/daily` | `getDailyWeatherForDefaultFarm` |
 | DELETE | `/api/v1/farms/{farmId}` | `delete` |
 | PUT | `/api/v1/farms/{farmId}` | `replace` |
 | GET | `/api/v1/farms/{farmId}/weather` | `getCurrentWeather` |
+| GET | `/api/v1/farms/{farmId}/weather/daily` | `getDailyWeather` |
 | POST | `/api/v1/media/images` | `uploadImage` |
 | GET | `/api/v1/members/me` | `getMyProfile` |
 | GET | `/api/v1/members/me/farm-crops` | `getMyFarmCrops` |
 | PUT | `/api/v1/members/me/profile` | `updateMyProfile` |
 | GET | `/api/v1/members/{memberId}/profile` | `getPublicProfile` |
+| GET | `/api/v1/pesticides` | `searchPesticides` |
+| GET | `/api/v1/pesticides/{pesticideId}/pests` | `listPests` |
 | GET | `/api/v1/policies/recommendations` | `listRecommendations` |
 | GET | `/api/v1/policies/{policyProgramId}` | `getProgramDetail` |
 | GET | `/api/v1/search` | `search` |
+| GET | `/api/v1/search/suggestions` | `suggestions` |
 | GET | `/api/v1/test/me` | `getMyInfo` |
 | GET | `/api/v1/test/ping` | `ping` |
+| POST | `/api/v1/voice-sessions` | `createSession` |
+| POST | `/api/v1/voice-sessions/{sessionId}/cancel` | `cancel` |
+| POST | `/api/v1/voice-sessions/{sessionId}/confirm` | `confirm` |
+| PATCH | `/api/v1/voice-sessions/{sessionId}/turns` | `submitTurns` |
 | GET | `/api/v1/work-types` | `listWorkTypes` |
 
 ## Schemas
 
 - `ApiError`
+- `ApiResponseCancelledResponse`
 - `ApiResponseCommentIdResponse`
 - `ApiResponseCommentPageResponse`
+- `ApiResponseConfirmedResponse`
+- `ApiResponseCreatedResponse`
 - `ApiResponseCurrentWeatherResponse`
+- `ApiResponseDailyWeatherResponse`
 - `ApiResponseFarmResponse`
 - `ApiResponseLikeToggleResponse`
 - `ApiResponseListBoardResponse`
@@ -71,11 +86,14 @@
 - `ApiResponseListCropResponse`
 - `ApiResponseListFarmCropsResponse`
 - `ApiResponseListFarmResponse`
+- `ApiResponseListPestSummaryResponse`
 - `ApiResponseListWorkTypeResponse`
 - `ApiResponseLoginResponse`
 - `ApiResponseMyProfileResponse`
 - `ApiResponseObject`
 - `ApiResponseOnboardingCompleteResponse`
+- `ApiResponsePesticidePageResponse`
+- `ApiResponsePesticideSyncResult`
 - `ApiResponsePolicyProgramDetailResponse`
 - `ApiResponsePolicyRecommendationPageResponse`
 - `ApiResponsePolicySyncJobDetailResponse`
@@ -83,6 +101,7 @@
 - `ApiResponsePostDetailResponse`
 - `ApiResponsePostIdResponse`
 - `ApiResponsePostPageResponse`
+- `ApiResponseProcessedResponse`
 - `ApiResponsePublicProfileResponse`
 - `ApiResponseRecordDetailResponse`
 - `ApiResponseRecordIdResponse`
@@ -95,38 +114,57 @@
 - `BoardResponse`
 - `BoundaryCoordinateRequest`
 - `BoundaryCoordinateResponse`
+- `CancelledResponse`
+- `CandidateRequest`
+- `CandidateResponse`
 - `CategoryResponse`
 - `CommentIdResponse`
 - `CommentPageResponse`
 - `CommentResponse`
 - `CompleteOnboardingRequest`
+- `ConfirmedResponse`
 - `CreateCommentRequest`
+- `CreatedResponse`
+- `CropOptionResponse`
 - `CropProfileResponse`
 - `CropResponse`
 - `CurrentWeatherResponse`
+- `DailyWeatherResponse`
 - `DataSourceRequest`
 - `DataSourceResponse`
 - `EnumOptionResponse`
 - `FarmCropsResponse`
 - `FarmDraftRequest`
+- `FarmOptionResponse`
+- `FarmRequest`
 - `FarmResponse`
+- `FertilizingDetail`
 - `FertilizingDetailRequest`
 - `FertilizingDetailResponse`
 - `FieldResponse`
+- `ForecastDayResponse`
+- `HarvestDetail`
 - `HarvestDetailRequest`
 - `HarvestDetailResponse`
 - `KakaoLoginRequest`
 - `LikeToggleResponse`
 - `LoginRequest`
 - `LoginResponse`
+- `MediaResponse`
 - `MemberProfileResponse`
 - `MyFarmResponse`
 - `MyProfileResponse`
 - `NaverLoginRequest`
 - `OnboardingCompleteResponse`
 - `OnboardingResponse`
+- `PestControlDetail`
 - `PestControlDetailRequest`
 - `PestControlDetailResponse`
+- `PestSummaryResponse`
+- `PesticidePageResponse`
+- `PesticideSummaryResponse`
+- `PesticideSyncResult`
+- `PlantingDetail`
 - `PlantingDetailRequest`
 - `PlantingDetailResponse`
 - `PolicyAttachmentResponse`
@@ -140,6 +178,7 @@
 - `PostIdResponse`
 - `PostPageResponse`
 - `PostSummaryResponse`
+- `ProcessedResponse`
 - `PublicFarmResponse`
 - `PublicProfileResponse`
 - `RecordDetailResponse`
@@ -152,13 +191,17 @@
 - `SaveRecordRequest`
 - `SendVerificationCodeRequest`
 - `SignUpRequest`
+- `SubmitTurnsRequest`
 - `TokenResponse`
+- `TurnRequest`
 - `UpdateMyProfileRequest`
 - `UploadImageRequest`
 - `UploadedImageResponse`
 - `VerifyEmailCodeRequest`
+- `WateringDetail`
 - `WateringDetailRequest`
 - `WateringDetailResponse`
+- `WeedingDetail`
 - `WeedingDetailRequest`
 - `WeedingDetailResponse`
 - `WorkTypeResponse`

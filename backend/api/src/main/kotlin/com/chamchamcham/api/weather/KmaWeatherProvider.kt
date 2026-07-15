@@ -6,6 +6,8 @@ import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFee
 import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackForecastDay
 import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackLiveWeather
 import com.chamchamcham.application.coaching.recordfeedback.generation.RecordFeedbackWeatherPort
+import com.chamchamcham.application.weather.DailyForecast
+import com.chamchamcham.application.weather.WeatherForecast
 import com.chamchamcham.application.weather.WeatherProvider
 import com.chamchamcham.application.weather.WeatherSnapshot
 import com.fasterxml.jackson.annotation.JsonProperty
@@ -21,6 +23,7 @@ import java.time.LocalDate
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
+import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /**
@@ -75,13 +78,28 @@ class KmaWeatherProvider internal constructor(
             ?.roundToInt()
             ?: throw BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE)
 
+        val humidity = ncst.firstOrNull { it.category == "REH" }?.obsrValue
+            ?.toDoubleOrNull()
+            ?.roundToInt()
+        val windSpeed = ncst.firstOrNull { it.category == "WSD" }?.obsrValue
+            ?.toDoubleOrNull()
+
         val observedAt = parseObservedAt(ncst)
         val skyCondition = resolveSkyCondition(fcst)
+        val feelsLikeTemperature = FeelsLikeTemperatureCalculator.of(
+            temperature = temperature,
+            humidity = humidity,
+            windSpeedMps = windSpeed,
+            month = observedAt.monthValue
+        )
 
         return WeatherSnapshot(
             temperature = temperature,
             skyCondition = skyCondition,
-            observedAt = observedAt
+            observedAt = observedAt,
+            humidity = humidity,
+            windSpeed = windSpeed,
+            feelsLikeTemperature = feelsLikeTemperature
         )
     }
 
@@ -112,6 +130,73 @@ class KmaWeatherProvider internal constructor(
             ),
             source = KMA_SHORT_TERM_SOURCE
         )
+    }
+
+    override fun fetchForecastPanel(latitude: Double, longitude: Double): WeatherForecast {
+        val grid = GeoToGridConverter.convert(latitude, longitude)
+        val now = currentKmaTime()
+
+        val items = requestItems(
+            path = "getVilageFcst",
+            base = KmaBaseTimeResolver.resolveVilageFcst(now),
+            nx = grid.nx,
+            ny = grid.ny
+        )
+
+        val dailyForecasts = items
+            .mapNotNull { it.fcstDate }
+            .distinct()
+            .sorted()
+            .map { fcstDate -> buildDailyForecast(fcstDate, items) }
+
+        return WeatherForecast(
+            precipitationProbability = resolvePrecipitationProbability(items, now),
+            dailyForecasts = dailyForecasts
+        )
+    }
+
+    private fun buildDailyForecast(fcstDate: String, items: List<KmaItem>): DailyForecast {
+        val dayItems = items.filter { it.fcstDate == fcstDate }
+
+        val tmn = dayItems.firstOrNull { it.category == "TMN" && it.fcstTime == "0600" }
+            ?.fcstValue?.toDoubleOrNull()?.roundToInt()
+        val tmx = dayItems.firstOrNull { it.category == "TMX" && it.fcstTime == "1500" }
+            ?.fcstValue?.toDoubleOrNull()?.roundToInt()
+        val tmpValues = dayItems.filter { it.category == "TMP" }.mapNotNull { it.fcstValue?.toDoubleOrNull() }
+
+        val nearestNoon = dayItems
+            .filter { it.category == "SKY" || it.category == "PTY" }
+            .minByOrNull { minutesFromTarget(it.fcstTime, targetMinutes = 12 * 60) }
+            ?.fcstTime
+        // getVilageFcst는 PTY 코드로 {0,1,2,3,4}만 내려주지만(초단기예보의 5/6/7은 여기 없음), skyConditionOf는 상위호환이라 재사용해도 안전하다.
+        val skyCondition = nearestNoon?.let { fcstTime ->
+            val sky = dayItems.firstOrNull { it.category == "SKY" && it.fcstTime == fcstTime }?.fcstValue
+            val pty = dayItems.firstOrNull { it.category == "PTY" && it.fcstTime == fcstTime }?.fcstValue
+            skyConditionOf(sky, pty)
+        }
+
+        return DailyForecast(
+            date = LocalDate.parse(fcstDate, FORECAST_DATE_FORMAT),
+            minTemperature = tmn ?: tmpValues.minOrNull()?.roundToInt(),
+            maxTemperature = tmx ?: tmpValues.maxOrNull()?.roundToInt(),
+            skyCondition = skyCondition
+        )
+    }
+
+    private fun resolvePrecipitationProbability(items: List<KmaItem>, now: LocalDateTime): Int? {
+        val today = now.format(FORECAST_DATE_FORMAT)
+        val nowMinutes = now.hour * 60 + now.minute
+        return items
+            .filter { it.category == "POP" && it.fcstDate == today }
+            .minByOrNull { minutesFromTarget(it.fcstTime, targetMinutes = nowMinutes) }
+            ?.fcstValue?.toDoubleOrNull()?.roundToInt()
+    }
+
+    private fun minutesFromTarget(fcstTime: String?, targetMinutes: Int): Int {
+        if (fcstTime == null || fcstTime.length != 4) return Int.MAX_VALUE
+        val hour = fcstTime.substring(0, 2).toIntOrNull() ?: return Int.MAX_VALUE
+        val minute = fcstTime.substring(2, 4).toIntOrNull() ?: return Int.MAX_VALUE
+        return abs(hour * 60 + minute - targetMinutes)
     }
 
     private fun requestItems(

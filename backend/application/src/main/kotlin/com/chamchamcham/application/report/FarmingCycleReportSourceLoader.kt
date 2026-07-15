@@ -5,7 +5,6 @@ import com.chamchamcham.domain.farming.FarmingCycleReportSourceRepository
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.FertilizingRecord
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestRecord
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
@@ -118,7 +117,7 @@ class FarmingCycleReportSourceLoader(
             pesticideAmount = detail.pesticideAmount.scale4(),
             pesticideAmountUnit = detail.pesticideAmountUnit.name,
             totalSprayAmountLiters = when (detail.totalSprayAmountUnit) {
-                SprayAmountUnit.L -> detail.totalSprayAmount.scale4()
+                SprayAmountUnit.ML -> detail.totalSprayAmount.divide(BigDecimal("1000")).scale4()
             },
             pestName = detail.pest?.name,
         )
@@ -132,18 +131,10 @@ class FarmingCycleReportSourceLoader(
             medicinalPart = detail.medicinalPart?.toRef(),
             harvestSource = detail.harvestSource.toRef(),
             growthPeriod = detail.growthPeriod,
-            growthPeriodUnit = detail.growthPeriodUnit?.name,
-            growthPeriodMonths = normalizeGrowthMonths(detail),
+            growthPeriodUnit = "MONTH",
+            growthPeriodMonths = detail.growthPeriod,
             isLastHarvest = detail.isLastHarvest,
         )
-
-    private fun normalizeGrowthMonths(detail: HarvestRecord): Int? {
-        val growthPeriod = detail.growthPeriod ?: return null
-        return when (detail.growthPeriodUnit ?: return null) {
-            GrowthPeriodUnit.MONTH -> growthPeriod
-            GrowthPeriodUnit.YEAR -> Math.multiplyExact(growthPeriod, 12)
-        }
-    }
 
     private fun BigDecimal.toKilogramsOrNull(unit: FertilizerAmountUnit): BigDecimal? =
         when (unit) {

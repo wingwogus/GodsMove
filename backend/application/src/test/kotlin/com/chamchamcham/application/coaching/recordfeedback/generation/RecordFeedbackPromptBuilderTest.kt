@@ -4,13 +4,11 @@ import com.chamchamcham.application.coaching.common.CoachingTextPolicy
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.PesticideAmountUnit
 import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
-import com.chamchamcham.domain.farming.SprayAmountUnit
 import com.chamchamcham.domain.farming.WeedingMethod
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
@@ -138,12 +136,12 @@ class RecordFeedbackPromptBuilderTest {
                 pesticideAmount = BigDecimal("120.0000"),
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal("20.0000"),
-                totalSprayAmountUnit = SprayAmountUnit.L,
+                totalSprayAmountUnit = "ML",
                 pestName = "점무늬병",
             ) to listOf(
                 "약 이름: 가가방",
                 "약 사용량: 120.0000밀리리터",
-                "약을 섞은 물의 양: 20.0000리터",
+                "약을 섞은 물의 양: 20.0000밀리리터",
             ),
             WeedingFeedbackDetail(WeedingMethod.HAND) to listOf("풀을 정리한 방법: 손으로 풀을 뽑음"),
             HarvestFeedbackDetail(
@@ -152,7 +150,7 @@ class RecordFeedbackPromptBuilderTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 6,
-                growthPeriodUnit = GrowthPeriodUnit.MONTH,
+                growthPeriodUnit = "MONTH",
                 isLastHarvest = true,
             ) to listOf(
                 "수확량: 82.0000킬로그램",
@@ -190,7 +188,7 @@ class RecordFeedbackPromptBuilderTest {
                 pesticideAmount = BigDecimal("120"),
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal("20"),
-                totalSprayAmountUnit = SprayAmountUnit.L,
+                totalSprayAmountUnit = "L",
                 pestName = null,
             ) to listOf("관리 대상"),
             WeedingFeedbackDetail(null) to listOf("풀을 정리한 방법"),

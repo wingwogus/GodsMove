@@ -3,7 +3,6 @@ package com.chamchamcham.application.coaching.common
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
@@ -12,7 +11,6 @@ import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
-import com.chamchamcham.domain.farming.SprayAmountUnit
 import com.chamchamcham.domain.farming.WeedingMethod
 import com.chamchamcham.domain.farming.WorkType
 
@@ -76,8 +74,10 @@ internal fun PesticideAmountUnit.toCoachingText(): String = when (this) {
     PesticideAmountUnit.G -> "그램"
 }
 
-internal fun SprayAmountUnit.toCoachingText(): String = when (this) {
-    SprayAmountUnit.L -> "리터"
+internal fun String.toSprayAmountCoachingText(): String? = when (this) {
+    "L" -> "리터"
+    "ML" -> "밀리리터"
+    else -> null
 }
 
 internal fun WeedingMethod.toCoachingText(): String = when (this) {
@@ -104,7 +104,8 @@ internal fun HarvestSource.toCoachingText(): String = when (this) {
     HarvestSource.FORAGED -> "산이나 들에서 얻음"
 }
 
-internal fun GrowthPeriodUnit.toCoachingText(): String = when (this) {
-    GrowthPeriodUnit.YEAR -> "년"
-    GrowthPeriodUnit.MONTH -> "개월"
+internal fun String.toGrowthPeriodCoachingText(): String? = when (this) {
+    "YEAR" -> "년"
+    "MONTH" -> "개월"
+    else -> null
 }

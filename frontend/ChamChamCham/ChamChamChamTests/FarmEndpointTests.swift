@@ -23,4 +23,15 @@ struct FarmEndpointTests {
         #expect(FarmEndpoint.create(request).body != nil)
         #expect(FarmEndpoint.create(request).requiresAuth)
     }
+
+    @Test("delete targets the farm id path with DELETE and no body")
+    func deletePath() {
+        let id = UUID()
+        let endpoint = FarmEndpoint.delete(id)
+
+        #expect(endpoint.path == "api/v1/farms/\(id.uuidString)")
+        #expect(endpoint.method == .delete)
+        #expect(endpoint.body == nil)
+        #expect(endpoint.requiresAuth)
+    }
 }

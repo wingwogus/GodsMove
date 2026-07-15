@@ -3,7 +3,6 @@ package com.chamchamcham.application.voice
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
@@ -113,9 +112,8 @@ object FarmingRecordVoiceToolSchema {
 
     private fun harvestSchema() = objectProperty(
         "수확 상세 (workType=HARVEST일 때 필수). 수확량은 항상 kg 기준이다. 사용자가 수확량을 모른다고 " +
-            "말하면 harvestAmountUnknown=true로 설정하고 harvestAmount는 비운다. 수확 부위(medicinalPart)와 " +
-            "재배기간(growthPeriod/growthPeriodUnit)은 선택 입력이다. 사용자가 재배기간을 말하면 growthPeriod와 " +
-            "growthPeriodUnit을 함께 채우고, 언급하지 않으면 둘 다 비운다.",
+            "말하면 harvestAmountUnknown=true로 설정하고 harvestAmount는 비운다. 수확 부위(medicinalPart)는 " +
+            "선택 입력이다. 재배기간(growthPeriod)은 항상 개월 단위이며 필수 입력이다.",
         mapOf(
             "harvestAmount" to mapOf("type" to "number", "description" to "수확량(kg). 모르면 비운다."),
             "harvestAmountUnknown" to mapOf(
@@ -124,11 +122,7 @@ object FarmingRecordVoiceToolSchema {
             ),
             "medicinalPart" to enumProperty("수확 부위(선택)", CropUsePartCategory.entries.map { it.name }),
             "harvestSource" to enumProperty("수확 출처", HarvestSource.entries.map { it.name }),
-            "growthPeriod" to mapOf("type" to "integer", "description" to "재배기간(선택, growthPeriodUnit과 함께 입력)"),
-            "growthPeriodUnit" to enumProperty(
-                "재배기간 단위(선택, growthPeriod와 함께 입력)",
-                GrowthPeriodUnit.entries.map { it.name },
-            ),
+            "growthPeriod" to mapOf("type" to "integer", "description" to "재배기간(개월, 필수)"),
         ),
     )
 

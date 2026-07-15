@@ -16,7 +16,6 @@ import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecordMediaRepository
 import com.chamchamcham.domain.farming.FarmingRecordRepository
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestRecordRepository
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
@@ -27,6 +26,7 @@ import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
 import com.chamchamcham.domain.report.FarmingCycleReportRepository
 import com.chamchamcham.domain.report.FarmingCycleReportStatus
+import com.chamchamcham.domain.report.GrowthPeriodRange
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -136,15 +136,13 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
     }
 
     @Test
-    fun `unknown final harvest values still complete the cycle with empty nullable statistics`() {
+    fun `unknown optional harvest values still complete the cycle with required growth statistics`() {
         val finalHarvestId = farmingRecordService.create(
             harvestCommand(
                 isLastHarvest = true,
                 amountKg = null,
                 amountUnknown = true,
                 medicinalPart = null,
-                growthPeriod = null,
-                growthPeriodUnit = null,
             ),
         ).id
 
@@ -158,8 +156,8 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
         assertThat(completed.statistics.harvest.amountCoverage.recordedCount).isZero()
         assertThat(completed.statistics.harvest.amountCoverage.targetCount).isEqualTo(1)
         assertThat(completed.statistics.harvest.medicinalParts).isEmpty()
-        assertThat(completed.statistics.harvest.finalGrowthPeriodMonths).isNull()
-        assertThat(completed.statistics.harvest.growthPeriodRangeMonths).isNull()
+        assertThat(completed.statistics.harvest.finalGrowthPeriodMonths).isEqualTo(4)
+        assertThat(completed.statistics.harvest.growthPeriodRangeMonths).isEqualTo(GrowthPeriodRange(4, 4))
     }
 
     private fun loadOnlyCompletedReport() = queryService.listCompleted(
@@ -192,8 +190,7 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
         amountKg: String?,
         amountUnknown: Boolean = false,
         medicinalPart: CropUsePartCategory? = CropUsePartCategory.ROOT_BARK,
-        growthPeriod: Int? = 4,
-        growthPeriodUnit: GrowthPeriodUnit? = GrowthPeriodUnit.MONTH,
+        growthPeriod: Int = 4,
     ) = FarmingRecordCommand.Create(
         memberId = memberId,
         farmId = farmId,
@@ -209,7 +206,6 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
             medicinalPart = medicinalPart,
             harvestSource = HarvestSource.CULTIVATED,
             growthPeriod = growthPeriod,
-            growthPeriodUnit = growthPeriodUnit,
             isLastHarvest = isLastHarvest,
         ),
     )

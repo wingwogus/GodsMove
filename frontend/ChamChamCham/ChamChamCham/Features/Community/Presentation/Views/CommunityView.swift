@@ -14,7 +14,6 @@ struct CommunityView: View {
     @State private var viewModel: CommunityFeedViewModel
     @State private var showCompose = false
     @State private var showCropPicker = false
-    @State private var showSortOptions = false
     private let horizontalInset: CGFloat = 20
 
     init(container: DIContainer) {
@@ -32,9 +31,9 @@ struct CommunityView: View {
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 0) {
                     AppTopAppBar(
-                        title: "커뮤니티",
+                        title: "정보 공유",
                         showBorder: false,
-                        trailing: [.init("magnifyingglass"), .init("bell.fill")]
+                        trailing: [.init(.asset("search")), .init(.asset("notifications"))]
                     )
                     postTypeTabs
                     cropChipRow
@@ -84,8 +83,7 @@ struct CommunityView: View {
             Button {
                 showCropPicker = true
             } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 18, weight: .medium))
+                AppIconView(source: .asset("add"), size: 24)
                     .foregroundStyle(Color.Icon.subtle)
                     .frame(width: 32, height: 32)
                     .background(Color.Object.default)
@@ -164,23 +162,28 @@ struct CommunityView: View {
         .refreshable { await viewModel.reload() }
     }
 
+    private var sortSelection: Binding<CommunityPostSort> {
+        Binding(
+            get: { viewModel.sort },
+            set: { newValue in Task { await viewModel.selectSort(newValue) } }
+        )
+    }
+
     private var sortRow: some View {
         HStack {
             Spacer()
-            AppSortButton(
-                title: viewModel.sort == .popular ? "인기순" : "최신순",
-                isExpanded: showSortOptions
-            ) {
-                showSortOptions = true
+            Picker(selection: sortSelection) {
+                Text("최신순").tag(CommunityPostSort.latest)
+                Text("인기순").tag(CommunityPostSort.popular)
+            } label: {
+                AppSortButton(title: viewModel.sort == .popular ? "인기순" : "최신순")
             }
+            .pickerStyle(.menu)
+            .tint(Color.Text.subtle)
         }
         .frame(height: 48)
         .padding(.horizontal, horizontalInset)
         .background(Color.Background.default)
-        .confirmationDialog("정렬", isPresented: $showSortOptions, titleVisibility: .hidden) {
-            Button("최신순") { Task { await viewModel.selectSort(.latest) } }
-            Button("인기순") { Task { await viewModel.selectSort(.popular) } }
-        }
     }
 
     private func emptyState(text: String, systemImage: String) -> some View {
@@ -198,7 +201,7 @@ struct CommunityView: View {
 
     private var writeButton: some View {
         AppButton(
-            systemImage: "pencil",
+            icon: .asset("add_2"),
             variant: .primary,
             size: .xlarge
         ) {
@@ -244,8 +247,9 @@ struct CommunityPostRow: View {
         }
     }
 
-    private var badges: [String] {
-        post.postType == .question ? [post.cropName, "Q&A"] : [post.cropName]
+    private var badges: [AppListItemBadge] {
+        let category = AppListItemBadge(post.cropName, style: .solidPastel, variant: .primary)
+        return post.postType == .question ? [category, AppListItemBadge("Q&A")] : [category]
     }
 
     private func rowDateText(_ date: Date) -> String {

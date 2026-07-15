@@ -10,7 +10,6 @@ import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.FertilizingRecord
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestRecord
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
@@ -168,8 +167,8 @@ class FarmingCycleReportSourceLoaderTest {
                     ),
                     pesticideAmount = BigDecimal("30.0000"),
                     pesticideAmountUnit = PesticideAmountUnit.ML,
-                    totalSprayAmount = BigDecimal("10.0000"),
-                    totalSprayAmountUnit = SprayAmountUnit.L,
+                    totalSprayAmount = BigDecimal("10000.0000"),
+                    totalSprayAmountUnit = SprayAmountUnit.ML,
                     pest = Pest(
                         id = uuid("00000000-0000-0000-0000-000000000302"),
                         name = "진딧물",
@@ -188,8 +187,7 @@ class FarmingCycleReportSourceLoaderTest {
                     harvestAmount = null,
                     medicinalPart = CropUsePartCategory.ROOT_BARK,
                     harvestSource = HarvestSource.CULTIVATED,
-                    growthPeriod = 2,
-                    growthPeriodUnit = GrowthPeriodUnit.YEAR,
+                    growthPeriod = 24,
                     isLastHarvest = true,
                 )
             ),

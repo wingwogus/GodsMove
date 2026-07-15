@@ -11,18 +11,18 @@ class FarmingRecordSearcher(
     override fun category(): SearchCategory = SearchCategory.RECORD
 
     override fun search(query: SearchQuery): SearchResult.Page {
-        val page = farmingRecordService.search(
-            FarmingRecordSearchCondition(
-                memberId = query.memberId,
-                cropId = null,
-                workType = null,
-                startDate = null,
-                endDate = null,
-                keyword = query.keyword,
-                cursor = query.cursor,
-                size = query.size,
-            )
+        val condition = FarmingRecordSearchCondition(
+            memberId = query.memberId,
+            cropIds = emptyList(),
+            workTypes = emptyList(),
+            startDate = null,
+            endDate = null,
+            keyword = query.keyword,
+            cursor = query.cursor,
+            size = query.size,
         )
+        val page = farmingRecordService.search(condition)
+        val totalCount = farmingRecordService.count(condition)
         return SearchResult.Page(
             items = page.items.map { summary ->
                 SearchResult.Item(
@@ -35,6 +35,7 @@ class FarmingRecordSearcher(
                 )
             },
             nextCursor = page.nextCursor,
+            totalCount = totalCount,
         )
     }
 }

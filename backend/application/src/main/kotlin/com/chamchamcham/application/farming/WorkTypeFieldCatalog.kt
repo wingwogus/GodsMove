@@ -3,7 +3,6 @@ package com.chamchamcham.application.farming
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
@@ -166,8 +165,7 @@ object WorkTypeFieldCatalog {
     // harvestAmount는 kg 단위로 필수이나, 사용자가 '모르겠음'을 선택하면(harvestAmountUnknown=true)
     // 비워둘 수 있다(FarmingRecordDetailValidator.validateHarvest에서 강제). 이 경우 서버는 NULL로
     // 저장한다(0 아님). medicinalPart는 선택이다(온보딩 기본값으로 프론트가 미리 채워둔다).
-    // growthPeriod/growthPeriodUnit은 둘 다 비거나 둘 다 채워져야 한다(validateHarvest에서 강제).
-    // 이 목록 자체는 그 예외들을 표현하지 않으므로 프론트가 별도 처리해야 한다.
+    // growthPeriod는 항상 개월 단위이며 필수다.
     private val HARVEST_FIELDS: List<WorkTypeResult.FieldSummary> = listOf(
         WorkTypeResult.FieldSummary(
             name = "harvestAmount",
@@ -190,14 +188,8 @@ object WorkTypeFieldCatalog {
         WorkTypeResult.FieldSummary(
             name = "growthPeriod",
             type = FieldValueType.INT,
-            required = false,
+            required = true,
             options = emptyList()
-        ),
-        WorkTypeResult.FieldSummary(
-            name = "growthPeriodUnit",
-            type = FieldValueType.ENUM,
-            required = false,
-            options = GrowthPeriodUnit.entries.map { WorkTypeResult.EnumOptionSummary(it.name, it.label) }
         )
     )
 }

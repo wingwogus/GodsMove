@@ -20,10 +20,8 @@ struct AppSortButton: View {
                 Text(title)
                     .appTypography(.labelMedium)
                     .foregroundStyle(Color.Text.subtle)
-                Image(systemName: isExpanded ? "chevron.up" : "chevron.down")
-                    .font(.system(size: 16, weight: .medium))
+                AppIconView(source: .asset(isExpanded ? "keyboard_arrow_up" : "keyboard_arrow_down"), size: 24)
                     .foregroundStyle(Color.Icon.subtle)
-                    .frame(width: 24, height: 24)
             }
         }
         .buttonStyle(.plain)

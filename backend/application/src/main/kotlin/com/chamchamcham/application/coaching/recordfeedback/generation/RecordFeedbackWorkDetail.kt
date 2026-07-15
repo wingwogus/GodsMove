@@ -3,7 +3,6 @@ package com.chamchamcham.application.coaching.recordfeedback.generation
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
@@ -12,7 +11,6 @@ import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
-import com.chamchamcham.domain.farming.SprayAmountUnit
 import com.chamchamcham.domain.farming.WeedingMethod
 import com.fasterxml.jackson.annotation.JsonSubTypes
 import com.fasterxml.jackson.annotation.JsonTypeInfo
@@ -56,7 +54,7 @@ data class PestControlFeedbackDetail(
     val pesticideAmount: BigDecimal,
     val pesticideAmountUnit: PesticideAmountUnit,
     val totalSprayAmount: BigDecimal,
-    val totalSprayAmountUnit: SprayAmountUnit,
+    val totalSprayAmountUnit: String,
     val pestName: String?,
 ) : RecordFeedbackWorkDetail
 
@@ -70,7 +68,7 @@ data class HarvestFeedbackDetail(
     val medicinalPart: CropUsePartCategory?,
     val harvestSource: HarvestSource,
     val growthPeriod: Int?,
-    val growthPeriodUnit: GrowthPeriodUnit?,
+    val growthPeriodUnit: String?,
     val isLastHarvest: Boolean,
 ) : RecordFeedbackWorkDetail
 

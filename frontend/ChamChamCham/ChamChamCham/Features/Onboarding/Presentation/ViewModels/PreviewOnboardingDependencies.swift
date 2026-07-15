@@ -98,6 +98,8 @@ struct PreviewMemberProfileCache: MemberProfileCache {
             updatedAt: Date()
         )
     }
+
+    func fetchCurrent() -> CachedMemberProfile? { nil }
 }
 
 struct PreviewFarmRepository: FarmRepository {

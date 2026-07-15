@@ -13,7 +13,7 @@ struct BasicProfileView: View {
     @State private var pickerItem: PhotosPickerItem?
     @State private var profileImage: Image?
     @State private var hasAttemptedNext = false
-    @State private var isQualificationGuideVisible = false
+    @State private var isQualificationTooltipVisible = false
 
     private let store = OnboardingDraftStore()
 
@@ -103,9 +103,6 @@ struct BasicProfileView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomCTA
         }
-        .sheet(isPresented: $isQualificationGuideVisible) {
-            qualificationGuideSheet
-        }
         .task(id: pickerItem) {
             guard let pickerItem,
                   let data = try? await pickerItem.loadTransferable(type: Data.self) else { return }
@@ -172,7 +169,7 @@ struct BasicProfileView: View {
                 Spacer()
 
                 Button {
-                    isQualificationGuideVisible = true
+                    isQualificationTooltipVisible = true
                 } label: {
                     Image(systemName: "info.circle.fill")
                         .font(.system(size: 22, weight: .semibold))
@@ -181,6 +178,13 @@ struct BasicProfileView: View {
                 }
                 .buttonStyle(.plain)
                 .accessibilityLabel("자격 안내 보기")
+                .popover(isPresented: $isQualificationTooltipVisible, arrowEdge: .bottom) {
+                    qualificationTooltip
+                        .presentationCompactAdaptation(.popover)
+                        .presentationBackground(alignment: .bottom) {
+                            qualificationTooltipBackground
+                        }
+                }
             }
 
             HStack(spacing: 8) {
@@ -198,25 +202,12 @@ struct BasicProfileView: View {
     }
 
     private func qualificationButton(_ option: QualificationOption) -> some View {
-        let isSelected = viewModel.draft.managementType == option.managementType
-        return Button {
+        AppSelectItem(
+            title: option.title,
+            isSelected: viewModel.draft.managementType == option.managementType
+        ) {
             viewModel.draft.managementType = option.managementType
-        } label: {
-            Text(option.title)
-                .appTypography(.labelMedium)
-                .foregroundStyle(isSelected ? Color.Text.primary : Color.Text.muted)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .background(isSelected ? Color.Object.primarySubtle : Color.Object.subtle)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(isSelected ? Color.Border.primary : Color.Border.subtle, lineWidth: 1)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .buttonStyle(.plain)
     }
 
     private var bottomCTA: some View {
@@ -235,32 +226,55 @@ struct BasicProfileView: View {
         }
     }
 
-    private var qualificationGuideSheet: some View {
-        NavigationStack {
-            VStack(alignment: .leading, spacing: 20) {
-                guideRow(title: "농업경영체(농업인)", body: "일반 — 개인 자격으로 농업경영체에 등록된 농업인")
-                guideRow(title: "농업경영체(법인)", body: "법인 — 영농조합법인·농업회사법인 등")
-                guideRow(title: "농업인(비경영체)", body: "미가입 — 농업경영체에 등록되지 않은 농업인")
-                Spacer(minLength: 0)
-                OnboardingCTAButton(title: "확인", isVisuallyEnabled: true) {
-                    isQualificationGuideVisible = false
+    private var qualificationTooltip: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            HStack(spacing: 0) {
+                Text("자격 유형")
+                    .appTypography(.bodyLargeEmphasized)
+                    .foregroundStyle(Color.Text.inverse)
+                Spacer()
+                Button {
+                    isQualificationTooltipVisible = false
+                } label: {
+                    AppIconView(source: .asset("close"), size: 20)
+                        .foregroundStyle(Color.Text.inverse)
                 }
+                .buttonStyle(.plain)
+                .accessibilityLabel("닫기")
             }
-            .padding(20)
-            .navigationTitle("농업경영체 자격 안내")
-            .navigationBarTitleDisplayMode(.inline)
+
+            VStack(alignment: .leading, spacing: 16) {
+                tooltipRow(title: "개인 농업인", body: "개인으로 농업경영체 등록을 마친 대상")
+                tooltipRow(title: "농업경영 법인", body: "영농조합법인·농업회사법인으로 설립 후 농업경영체 등록을 완료한 대상")
+                tooltipRow(title: "비경영체", body: "농업경영체로 등록하지 않은 대상")
+            }
         }
-        .presentationDetents([.medium])
+        .padding(20)
+        .frame(width: 300, alignment: .leading)
     }
 
-    private func guideRow(title: String, body: String) -> some View {
-        VStack(alignment: .leading, spacing: 6) {
+    /// Opaque card + tail behind `qualificationTooltip`. Supplied via `presentationBackground(alignment:content:)`
+    /// rather than `.presentationBackground(.clear)` — the latter renders the whole popover translucent instead
+    /// of just clearing the system chrome, letting content behind it (e.g. the profile photo) show through.
+    private var qualificationTooltipBackground: some View {
+        RoundedRectangle(cornerRadius: 16)
+            .fill(Color.Object.bold)
+            .overlay(alignment: .bottom) {
+                TooltipTailShape()
+                    .fill(Color.Object.bold)
+                    .frame(width: 20, height: 10)
+                    .offset(y: 10)
+            }
+    }
+
+    private func tooltipRow(title: String, body: String) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
             Text(title)
                 .appTypography(.bodyMediumEmphasized)
-                .foregroundStyle(Color.Text.default)
+                .foregroundStyle(Color.Text.inverse)
             Text(body)
                 .appTypography(.labelMedium)
-                .foregroundStyle(Color.Text.subtle)
+                .foregroundStyle(Color.Text.inverse.opacity(0.64))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
@@ -313,6 +327,19 @@ struct BasicProfileView: View {
     private func error(for field: OnboardingViewModel.BasicProfileField) -> String? {
         guard hasAttemptedNext else { return nil }
         return viewModel.basicProfileValidationErrors[field]
+    }
+
+    /// Downward-pointing tail attached to the bottom of `qualificationTooltip`, giving the popover a
+    /// speech-bubble shape pointing back at the info icon that opened it.
+    private struct TooltipTailShape: Shape {
+        func path(in rect: CGRect) -> Path {
+            var path = Path()
+            path.move(to: CGPoint(x: rect.minX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY))
+            path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY))
+            path.closeSubpath()
+            return path
+        }
     }
 
     private struct QualificationOption: Identifiable, CaseIterable {

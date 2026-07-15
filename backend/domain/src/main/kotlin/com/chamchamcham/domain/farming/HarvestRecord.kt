@@ -39,12 +39,8 @@ class   HarvestRecord(
     @Column(name = "harvest_source", nullable = false, length = 16)
     val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
 
-    @Column(name = "growth_period")
-    val growthPeriod: Int? = null,
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "growth_period_unit", length = 16)
-    val growthPeriodUnit: GrowthPeriodUnit? = null,
+    @Column(name = "growth_period", nullable = false)
+    val growthPeriod: Int,
 
     @Column(name = "is_last_harvest", nullable = false)
     val isLastHarvest: Boolean,

@@ -17,11 +17,11 @@ import com.chamchamcham.domain.farming.FarmingRecordMediaRepository
 import com.chamchamcham.domain.farming.FarmingRecordQueryRepository
 import com.chamchamcham.domain.farming.FarmingRecordRepository
 import com.chamchamcham.domain.farming.FertilizingRecordRepository
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestRecord
 import com.chamchamcham.domain.farming.HarvestRecordRepository
 import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.HarvestSource
+import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PestControlRecord
 import com.chamchamcham.domain.farming.PestControlRecordRepository
 import com.chamchamcham.domain.farming.PesticideAmountUnit
@@ -31,6 +31,7 @@ import com.chamchamcham.domain.farming.PlantingRecordRepository
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SprayAmountUnit
 import com.chamchamcham.domain.farming.WateringRecordRepository
+import com.chamchamcham.domain.farming.WeedingMethod
 import com.chamchamcham.domain.farming.WeedingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.media.UploadedMedia
@@ -292,7 +293,7 @@ class FarmingRecordServiceTest {
                 pesticideAmount = BigDecimal.ONE,
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal.TEN,
-                totalSprayAmountUnit = SprayAmountUnit.L,
+                totalSprayAmountUnit = SprayAmountUnit.ML,
                 pestId = pestId,
             ),
         )
@@ -322,7 +323,7 @@ class FarmingRecordServiceTest {
                 pesticideAmount = BigDecimal.ONE,
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal.TEN,
-                totalSprayAmountUnit = SprayAmountUnit.L,
+                totalSprayAmountUnit = SprayAmountUnit.ML,
             ),
         )
 
@@ -374,7 +375,6 @@ class FarmingRecordServiceTest {
                 harvestAmount = BigDecimal.TEN,
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = false,
             ),
         )
@@ -401,7 +401,6 @@ class FarmingRecordServiceTest {
                 amountUnknown = true,
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = false,
             ),
         )
@@ -523,7 +522,6 @@ class FarmingRecordServiceTest {
                     harvestAmount = BigDecimal.TEN,
                     medicinalPart = CropUsePartCategory.ROOT_BARK,
                     growthPeriod = 2,
-                    growthPeriodUnit = GrowthPeriodUnit.YEAR,
                     isLastHarvest = false,
                 ),
             )
@@ -646,7 +644,6 @@ class FarmingRecordServiceTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 2,
-                growthPeriodUnit = GrowthPeriodUnit.YEAR,
                 isLastHarvest = true,
             )
         )
@@ -664,7 +661,7 @@ class FarmingRecordServiceTest {
         assertEquals(20, detail.weatherTemperature)
         assertEquals(BigDecimal.TEN, detail.harvest?.harvestAmount)
         assertEquals(true, detail.harvest?.isLastHarvest)
-        assertThat(detail.imageUrls).containsExactly(media1.fileUrl)
+        assertThat(detail.images).containsExactly(FarmingRecordResult.MediaItem(mediaId = mediaId1, url = media1.fileUrl))
     }
 
     @Test
@@ -696,8 +693,8 @@ class FarmingRecordServiceTest {
             farmingRecordQueryRepository.search(
                 FarmingRecordQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = cropId,
-                    workType = WorkType.PRUNING,
+                    cropIds = listOf(cropId),
+                    workTypes = listOf(WorkType.PRUNING),
                     workedAtFrom = null,
                     workedAtTo = null,
                     cursor = null,
@@ -716,8 +713,8 @@ class FarmingRecordServiceTest {
         val page = service.search(
             FarmingRecordSearchCondition(
                 memberId = memberId,
-                cropId = cropId,
-                workType = WorkType.PRUNING,
+                cropIds = listOf(cropId),
+                workTypes = listOf(WorkType.PRUNING),
                 startDate = null,
                 endDate = null,
                 cursor = null,
@@ -734,13 +731,63 @@ class FarmingRecordServiceTest {
     }
 
     @Test
+    fun `search maps work type summary fields from query repository row`() {
+        val record = existingRecord(id = recordId, workType = WorkType.WATERING)
+
+        `when`(
+            farmingRecordQueryRepository.search(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    cursor = null,
+                    size = 21
+                )
+            )
+        ).thenReturn(
+            FarmingRecordQueryRepository.SearchResult(
+                rows = listOf(
+                    FarmingRecordQueryRepository.Row(
+                        record = record,
+                        thumbnailUrl = null,
+                        irrigationMethod = IrrigationMethod.DRIP,
+                        harvestAmount = BigDecimal.TEN,
+                        pesticideName = "친환경약제",
+                        weedingMethod = WeedingMethod.HAND,
+                    ),
+                )
+            )
+        )
+
+        val page = service.search(
+            FarmingRecordSearchCondition(
+                memberId = memberId,
+                cropIds = emptyList(),
+                workTypes = emptyList(),
+                startDate = null,
+                endDate = null,
+                cursor = null,
+                size = 20
+            )
+        )
+
+        val summary = page.items.single()
+        assertEquals(IrrigationMethod.DRIP, summary.irrigationMethod)
+        assertEquals(0, BigDecimal.TEN.compareTo(summary.harvestAmount))
+        assertEquals("친환경약제", summary.pesticideName)
+        assertEquals(WeedingMethod.HAND, summary.weedingMethod)
+    }
+
+    @Test
     fun `search converts start and end date to datetime bounds`() {
         `when`(
             farmingRecordQueryRepository.search(
                 FarmingRecordQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     workedAtFrom = LocalDateTime.of(2026, 6, 1, 0, 0),
                     workedAtTo = LocalDateTime.of(2026, 7, 1, 0, 0),
                     cursor = null,
@@ -752,8 +799,8 @@ class FarmingRecordServiceTest {
         val page = service.search(
             FarmingRecordSearchCondition(
                 memberId = memberId,
-                cropId = null,
-                workType = null,
+                cropIds = emptyList(),
+                workTypes = emptyList(),
                 startDate = LocalDate.of(2026, 6, 1),
                 endDate = LocalDate.of(2026, 6, 30),
                 cursor = null,
@@ -810,8 +857,8 @@ class FarmingRecordServiceTest {
             farmingRecordQueryRepository.search(
                 FarmingRecordQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     workedAtFrom = null,
                     workedAtTo = null,
                     keyword = "수확",
@@ -834,8 +881,8 @@ class FarmingRecordServiceTest {
             farmingRecordQueryRepository.search(
                 FarmingRecordQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     workedAtFrom = null,
                     workedAtTo = null,
                     keyword = "잎",
@@ -858,8 +905,8 @@ class FarmingRecordServiceTest {
             farmingRecordQueryRepository.search(
                 FarmingRecordQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = null,
-                    workType = null,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
                     workedAtFrom = null,
                     workedAtTo = null,
                     keyword = null,
@@ -876,9 +923,58 @@ class FarmingRecordServiceTest {
         assertThat(page.items).isEmpty()
     }
 
+    @Test
+    fun `count delegates to query repository with derived matched labels and no cursor`() {
+        `when`(
+            farmingRecordQueryRepository.count(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropIds = listOf(cropId),
+                    workTypes = emptyList(),
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    keyword = "수확",
+                    matchedWorkTypes = listOf(WorkType.HARVEST),
+                    matchedParts = emptyList(),
+                    cursor = null,
+                    size = 1
+                )
+            )
+        ).thenReturn(7L)
+
+        val total = service.count(searchCondition(cropIds = listOf(cropId), keyword = "수확"))
+
+        assertEquals(7L, total)
+        verifyNoInteractions(farmingRecordRepository)
+    }
+
+    @Test
+    fun `count passes blank keyword as null with no matched labels`() {
+        `when`(
+            farmingRecordQueryRepository.count(
+                FarmingRecordQueryRepository.SearchCondition(
+                    memberId = memberId,
+                    cropIds = emptyList(),
+                    workTypes = emptyList(),
+                    workedAtFrom = null,
+                    workedAtTo = null,
+                    keyword = null,
+                    matchedWorkTypes = emptyList(),
+                    matchedParts = emptyList(),
+                    cursor = null,
+                    size = 1
+                )
+            )
+        ).thenReturn(0L)
+
+        val total = service.count(searchCondition(keyword = "   "))
+
+        assertEquals(0L, total)
+    }
+
     private fun searchCondition(
-        cropId: UUID? = null,
-        workType: WorkType? = null,
+        cropIds: List<UUID> = emptyList(),
+        workTypes: List<WorkType> = emptyList(),
         startDate: LocalDate? = null,
         endDate: LocalDate? = null,
         keyword: String? = null,
@@ -886,8 +982,8 @@ class FarmingRecordServiceTest {
         size: Int = 20,
     ) = FarmingRecordSearchCondition(
         memberId = memberId,
-        cropId = cropId,
-        workType = workType,
+        cropIds = cropIds,
+        workTypes = workTypes,
         startDate = startDate,
         endDate = endDate,
         keyword = keyword,

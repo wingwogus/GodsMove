@@ -8,15 +8,16 @@
 import SwiftUI
 
 /// Figma `top-app-bar`. Two layouts: `.standard` (large title on the left + up to two trailing
-/// icons) and `.detail` (centered smaller title with optional leading/trailing icons). Icons are
-/// SF Symbols until the Figma icon set lands.
+/// icons) and `.detail` (centered smaller title with optional leading/trailing icons). Pass an
+/// `AppIconSource` string literal for an SF Symbol placeholder, or `.asset("...")` for a glyph
+/// from the Figma icon set (`Assets.xcassets/icon`).
 struct AppTopAppBar: View {
     struct BarIcon {
-        let systemName: String
+        let source: AppIconSource
         let action: () -> Void
 
-        init(_ systemName: String, action: @escaping () -> Void = {}) {
-            self.systemName = systemName
+        init(_ source: AppIconSource, action: @escaping () -> Void = {}) {
+            self.source = source
             self.action = action
         }
     }
@@ -37,10 +38,10 @@ struct AppTopAppBar: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity)
-            .padding(.vertical, isDetail ? Spacing.sm : 6)
-            .padding(.leading, isDetail ? 12 : Spacing.lg)
+            .padding(.vertical, Spacing.sm)
+            .padding(.leading, isDetail ? 12 : 20)
             .padding(.trailing, 12)
-            .frame(height: isDetail ? 64 : 60)
+            .frame(height: 60)
             .background(backgroundColor)
             .overlay(alignment: .bottom) {
                 if showBorder {
@@ -86,8 +87,7 @@ struct AppTopAppBar: View {
 
     private func iconButton(_ icon: BarIcon) -> some View {
         Button(action: icon.action) {
-            Image(systemName: icon.systemName)
-                .font(.system(size: 32))
+            AppIconView(source: icon.source, size: 32)
                 .frame(width: 48, height: 48)
                 .foregroundStyle(Color.Icon.default)
         }

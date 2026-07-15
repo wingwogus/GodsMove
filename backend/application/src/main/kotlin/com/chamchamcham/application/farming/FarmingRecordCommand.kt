@@ -4,7 +4,6 @@ import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
@@ -103,8 +102,7 @@ object FarmingRecordCommand {
         val amountUnknown: Boolean = false,
         val medicinalPart: CropUsePartCategory? = null,
         val harvestSource: HarvestSource = HarvestSource.CULTIVATED,
-        val growthPeriod: Int? = null,
-        val growthPeriodUnit: GrowthPeriodUnit? = null,
+        val growthPeriod: Int,
         val isLastHarvest: Boolean,
     )
 }

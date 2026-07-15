@@ -93,6 +93,7 @@ class SearchPolicyIntegrationTest(
             .andExpect(jsonPath("$.data.items[0].id", equalTo(programAId)))
             .andExpect(jsonPath("$.data.items[0].title", equalTo(programATitle)))
             .andExpect(jsonPath("$.data.items[0].snippet", equalTo(programABenefitSummary)))
+            .andExpect(jsonPath("$.data.totalCount", equalTo(1)))
     }
 
     @Test
@@ -106,6 +107,7 @@ class SearchPolicyIntegrationTest(
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.success", equalTo(true)))
             .andExpect(jsonPath("$.data.items.length()", equalTo(0)))
+            .andExpect(jsonPath("$.data.totalCount", equalTo(0)))
     }
 
     @Test

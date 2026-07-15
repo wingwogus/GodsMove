@@ -19,6 +19,23 @@
         ],
         "type": "object"
       },
+      "ApiResponseCancelledResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CancelledResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
       "ApiResponseCommentIdResponse": {
         "properties": {
           "data": {
@@ -53,10 +70,61 @@
         ],
         "type": "object"
       },
+      "ApiResponseConfirmedResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ConfirmedResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseCreatedResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/CreatedResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
       "ApiResponseCurrentWeatherResponse": {
         "properties": {
           "data": {
             "$ref": "#/components/schemas/CurrentWeatherResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseDailyWeatherResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DailyWeatherResponse"
           },
           "error": {
             "$ref": "#/components/schemas/ApiError"
@@ -204,6 +272,26 @@
         ],
         "type": "object"
       },
+      "ApiResponseListPestSummaryResponse": {
+        "properties": {
+          "data": {
+            "items": {
+              "$ref": "#/components/schemas/PestSummaryResponse"
+            },
+            "type": "array"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
       "ApiResponseListWorkTypeResponse": {
         "properties": {
           "data": {
@@ -279,6 +367,40 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/OnboardingCompleteResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePesticidePageResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PesticidePageResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePesticideSyncResult": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PesticideSyncResult"
           },
           "error": {
             "$ref": "#/components/schemas/ApiError"
@@ -398,6 +520,23 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/PostPageResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseProcessedResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ProcessedResponse"
           },
           "error": {
             "$ref": "#/components/schemas/ApiError"
@@ -620,6 +759,146 @@
         ],
         "type": "object"
       },
+      "CancelledResponse": {
+        "properties": {
+          "sessionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "CREATED",
+              "PROCESSING",
+              "WAITING_CONFIRMATION",
+              "COMPLETED",
+              "CANCELLED",
+              "FAILED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "sessionId",
+          "status"
+        ],
+        "type": "object"
+      },
+      "CandidateRequest": {
+        "properties": {
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "fertilizing": {
+            "$ref": "#/components/schemas/FertilizingDetailRequest"
+          },
+          "harvest": {
+            "$ref": "#/components/schemas/HarvestDetailRequest"
+          },
+          "memo": {
+            "type": "string"
+          },
+          "pestControl": {
+            "$ref": "#/components/schemas/PestControlDetailRequest"
+          },
+          "planting": {
+            "$ref": "#/components/schemas/PlantingDetailRequest"
+          },
+          "watering": {
+            "$ref": "#/components/schemas/WateringDetailRequest"
+          },
+          "weatherCondition": {
+            "type": "string"
+          },
+          "weatherTemperature": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weeding": {
+            "$ref": "#/components/schemas/WeedingDetailRequest"
+          },
+          "workType": {
+            "enum": [
+              "PLANTING",
+              "WATERING",
+              "FERTILIZING",
+              "PEST_CONTROL",
+              "WEEDING",
+              "PRUNING",
+              "HARVEST",
+              "ETC"
+            ],
+            "type": "string"
+          },
+          "workedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "CandidateResponse": {
+        "properties": {
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "fertilizing": {
+            "$ref": "#/components/schemas/FertilizingDetail"
+          },
+          "harvest": {
+            "$ref": "#/components/schemas/HarvestDetail"
+          },
+          "memo": {
+            "type": "string"
+          },
+          "pestControl": {
+            "$ref": "#/components/schemas/PestControlDetail"
+          },
+          "planting": {
+            "$ref": "#/components/schemas/PlantingDetail"
+          },
+          "watering": {
+            "$ref": "#/components/schemas/WateringDetail"
+          },
+          "weatherCondition": {
+            "type": "string"
+          },
+          "weatherTemperature": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weeding": {
+            "$ref": "#/components/schemas/WeedingDetail"
+          },
+          "workType": {
+            "enum": [
+              "PLANTING",
+              "WATERING",
+              "FERTILIZING",
+              "PEST_CONTROL",
+              "WEEDING",
+              "PRUNING",
+              "HARVEST",
+              "ETC"
+            ],
+            "type": "string"
+          },
+          "workedAt": {
+            "format": "date-time",
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "CategoryResponse": {
         "properties": {
           "code": {
@@ -757,6 +1036,37 @@
         ],
         "type": "object"
       },
+      "ConfirmedResponse": {
+        "properties": {
+          "recordId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sessionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "workType": {
+            "enum": [
+              "PLANTING",
+              "WATERING",
+              "FERTILIZING",
+              "PEST_CONTROL",
+              "WEEDING",
+              "PRUNING",
+              "HARVEST",
+              "ETC"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "recordId",
+          "sessionId",
+          "workType"
+        ],
+        "type": "object"
+      },
       "CreateCommentRequest": {
         "properties": {
           "body": {
@@ -773,6 +1083,64 @@
         },
         "required": [
           "body"
+        ],
+        "type": "object"
+      },
+      "CreatedResponse": {
+        "properties": {
+          "clientSecret": {
+            "type": "string"
+          },
+          "cropsByFarm": {
+            "additionalProperties": {
+              "items": {
+                "$ref": "#/components/schemas/CropOptionResponse"
+              },
+              "type": "array"
+            },
+            "type": "object"
+          },
+          "expiresAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "farms": {
+            "items": {
+              "$ref": "#/components/schemas/FarmOptionResponse"
+            },
+            "type": "array"
+          },
+          "model": {
+            "type": "string"
+          },
+          "sessionId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "clientSecret",
+          "cropsByFarm",
+          "expiresAt",
+          "farms",
+          "model",
+          "sessionId"
+        ],
+        "type": "object"
+      },
+      "CropOptionResponse": {
+        "properties": {
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "cropId",
+          "name"
         ],
         "type": "object"
       },
@@ -823,11 +1191,75 @@
       },
       "CurrentWeatherResponse": {
         "properties": {
+          "address": {
+            "type": "string"
+          },
+          "feelsLikeTemperature": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "forecast": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastDayResponse"
+            },
+            "type": "array"
+          },
+          "humidity": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "maxTemperature": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "minTemperature": {
+            "format": "int32",
+            "type": "integer"
+          },
           "observedAt": {
             "format": "date-time",
             "type": "string"
           },
+          "precipitationProbability": {
+            "format": "int32",
+            "type": "integer"
+          },
           "temperature": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "uvIndex": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weatherCondition": {
+            "type": "string"
+          },
+          "windSpeed": {
+            "format": "double",
+            "type": "number"
+          }
+        },
+        "required": [
+          "address",
+          "forecast",
+          "observedAt",
+          "temperature",
+          "weatherCondition"
+        ],
+        "type": "object"
+      },
+      "DailyWeatherResponse": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "maxTemperature": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "minTemperature": {
             "format": "int32",
             "type": "integer"
           },
@@ -836,8 +1268,9 @@
           }
         },
         "required": [
-          "observedAt",
-          "temperature",
+          "date",
+          "maxTemperature",
+          "minTemperature",
           "weatherCondition"
         ],
         "type": "object"
@@ -971,6 +1404,87 @@
         ],
         "type": "object"
       },
+      "FarmOptionResponse": {
+        "properties": {
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "farmId",
+          "name"
+        ],
+        "type": "object"
+      },
+      "FarmRequest": {
+        "properties": {
+          "areaIsManualEntry": {
+            "type": "boolean"
+          },
+          "areaSqm": {
+            "minimum": 0.0,
+            "type": "number"
+          },
+          "boundaryCoordinates": {
+            "items": {
+              "$ref": "#/components/schemas/BoundaryCoordinateRequest"
+            },
+            "type": "array"
+          },
+          "cropIds": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "dataSource": {
+            "$ref": "#/components/schemas/DataSourceRequest"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "jibunAddress": {
+            "type": "string"
+          },
+          "landCategory": {
+            "type": "string"
+          },
+          "latitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "longitude": {
+            "format": "double",
+            "type": "number"
+          },
+          "name": {
+            "type": "string"
+          },
+          "pnu": {
+            "type": "string"
+          },
+          "roadAddress": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "areaIsManualEntry",
+          "boundaryCoordinates",
+          "cropIds",
+          "dataSource",
+          "latitude",
+          "longitude",
+          "name",
+          "roadAddress"
+        ],
+        "type": "object"
+      },
       "FarmResponse": {
         "properties": {
           "areaIsManualEntry": {
@@ -1033,6 +1547,36 @@
         ],
         "type": "object"
       },
+      "FertilizingDetail": {
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "amountUnit": {
+            "enum": [
+              "G",
+              "ML"
+            ],
+            "type": "string"
+          },
+          "applicationMethod": {
+            "enum": [
+              "SOIL",
+              "FOLIAR"
+            ],
+            "type": "string"
+          },
+          "materialName": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "amountUnit",
+          "materialName"
+        ],
+        "type": "object"
+      },
       "FertilizingDetailRequest": {
         "properties": {
           "amount": {
@@ -1041,7 +1585,8 @@
           },
           "amountUnit": {
             "enum": [
-              "KG"
+              "G",
+              "ML"
             ],
             "type": "string"
           },
@@ -1070,7 +1615,8 @@
           },
           "amountUnit": {
             "enum": [
-              "KG"
+              "G",
+              "ML"
             ],
             "type": "string"
           },
@@ -1118,59 +1664,30 @@
         ],
         "type": "object"
       },
-      "HarvestDetailRequest": {
+      "ForecastDayResponse": {
         "properties": {
-          "growthPeriod": {
+          "date": {
+            "format": "date",
+            "type": "string"
+          },
+          "maxTemperature": {
             "format": "int32",
-            "minimum": 1,
             "type": "integer"
           },
-          "growthPeriodUnit": {
-            "enum": [
-              "YEAR",
-              "MONTH"
-            ],
-            "type": "string"
+          "minTemperature": {
+            "format": "int32",
+            "type": "integer"
           },
-          "harvestAmount": {
-            "minimum": 0.01,
-            "type": "number"
-          },
-          "harvestAmountUnknown": {
-            "type": "boolean"
-          },
-          "harvestSource": {
-            "enum": [
-              "CULTIVATED",
-              "FORAGED"
-            ],
-            "type": "string"
-          },
-          "medicinalPart": {
-            "enum": [
-              "WHOLE_HERB",
-              "ROOT_BARK",
-              "RHIZOME",
-              "LEAF",
-              "FLOWER",
-              "FRUIT",
-              "SEED",
-              "STEM_BRANCH",
-              "UNKNOWN"
-            ],
+          "weatherCondition": {
             "type": "string"
           }
         },
         "required": [
-          "growthPeriod",
-          "growthPeriodUnit",
-          "harvestAmountUnknown",
-          "harvestSource",
-          "medicinalPart"
+          "date"
         ],
         "type": "object"
       },
-      "HarvestDetailResponse": {
+      "HarvestDetail": {
         "properties": {
           "amountUnknown": {
             "type": "boolean"
@@ -1179,13 +1696,6 @@
             "format": "int32",
             "type": "integer"
           },
-          "growthPeriodUnit": {
-            "enum": [
-              "YEAR",
-              "MONTH"
-            ],
-            "type": "string"
-          },
           "harvestAmount": {
             "type": "number"
           },
@@ -1195,6 +1705,9 @@
               "FORAGED"
             ],
             "type": "string"
+          },
+          "isLastHarvest": {
+            "type": "boolean"
           },
           "medicinalPart": {
             "enum": [
@@ -1214,9 +1727,100 @@
         "required": [
           "amountUnknown",
           "growthPeriod",
-          "growthPeriodUnit",
           "harvestSource",
-          "medicinalPart"
+          "isLastHarvest"
+        ],
+        "type": "object"
+      },
+      "HarvestDetailRequest": {
+        "properties": {
+          "growthPeriod": {
+            "format": "int32",
+            "minimum": 1,
+            "type": "integer"
+          },
+          "harvestAmount": {
+            "minimum": 0.01,
+            "type": "number"
+          },
+          "harvestAmountUnknown": {
+            "type": "boolean"
+          },
+          "harvestSource": {
+            "enum": [
+              "CULTIVATED",
+              "FORAGED"
+            ],
+            "type": "string"
+          },
+          "isLastHarvest": {
+            "type": "boolean"
+          },
+          "medicinalPart": {
+            "enum": [
+              "WHOLE_HERB",
+              "ROOT_BARK",
+              "RHIZOME",
+              "LEAF",
+              "FLOWER",
+              "FRUIT",
+              "SEED",
+              "STEM_BRANCH",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "growthPeriod",
+          "harvestAmountUnknown",
+          "harvestSource",
+          "isLastHarvest"
+        ],
+        "type": "object"
+      },
+      "HarvestDetailResponse": {
+        "properties": {
+          "amountUnknown": {
+            "type": "boolean"
+          },
+          "growthPeriod": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "harvestAmount": {
+            "type": "number"
+          },
+          "harvestSource": {
+            "enum": [
+              "CULTIVATED",
+              "FORAGED"
+            ],
+            "type": "string"
+          },
+          "isLastHarvest": {
+            "type": "boolean"
+          },
+          "medicinalPart": {
+            "enum": [
+              "WHOLE_HERB",
+              "ROOT_BARK",
+              "RHIZOME",
+              "LEAF",
+              "FLOWER",
+              "FRUIT",
+              "SEED",
+              "STEM_BRANCH",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "amountUnknown",
+          "growthPeriod",
+          "harvestSource",
+          "isLastHarvest"
         ],
         "type": "object"
       },
@@ -1289,6 +1893,22 @@
           "member",
           "onboarding",
           "refreshToken"
+        ],
+        "type": "object"
+      },
+      "MediaResponse": {
+        "properties": {
+          "mediaId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "url": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "mediaId",
+          "url"
         ],
         "type": "object"
       },
@@ -1475,9 +2095,49 @@
         ],
         "type": "object"
       },
+      "PestControlDetail": {
+        "properties": {
+          "pestId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "pesticideAmount": {
+            "type": "number"
+          },
+          "pesticideAmountUnit": {
+            "enum": [
+              "ML",
+              "G"
+            ],
+            "type": "string"
+          },
+          "pesticideId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "totalSprayAmount": {
+            "type": "number"
+          },
+          "totalSprayAmountUnit": {
+            "enum": [
+              "ML"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "pesticideAmount",
+          "pesticideAmountUnit",
+          "pesticideId",
+          "totalSprayAmount",
+          "totalSprayAmountUnit"
+        ],
+        "type": "object"
+      },
       "PestControlDetailRequest": {
         "properties": {
-          "pestTarget": {
+          "pestId": {
+            "format": "uuid",
             "type": "string"
           },
           "pesticideAmount": {
@@ -1491,7 +2151,8 @@
             ],
             "type": "string"
           },
-          "pesticideName": {
+          "pesticideId": {
+            "format": "uuid",
             "type": "string"
           },
           "totalSprayAmount": {
@@ -1500,7 +2161,7 @@
           },
           "totalSprayAmountUnit": {
             "enum": [
-              "L"
+              "ML"
             ],
             "type": "string"
           }
@@ -1508,7 +2169,7 @@
         "required": [
           "pesticideAmount",
           "pesticideAmountUnit",
-          "pesticideName",
+          "pesticideId",
           "totalSprayAmount",
           "totalSprayAmountUnit"
         ],
@@ -1516,7 +2177,11 @@
       },
       "PestControlDetailResponse": {
         "properties": {
-          "pestTarget": {
+          "pestId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "pestName": {
             "type": "string"
           },
           "pesticideAmount": {
@@ -1529,6 +2194,10 @@
             ],
             "type": "string"
           },
+          "pesticideId": {
+            "format": "uuid",
+            "type": "string"
+          },
           "pesticideName": {
             "type": "string"
           },
@@ -1537,7 +2206,7 @@
           },
           "totalSprayAmountUnit": {
             "enum": [
-              "L"
+              "ML"
             ],
             "type": "string"
           }
@@ -1545,22 +2214,156 @@
         "required": [
           "pesticideAmount",
           "pesticideAmountUnit",
+          "pesticideId",
           "pesticideName",
           "totalSprayAmount",
           "totalSprayAmountUnit"
         ],
         "type": "object"
       },
-      "PlantingDetailRequest": {
+      "PestSummaryResponse": {
         "properties": {
-          "propagationMethod": {
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "name": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name"
+        ],
+        "type": "object"
+      },
+      "PesticidePageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/PesticideSummaryResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "type": "object"
+      },
+      "PesticideSummaryResponse": {
+        "properties": {
+          "brandName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "itemName": {
+            "type": "string"
+          },
+          "manufacturer": {
+            "type": "string"
+          },
+          "usageCategory": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "brandName",
+          "id",
+          "itemName"
+        ],
+        "type": "object"
+      },
+      "PesticideSyncResult": {
+        "properties": {
+          "createdApplicationCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "fetchedRowCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "pageCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "createdApplicationCount",
+          "fetchedRowCount",
+          "pageCount"
+        ],
+        "type": "object"
+      },
+      "PlantingDetail": {
+        "properties": {
+          "plantingMethod": {
             "enum": [
               "SEED",
+              "SEEDLING"
+            ],
+            "type": "string"
+          },
+          "propagationMethod": {
+            "enum": [
               "CUTTING",
               "GRAFTING",
               "LAYERING",
               "DIVISION",
-              "TISSUE_CULTURE"
+              "TISSUE_CULTURE",
+              "PURCHASED"
+            ],
+            "type": "string"
+          },
+          "seedAmount": {
+            "type": "number"
+          },
+          "seedAmountUnit": {
+            "enum": [
+              "G"
+            ],
+            "type": "string"
+          },
+          "seedlingCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "seedlingUnit": {
+            "enum": [
+              "JU"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "plantingMethod"
+        ],
+        "type": "object"
+      },
+      "PlantingDetailRequest": {
+        "properties": {
+          "plantingMethod": {
+            "enum": [
+              "SEED",
+              "SEEDLING"
+            ],
+            "type": "string"
+          },
+          "propagationMethod": {
+            "enum": [
+              "CUTTING",
+              "GRAFTING",
+              "LAYERING",
+              "DIVISION",
+              "TISSUE_CULTURE",
+              "PURCHASED"
             ],
             "type": "string"
           },
@@ -1570,7 +2373,6 @@
           },
           "seedAmountUnit": {
             "enum": [
-              "KG",
               "G"
             ],
             "type": "string"
@@ -1588,20 +2390,27 @@
           }
         },
         "required": [
-          "propagationMethod"
+          "plantingMethod"
         ],
         "type": "object"
       },
       "PlantingDetailResponse": {
         "properties": {
-          "propagationMethod": {
+          "plantingMethod": {
             "enum": [
               "SEED",
+              "SEEDLING"
+            ],
+            "type": "string"
+          },
+          "propagationMethod": {
+            "enum": [
               "CUTTING",
               "GRAFTING",
               "LAYERING",
               "DIVISION",
-              "TISSUE_CULTURE"
+              "TISSUE_CULTURE",
+              "PURCHASED"
             ],
             "type": "string"
           },
@@ -1610,7 +2419,6 @@
           },
           "seedAmountUnit": {
             "enum": [
-              "KG",
               "G"
             ],
             "type": "string"
@@ -1627,7 +2435,7 @@
           }
         },
         "required": [
-          "propagationMethod"
+          "plantingMethod"
         ],
         "type": "object"
       },
@@ -2061,6 +2869,41 @@
         ],
         "type": "object"
       },
+      "ProcessedResponse": {
+        "properties": {
+          "candidate": {
+            "$ref": "#/components/schemas/CandidateResponse"
+          },
+          "missingFields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "sessionId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "CREATED",
+              "PROCESSING",
+              "WAITING_CONFIRMATION",
+              "COMPLETED",
+              "CANCELLED",
+              "FAILED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "candidate",
+          "missingFields",
+          "sessionId",
+          "status"
+        ],
+        "type": "object"
+      },
       "PublicFarmResponse": {
         "properties": {
           "displayRegion": {
@@ -2145,9 +2988,9 @@
             "format": "uuid",
             "type": "string"
           },
-          "imageUrls": {
+          "images": {
             "items": {
-              "type": "string"
+              "$ref": "#/components/schemas/MediaResponse"
             },
             "type": "array"
           },
@@ -2202,7 +3045,7 @@
           "farmId",
           "farmName",
           "id",
-          "imageUrls",
+          "images",
           "memo",
           "updatedAt",
           "weatherCondition",
@@ -2264,11 +3107,25 @@
           "cropName": {
             "type": "string"
           },
+          "harvestAmount": {
+            "type": "number"
+          },
           "id": {
             "format": "uuid",
             "type": "string"
           },
+          "irrigationMethod": {
+            "enum": [
+              "DRIP",
+              "SPRAYING",
+              "ETC"
+            ],
+            "type": "string"
+          },
           "memoPreview": {
+            "type": "string"
+          },
+          "pesticideName": {
             "type": "string"
           },
           "thumbnailUrl": {
@@ -2280,6 +3137,15 @@
           "weatherTemperature": {
             "format": "int32",
             "type": "integer"
+          },
+          "weedingMethod": {
+            "enum": [
+              "HAND",
+              "MACHINE",
+              "MULCHING",
+              "HERBICIDE"
+            ],
+            "type": "string"
           },
           "workType": {
             "enum": [
@@ -2436,6 +3302,13 @@
             "format": "uuid",
             "type": "string"
           },
+          "entryMode": {
+            "enum": [
+              "MANUAL",
+              "VOICE"
+            ],
+            "type": "string"
+          },
           "farmId": {
             "format": "uuid",
             "type": "string"
@@ -2499,6 +3372,7 @@
         },
         "required": [
           "cropId",
+          "entryMode",
           "farmId",
           "mediaIds",
           "memo",
@@ -2537,6 +3411,24 @@
         ],
         "type": "object"
       },
+      "SubmitTurnsRequest": {
+        "properties": {
+          "candidate": {
+            "$ref": "#/components/schemas/CandidateRequest"
+          },
+          "turns": {
+            "items": {
+              "$ref": "#/components/schemas/TurnRequest"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "candidate",
+          "turns"
+        ],
+        "type": "object"
+      },
       "TokenResponse": {
         "properties": {
           "accessToken": {
@@ -2552,6 +3444,28 @@
         ],
         "type": "object"
       },
+      "TurnRequest": {
+        "properties": {
+          "content": {
+            "type": "string"
+          },
+          "extractedFields": {
+            "type": "string"
+          },
+          "role": {
+            "enum": [
+              "USER",
+              "ASSISTANT"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "content",
+          "role"
+        ],
+        "type": "object"
+      },
       "UpdateMyProfileRequest": {
         "properties": {
           "birthDate": {
@@ -2563,6 +3477,12 @@
             "maximum": 100,
             "minimum": 0,
             "type": "integer"
+          },
+          "farms": {
+            "items": {
+              "$ref": "#/components/schemas/FarmRequest"
+            },
+            "type": "array"
           },
           "managementType": {
             "enum": [
@@ -2589,6 +3509,7 @@
         "required": [
           "birthDate",
           "experienceLevel",
+          "farms",
           "managementType",
           "name",
           "nickname",
@@ -2664,6 +3585,27 @@
         ],
         "type": "object"
       },
+      "WateringDetail": {
+        "properties": {
+          "irrigationAmount": {
+            "enum": [
+              "LOW",
+              "NORMAL",
+              "SUFFICIENT"
+            ],
+            "type": "string"
+          },
+          "irrigationMethod": {
+            "enum": [
+              "DRIP",
+              "SPRAYING",
+              "ETC"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
       "WateringDetailRequest": {
         "properties": {
           "irrigationAmount": {
@@ -2677,9 +3619,8 @@
           "irrigationMethod": {
             "enum": [
               "DRIP",
-              "SPRINKLER",
               "SPRAYING",
-              "MANUAL"
+              "ETC"
             ],
             "type": "string"
           }
@@ -2699,9 +3640,22 @@
           "irrigationMethod": {
             "enum": [
               "DRIP",
-              "SPRINKLER",
               "SPRAYING",
-              "MANUAL"
+              "ETC"
+            ],
+            "type": "string"
+          }
+        },
+        "type": "object"
+      },
+      "WeedingDetail": {
+        "properties": {
+          "weedingMethod": {
+            "enum": [
+              "HAND",
+              "MACHINE",
+              "MULCHING",
+              "HERBICIDE"
             ],
             "type": "string"
           }
@@ -2780,6 +3734,26 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/pesticide-sync": {
+      "post": {
+        "operationId": "sync",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePesticideSyncResult"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "admin-pesticide-sync-controller"
+        ]
+      }
+    },
     "/api/v1/admin/policies/sync-jobs": {
       "post": {
         "operationId": "createJob",
@@ -3616,29 +4590,35 @@
         "parameters": [
           {
             "in": "query",
-            "name": "cropId",
+            "name": "cropIds",
             "required": false,
             "schema": {
-              "format": "uuid",
-              "type": "string"
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
             "in": "query",
-            "name": "workType",
+            "name": "workTypes",
             "required": false,
             "schema": {
-              "enum": [
-                "PLANTING",
-                "WATERING",
-                "FERTILIZING",
-                "PEST_CONTROL",
-                "WEEDING",
-                "PRUNING",
-                "HARVEST",
-                "ETC"
-              ],
-              "type": "string"
+              "items": {
+                "enum": [
+                  "PLANTING",
+                  "WATERING",
+                  "FERTILIZING",
+                  "PEST_CONTROL",
+                  "WEEDING",
+                  "PRUNING",
+                  "HARVEST",
+                  "ETC"
+                ],
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
@@ -3878,6 +4858,57 @@
         ]
       }
     },
+    "/api/v1/farms/weather": {
+      "get": {
+        "operationId": "getCurrentWeatherForDefaultFarm",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCurrentWeatherResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farm-weather-controller"
+        ]
+      }
+    },
+    "/api/v1/farms/weather/daily": {
+      "get": {
+        "operationId": "getDailyWeatherForDefaultFarm",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDailyWeatherResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farm-weather-controller"
+        ]
+      }
+    },
     "/api/v1/farms/{farmId}": {
       "delete": {
         "operationId": "delete",
@@ -3961,6 +4992,46 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseCurrentWeatherResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farm-weather-controller"
+        ]
+      }
+    },
+    "/api/v1/farms/{farmId}/weather/daily": {
+      "get": {
+        "operationId": "getDailyWeather",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "farmId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDailyWeatherResponse"
                 }
               }
             },
@@ -4103,6 +5174,85 @@
         ]
       }
     },
+    "/api/v1/pesticides": {
+      "get": {
+        "operationId": "searchPesticides",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePesticidePageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "pesticide-controller"
+        ]
+      }
+    },
+    "/api/v1/pesticides/{pesticideId}/pests": {
+      "get": {
+        "operationId": "listPests",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "pesticideId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListPestSummaryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "pesticide-controller"
+        ]
+      }
+    },
     "/api/v1/policies/recommendations": {
       "get": {
         "operationId": "listRecommendations",
@@ -4212,7 +5362,8 @@
               "enum": [
                 "ALL",
                 "RECORD",
-                "POST"
+                "POST",
+                "POLICY"
               ],
               "type": "string"
             }
@@ -4233,6 +5384,36 @@
               "default": 20,
               "format": "int32",
               "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseObject"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "search-controller"
+        ]
+      }
+    },
+    "/api/v1/search/suggestions": {
+      "get": {
+        "operationId": "suggestions",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "keyword",
+            "required": false,
+            "schema": {
+              "type": "string"
             }
           }
         ],
@@ -4290,6 +5471,139 @@
         },
         "tags": [
           "test-controller"
+        ]
+      }
+    },
+    "/api/v1/voice-sessions": {
+      "post": {
+        "operationId": "createSession",
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCreatedResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "voice-session-controller"
+        ]
+      }
+    },
+    "/api/v1/voice-sessions/{sessionId}/cancel": {
+      "post": {
+        "operationId": "cancel",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseCancelledResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "voice-session-controller"
+        ]
+      }
+    },
+    "/api/v1/voice-sessions/{sessionId}/confirm": {
+      "post": {
+        "operationId": "confirm",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SaveRecordRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseConfirmedResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "voice-session-controller"
+        ]
+      }
+    },
+    "/api/v1/voice-sessions/{sessionId}/turns": {
+      "patch": {
+        "operationId": "submitTurns",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "sessionId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SubmitTurnsRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseProcessedResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "voice-session-controller"
         ]
       }
     },

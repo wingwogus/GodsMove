@@ -17,6 +17,7 @@ DerivedData/
 xcuserdata/
 *.xcuserstate
 .build/
+buildServer.json
 
 *.xcarchive
 *.ipa

@@ -3,7 +3,6 @@ package com.chamchamcham.application.coaching.common
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
@@ -12,7 +11,6 @@ import com.chamchamcham.domain.farming.PlantingMethod
 import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.SeedAmountUnit
 import com.chamchamcham.domain.farming.SeedlingUnit
-import com.chamchamcham.domain.farming.SprayAmountUnit
 import com.chamchamcham.domain.farming.WeedingMethod
 import com.chamchamcham.domain.farming.WorkType
 import org.assertj.core.api.Assertions.assertThat
@@ -97,9 +95,10 @@ class CoachingPromptLabelsTest {
         assertThat(PesticideAmountUnit.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
             mapOf(PesticideAmountUnit.ML to "밀리리터", PesticideAmountUnit.G to "그램"),
         )
-        assertThat(SprayAmountUnit.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
-            mapOf(SprayAmountUnit.L to "리터"),
-        )
+        assertThat(listOf("L", "ML", "UNKNOWN").associateWith { it.toSprayAmountCoachingText() })
+            .containsExactlyEntriesOf(
+                mapOf("L" to "리터", "ML" to "밀리리터", "UNKNOWN" to null),
+            )
     }
 
     @Test
@@ -128,9 +127,10 @@ class CoachingPromptLabelsTest {
         assertThat(HarvestSource.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
             mapOf(HarvestSource.CULTIVATED to "밭에서 기름", HarvestSource.FORAGED to "산이나 들에서 얻음"),
         )
-        assertThat(GrowthPeriodUnit.entries.associateWith { it.toCoachingText() }).containsExactlyEntriesOf(
-            mapOf(GrowthPeriodUnit.YEAR to "년", GrowthPeriodUnit.MONTH to "개월"),
-        )
+        assertThat(listOf("YEAR", "MONTH", "UNKNOWN").associateWith { it.toGrowthPeriodCoachingText() })
+            .containsExactlyEntriesOf(
+                mapOf("YEAR" to "년", "MONTH" to "개월", "UNKNOWN" to null),
+            )
     }
 
     @Test

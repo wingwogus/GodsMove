@@ -2,6 +2,8 @@ package com.chamchamcham.application.coaching.recordfeedback.generation
 
 import com.chamchamcham.application.coaching.common.CoachingTextPolicy
 import com.chamchamcham.application.coaching.common.toCoachingText
+import com.chamchamcham.application.coaching.common.toGrowthPeriodCoachingText
+import com.chamchamcham.application.coaching.common.toSprayAmountCoachingText
 import org.springframework.stereotype.Component
 
 data class RecordFeedbackEvidence(
@@ -161,7 +163,9 @@ class RecordFeedbackPromptBuilder {
             is PestControlFeedbackDetail -> buildList {
                 add("약 이름: ${detail.pesticideName}")
                 add("약 사용량: ${detail.pesticideAmount}${detail.pesticideAmountUnit.toCoachingText()}")
-                add("약을 섞은 물의 양: ${detail.totalSprayAmount}${detail.totalSprayAmountUnit.toCoachingText()}")
+                detail.totalSprayAmountUnit.toSprayAmountCoachingText()?.let { unit ->
+                    add("약을 섞은 물의 양: ${detail.totalSprayAmount}$unit")
+                }
                 detail.pestName?.let { add("관리 대상: $it") }
             }.joinToString(", ")
 
@@ -174,7 +178,9 @@ class RecordFeedbackPromptBuilder {
                 add("기른 곳: ${detail.harvestSource.toCoachingText()}")
                 detail.growthPeriod?.let { period ->
                     detail.growthPeriodUnit?.let { unit ->
-                        add("기른 기간: $period${unit.toCoachingText()}")
+                        unit.toGrowthPeriodCoachingText()?.let { label ->
+                            add("기른 기간: $period$label")
+                        }
                     }
                 }
                 add("마지막 수확: ${if (detail.isLastHarvest) "네" else "아니요"}")

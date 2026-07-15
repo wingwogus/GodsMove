@@ -33,25 +33,26 @@ class CommunityPostQueryRepositoryImpl(
         )
     }
 
-    private fun findPosts(condition: CommunityPostQueryRepository.SearchCondition): List<SelectedPost> {
+    override fun count(condition: CommunityPostQueryRepository.SearchCondition): Long {
+        val (where, params) = buildFilterPredicates(condition)
+
+        val query = entityManager.createQuery(
+            """
+            select count(p)
+            from CommunityPost p
+            where ${where.joinToString(" and ")}
+            """.trimIndent(),
+            Long::class.javaObjectType
+        )
+        params.forEach(query::setParameter)
+        return query.singleResult
+    }
+
+    private fun buildFilterPredicates(
+        condition: CommunityPostQueryRepository.SearchCondition
+    ): Pair<MutableList<String>, MutableMap<String, Any>> {
         val where = mutableListOf("p.isDeleted = false")
         val params = mutableMapOf<String, Any>()
-        val commentCountExpression = "(select count(c) from CommunityComment c where c.post = p and c.isDeleted = false)"
-        val likeCountExpression = "(select count(l) from CommunityPostLike l where l.post = p)"
-        val scoreExpression = when (condition.sort) {
-            CommunityPostSort.LATEST -> "0"
-            CommunityPostSort.LIKE -> likeCountExpression
-            CommunityPostSort.COMMENT -> commentCountExpression
-            CommunityPostSort.POPULAR -> "($likeCountExpression + $commentCountExpression)"
-        }
-        val score = when (condition.sort) {
-            CommunityPostSort.LATEST -> null
-            else -> scoreExpression
-        }
-        val orderBy = when (condition.sort) {
-            CommunityPostSort.LATEST -> "p.createdAt desc, p.id desc"
-            else -> "$scoreExpression desc, p.createdAt desc, p.id desc"
-        }
 
         condition.cropId?.let {
             where += "p.crop.id = :cropId"
@@ -73,6 +74,29 @@ class CommunityPostQueryRepositoryImpl(
             where += "exists (select 1 from CommunityPostLike l where l.post = p and l.member.id = :memberId)"
             params["memberId"] = condition.memberId
         }
+
+        return where to params
+    }
+
+    private fun findPosts(condition: CommunityPostQueryRepository.SearchCondition): List<SelectedPost> {
+        val (where, params) = buildFilterPredicates(condition)
+        val commentCountExpression = "(select count(c) from CommunityComment c where c.post = p and c.isDeleted = false)"
+        val likeCountExpression = "(select count(l) from CommunityPostLike l where l.post = p)"
+        val scoreExpression = when (condition.sort) {
+            CommunityPostSort.LATEST -> "0"
+            CommunityPostSort.LIKE -> likeCountExpression
+            CommunityPostSort.COMMENT -> commentCountExpression
+            CommunityPostSort.POPULAR -> "($likeCountExpression + $commentCountExpression)"
+        }
+        val score = when (condition.sort) {
+            CommunityPostSort.LATEST -> null
+            else -> scoreExpression
+        }
+        val orderBy = when (condition.sort) {
+            CommunityPostSort.LATEST -> "p.createdAt desc, p.id desc"
+            else -> "$scoreExpression desc, p.createdAt desc, p.id desc"
+        }
+
         condition.cursor?.let { cursor ->
             when (condition.sort) {
                 CommunityPostSort.LATEST -> {

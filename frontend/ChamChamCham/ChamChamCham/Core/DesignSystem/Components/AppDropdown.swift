@@ -8,8 +8,12 @@
 import SwiftUI
 
 /// Figma `drop-down`. Shares ``AppTextField``'s label / box / helper chrome but maps runtime state
-/// to the Figma props: `variant` (`default` / `filled` / `error`) and `focus` (`true` / `false`).
-/// Per the Figma spec the focus prop flips the chevron but keeps the field border neutral.
+/// to the Figma props: `variant` (`default` / `filled` / `error`). Triggers a native `Menu` rather
+/// than the Figma mock's bottom-sheet list — the few screens that truly need a full-list sheet for
+/// many options get their own view-local presentation instead of a shared variant here.
+///
+/// The Figma `focus` prop flips the chevron (down/up) while the menu is open, but `Menu` doesn't
+/// publish an "is open" state, so the chevron here stays static (`keyboard_arrow_down`).
 struct AppDropdown<Option: Hashable>: View {
     enum Variant: Equatable {
         case `default`
@@ -29,7 +33,6 @@ struct AppDropdown<Option: Hashable>: View {
     var filled: Bool? = nil
 
     @Environment(\.isEnabled) private var isEnabled
-    @State private var isExpanded = false
 
     init(
         _ label: String? = nil,
@@ -68,24 +71,23 @@ struct AppDropdown<Option: Hashable>: View {
             // The Figma focus prop only flips the dropdown icon; it does not turn the border green.
             isFocused: false
         ) {
-            Text(displayText)
-                .appTypography(.bodyLarge)
-                .foregroundStyle(valueColor)
-                .lineLimit(1)
-                .frame(maxWidth: .infinity, alignment: .leading)
+            Menu {
+                ForEach(options, id: \.self) { option in
+                    Button(optionTitle(option)) { selection = option }
+                }
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    Text(displayText)
+                        .appTypography(.bodyLarge)
+                        .foregroundStyle(valueColor)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
 
-            Image(systemName: Self.chevronSystemName(isFocused: isExpanded))
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(Color.Icon.subtle)
-                .frame(width: 24, height: 24)
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            guard isEnabled else { return }
-            isExpanded = true
-        }
-        .sheet(isPresented: $isExpanded) {
-            optionsSheet
+                    AppIconView(source: .asset("keyboard_arrow_down"), size: 24)
+                        .foregroundStyle(Color.Icon.subtle)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
@@ -109,35 +111,6 @@ struct AppDropdown<Option: Hashable>: View {
     static func variant(isFilled: Bool, isError: Bool) -> Variant {
         if isError { return .error }
         return isFilled ? .filled : .default
-    }
-
-    static func chevronSystemName(isFocused: Bool) -> String {
-        isFocused ? "chevron.up" : "chevron.down"
-    }
-
-    private var optionsSheet: some View {
-        NavigationStack {
-            List(options, id: \.self) { option in
-                Button {
-                    selection = option
-                    isExpanded = false
-                } label: {
-                    HStack {
-                        Text(optionTitle(option))
-                            .appTypography(.bodyLarge)
-                            .foregroundStyle(Color.Text.default)
-                        Spacer()
-                        if selection == option {
-                            Image(systemName: "checkmark")
-                                .foregroundStyle(Color.Icon.primary)
-                        }
-                    }
-                }
-            }
-            .navigationTitle(label ?? "선택")
-            .navigationBarTitleDisplayMode(.inline)
-        }
-        .presentationDetents([.medium, .large])
     }
 }
 

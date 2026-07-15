@@ -12,19 +12,19 @@ class CommunityPostSearcher(
     override fun category(): SearchCategory = SearchCategory.POST
 
     override fun search(query: SearchQuery): SearchResult.Page {
-        val page = communityPostService.search(
-            CommunityPostSearchCondition(
-                memberId = query.memberId,
-                cropId = null,
-                postType = null,
-                keyword = query.keyword,
-                likedOnly = false,
-                mineOnly = false,
-                sort = CommunityPostSort.LATEST,
-                cursor = query.cursor,
-                size = query.size,
-            )
+        val condition = CommunityPostSearchCondition(
+            memberId = query.memberId,
+            cropId = null,
+            postType = null,
+            keyword = query.keyword,
+            likedOnly = false,
+            mineOnly = false,
+            sort = CommunityPostSort.LATEST,
+            cursor = query.cursor,
+            size = query.size,
         )
+        val page = communityPostService.search(condition)
+        val totalCount = communityPostService.count(condition)
         return SearchResult.Page(
             items = page.items.map { summary ->
                 SearchResult.Item(
@@ -37,6 +37,7 @@ class CommunityPostSearcher(
                 )
             },
             nextCursor = page.nextCursor,
+            totalCount = totalCount,
         )
     }
 }

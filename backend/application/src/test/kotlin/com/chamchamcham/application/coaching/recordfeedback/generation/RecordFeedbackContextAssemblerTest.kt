@@ -13,7 +13,6 @@ import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
 import com.chamchamcham.domain.farming.FertilizingRecord
 import com.chamchamcham.domain.farming.FertilizingRecordRepository
-import com.chamchamcham.domain.farming.GrowthPeriodUnit
 import com.chamchamcham.domain.farming.HarvestRecord
 import com.chamchamcham.domain.farming.HarvestRecordRepository
 import com.chamchamcham.domain.farming.HarvestSource
@@ -208,7 +207,7 @@ class RecordFeedbackContextAssemblerTest {
                 pesticideAmount = BigDecimal("120.0000"),
                 pesticideAmountUnit = PesticideAmountUnit.ML,
                 totalSprayAmount = BigDecimal("20.0000"),
-                totalSprayAmountUnit = SprayAmountUnit.L,
+                totalSprayAmountUnit = SprayAmountUnit.ML,
                 pest = Pest(
                     id = UUID.fromString("00000000-0000-0000-0000-000000000011"),
                     name = "점무늬병",
@@ -226,7 +225,7 @@ class RecordFeedbackContextAssemblerTest {
                 BigDecimal("120.0000"),
                 PesticideAmountUnit.ML,
                 BigDecimal("20.0000"),
-                SprayAmountUnit.L,
+                "ML",
                 "점무늬병",
             )
         )
@@ -285,7 +284,6 @@ class RecordFeedbackContextAssemblerTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 18,
-                growthPeriodUnit = GrowthPeriodUnit.MONTH,
                 isLastHarvest = true,
             )
         )
@@ -301,7 +299,7 @@ class RecordFeedbackContextAssemblerTest {
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
                 harvestSource = HarvestSource.CULTIVATED,
                 growthPeriod = 18,
-                growthPeriodUnit = GrowthPeriodUnit.MONTH,
+                growthPeriodUnit = "MONTH",
                 isLastHarvest = true,
             )
         )
@@ -310,7 +308,7 @@ class RecordFeedbackContextAssemblerTest {
     }
 
     @Test
-    fun `harvest null amount marks amount unknown`() {
+    fun `harvest null amount marks amount unknown while keeping required growth period`() {
         stubOwnedRecord(WorkType.HARVEST)
         `when`(harvestRecordRepository.findByRecord_Id(recordId)).thenReturn(
             HarvestRecord(
@@ -318,8 +316,7 @@ class RecordFeedbackContextAssemblerTest {
                 harvestAmount = null,
                 medicinalPart = null,
                 harvestSource = HarvestSource.FORAGED,
-                growthPeriod = null,
-                growthPeriodUnit = null,
+                growthPeriod = 12,
                 isLastHarvest = false,
             )
         )
@@ -333,8 +330,8 @@ class RecordFeedbackContextAssemblerTest {
                 amountUnknown = true,
                 medicinalPart = null,
                 harvestSource = HarvestSource.FORAGED,
-                growthPeriod = null,
-                growthPeriodUnit = null,
+                growthPeriod = 12,
+                growthPeriodUnit = "MONTH",
                 isLastHarvest = false,
             )
         )

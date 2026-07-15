@@ -109,7 +109,7 @@ class RecordFeedbackContextAssembler(
                         pesticideAmount = it.pesticideAmount,
                         pesticideAmountUnit = it.pesticideAmountUnit,
                         totalSprayAmount = it.totalSprayAmount,
-                        totalSprayAmountUnit = it.totalSprayAmountUnit,
+                        totalSprayAmountUnit = it.totalSprayAmountUnit.name,
                         pestName = it.pest?.name,
                     )
                 } ?: throw BusinessException(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)
@@ -128,7 +128,7 @@ class RecordFeedbackContextAssembler(
                         medicinalPart = it.medicinalPart,
                         harvestSource = it.harvestSource,
                         growthPeriod = it.growthPeriod,
-                        growthPeriodUnit = it.growthPeriodUnit,
+                        growthPeriodUnit = "MONTH",
                         isLastHarvest = it.isLastHarvest,
                     )
                 } ?: throw BusinessException(ErrorCode.FARMING_RECORD_DETAIL_REQUIRED)

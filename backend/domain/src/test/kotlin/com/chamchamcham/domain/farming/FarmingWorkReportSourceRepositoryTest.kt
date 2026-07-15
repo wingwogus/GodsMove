@@ -68,6 +68,7 @@ class FarmingWorkReportSourceRepositoryTest @Autowired constructor(
                 record = finalHarvest,
                 harvestAmount = BigDecimal.ONE,
                 medicinalPart = CropUsePartCategory.ROOT_BARK,
+                growthPeriod = 12,
                 isLastHarvest = true,
             ),
             now,

@@ -16,6 +16,7 @@ class PolicyRecommendationSearcher(
             query.cursor,
             query.size,
         )
+        val totalCount = policyRecommendationService.countSearchRecommendations(query.memberId, query.keyword)
         return SearchResult.Page(
             items = page.items.map { card ->
                 SearchResult.Item(
@@ -28,6 +29,7 @@ class PolicyRecommendationSearcher(
                 )
             },
             nextCursor = page.nextCursor,
+            totalCount = totalCount,
         )
     }
 }

@@ -79,7 +79,7 @@ class WorkTypeControllerTest(
                 ),
                 WorkTypeResult.WorkTypeSummary(
                     code = "PRUNING",
-                    label = "전정",
+                    label = "가지·순 정리",
                     detailRequired = false,
                     fields = emptyList()
                 )

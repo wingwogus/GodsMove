@@ -865,6 +865,31 @@ class PolicyRecommendationServiceTest {
         verifyNoInteractions(policyRecommendationQueryRepository)
     }
 
+    @Test
+    fun `count search recommendations delegates to query repository without cursor or regeneration writes`() {
+        val condition = PolicyRecommendationQueryRepository.MemberSearchCondition(
+            memberId = memberId,
+            keyword = "청년",
+            cursorCreatedAt = null,
+            cursorId = null,
+            size = 1
+        )
+        `when`(policyRecommendationQueryRepository.countByMember(condition)).thenReturn(4L)
+
+        val total = service.countSearchRecommendations(memberId, keyword = "청년")
+
+        assertThat(total).isEqualTo(4L)
+        verify(policyRecommendationQueryRepository).countByMember(condition)
+        verifyNoInteractions(
+            policySyncJobRepository,
+            policyProgramRepository,
+            policyRecommendationRepository,
+            memberRepository,
+            memberCropRepository,
+            farmRepository
+        )
+    }
+
     private fun capturedSavedRecommendations(): List<PolicyRecommendation> {
         @Suppress("UNCHECKED_CAST")
         val captor = ArgumentCaptor.forClass(Iterable::class.java) as ArgumentCaptor<Iterable<PolicyRecommendation>>

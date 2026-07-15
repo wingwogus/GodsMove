@@ -36,4 +36,6 @@ interface FarmRepository : JpaRepository<Farm, UUID> {
         farmId: UUID,
         memberId: UUID,
     ): Farm?
+
+    fun findFirstByOwnerIdOrderByCreatedAtAsc(ownerId: UUID): Farm?
 }

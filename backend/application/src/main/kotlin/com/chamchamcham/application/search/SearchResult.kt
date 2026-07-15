@@ -16,12 +16,14 @@ object SearchResult {
     data class Page(
         val items: List<Item>,
         val nextCursor: String?,
+        val totalCount: Long,
     )
 
     data class SectionPreview(
         val category: SearchCategory,
         val items: List<Item>,
         val hasMore: Boolean,
+        val totalCount: Long,
     )
 
     data class Sections(

@@ -73,12 +73,28 @@ class CommunityPostSearcherTest {
                 nextCursor = "cursor-2"
             )
         )
+        `when`(
+            communityPostService.count(
+                CommunityPostSearchCondition(
+                    memberId = memberId,
+                    cropId = null,
+                    postType = null,
+                    keyword = "발아",
+                    likedOnly = false,
+                    mineOnly = false,
+                    sort = CommunityPostSort.LATEST,
+                    cursor = "cursor-1",
+                    size = 10
+                )
+            )
+        ).thenReturn(4L)
 
         val page = searcher.search(
             SearchQuery(memberId = memberId, keyword = "발아", cursor = "cursor-1", size = 10)
         )
 
         assertThat(page.nextCursor).isEqualTo("cursor-2")
+        assertThat(page.totalCount).isEqualTo(4L)
         val item = page.items.single()
         assertThat(item.category).isEqualTo(SearchCategory.POST)
         assertThat(item.id).isEqualTo(postId)

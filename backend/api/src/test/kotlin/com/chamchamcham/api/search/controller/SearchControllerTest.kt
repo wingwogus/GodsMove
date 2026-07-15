@@ -5,6 +5,8 @@ import com.chamchamcham.application.search.SearchCategory
 import com.chamchamcham.application.search.SearchQuery
 import com.chamchamcham.application.search.SearchResult
 import com.chamchamcham.application.search.SearchService
+import com.chamchamcham.application.search.SearchSuggestionResult
+import com.chamchamcham.application.search.SearchSuggestionService
 import com.chamchamcham.application.security.TokenProvider
 import org.hamcrest.Matchers.equalTo
 import org.junit.jupiter.api.Test
@@ -36,6 +38,7 @@ class SearchControllerTest(
     private val createdAt = LocalDateTime.of(2026, 6, 1, 9, 0)
 
     @MockBean private lateinit var searchService: SearchService
+    @MockBean private lateinit var searchSuggestionService: SearchSuggestionService
     @MockBean private lateinit var tokenProvider: TokenProvider
 
     @Test
@@ -60,11 +63,13 @@ class SearchControllerTest(
                             )
                         ),
                         hasMore = true,
+                        totalCount = 12,
                     ),
                     SearchResult.SectionPreview(
                         category = SearchCategory.POST,
                         items = emptyList(),
                         hasMore = false,
+                        totalCount = 0,
                     ),
                 )
             )
@@ -79,6 +84,7 @@ class SearchControllerTest(
             .andExpect(jsonPath("$.data.sections[0].category", equalTo("RECORD")))
             .andExpect(jsonPath("$.data.sections[0].items[0].id", equalTo(recordId.toString())))
             .andExpect(jsonPath("$.data.sections[0].hasMore", equalTo(true)))
+            .andExpect(jsonPath("$.data.sections[0].totalCount", equalTo(12)))
     }
 
     @Test
@@ -100,7 +106,8 @@ class SearchControllerTest(
                         createdAt = createdAt,
                     )
                 ),
-                nextCursor = "cursor-2"
+                nextCursor = "cursor-2",
+                totalCount = 25,
             )
         )
 
@@ -115,11 +122,34 @@ class SearchControllerTest(
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.items[0].id", equalTo(recordId.toString())))
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-2")))
+            .andExpect(jsonPath("$.data.totalCount", equalTo(25)))
     }
 
     @Test
     fun `search without auth returns unauthorized`() {
         mockMvc.perform(get("/api/v1/search"))
+            .andExpect(status().isUnauthorized)
+            .andExpect(jsonPath("$.error.code", equalTo("AUTH_001")))
+    }
+
+    @Test
+    fun `suggestions returns keywords from suggestion service`() {
+        `when`(searchSuggestionService.suggest("황기"))
+            .thenReturn(SearchSuggestionResult.Suggestions(keywords = listOf("황기", "황기환", "황기차")))
+
+        mockMvc.perform(
+            get("/api/v1/search/suggestions")
+                .with(authenticatedMember(memberId.toString()))
+                .param("keyword", "황기")
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.keywords[0]", equalTo("황기")))
+            .andExpect(jsonPath("$.data.keywords.length()", equalTo(3)))
+    }
+
+    @Test
+    fun `suggestions without auth returns unauthorized`() {
+        mockMvc.perform(get("/api/v1/search/suggestions").param("keyword", "황기"))
             .andExpect(status().isUnauthorized)
             .andExpect(jsonPath("$.error.code", equalTo("AUTH_001")))
     }
