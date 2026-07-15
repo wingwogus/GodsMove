@@ -14,7 +14,6 @@ struct CommunityView: View {
     @State private var viewModel: CommunityFeedViewModel
     @State private var showCompose = false
     @State private var showCropPicker = false
-    @State private var showSortOptions = false
     private let horizontalInset: CGFloat = 20
 
     init(container: DIContainer) {
@@ -164,23 +163,27 @@ struct CommunityView: View {
         .refreshable { await viewModel.reload() }
     }
 
+    private var sortSelection: Binding<CommunityPostSort> {
+        Binding(
+            get: { viewModel.sort },
+            set: { newValue in Task { await viewModel.selectSort(newValue) } }
+        )
+    }
+
     private var sortRow: some View {
         HStack {
             Spacer()
-            AppSortButton(
-                title: viewModel.sort == .popular ? "인기순" : "최신순",
-                isExpanded: showSortOptions
-            ) {
-                showSortOptions = true
+            Picker(selection: sortSelection) {
+                Text("최신순").tag(CommunityPostSort.latest)
+                Text("인기순").tag(CommunityPostSort.popular)
+            } label: {
+                AppSortButton(title: viewModel.sort == .popular ? "인기순" : "최신순")
             }
+            .pickerStyle(.menu)
         }
         .frame(height: 48)
         .padding(.horizontal, horizontalInset)
         .background(Color.Background.default)
-        .confirmationDialog("정렬", isPresented: $showSortOptions, titleVisibility: .hidden) {
-            Button("최신순") { Task { await viewModel.selectSort(.latest) } }
-            Button("인기순") { Task { await viewModel.selectSort(.popular) } }
-        }
     }
 
     private func emptyState(text: String, systemImage: String) -> some View {
@@ -198,7 +201,7 @@ struct CommunityView: View {
 
     private var writeButton: some View {
         AppButton(
-            systemImage: "pencil",
+            icon: .system("pencil"),
             variant: .primary,
             size: .xlarge
         ) {
@@ -244,8 +247,9 @@ struct CommunityPostRow: View {
         }
     }
 
-    private var badges: [String] {
-        post.postType == .question ? [post.cropName, "Q&A"] : [post.cropName]
+    private var badges: [AppListItemBadge] {
+        let category = AppListItemBadge(post.cropName)
+        return post.postType == .question ? [category, AppListItemBadge("Q&A")] : [category]
     }
 
     private func rowDateText(_ date: Date) -> String {

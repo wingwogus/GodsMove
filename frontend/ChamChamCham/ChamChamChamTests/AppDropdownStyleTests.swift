@@ -19,11 +19,4 @@ struct AppDropdownStyleTests {
         #expect(AppDropdown<String>.variant(isFilled: false, isError: true) == .error)
         #expect(AppDropdown<String>.variant(isFilled: true, isError: true) == .error)
     }
-
-    @Test("focus controls the chevron direction")
-    @MainActor
-    func chevronDirection() {
-        #expect(AppDropdown<String>.chevronSystemName(isFocused: false) == "chevron.down")
-        #expect(AppDropdown<String>.chevronSystemName(isFocused: true) == "chevron.up")
-    }
 }

@@ -64,15 +64,13 @@ enum AppTypography {
     }
 
     /// Figma spec weights: non-emphasized tokens are Medium, and "-emphasized" tokens are SemiBold —
-    /// except `headlineLargeEmphasized`, the largest page-title emphasis, which is Bold. Note
-    /// `label/medium-emphasized` is spec'd as "medium" (not heavier, unlike every other
-    /// "-emphasized" token), so it stays Medium here — kept literal to the source rather than assumed.
+    /// except `headlineLargeEmphasized`, the largest page-title emphasis, which is Bold.
     var weight: Weight {
         switch self {
         case .headlineLargeEmphasized:
             .bold
         case .headlineLarge, .headlineMedium, .headlineMediumEmphasized, .titleLargeEmphasized,
-             .titleMediumEmphasized, .bodyLargeEmphasized, .bodyMediumEmphasized:
+             .titleMediumEmphasized, .bodyLargeEmphasized, .bodyMediumEmphasized, .labelMediumEmphasized:
             .semibold
         default:
             .medium

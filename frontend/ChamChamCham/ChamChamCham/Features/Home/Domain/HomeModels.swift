@@ -27,6 +27,13 @@ enum PolicyCategory: String, Sendable, Hashable, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+/// 정책 리스트 정렬. 백엔드 `PolicyRecommendationSort`(domain/policy/PolicyRecommendationSort.kt)를
+/// 그대로 미러링 — `RECOMMENDED`/`LATEST` 두 값만 존재하고 기본값은 `RECOMMENDED`.
+enum PolicySort: String, Sendable, Hashable, CaseIterable {
+    case recommended = "RECOMMENDED"
+    case latest = "LATEST"
+}
+
 /// 오늘의 추천 정책 / 정책 리스트 row. `GET /policies/recommendations`의 projection.
 /// D-day 배지는 구조화된 마감일이 없어 표시하지 않고 `applicationPeriodLabel`을 그대로 노출
 /// (2026-07-14 확정). 참고: docs/figma/home/2026-07-14-home-backend-conflicts.md (C-3)

@@ -7,6 +7,25 @@
 
 import SwiftUI
 
+/// A single `AppListItem` badge with its own color treatment, so a row can mix a solid "type" tag
+/// (e.g. Q&A) with a pastel category tag — Figma's `list` component doesn't style every badge the
+/// same way. Plain string literals still work and keep today's default look (`solidPastel`/`secondary`).
+struct AppListItemBadge: ExpressibleByStringLiteral {
+    let label: String
+    var style: AppBadge.Style = .solidPastel
+    var variant: AppBadge.Variant = .secondary
+
+    init(_ label: String, style: AppBadge.Style = .solidPastel, variant: AppBadge.Variant = .secondary) {
+        self.label = label
+        self.style = style
+        self.variant = variant
+    }
+
+    init(stringLiteral value: String) {
+        self.init(value)
+    }
+}
+
 /// Figma `list` row. `large` is the new 120-point thumbnail layout; `xlarge` is the policy
 /// information layout retained from the prior large component.
 struct AppListItem<Thumbnail: View>: View {
@@ -40,7 +59,7 @@ struct AppListItem<Thumbnail: View>: View {
     let size: Size
     var title: String = "타이틀"
     var caption: String = "캡션"
-    var badges: [String] = ["레이블", "레이블"]
+    var badges: [AppListItemBadge] = ["레이블", "레이블"]
     var dateText: String = "mm/dd"
     var organization: String = "기관"
     var infoRows: [(label: String, value: String)] = []
@@ -56,7 +75,7 @@ struct AppListItem<Thumbnail: View>: View {
         size: Size,
         title: String = "타이틀",
         caption: String = "캡션",
-        badges: [String] = ["레이블", "레이블"],
+        badges: [AppListItemBadge] = ["레이블", "레이블"],
         dateText: String = "mm/dd",
         organization: String = "기관",
         infoRows: [(label: String, value: String)] = [],
@@ -89,7 +108,9 @@ struct AppListItem<Thumbnail: View>: View {
                 maxWidth: .infinity,
                 minHeight: size.canvasSize.height,
                 maxHeight: size.canvasSize.height,
-                alignment: .topLeading
+                // Vertically centers medium/large/xlarge's content (which is shorter than the row)
+                // so the leftover space splits evenly above/below instead of pooling at the bottom.
+                alignment: .leading
             )
             .overlay(alignment: .bottom) {
                 if showsDivider {
@@ -184,7 +205,8 @@ struct AppListItem<Thumbnail: View>: View {
             }
             .frame(height: thumbnailSide)
         }
-        .frame(height: size.canvasSize.height - 20, alignment: .top)
+        // No fixed/pinned height here — sized naturally, then centered by `body`'s outer frame so
+        // the row's leftover vertical space splits evenly above/below instead of only at the bottom.
     }
 
     private var xlargeBody: some View {
@@ -222,13 +244,13 @@ struct AppListItem<Thumbnail: View>: View {
                 .foregroundStyle(Color.Text.default)
             }
         }
-        .frame(height: size.canvasSize.height - 20, alignment: .top)
+        // Same reasoning as `mediaBody`: natural height, centered by `body`'s outer frame.
     }
 
     private func badgeRow(size badgeSize: AppBadge.Size) -> some View {
         HStack(spacing: 8) {
             ForEach(Array(badges.prefix(2).enumerated()), id: \.offset) { _, badge in
-                AppBadge(label: badge, size: badgeSize, style: .solidPastel, variant: .secondary)
+                AppBadge(label: badge.label, size: badgeSize, style: badge.style, variant: badge.variant)
             }
         }
     }
@@ -268,7 +290,7 @@ extension AppListItem where Thumbnail == EmptyView {
         size: Size,
         title: String = "타이틀",
         caption: String = "캡션",
-        badges: [String] = ["레이블", "레이블"],
+        badges: [AppListItemBadge] = ["레이블", "레이블"],
         dateText: String = "mm/dd",
         organization: String = "기관",
         infoRows: [(label: String, value: String)] = [],

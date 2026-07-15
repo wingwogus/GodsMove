@@ -283,7 +283,7 @@ struct RecordRow: View {
             size: .large,
             title: record.memoPreview.isEmpty ? record.cropName : record.memoPreview,
             caption: weatherText,
-            badges: [record.cropName, record.workType.label],
+            badges: [AppListItemBadge(record.cropName), AppListItemBadge(record.workType.label)],
             dateText: dateText
         ) {
             RecordRemoteImage(url: record.thumbnailUrl)

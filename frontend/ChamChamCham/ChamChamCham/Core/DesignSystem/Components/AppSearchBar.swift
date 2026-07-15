@@ -8,10 +8,13 @@
 import SwiftUI
 
 /// Figma `search`. A borderless search field on a subtle fill with a leading magnifier and a
-/// trailing clear button that appears once there's text.
+/// trailing clear button that appears only while focused with text (Figma's `focus` variant) —
+/// `filled` (has text, not focused) shows no clear button. `isError` renders the `error` variant's
+/// red border; Figma doesn't pair an error state with helper text here, so there's no message slot.
 struct AppSearchBar: View {
     @Binding var text: String
     var placeholder: String = "검색어를 입력해주세요."
+    var isError: Bool = false
 
     @FocusState private var isFocused: Bool
     @Environment(\.isEnabled) private var isEnabled
@@ -20,10 +23,8 @@ struct AppSearchBar: View {
         HStack(spacing: 12) {
             // Figma: search icon ↔ text group uses gap 8; the trailing clear button sits at gap 12.
             HStack(spacing: Spacing.sm) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 20))
+                AppIconView(source: .asset("search"), size: 24)
                     .foregroundStyle(Color.Icon.subtle)
-                    .frame(width: 24, height: 24)
 
                 ZStack(alignment: .leading) {
                     if text.isEmpty {
@@ -38,14 +39,12 @@ struct AppSearchBar: View {
             }
             .frame(maxWidth: .infinity)
 
-            if !text.isEmpty && isEnabled {
+            if !text.isEmpty && isFocused && isEnabled {
                 Button {
                     text = ""
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 22))
+                    AppIconView(source: .asset("cancel"), size: 24)
                         .foregroundStyle(Color.Icon.subtle)
-                        .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
             }
@@ -53,6 +52,11 @@ struct AppSearchBar: View {
         .padding(.horizontal, Spacing.md)
         .padding(.vertical, 14)
         .background(RoundedRectangle(cornerRadius: 8).fill(Color.Object.subtle))
+        .overlay {
+            if isError {
+                RoundedRectangle(cornerRadius: 8).stroke(Color.Border.error, lineWidth: 1)
+            }
+        }
     }
 }
 
@@ -63,7 +67,10 @@ struct AppSearchBar: View {
         var body: some View {
             VStack(spacing: Spacing.md) {
                 AppSearchBar(text: $empty)
+                // Tap into this one in Live Preview to focus it — the clear button only shows up
+                // while focused with text, matching Figma's `focus` variant (not `filled`).
                 AppSearchBar(text: $filled)
+                AppSearchBar(text: $empty, isError: true)
             }
             .padding()
         }

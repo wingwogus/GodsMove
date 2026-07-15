@@ -367,18 +367,9 @@ struct RecordComposeView: View {
     private func choiceRow<T: Hashable>(_ items: [T], selection: Binding<T?>, title: @escaping (T) -> String) -> some View {
         HStack(spacing: 8) {
             ForEach(items, id: \.self) { item in
-                let isSelected = selection.wrappedValue == item
-                Button { selection.wrappedValue = item } label: {
-                    Text(title(item))
-                        .appTypography(.bodyLarge)
-                        .foregroundStyle(isSelected ? Color.Text.primary : Color.Text.muted)
-                        .frame(maxWidth: .infinity, minHeight: 56)
-                        .background(isSelected ? Color.Object.primarySubtle : Color.Object.subtle)
-                        .overlay(RoundedRectangle(cornerRadius: 8)
-                            .stroke(isSelected ? Color.Border.primary : Color.Border.subtle, lineWidth: 1))
-                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                AppSelectItem(title: title(item), isSelected: selection.wrappedValue == item) {
+                    selection.wrappedValue = item
                 }
-                .buttonStyle(.plain)
             }
         }
     }

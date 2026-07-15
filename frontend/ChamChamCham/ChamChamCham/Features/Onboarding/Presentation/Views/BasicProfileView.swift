@@ -198,25 +198,12 @@ struct BasicProfileView: View {
     }
 
     private func qualificationButton(_ option: QualificationOption) -> some View {
-        let isSelected = viewModel.draft.managementType == option.managementType
-        return Button {
+        AppSelectItem(
+            title: option.title,
+            isSelected: viewModel.draft.managementType == option.managementType
+        ) {
             viewModel.draft.managementType = option.managementType
-        } label: {
-            Text(option.title)
-                .appTypography(.labelMedium)
-                .foregroundStyle(isSelected ? Color.Text.primary : Color.Text.muted)
-                .lineLimit(1)
-                .minimumScaleFactor(0.75)
-                .frame(maxWidth: .infinity)
-                .frame(height: 48)
-                .background(isSelected ? Color.Object.primarySubtle : Color.Object.subtle)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 8, style: .continuous)
-                        .stroke(isSelected ? Color.Border.primary : Color.Border.subtle, lineWidth: 1)
-                }
-                .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
         }
-        .buttonStyle(.plain)
     }
 
     private var bottomCTA: some View {

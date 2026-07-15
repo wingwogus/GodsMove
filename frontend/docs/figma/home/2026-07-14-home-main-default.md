@@ -18,7 +18,7 @@
 └─ content (390×1163)
     ├─ info-card (350×167) — weather-card + tip-card 좌우 배치
     ├─ record (350×343) — "나의 최근 영농 기록"
-    ├─ policy (350×150) — "오늘의 추천 정책"
+    ├─ policy (350×133) — "오늘의 추천 정책" (2026-07-14 재확인 시 133로 정정, 구 문서 150은 오기재)
     └─ community (350×407) — "나의 게시판 인기글"
 └─ nav-bar (390×72, 하단 고정)
 ```
@@ -57,13 +57,20 @@
   - 텍스트가 전부 플레이스홀더("타이틀"/"캡션"/"레이블") — 실제 바인딩 필드는 Record 탭 API(`GET /farming-records`) 응답과 매핑 필요 추정
 - 버튼 "새로 작성하기": 배경 `#343434`(다크), radius 12, height 48, `icon/add` leading + 라벨(Medium 16, 흰색), full-width
 
-## Section 4 — policy ("오늘의 추천 정책", 350×150)
+## Section 4 — policy ("오늘의 추천 정책", 350×133)
+
+> **2026-07-14 재확인**: 이 섹션은 최초 캡처 이후 Figma에서 D-day 배지를 제거하고
+> 기간 텍스트를 추가하는 방향으로 개정됐다(`HomeModels.swift` `PolicyRecommendation`
+> 주석의 "D-day 배지는 구조화된 마감일이 없어 표시하지 않고 applicationPeriodLabel을
+> 그대로 노출(2026-07-14 확정)"과 동일 결정). 아래는 그 개정을 반영한 최신 스펙이다.
 
 - title row: "오늘의 추천 정책" (SemiBold 24 / `#1a1a1a`) + `icon/arrow_forward_ios`
-- card (350×103, 흰 배경, border `#f3f3f3`, radius 12):
-  - badge-label "D-12": 배경 `#e6f7bf`, 텍스트 `#27865c`, radius 8
-  - "정책 제목" (Medium 24 / `#4f4f4f`) — placeholder
+- card (350×86, 흰 배경, border `#f3f3f3`, radius 12, 내부 padding 16 전방향):
+  - ~~badge-label "D-12"~~ **제거됨** (구조화된 마감일 없음 — 위 결정 참고)
+  - "정책 제목": **SemiBold 20** / `#4f4f4f` (구 문서는 Medium 24로 오기재 — 정정)
+  - "2026. 12. 12 ~ 2026. 12. 12" (기간 텍스트, 신규): Medium 16 / `#878787`, 제목과 4pt 간격
   - 원형 버튼 48×48, 배경 `#38c284`, radius 1000(circle), `icon/arrow_forward` 내장 — 상세 이동용으로 추정
+- **DS 토큰 매핑**: 제목 `.titleMediumEmphasized`(subtle), 기간 텍스트 `.bodyMedium`(muted)
 
 ## Section 5 — community ("나의 게시판 인기글", 350×407)
 
