@@ -75,4 +75,25 @@ class KmaBaseTimeResolverTest {
 
         assertThat(result).isEqualTo(KmaBaseDateTime(baseDate = "20260707", baseTime = "2300"))
     }
+
+    @Test
+    fun `자외선지수는 정확히 경계 시각이면 그대로 사용한다`() {
+        val result = KmaBaseTimeResolver.resolveUvIdx(LocalDateTime.of(2026, 7, 8, 12, 0))
+
+        assertThat(result).isEqualTo(LocalDateTime.of(2026, 7, 8, 12, 0))
+    }
+
+    @Test
+    fun `자외선지수는 경계 사이 시각이면 직전 3시간 경계로 내림한다`() {
+        val result = KmaBaseTimeResolver.resolveUvIdx(LocalDateTime.of(2026, 7, 8, 14, 37))
+
+        assertThat(result).isEqualTo(LocalDateTime.of(2026, 7, 8, 12, 0))
+    }
+
+    @Test
+    fun `자외선지수는 스케줄에 00시가 포함되어 있어 자정 이후에도 전날로 롤오버하지 않는다`() {
+        val result = KmaBaseTimeResolver.resolveUvIdx(LocalDateTime.of(2026, 7, 8, 1, 0))
+
+        assertThat(result).isEqualTo(LocalDateTime.of(2026, 7, 8, 0, 0))
+    }
 }

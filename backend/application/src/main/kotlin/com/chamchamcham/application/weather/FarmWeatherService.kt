@@ -12,7 +12,8 @@ import java.util.UUID
 class FarmWeatherService(
     private val farmRepository: FarmRepository,
     private val weatherProvider: WeatherProvider,
-    private val historicalWeatherProvider: HistoricalWeatherProvider
+    private val historicalWeatherProvider: HistoricalWeatherProvider,
+    private val uvIndexProvider: UvIndexProvider
 ) {
     fun getCurrentWeather(memberId: UUID, farmId: UUID): FarmWeatherResult.CurrentDetail {
         val farm = farmRepository.findByIdAndOwnerId(farmId, memberId)
@@ -26,12 +27,15 @@ class FarmWeatherService(
 
         val snapshot = weatherProvider.fetchCurrentWeather(latitude, longitude)
         val forecast = runCatching { weatherProvider.fetchForecastPanel(latitude, longitude) }.getOrNull()
+        val uvIndex = farm.pnu?.take(10)?.let { areaNo ->
+            runCatching { uvIndexProvider.fetchUvIndex(areaNo) }.getOrNull()
+        }
         return FarmWeatherResult.CurrentDetail(
             snapshot = snapshot,
             roadAddress = farm.roadAddress,
             precipitationProbability = forecast?.precipitationProbability,
             forecast = forecast?.dailyForecasts ?: emptyList(),
-            uvIndex = null
+            uvIndex = uvIndex
         )
     }
 

@@ -24,6 +24,7 @@ class FarmWeatherServiceTest {
     @Mock private lateinit var farmRepository: FarmRepository
     @Mock private lateinit var weatherProvider: WeatherProvider
     @Mock private lateinit var historicalWeatherProvider: HistoricalWeatherProvider
+    @Mock private lateinit var uvIndexProvider: UvIndexProvider
 
     private lateinit var service: FarmWeatherService
 
@@ -33,7 +34,7 @@ class FarmWeatherServiceTest {
 
     @BeforeEach
     fun setUp() {
-        service = FarmWeatherService(farmRepository, weatherProvider, historicalWeatherProvider)
+        service = FarmWeatherService(farmRepository, weatherProvider, historicalWeatherProvider, uvIndexProvider)
     }
 
     @Test
@@ -187,6 +188,83 @@ class FarmWeatherServiceTest {
         assertThat(result.roadAddress).isEqualTo("서울시 강남구")
         assertThat(result.precipitationProbability).isNull()
         assertThat(result.forecast).isEmpty()
+    }
+
+    @Test
+    fun `농지에 pnu가 있고 제공자가 값을 반환하면 자외선지수가 채워진다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780,
+            pnu = "1100000000123456789"
+        )
+        val snapshot = WeatherSnapshot(
+            temperature = 14,
+            skyCondition = "맑음",
+            observedAt = LocalDateTime.of(2026, 7, 8, 10, 0)
+        )
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchCurrentWeather(37.5665, 126.9780)).thenReturn(snapshot)
+        `when`(uvIndexProvider.fetchUvIndex("1100000000")).thenReturn(7)
+
+        val result = service.getCurrentWeather(memberId, farmId)
+
+        assertThat(result.uvIndex).isEqualTo(7)
+    }
+
+    @Test
+    fun `농지에 pnu가 없으면 자외선지수는 null이다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780,
+            pnu = null
+        )
+        val snapshot = WeatherSnapshot(
+            temperature = 14,
+            skyCondition = "맑음",
+            observedAt = LocalDateTime.of(2026, 7, 8, 10, 0)
+        )
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchCurrentWeather(37.5665, 126.9780)).thenReturn(snapshot)
+
+        val result = service.getCurrentWeather(memberId, farmId)
+
+        assertThat(result.uvIndex).isNull()
+        verifyNoInteractions(uvIndexProvider)
+    }
+
+    @Test
+    fun `자외선지수 제공자가 예외를 던져도 현재 날씨 응답은 성공하고 자외선지수는 null이다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780,
+            pnu = "1100000000123456789"
+        )
+        val snapshot = WeatherSnapshot(
+            temperature = 14,
+            skyCondition = "맑음",
+            observedAt = LocalDateTime.of(2026, 7, 8, 10, 0)
+        )
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchCurrentWeather(37.5665, 126.9780)).thenReturn(snapshot)
+        `when`(uvIndexProvider.fetchUvIndex("1100000000"))
+            .thenThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+
+        val result = service.getCurrentWeather(memberId, farmId)
+
+        assertThat(result.snapshot).isEqualTo(snapshot)
+        assertThat(result.uvIndex).isNull()
     }
 
     @Test

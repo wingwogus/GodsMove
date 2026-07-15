@@ -70,6 +70,11 @@ weather:
     service-key: ${KMA_SERVICE_KEY:test-kma-service-key}
     connect-timeout-millis: ${KMA_CONNECT_TIMEOUT_MILLIS:2000}
     read-timeout-millis: ${KMA_READ_TIMEOUT_MILLIS:2000}
+  uv:
+    base-url: https://apis.data.go.kr/1360000/LivingWthrIdxServiceV5
+    service-key: ${KMA_SERVICE_KEY:test-kma-service-key}
+    connect-timeout-millis: ${KMA_CONNECT_TIMEOUT_MILLIS:2000}
+    read-timeout-millis: ${KMA_READ_TIMEOUT_MILLIS:2000}
 
 psis:
   pesticide:

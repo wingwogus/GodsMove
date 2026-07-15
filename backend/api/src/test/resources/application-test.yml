@@ -71,6 +71,11 @@ weather:
     service-key: test-kma-service-key
     connect-timeout-millis: 2000
     read-timeout-millis: 2000
+  uv:
+    base-url: https://apis.data.go.kr/1360000/LivingWthrIdxServiceV5
+    service-key: test-kma-service-key
+    connect-timeout-millis: 2000
+    read-timeout-millis: 2000
 
 openai:
   realtime:

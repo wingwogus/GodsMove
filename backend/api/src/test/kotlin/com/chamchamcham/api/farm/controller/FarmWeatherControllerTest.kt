@@ -55,7 +55,7 @@ class FarmWeatherControllerTest(
                 roadAddress = "서울시 강남구",
                 precipitationProbability = null,
                 forecast = emptyList(),
-                uvIndex = null
+                uvIndex = 7
             )
         )
 
@@ -70,6 +70,7 @@ class FarmWeatherControllerTest(
             .andExpect(jsonPath("$.data.address", equalTo("서울시 강남구")))
             .andExpect(jsonPath("$.data.humidity", equalTo(65)))
             .andExpect(jsonPath("$.data.windSpeed", equalTo(2.3)))
+            .andExpect(jsonPath("$.data.uvIndex", equalTo(7)))
     }
 
     @Test
