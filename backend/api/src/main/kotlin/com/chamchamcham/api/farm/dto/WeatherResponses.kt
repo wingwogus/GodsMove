@@ -17,7 +17,9 @@ object WeatherResponses {
         val humidity: Int?,
         val windSpeed: Double?,
         val uvIndex: Int?,
-        val feelsLikeTemperature: Int?
+        val feelsLikeTemperature: Int?,
+        val minTemperature: Int?,
+        val maxTemperature: Int?
     ) {
         companion object {
             fun from(result: FarmWeatherResult.CurrentDetail): CurrentWeatherResponse =
@@ -31,7 +33,9 @@ object WeatherResponses {
                     humidity = result.snapshot.humidity,
                     windSpeed = result.snapshot.windSpeed,
                     uvIndex = result.uvIndex,
-                    feelsLikeTemperature = result.snapshot.feelsLikeTemperature
+                    feelsLikeTemperature = result.snapshot.feelsLikeTemperature,
+                    minTemperature = result.minTemperature,
+                    maxTemperature = result.maxTemperature
                 )
         }
     }

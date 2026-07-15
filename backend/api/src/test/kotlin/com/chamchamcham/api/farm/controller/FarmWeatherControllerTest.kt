@@ -56,7 +56,9 @@ class FarmWeatherControllerTest(
                 roadAddress = "서울시 강남구",
                 precipitationProbability = null,
                 forecast = emptyList(),
-                uvIndex = 7
+                uvIndex = 7,
+                minTemperature = 8,
+                maxTemperature = 19
             )
         )
 
@@ -73,6 +75,8 @@ class FarmWeatherControllerTest(
             .andExpect(jsonPath("$.data.windSpeed", equalTo(2.3)))
             .andExpect(jsonPath("$.data.uvIndex", equalTo(7)))
             .andExpect(jsonPath("$.data.feelsLikeTemperature", equalTo(13)))
+            .andExpect(jsonPath("$.data.minTemperature", equalTo(8)))
+            .andExpect(jsonPath("$.data.maxTemperature", equalTo(19)))
     }
 
     @Test
@@ -87,7 +91,9 @@ class FarmWeatherControllerTest(
                 roadAddress = "서울시 강남구",
                 precipitationProbability = null,
                 forecast = emptyList(),
-                uvIndex = null
+                uvIndex = null,
+                minTemperature = null,
+                maxTemperature = null
             )
         )
 
@@ -121,7 +127,9 @@ class FarmWeatherControllerTest(
                         skyCondition = "맑음"
                     )
                 ),
-                uvIndex = null
+                uvIndex = null,
+                minTemperature = null,
+                maxTemperature = null
             )
         )
 

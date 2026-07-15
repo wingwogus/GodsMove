@@ -30,12 +30,15 @@ class FarmWeatherService(
         val uvIndex = farm.pnu?.take(10)?.let { areaNo ->
             runCatching { uvIndexProvider.fetchUvIndex(areaNo) }.getOrNull()
         }
+        val today = forecast?.dailyForecasts?.firstOrNull { it.date == LocalDate.now() }
         return FarmWeatherResult.CurrentDetail(
             snapshot = snapshot,
             roadAddress = farm.roadAddress,
             precipitationProbability = forecast?.precipitationProbability,
             forecast = forecast?.dailyForecasts ?: emptyList(),
-            uvIndex = uvIndex
+            uvIndex = uvIndex,
+            minTemperature = today?.minTemperature,
+            maxTemperature = today?.maxTemperature
         )
     }
 

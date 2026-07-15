@@ -163,6 +163,80 @@ class FarmWeatherServiceTest {
     }
 
     @Test
+    fun `예보 목록에 오늘 날짜 항목이 있으면 오늘의 최저_최고 기온을 채운다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780
+        )
+        val snapshot = WeatherSnapshot(
+            temperature = 14,
+            skyCondition = "맑음",
+            observedAt = LocalDateTime.of(2026, 7, 8, 10, 0)
+        )
+        val dailyForecasts = listOf(
+            DailyForecast(
+                date = LocalDate.now(),
+                minTemperature = 18,
+                maxTemperature = 29,
+                skyCondition = "맑음"
+            ),
+            DailyForecast(
+                date = LocalDate.now().plusDays(1),
+                minTemperature = 20,
+                maxTemperature = 31,
+                skyCondition = "구름많음"
+            )
+        )
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchCurrentWeather(37.5665, 126.9780)).thenReturn(snapshot)
+        `when`(weatherProvider.fetchForecastPanel(37.5665, 126.9780))
+            .thenReturn(WeatherForecast(precipitationProbability = 30, dailyForecasts = dailyForecasts))
+
+        val result = service.getCurrentWeather(memberId, farmId)
+
+        assertThat(result.minTemperature).isEqualTo(18)
+        assertThat(result.maxTemperature).isEqualTo(29)
+    }
+
+    @Test
+    fun `예보 목록에 오늘 날짜 항목이 없으면 최저_최고 기온은 null이다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780
+        )
+        val snapshot = WeatherSnapshot(
+            temperature = 14,
+            skyCondition = "맑음",
+            observedAt = LocalDateTime.of(2026, 7, 8, 10, 0)
+        )
+        val dailyForecasts = listOf(
+            DailyForecast(
+                date = LocalDate.now().plusDays(1),
+                minTemperature = 20,
+                maxTemperature = 31,
+                skyCondition = "구름많음"
+            )
+        )
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchCurrentWeather(37.5665, 126.9780)).thenReturn(snapshot)
+        `when`(weatherProvider.fetchForecastPanel(37.5665, 126.9780))
+            .thenReturn(WeatherForecast(precipitationProbability = 30, dailyForecasts = dailyForecasts))
+
+        val result = service.getCurrentWeather(memberId, farmId)
+
+        assertThat(result.minTemperature).isNull()
+        assertThat(result.maxTemperature).isNull()
+    }
+
+    @Test
     fun `예보 조회가 실패해도 현재 날씨 응답은 성공하고 예보는 빈 상태로 채워진다`() {
         val farm = Farm(
             id = farmId,

@@ -8,7 +8,9 @@ object FarmWeatherResult {
         val roadAddress: String,
         val precipitationProbability: Int?,
         val forecast: List<DailyForecast>,
-        val uvIndex: Int?
+        val uvIndex: Int?,
+        val minTemperature: Int?,
+        val maxTemperature: Int?
     )
 }
 
