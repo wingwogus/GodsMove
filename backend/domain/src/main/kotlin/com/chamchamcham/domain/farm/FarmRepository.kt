@@ -21,4 +21,6 @@ interface FarmRepository : JpaRepository<Farm, UUID> {
     ): List<Farm>
 
     fun findByIdAndOwnerId(id: UUID, ownerId: UUID): Farm?
+
+    fun findFirstByOwnerIdOrderByCreatedAtAsc(ownerId: UUID): Farm?
 }
