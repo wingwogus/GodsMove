@@ -7,5 +7,6 @@ data class WeatherSnapshot(
     val skyCondition: String,
     val observedAt: LocalDateTime,
     val humidity: Int? = null,
-    val windSpeed: Double? = null
+    val windSpeed: Double? = null,
+    val feelsLikeTemperature: Int? = null
 )

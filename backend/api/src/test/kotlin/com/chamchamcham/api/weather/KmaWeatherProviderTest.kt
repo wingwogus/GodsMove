@@ -42,6 +42,8 @@ class KmaWeatherProviderTest {
         assertThat(snapshot.observedAt).isEqualTo(LocalDateTime.of(2026, 7, 8, 10, 0))
         assertThat(snapshot.humidity).isEqualTo(55)
         assertThat(snapshot.windSpeed).isEqualTo(2.1)
+        // 7월(여름철) 열지수 공식: Ta=14, RH=55 -> Tw≈9.08 -> feelsLike≈14.33 -> 반올림 14
+        assertThat(snapshot.feelsLikeTemperature).isEqualTo(14)
         server.verify()
     }
 
@@ -55,6 +57,8 @@ class KmaWeatherProviderTest {
         assertThat(snapshot.temperature).isEqualTo(14)
         assertThat(snapshot.humidity).isNull()
         assertThat(snapshot.windSpeed).isNull()
+        // 7월(여름철)인데 습도가 없어 체감온도를 계산할 수 없다.
+        assertThat(snapshot.feelsLikeTemperature).isNull()
     }
 
     @Test

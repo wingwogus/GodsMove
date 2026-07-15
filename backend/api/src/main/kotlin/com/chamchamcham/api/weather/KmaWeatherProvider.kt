@@ -78,13 +78,20 @@ class KmaWeatherProvider internal constructor(
 
         val observedAt = parseObservedAt(ncst)
         val skyCondition = resolveSkyCondition(fcst)
+        val feelsLikeTemperature = FeelsLikeTemperatureCalculator.of(
+            temperature = temperature,
+            humidity = humidity,
+            windSpeedMps = windSpeed,
+            month = observedAt.monthValue
+        )
 
         return WeatherSnapshot(
             temperature = temperature,
             skyCondition = skyCondition,
             observedAt = observedAt,
             humidity = humidity,
-            windSpeed = windSpeed
+            windSpeed = windSpeed,
+            feelsLikeTemperature = feelsLikeTemperature
         )
     }
 

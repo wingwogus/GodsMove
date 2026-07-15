@@ -16,7 +16,8 @@ object WeatherResponses {
         val forecast: List<ForecastDayResponse>,
         val humidity: Int?,
         val windSpeed: Double?,
-        val uvIndex: Int?
+        val uvIndex: Int?,
+        val feelsLikeTemperature: Int?
     ) {
         companion object {
             fun from(result: FarmWeatherResult.CurrentDetail): CurrentWeatherResponse =
@@ -29,7 +30,8 @@ object WeatherResponses {
                     forecast = result.forecast.map { ForecastDayResponse.from(it) },
                     humidity = result.snapshot.humidity,
                     windSpeed = result.snapshot.windSpeed,
-                    uvIndex = result.uvIndex
+                    uvIndex = result.uvIndex,
+                    feelsLikeTemperature = result.snapshot.feelsLikeTemperature
                 )
         }
     }
