@@ -18,6 +18,9 @@ object KmaBaseTimeResolver {
     private val VILAGE_FCST_SCHEDULE_HOURS = listOf(2, 5, 8, 11, 14, 17, 20, 23)
     private const val VILAGE_FCST_AVAILABLE_MINUTE = 10
     private val UV_IDX_SCHEDULE_HOURS = listOf(0, 3, 6, 9, 12, 15, 18, 21)
+    private val MID_FCST_SCHEDULE_HOURS = listOf(6, 18)
+    private const val MID_FCST_AVAILABLE_MINUTE = 20
+    private val TM_FC_FORMAT = DateTimeFormatter.ofPattern("yyyyMMddHHmm")
 
     fun resolveNcst(now: LocalDateTime): KmaBaseDateTime {
         val base = if (now.minute < NCST_AVAILABLE_MINUTE) now.minusHours(1) else now
@@ -63,5 +66,22 @@ object KmaBaseTimeResolver {
     fun resolveUvIdx(now: LocalDateTime): LocalDateTime {
         val boundaryHour = UV_IDX_SCHEDULE_HOURS.last { hour -> now.hour >= hour }
         return now.withHour(boundaryHour).withMinute(0).withSecond(0).withNano(0)
+    }
+
+    /**
+     * 중기예보(getMidLandFcst/getMidTa)의 tmFc(yyyyMMddHHmm) 계산(순수 함수).
+     * 발표 스케줄: 06/18시 1일 2회. 제공 지연 시간이 공식 문서로 확인되지 않아, 단기예보(10분)보다
+     * 넉넉하게 20분 버퍼를 둔다.
+     */
+    fun resolveMidFcst(now: LocalDateTime): String {
+        val availableHour = MID_FCST_SCHEDULE_HOURS.lastOrNull { hour ->
+            now.hour > hour || (now.hour == hour && now.minute >= MID_FCST_AVAILABLE_MINUTE)
+        }
+        val base = if (availableHour != null) {
+            now.withHour(availableHour)
+        } else {
+            now.minusDays(1).withHour(MID_FCST_SCHEDULE_HOURS.last())
+        }
+        return base.withMinute(0).withSecond(0).withNano(0).format(TM_FC_FORMAT)
     }
 }

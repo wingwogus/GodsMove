@@ -96,4 +96,32 @@ class KmaBaseTimeResolverTest {
 
         assertThat(result).isEqualTo(LocalDateTime.of(2026, 7, 8, 0, 0))
     }
+
+    @Test
+    fun `중기예보는 06시 20분 이후면 당일 06시 발표를 사용한다`() {
+        val result = KmaBaseTimeResolver.resolveMidFcst(LocalDateTime.of(2026, 7, 8, 10, 0))
+
+        assertThat(result).isEqualTo("202607080600")
+    }
+
+    @Test
+    fun `중기예보는 18시 20분 이후면 당일 18시 발표를 사용한다`() {
+        val result = KmaBaseTimeResolver.resolveMidFcst(LocalDateTime.of(2026, 7, 8, 20, 0))
+
+        assertThat(result).isEqualTo("202607081800")
+    }
+
+    @Test
+    fun `중기예보는 06시 20분 이전이면 전날 18시 발표로 롤오버한다`() {
+        val result = KmaBaseTimeResolver.resolveMidFcst(LocalDateTime.of(2026, 7, 8, 6, 10))
+
+        assertThat(result).isEqualTo("202607071800")
+    }
+
+    @Test
+    fun `중기예보는 자정 직후에도 전날 18시 발표로 롤오버한다`() {
+        val result = KmaBaseTimeResolver.resolveMidFcst(LocalDateTime.of(2026, 7, 8, 0, 5))
+
+        assertThat(result).isEqualTo("202607071800")
+    }
 }

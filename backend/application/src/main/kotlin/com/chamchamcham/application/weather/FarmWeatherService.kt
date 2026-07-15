@@ -13,7 +13,8 @@ class FarmWeatherService(
     private val farmRepository: FarmRepository,
     private val weatherProvider: WeatherProvider,
     private val historicalWeatherProvider: HistoricalWeatherProvider,
-    private val uvIndexProvider: UvIndexProvider
+    private val uvIndexProvider: UvIndexProvider,
+    private val midTermForecastProvider: MidTermForecastProvider
 ) {
     fun getCurrentWeather(memberId: UUID, farmId: UUID): FarmWeatherResult.CurrentDetail {
         val farm = farmRepository.findByIdAndOwnerId(farmId, memberId)
@@ -27,19 +28,41 @@ class FarmWeatherService(
 
         val snapshot = weatherProvider.fetchCurrentWeather(latitude, longitude)
         val forecast = runCatching { weatherProvider.fetchForecastPanel(latitude, longitude) }.getOrNull()
+        val dailyForecasts = backfillTo5Days(latitude, longitude, forecast?.dailyForecasts ?: emptyList())
         val uvIndex = farm.pnu?.take(10)?.let { areaNo ->
             runCatching { uvIndexProvider.fetchUvIndex(areaNo) }.getOrNull()
         }
-        val today = forecast?.dailyForecasts?.firstOrNull { it.date == LocalDate.now() }
+        val today = dailyForecasts.firstOrNull { it.date == LocalDate.now() }
         return FarmWeatherResult.CurrentDetail(
             snapshot = snapshot,
             roadAddress = farm.roadAddress,
             precipitationProbability = forecast?.precipitationProbability,
-            forecast = forecast?.dailyForecasts ?: emptyList(),
+            forecast = dailyForecasts,
             uvIndex = uvIndex,
             minTemperature = today?.minTemperature,
             maxTemperature = today?.maxTemperature
         )
+    }
+
+    /**
+     * 단기예보(getVilageFcst)는 발표시각에 따라 오늘부터 4일(글피까지)만 줄 때가 있다. 부족한
+     * 날짜(항상 오늘+4일, 그글피 하나)를 중기예보로 채워 5일을 맞춘다. 중기예보 실패 시에도
+     * 예외를 던지지 않고 있는 만큼만 반환한다(데이터를 지어내지 않는다는 원칙).
+     */
+    private fun backfillTo5Days(
+        latitude: Double,
+        longitude: Double,
+        dailyForecasts: List<DailyForecast>
+    ): List<DailyForecast> {
+        val today = LocalDate.now()
+        val existingDates = dailyForecasts.map { it.date }.toSet()
+        val backfilled = (0..4L)
+            .map { today.plusDays(it) }
+            .filter { it !in existingDates }
+            .mapNotNull { missingDate ->
+                runCatching { midTermForecastProvider.fetchDayForecast(latitude, longitude, missingDate) }.getOrNull()
+            }
+        return (dailyForecasts + backfilled).sortedBy { it.date }
     }
 
     fun getCurrentWeather(memberId: UUID): FarmWeatherResult.CurrentDetail =

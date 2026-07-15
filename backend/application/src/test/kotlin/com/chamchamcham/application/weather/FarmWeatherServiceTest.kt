@@ -25,6 +25,7 @@ class FarmWeatherServiceTest {
     @Mock private lateinit var weatherProvider: WeatherProvider
     @Mock private lateinit var historicalWeatherProvider: HistoricalWeatherProvider
     @Mock private lateinit var uvIndexProvider: UvIndexProvider
+    @Mock private lateinit var midTermForecastProvider: MidTermForecastProvider
 
     private lateinit var service: FarmWeatherService
 
@@ -34,7 +35,13 @@ class FarmWeatherServiceTest {
 
     @BeforeEach
     fun setUp() {
-        service = FarmWeatherService(farmRepository, weatherProvider, historicalWeatherProvider, uvIndexProvider)
+        service = FarmWeatherService(
+            farmRepository,
+            weatherProvider,
+            historicalWeatherProvider,
+            uvIndexProvider,
+            midTermForecastProvider
+        )
     }
 
     @Test
@@ -262,6 +269,117 @@ class FarmWeatherServiceTest {
         assertThat(result.roadAddress).isEqualTo("서울시 강남구")
         assertThat(result.precipitationProbability).isNull()
         assertThat(result.forecast).isEmpty()
+    }
+
+    @Test
+    fun `단기예보가 5일을 모두 반환하면 중기예보를 호출하지 않는다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780
+        )
+        val snapshot = WeatherSnapshot(
+            temperature = 14,
+            skyCondition = "맑음",
+            observedAt = LocalDateTime.of(2026, 7, 8, 10, 0)
+        )
+        val fiveDayForecasts = (0..4L).map { offset ->
+            DailyForecast(
+                date = LocalDate.now().plusDays(offset),
+                minTemperature = 18,
+                maxTemperature = 29,
+                skyCondition = "맑음"
+            )
+        }
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchCurrentWeather(37.5665, 126.9780)).thenReturn(snapshot)
+        `when`(weatherProvider.fetchForecastPanel(37.5665, 126.9780))
+            .thenReturn(WeatherForecast(precipitationProbability = 30, dailyForecasts = fiveDayForecasts))
+
+        val result = service.getCurrentWeather(memberId, farmId)
+
+        assertThat(result.forecast).hasSize(5)
+        verifyNoInteractions(midTermForecastProvider)
+    }
+
+    @Test
+    fun `단기예보가 4일만 반환하면 5일차를 중기예보로 채워 5개를 반환한다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780
+        )
+        val snapshot = WeatherSnapshot(
+            temperature = 14,
+            skyCondition = "맑음",
+            observedAt = LocalDateTime.of(2026, 7, 8, 10, 0)
+        )
+        val fourDayForecasts = (0..3L).map { offset ->
+            DailyForecast(
+                date = LocalDate.now().plusDays(offset),
+                minTemperature = 18,
+                maxTemperature = 29,
+                skyCondition = "맑음"
+            )
+        }
+        val backfilledDay = DailyForecast(
+            date = LocalDate.now().plusDays(4),
+            minTemperature = 20,
+            maxTemperature = 30,
+            skyCondition = "비"
+        )
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchCurrentWeather(37.5665, 126.9780)).thenReturn(snapshot)
+        `when`(weatherProvider.fetchForecastPanel(37.5665, 126.9780))
+            .thenReturn(WeatherForecast(precipitationProbability = 30, dailyForecasts = fourDayForecasts))
+        `when`(midTermForecastProvider.fetchDayForecast(37.5665, 126.9780, LocalDate.now().plusDays(4)))
+            .thenReturn(backfilledDay)
+
+        val result = service.getCurrentWeather(memberId, farmId)
+
+        assertThat(result.forecast).hasSize(5)
+        assertThat(result.forecast.last()).isEqualTo(backfilledDay)
+    }
+
+    @Test
+    fun `중기예보 백필이 실패해도 예외 없이 있는 만큼만 반환한다`() {
+        val farm = Farm(
+            id = farmId,
+            owner = member,
+            name = "약초농장",
+            roadAddress = "서울시 강남구",
+            latitude = 37.5665,
+            longitude = 126.9780
+        )
+        val snapshot = WeatherSnapshot(
+            temperature = 14,
+            skyCondition = "맑음",
+            observedAt = LocalDateTime.of(2026, 7, 8, 10, 0)
+        )
+        val fourDayForecasts = (0..3L).map { offset ->
+            DailyForecast(
+                date = LocalDate.now().plusDays(offset),
+                minTemperature = 18,
+                maxTemperature = 29,
+                skyCondition = "맑음"
+            )
+        }
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(weatherProvider.fetchCurrentWeather(37.5665, 126.9780)).thenReturn(snapshot)
+        `when`(weatherProvider.fetchForecastPanel(37.5665, 126.9780))
+            .thenReturn(WeatherForecast(precipitationProbability = 30, dailyForecasts = fourDayForecasts))
+        `when`(midTermForecastProvider.fetchDayForecast(37.5665, 126.9780, LocalDate.now().plusDays(4)))
+            .thenThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+
+        val result = service.getCurrentWeather(memberId, farmId)
+
+        assertThat(result.forecast).hasSize(4)
     }
 
     @Test
