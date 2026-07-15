@@ -65,7 +65,9 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
         self.profileMediaId = draft.profileMediaId
     }
 
-    private static let wireDateFormatter: DateFormatter = {
+    /// Also reused to parse `CachedMemberProfile.birthDateRaw` back into a `Date` when prefilling onboarding from a
+    /// social login response — keeps parse/serialize as exact inverses of the same wire format.
+    static let wireDateFormatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.locale = Locale(identifier: "en_US_POSIX")

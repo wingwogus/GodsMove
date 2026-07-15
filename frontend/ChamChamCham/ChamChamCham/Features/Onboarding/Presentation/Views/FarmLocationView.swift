@@ -115,9 +115,9 @@ struct FarmLocationView: View {
             .padding(.top, 20)
 
             zoomControls
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topTrailing)
                 .padding(.trailing, 20)
-                .padding(.top, 190)
+                .padding(.top, 160)
 
             VStack {
                 Spacer()

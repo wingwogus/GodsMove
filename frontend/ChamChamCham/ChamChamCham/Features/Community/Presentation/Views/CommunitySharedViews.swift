@@ -69,9 +69,9 @@ struct CommunityTagRow: View {
     var body: some View {
         HStack(spacing: Spacing.sm) {
             if postType == .question {
-                AppBadge(label: "Q&A", size: .small, style: .solidPastel, variant: .primary)
+                AppBadge(label: "Q&A", size: .small, style: .solidPastel, variant: .secondary)
             }
-            AppBadge(label: cropName, size: .small, style: .solidPastel, variant: .secondary)
+            AppBadge(label: cropName, size: .small, style: .solidPastel, variant: .primary)
         }
     }
 }

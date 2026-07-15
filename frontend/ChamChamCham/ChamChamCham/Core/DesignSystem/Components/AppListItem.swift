@@ -108,15 +108,24 @@ struct AppListItem<Thumbnail: View>: View {
                 maxWidth: .infinity,
                 minHeight: size.canvasSize.height,
                 maxHeight: size.canvasSize.height,
-                // Vertically centers medium/large/xlarge's content (which is shorter than the row)
-                // so the leftover space splits evenly above/below instead of pooling at the bottom.
-                alignment: .leading
+                alignment: verticalAlignment
             )
             .overlay(alignment: .bottom) {
                 if showsDivider {
                     Rectangle().fill(Color.Border.default).frame(height: 1)
                 }
             }
+    }
+
+    /// How the (shorter-than-row) content sits inside the fixed-height row.
+    /// `medium`/`large`/`xlarge` pin content to the top so the leftover height pools as a single
+    /// 20pt bottom gap (Figma: 0 top / 20 bottom). `xsmall`/`small` center it (Figma: even 16/16),
+    /// which also keeps every row identical when stacked in a `ForEach`.
+    private var verticalAlignment: Alignment {
+        switch size {
+        case .xsmall, .small: .leading
+        case .medium, .large, .xlarge: .topLeading
+        }
     }
 
     private var horizontalPadding: CGFloat {
@@ -130,8 +139,8 @@ struct AppListItem<Thumbnail: View>: View {
         switch size {
         case .xsmall: xsmallBody
         case .small: smallBody
-        case .medium: mediaBody(thumbnailSide: 96, reactions: true)
-        case .large: mediaBody(thumbnailSide: 120, reactions: false)
+        case .medium: mediaBody(thumbnailSide: 96, titleFont: .titleMediumEmphasized, reactions: true)
+        case .large: mediaBody(thumbnailSide: 120, titleFont: .titleLargeEmphasized, reactions: false)
         case .xlarge: xlargeBody
         }
     }
@@ -167,7 +176,7 @@ struct AppListItem<Thumbnail: View>: View {
         .padding(.vertical, 16)
     }
 
-    private func mediaBody(thumbnailSide: CGFloat, reactions: Bool) -> some View {
+    private func mediaBody(thumbnailSide: CGFloat, titleFont: AppTypography, reactions: Bool) -> some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 badgeRow(size: .medium)
@@ -181,21 +190,21 @@ struct AppListItem<Thumbnail: View>: View {
             HStack(spacing: 12) {
                 VStack(alignment: .leading, spacing: 0) {
                     Text(title)
-                        .appTypography(.titleLargeEmphasized)
+                        .appTypography(titleFont)
                         .foregroundStyle(Color.Text.subtle)
                         .lineLimit(1)
 
                     Text(caption)
                         .appTypography(.bodyLarge)
                         .foregroundStyle(Color.Text.muted)
-                        .padding(.top, 4)
+                        .padding(.top, 2)
                         .lineLimit(1)
 
                     if reactions {
                         Spacer(minLength: 0)
                         HStack(spacing: 12) {
-                            reaction(systemImage: "heart", text: likeText)
-                            reaction(systemImage: "bubble.left", text: commentText)
+                            reaction(icon: .asset("favorite_line"), text: likeText)
+                            reaction(icon: .asset("chat_bubble_line"), text: commentText)
                         }
                     }
                 }
@@ -205,8 +214,8 @@ struct AppListItem<Thumbnail: View>: View {
             }
             .frame(height: thumbnailSide)
         }
-        // No fixed/pinned height here — sized naturally, then centered by `body`'s outer frame so
-        // the row's leftover vertical space splits evenly above/below instead of only at the bottom.
+        // Sized naturally; `body`'s outer frame top-aligns it so the leftover height becomes a
+        // single 20pt bottom gap (Figma medium/large: 0 top / 20 bottom).
     }
 
     private var xlargeBody: some View {
@@ -244,7 +253,8 @@ struct AppListItem<Thumbnail: View>: View {
                 .foregroundStyle(Color.Text.default)
             }
         }
-        // Same reasoning as `mediaBody`: natural height, centered by `body`'s outer frame.
+        // Same reasoning as `mediaBody`: natural height, top-aligned by `body`'s outer frame
+        // (Figma xlarge: 0 top / 20 bottom).
     }
 
     private func badgeRow(size badgeSize: AppBadge.Size) -> some View {
@@ -264,12 +274,10 @@ struct AppListItem<Thumbnail: View>: View {
         }
     }
 
-    private func reaction(systemImage: String, text: String) -> some View {
+    private func reaction(icon: AppIconSource, text: String) -> some View {
         HStack(spacing: 2) {
-            Image(systemName: systemImage)
-                .font(.system(size: 22))
+            AppIconView(source: icon, size: 24)
                 .foregroundStyle(Color.Icon.disabled)
-                .frame(width: 24, height: 24)
             Text(text)
                 .appTypography(.bodyMedium)
                 .foregroundStyle(Color.Text.muted)

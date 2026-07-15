@@ -20,11 +20,14 @@ enum AppIconSource: Equatable, ExpressibleByStringLiteral {
 }
 
 /// Renders an `AppIconSource` at a fixed square size. SF Symbols use `.font(size:)` (their native
-/// scaling mechanism); custom assets are made resizable and template-tinted so `.foregroundStyle`
-/// behaves the same as it does for SF Symbols.
+/// scaling mechanism); custom assets are made resizable and rendered per `renderingMode`.
 struct AppIconView: View {
     let source: AppIconSource
     var size: CGFloat = 24
+    /// `.template` tints the glyph with `.foregroundStyle`, matching SF Symbol behavior — the
+    /// right default for monochrome UI glyphs. Multi-color assets (e.g. weather icons) need
+    /// `.original` or their SVG fill colors get flattened into the current foreground color.
+    var renderingMode: Image.TemplateRenderingMode = .template
 
     var body: some View {
         switch source {
@@ -34,7 +37,7 @@ struct AppIconView: View {
                 .frame(width: size, height: size)
         case let .asset(name):
             Image(name)
-                .renderingMode(.template)
+                .renderingMode(renderingMode)
                 .resizable()
                 .scaledToFit()
                 .frame(width: size, height: size)

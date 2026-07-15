@@ -55,7 +55,7 @@ struct WeatherDetailView: View {
     private func todaySection(_ weather: CurrentWeather, _ detail: WeatherDetail) -> some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(spacing: Spacing.md) {
-                AppIconView(source: .asset(WeatherIconMapping.assetName(for: weather.condition)), size: 96)
+                AppIconView(source: .asset(WeatherIconMapping.assetName(for: weather.condition)), size: 96, renderingMode: .original)
                 VStack(alignment: .leading, spacing: 4) {
                     Text("\(weather.temperature)°")
                         .appTypography(.headlineLargeEmphasized)
@@ -124,7 +124,7 @@ struct WeatherDetailView: View {
                         Text(day.dayLabel)
                             .appTypography(day.dayLabel == "오늘" ? .labelMediumEmphasized : .labelMedium)
                             .foregroundStyle(day.dayLabel == "오늘" ? Color.Text.default : Color.Text.subtle)
-                        AppIconView(source: .asset(day.conditionAssetName), size: 40)
+                        AppIconView(source: .asset(day.conditionAssetName), size: 40, renderingMode: .original)
                         Text("\(day.temperature)°")
                             .appTypography(.bodyMedium)
                             .foregroundStyle(Color.Text.default)

@@ -31,9 +31,9 @@ struct CommunityView: View {
             ZStack(alignment: .bottomTrailing) {
                 VStack(spacing: 0) {
                     AppTopAppBar(
-                        title: "커뮤니티",
+                        title: "정보 공유",
                         showBorder: false,
-                        trailing: [.init("magnifyingglass"), .init("bell.fill")]
+                        trailing: [.init(.asset("search")), .init(.asset("notifications"))]
                     )
                     postTypeTabs
                     cropChipRow
@@ -83,8 +83,7 @@ struct CommunityView: View {
             Button {
                 showCropPicker = true
             } label: {
-                Image(systemName: "plus")
-                    .font(.system(size: 18, weight: .medium))
+                AppIconView(source: .asset("add"), size: 24)
                     .foregroundStyle(Color.Icon.subtle)
                     .frame(width: 32, height: 32)
                     .background(Color.Object.default)
@@ -180,6 +179,7 @@ struct CommunityView: View {
                 AppSortButton(title: viewModel.sort == .popular ? "인기순" : "최신순")
             }
             .pickerStyle(.menu)
+            .tint(Color.Text.subtle)
         }
         .frame(height: 48)
         .padding(.horizontal, horizontalInset)
@@ -201,7 +201,7 @@ struct CommunityView: View {
 
     private var writeButton: some View {
         AppButton(
-            icon: .system("pencil"),
+            icon: .asset("add_2"),
             variant: .primary,
             size: .xlarge
         ) {
@@ -248,7 +248,7 @@ struct CommunityPostRow: View {
     }
 
     private var badges: [AppListItemBadge] {
-        let category = AppListItemBadge(post.cropName)
+        let category = AppListItemBadge(post.cropName, style: .solidPastel, variant: .primary)
         return post.postType == .question ? [category, AppListItemBadge("Q&A")] : [category]
     }
 

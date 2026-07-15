@@ -96,6 +96,8 @@ struct StubCropCatalogService: CropCatalogService {
 @MainActor
 final class StubMemberProfileCache: MemberProfileCache {
     private(set) var savedMember: MemberProfileResponseDTO?
+    /// Set by a test before constructing an `OnboardingViewModel` to simulate a cached member from a prior login.
+    var currentMember: CachedMemberProfile?
 
     func save(member: MemberProfileResponseDTO, onboarding: OnboardingResponseDTO) -> CachedMemberProfile {
         savedMember = member
@@ -114,6 +116,8 @@ final class StubMemberProfileCache: MemberProfileCache {
             updatedAt: Date()
         )
     }
+
+    func fetchCurrent() -> CachedMemberProfile? { currentMember }
 }
 
 struct FakeUploadError: Error {}
@@ -169,6 +173,31 @@ enum OnboardingTestFactory {
             ),
             crops: [],
             onboarding: OnboardingResponseDTO(status: .complete, missingFields: [])
+        )
+    }
+
+    /// A cached member fixture for exercising `OnboardingDraft(prefillingFrom:)` — only the fields relevant to
+    /// social-login prefill are parameterized, the rest use placeholder defaults.
+    static func cachedMember(
+        name: String? = "홍길동",
+        nickname: String? = "길동",
+        phone: String? = "010-1234-5678",
+        birthDateRaw: String? = "1990-01-01",
+        onboardingStatus: OnboardingStatusDTO = .required
+    ) -> CachedMemberProfile {
+        CachedMemberProfile(
+            id: UUID(),
+            email: "member@example.com",
+            name: name,
+            nickname: nickname,
+            phone: phone,
+            birthDateRaw: birthDateRaw,
+            experienceLevel: nil,
+            managementTypeRaw: nil,
+            profileImageUrl: nil,
+            onboardingStatusRaw: onboardingStatus.rawValue,
+            missingFieldsRaw: [],
+            updatedAt: Date()
         )
     }
 
