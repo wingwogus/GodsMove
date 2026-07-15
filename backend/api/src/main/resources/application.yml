@@ -6,6 +6,13 @@ spring:
     active: local  # 기본은 local 환경
   jackson:
     time-zone: Asia/Seoul  # 기상청 API가 KST 기준이라 응답 직렬화도 KST로 맞춘다
+  cache:
+    cache-names: kma
+    caffeine:
+      # 캐시 키에 발표시각이 들어가므로 다음 발표는 새 키가 된다. 따라서 TTL은 정확성이 아니라
+      # 메모리 회수 문제일 뿐이고, 값 하나가 26시간이면 충분하다 — 당일 최저/최고를 담은 02시
+      # 발표를 그날 자정까지 재사용해야 하는 게 가장 긴 요구다.
+      spec: expireAfterWrite=26h,maximumSize=10000
 
 logging:
   pattern:

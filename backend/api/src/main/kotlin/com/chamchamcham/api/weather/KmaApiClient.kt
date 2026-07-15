@@ -6,6 +6,7 @@ import com.fasterxml.jackson.databind.DeserializationFeature
 import com.fasterxml.jackson.databind.ObjectMapper
 import mu.KotlinLogging
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.cache.annotation.Cacheable
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.http.converter.json.Jackson2ObjectMapperBuilder
 import org.springframework.stereotype.Component
@@ -45,6 +46,15 @@ class KmaApiClient internal constructor(
         properties.serviceKey
     )
 
+    /**
+     * 기상청 응답은 불변이다 — 같은 격자·같은 발표시각이면 영원히 같은 값이다. `params`에 이미
+     * base_date/base_time(또는 tmFc, time)과 격자가 들어 있어서 캐시 키가 발표시각을 저절로
+     * 포함하고, 그래서 다음 발표는 갱신이 아니라 새 키가 된다. 무효화 로직이 필요 없는 이유다.
+     *
+     * 빈 결과는 캐싱하지 않는다. 03/99는 대부분 진짜 데이터 부재지만(예: ASOS의 오늘 조회),
+     * 일시적 장애도 같은 코드로 올 수 있어 그걸 TTL 내내 고착시키면 안 된다.
+     */
+    @Cacheable(cacheNames = ["kma"], key = "#operation + '|' + #params", unless = "#result.isEmpty()")
     fun <T> getItems(
         baseUrl: String,
         operation: String,
