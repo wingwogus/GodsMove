@@ -60,7 +60,7 @@ struct AppTextEditor: View {
 
                 Text(counterText)
                     .appTypography(.labelMedium)
-                    .foregroundStyle(Color.Text.default)
+                    .foregroundStyle(isEnabled ? (isFilled ? Color.Text.default : Color.Text.muted) : Color.Text.disabled)
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .frame(height: 172)

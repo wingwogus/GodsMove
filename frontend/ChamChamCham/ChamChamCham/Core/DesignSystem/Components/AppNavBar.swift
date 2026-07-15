@@ -56,7 +56,6 @@ struct AppNavBar: View {
         }
         .frame(height: 72, alignment: .top)
         .padding(.horizontal, 20)
-        .padding(.bottom, Spacing.sm)
         .background(Color.Background.default)
         .overlay(alignment: .top) {
             Rectangle()

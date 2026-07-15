@@ -58,10 +58,8 @@ struct AppTextField: View {
                 Button {
                     text = ""
                 } label: {
-                    Image(systemName: "xmark.circle.fill")
-                        .font(.system(size: 22))
+                    AppIconView(source: .asset("cancel"), size: 24)
                         .foregroundStyle(Color.Icon.subtle)
-                        .frame(width: 24, height: 24)
                 }
                 .buttonStyle(.plain)
             }

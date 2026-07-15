@@ -8,11 +8,11 @@
 import SwiftUI
 
 /// Figma `date-input`. Renders like a text field with a trailing calendar icon and a
-/// `yyyy.mm.dd` placeholder; tapping presents a graphical date picker. `selection` is optional so
+/// `yyyy-mm-dd` placeholder; tapping presents a graphical date picker. `selection` is optional so
 /// the empty state shows the placeholder. Focus (green border) is driven by the picker being open.
 struct AppDateField: View {
     var label: String?
-    var placeholder: String = "yyyy.mm.dd"
+    var placeholder: String = "yyyy-mm-dd"
     @Binding var selection: Date?
     var isRequired: Bool = false
     var helperText: String? = nil
@@ -43,9 +43,8 @@ struct AppDateField: View {
                 .foregroundStyle(valueColor)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            AppIconView(source: .asset("calendar_month"), size: 22)
+            AppIconView(source: .asset("calendar_month"), size: 24)
                 .foregroundStyle(iconColor)
-                .frame(width: 24, height: 24)
         }
         .contentShape(Rectangle())
         .onTapGesture {
@@ -104,7 +103,7 @@ struct AppDateField: View {
     static let formatter: DateFormatter = {
         let formatter = DateFormatter()
         formatter.locale = Locale(identifier: "ko_KR")
-        formatter.dateFormat = "yyyy.MM.dd"
+        formatter.dateFormat = "yyyy-MM-dd"
         return formatter
     }()
 }
