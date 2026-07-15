@@ -4,6 +4,8 @@ server:
 spring:
   profiles:
     active: local  # 기본은 local 환경
+  jackson:
+    time-zone: Asia/Seoul  # 기상청 API가 KST 기준이라 응답 직렬화도 KST로 맞춘다
 
 logging:
   pattern:
