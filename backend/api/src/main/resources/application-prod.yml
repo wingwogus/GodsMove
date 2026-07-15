@@ -79,6 +79,17 @@ weather:
     connect-timeout-millis: ${KMA_CONNECT_TIMEOUT_MILLIS:2000}
     read-timeout-millis: ${KMA_READ_TIMEOUT_MILLIS:2000}
 
+# 재설계 KmaProperties(prefix=kma)용 신규 블록. 옛 weather.kma/asos/uv/mid-fcst는 어댑터 삭제 단계에서 정리한다.
+kma:
+  service-key: ${KMA_SERVICE_KEY}
+  connect-timeout-millis: ${KMA_CONNECT_TIMEOUT_MILLIS:2000}
+  read-timeout-millis: ${KMA_READ_TIMEOUT_MILLIS:2000}
+  base-url:
+    vilage-fcst: https://apis.data.go.kr/1360000/VilageFcstInfoService_2.0
+    mid-fcst: https://apis.data.go.kr/1360000/MidFcstInfoService
+    asos: https://apis.data.go.kr/1360000/AsosDalyInfoService
+    uv: https://apis.data.go.kr/1360000/LivingWthrIdxServiceV5
+
 psis:
   pesticide:
     base-url: ${PSIS_PESTICIDE_BASE_URL:}
