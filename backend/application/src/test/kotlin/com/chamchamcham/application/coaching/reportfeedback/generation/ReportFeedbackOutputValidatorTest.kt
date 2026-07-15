@@ -230,6 +230,41 @@ class ReportFeedbackOutputValidatorTest {
     }
 
     @Test
+    fun `allows summary and every section text at exactly fifty characters`() {
+        val text = "가".repeat(50)
+        val content = validContent().copy(
+            summary = text,
+            comparisons = listOf(comparisonItem(text = text)),
+            strengths = listOf(item(text = text)),
+            improvements = listOf(item(text = text)),
+            nextActions = listOf(item(text = text)),
+        )
+
+        assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList())).isEmpty()
+    }
+
+    @Test
+    fun `rejects summary and every section text over fifty characters`() {
+        val text = "가".repeat(51)
+        val content = validContent().copy(
+            summary = text,
+            comparisons = listOf(comparisonItem(text = text)),
+            strengths = listOf(item(text = text)),
+            improvements = listOf(item(text = text)),
+            nextActions = listOf(item(text = text)),
+        )
+
+        assertThat(ReportFeedbackOutputValidator.validate(content, context, emptyList()))
+            .containsExactly(
+                "summary_text_length",
+                "comparison_text_length",
+                "strength_text_length",
+                "improvement_text_length",
+                "next_action_text_length",
+            )
+    }
+
+    @Test
     fun `deserializes omitted item sections as empty lists`() {
         val content = jacksonObjectMapper().readValue<ReportFeedbackContent>(
             """{"summary":"이번 물 주기 기록을 확인했어요."}""",

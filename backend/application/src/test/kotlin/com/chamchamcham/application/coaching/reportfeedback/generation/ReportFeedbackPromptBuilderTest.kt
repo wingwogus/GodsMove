@@ -46,6 +46,8 @@ class ReportFeedbackPromptBuilderTest {
                 "서버가 계산한 비교값이 없으면 comparisons는 반드시 빈 배열로 응답한다.",
                 "각 배열 항목의 text는 줄바꿈이나 목록 기호 없이 하나의 문단으로 작성한다.",
                 "한 문단 안에는 자연스럽게 이어지는 여러 문장을 작성해도 된다.",
+                "summary와 모든 배열 항목의 text는 각각 최대 50자로 작성한다.",
+                "50자를 넘으면 문장을 자르지 말고 핵심 내용을 남겨 다시 쓴다.",
             )
             .doesNotContain(
                 "comparisons, strengths, improvements, nextActions는 근거가 없으면 빈 배열로 응답해도 된다.",

@@ -12,6 +12,9 @@ object ReportFeedbackOutputValidator {
         if (content.summary.isBlank()) {
             warnings += "summary_blank"
         }
+        if (content.summary.length > MAX_TEXT_LENGTH) {
+            warnings += "summary_text_length"
+        }
         if (context.comparisons.isEmpty()) {
             if (content.comparisons.isNotEmpty()) {
                 warnings += "comparison_not_available"
@@ -46,6 +49,9 @@ object ReportFeedbackOutputValidator {
             if (item.text.isBlank()) {
                 warnings += "${structured.section.name.lowercase()}_text_blank"
             }
+            if (item.text.length > MAX_TEXT_LENGTH) {
+                warnings += "${structured.section.name.lowercase()}_text_length"
+            }
             if (item.text.any { it == '\r' || it == '\n' }) {
                 warnings += "${structured.section.name.lowercase()}_text_paragraph"
             }
@@ -68,4 +74,6 @@ object ReportFeedbackOutputValidator {
         }
         return warnings.distinct()
     }
+
+    private const val MAX_TEXT_LENGTH = 50
 }
