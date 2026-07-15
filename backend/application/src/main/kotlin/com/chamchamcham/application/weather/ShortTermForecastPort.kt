@@ -4,8 +4,8 @@ package com.chamchamcham.application.weather
  * 단기예보. 발표시각마다 응답에 담기는 날짜가 달라서, 하나의 API를 용도별로 나눠 부른다.
  */
 interface ShortTermForecastPort {
-    /** 최신 발표. 현재 하늘상태·강수확률과 내일 이후 예보에 쓴다. */
-    fun fetchLatest(location: WeatherLocation): ShortTermForecast
+    /** 최신 발표. 현재 하늘상태·강수확률과 내일 이후 예보에 쓴다. 자료가 없으면 null. */
+    fun fetchLatest(location: WeatherLocation): ShortTermForecast?
 
     /**
      * 당일 최저/최고 전용 조회.
