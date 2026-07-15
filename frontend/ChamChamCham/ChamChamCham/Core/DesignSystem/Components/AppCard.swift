@@ -46,10 +46,12 @@ struct AppCard<Thumbnail: View>: View {
     var captions: [String] = []
     var badges: [String] = []
     var dateText: String = "mm/dd"
-    var nickname: String = "닉네임"
-    var likeText: String = "nn"
-    var commentText: String = "nn"
-    var showsPostInfo: Bool = true
+    // Dead: never read by any size's layout, never passed by any call site. Kept commented out
+    // in case a community post-info footer (author/like/comment) lands later.
+    // var nickname: String = "닉네임"
+    // var likeText: String = "nn"
+    // var commentText: String = "nn"
+    // var showsPostInfo: Bool = true
     var width: CGFloat? = nil
     var isSelected: Bool = false
 
@@ -61,10 +63,10 @@ struct AppCard<Thumbnail: View>: View {
         captions: [String] = [],
         badges: [String] = [],
         dateText: String = "mm/dd",
-        nickname: String = "닉네임",
-        likeText: String = "nn",
-        commentText: String = "nn",
-        showsPostInfo: Bool = true,
+        // nickname: String = "닉네임",
+        // likeText: String = "nn",
+        // commentText: String = "nn",
+        // showsPostInfo: Bool = true,
         width: CGFloat? = nil,
         isSelected: Bool = false,
         @ViewBuilder thumbnail: () -> Thumbnail
@@ -74,10 +76,10 @@ struct AppCard<Thumbnail: View>: View {
         self.captions = captions
         self.badges = badges
         self.dateText = dateText
-        self.nickname = nickname
-        self.likeText = likeText
-        self.commentText = commentText
-        self.showsPostInfo = showsPostInfo
+        // self.nickname = nickname
+        // self.likeText = likeText
+        // self.commentText = commentText
+        // self.showsPostInfo = showsPostInfo
         self.width = width
         self.isSelected = isSelected
         self.thumbnail = thumbnail()
@@ -393,10 +395,10 @@ extension AppCard where Thumbnail == EmptyView {
         captions: [String] = [],
         badges: [String] = [],
         dateText: String = "mm/dd",
-        nickname: String = "닉네임",
-        likeText: String = "nn",
-        commentText: String = "nn",
-        showsPostInfo: Bool = true,
+        // nickname: String = "닉네임",
+        // likeText: String = "nn",
+        // commentText: String = "nn",
+        // showsPostInfo: Bool = true,
         width: CGFloat? = nil,
         isSelected: Bool = false
     ) {
@@ -405,10 +407,10 @@ extension AppCard where Thumbnail == EmptyView {
         self.captions = captions
         self.badges = badges
         self.dateText = dateText
-        self.nickname = nickname
-        self.likeText = likeText
-        self.commentText = commentText
-        self.showsPostInfo = showsPostInfo
+        // self.nickname = nickname
+        // self.likeText = likeText
+        // self.commentText = commentText
+        // self.showsPostInfo = showsPostInfo
         self.width = width
         self.isSelected = isSelected
         self.thumbnail = nil

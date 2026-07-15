@@ -89,7 +89,9 @@ struct AppListItem<Thumbnail: View>: View {
                 maxWidth: .infinity,
                 minHeight: size.canvasSize.height,
                 maxHeight: size.canvasSize.height,
-                alignment: .topLeading
+                // Vertically centers medium/large/xlarge's content (which is shorter than the row)
+                // so the leftover space splits evenly above/below instead of pooling at the bottom.
+                alignment: .leading
             )
             .overlay(alignment: .bottom) {
                 if showsDivider {
@@ -184,7 +186,8 @@ struct AppListItem<Thumbnail: View>: View {
             }
             .frame(height: thumbnailSide)
         }
-        .frame(height: size.canvasSize.height - 20, alignment: .top)
+        // No fixed/pinned height here — sized naturally, then centered by `body`'s outer frame so
+        // the row's leftover vertical space splits evenly above/below instead of only at the bottom.
     }
 
     private var xlargeBody: some View {
@@ -222,7 +225,7 @@ struct AppListItem<Thumbnail: View>: View {
                 .foregroundStyle(Color.Text.default)
             }
         }
-        .frame(height: size.canvasSize.height - 20, alignment: .top)
+        // Same reasoning as `mediaBody`: natural height, centered by `body`'s outer frame.
     }
 
     private func badgeRow(size badgeSize: AppBadge.Size) -> some View {
