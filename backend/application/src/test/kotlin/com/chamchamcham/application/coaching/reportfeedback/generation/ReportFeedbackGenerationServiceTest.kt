@@ -69,6 +69,23 @@ class ReportFeedbackGenerationServiceTest {
     }
 
     @Test
+    fun `length failures are retried with safe diagnostic codes`() {
+        val generatedText = "가".repeat(51)
+        val invalid = validContent().copy(
+            summary = generatedText,
+            nextActions = listOf(item(text = generatedText)),
+        )
+        val client = FakeChatClient(invalid, validContent())
+
+        service(client).generate(context())
+
+        assertThat(client.attempts).isEqualTo(2)
+        assertThat(client.requestSpec.userTexts.last())
+            .contains("summary_text_length", "next_action_text_length")
+            .doesNotContain(generatedText)
+    }
+
+    @Test
     fun `English summary is accepted without retry`() {
         val generatedText = "WATERING 흐름을 확인했어요."
         val client = FakeChatClient(

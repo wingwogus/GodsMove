@@ -234,6 +234,7 @@ class ReportFeedbackGenerationHandlerTest {
                 ReportFeedbackFailureCode.STRUCTURED_OUTPUT_INVALID,
                 IllegalStateException(
                     "comparison_not_available,strength_count,next_action_text_paragraph," +
+                        "summary_text_length,comparison_text_length," +
                         "unknown_evidence:untrusted-generated-value",
                 ),
             ),
@@ -248,6 +249,8 @@ class ReportFeedbackGenerationHandlerTest {
             .contains("comparison_not_available")
             .contains("strength_count")
             .contains("next_action_text_paragraph")
+            .contains("summary_text_length")
+            .contains("comparison_text_length")
             .contains("unknown_evidence")
             .doesNotContain("untrusted-generated-value")
     }
