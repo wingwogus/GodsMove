@@ -197,4 +197,3 @@ GET /api/v1/farming-reports/{reportId}/feedback
 - 리포트 피드백 재생성 API
 - 운영 데이터 마이그레이션
 - 새 프론트엔드 의존성 또는 빌드 도구
-
