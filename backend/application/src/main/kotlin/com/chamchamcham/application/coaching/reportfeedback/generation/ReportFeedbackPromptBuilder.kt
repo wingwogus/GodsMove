@@ -81,6 +81,7 @@ class ReportFeedbackPromptBuilder {
             summary는 20~65자로 작성한다.
             comparisons의 text는 20~65자로 작성한다.
             strengths, improvements, nextActions의 text는 각각 20~65자로 작성한다.
+            JSON을 반환하기 전에 공백과 문장부호를 포함한 summary와 모든 text의 글자 수가 20~65자인지 확인한다.
             최소 길이를 맞출 때 의미 없는 표현을 덧붙이지 말고 근거, 판단, 실행 방법을 보강해 다시 쓴다.
             65자를 넘으면 문장을 자르지 말고 핵심 내용을 남겨 다시 쓴다.
             각 항목은 basis, text, evidenceRefs를 가져야 한다.
