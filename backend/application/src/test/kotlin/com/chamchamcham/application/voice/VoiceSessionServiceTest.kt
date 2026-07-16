@@ -76,6 +76,7 @@ class VoiceSessionServiceTest {
             voiceRecordSessionRepository = voiceRecordSessionRepository,
             voiceRecordTurnRepository = voiceRecordTurnRepository,
             realtimeSessionProvider = realtimeSessionProvider,
+            voiceSessionProperties = VoiceSessionProperties(maxRounds = 10, maxDurationSeconds = 300),
         )
         member = Member(id = memberId, email = "$memberId@example.com", passwordHash = null)
         farm = Farm(id = farmId, owner = member, name = "약초농장", roadAddress = "서울시 강남구")
@@ -98,6 +99,8 @@ class VoiceSessionServiceTest {
         assertThat(result.clientSecret).isEqualTo("secret")
         assertThat(result.farms).extracting("farmId").containsExactly(farmId)
         assertThat(result.cropsByFarm[farmId.toString()]).extracting("cropId").containsExactly(cropId)
+        assertThat(result.maxRounds).isEqualTo(10)
+        assertThat(result.maxDurationSeconds).isEqualTo(300)
     }
 
     @Test

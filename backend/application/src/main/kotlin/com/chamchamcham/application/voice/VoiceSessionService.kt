@@ -30,6 +30,7 @@ class VoiceSessionService(
     private val voiceRecordSessionRepository: VoiceRecordSessionRepository,
     private val voiceRecordTurnRepository: VoiceRecordTurnRepository,
     private val realtimeSessionProvider: RealtimeSessionProvider,
+    private val voiceSessionProperties: VoiceSessionProperties,
 ) {
     fun create(command: VoiceSessionCommand.Create): VoiceSessionResult.Created {
         val member = findMember(command.memberId)
@@ -62,6 +63,8 @@ class VoiceSessionService(
             model = providerResult.model,
             farms = farmOptions,
             cropsByFarm = cropsByFarm,
+            maxRounds = voiceSessionProperties.maxRounds,
+            maxDurationSeconds = voiceSessionProperties.maxDurationSeconds,
         )
     }
 

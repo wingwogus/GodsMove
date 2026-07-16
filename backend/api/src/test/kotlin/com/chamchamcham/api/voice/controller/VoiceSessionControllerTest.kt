@@ -59,6 +59,8 @@ class VoiceSessionControllerTest(
                     model = "gpt-realtime",
                     farms = listOf(FarmOption(farmId, "약초농장")),
                     cropsByFarm = mapOf(farmId.toString() to emptyList()),
+                    maxRounds = 10,
+                    maxDurationSeconds = 300,
                 )
             )
 
@@ -66,6 +68,8 @@ class VoiceSessionControllerTest(
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.sessionId", equalTo(sessionId.toString())))
             .andExpect(jsonPath("$.data.clientSecret", equalTo("secret")))
+            .andExpect(jsonPath("$.data.maxRounds", equalTo(10)))
+            .andExpect(jsonPath("$.data.maxDurationSeconds", equalTo(300)))
     }
 
     @Test
