@@ -31,6 +31,14 @@ actor AuthTokenStore {
         return cachedRefreshToken
     }
 
+    /// Cold-launch-only synchronous check. Keychain reads are plain system calls, not truly asynchronous —
+    /// this intentionally bypasses the actor so the app's very first `AppState` value (built in
+    /// `ChamChamChamApp.init()`, before SwiftUI's first render) can already reflect an existing session,
+    /// instead of `RootView` flashing the logged-out flow for a frame while `bootstrap()` awaits the actor.
+    nonisolated static func hasStoredRefreshToken(storage: KeychainTokenStorage = KeychainTokenStorage()) -> Bool {
+        storage.read(account: refreshTokenAccount) != nil
+    }
+
     func save(accessToken: String, refreshToken: String) {
         storage.save(accessToken, account: Self.accessTokenAccount)
         storage.save(refreshToken, account: Self.refreshTokenAccount)

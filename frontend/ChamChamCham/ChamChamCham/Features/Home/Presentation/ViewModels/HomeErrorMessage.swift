@@ -17,7 +17,7 @@ enum HomeErrorMessage {
         switch apiError {
         case .unauthorized:
             return "로그인이 필요해요."
-        case let .apiError(_, message) where !message.isEmpty:
+        case let .apiError(_, message) where message.looksLikeUserFacingErrorMessage:
             return message
         case .network:
             return "네트워크 연결을 확인해주세요."

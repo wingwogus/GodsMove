@@ -25,7 +25,7 @@ struct SettingsView: View {
             AppTopAppBar(
                 title: "설정",
                 isDetail: true,
-                leading: .init("chevron.left") { dismiss() }
+                leading: .init(.asset("chevron_backward")) { dismiss() }
             )
 
             VStack(spacing: 0) {
@@ -68,10 +68,8 @@ struct SettingsView: View {
                     .appTypography(.bodyLarge)
                     .foregroundStyle(isDestructive ? Color.Text.red : Color.Text.default)
                 Spacer()
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 20))
+                AppIconView(source: .asset("chevron_forward"), size: 24)
                     .foregroundStyle(Color.Icon.subtle)
-                    .frame(width: 24, height: 24)
             }
             .padding(.horizontal, Spacing.lg - Spacing.xs)
             .frame(height: 56)

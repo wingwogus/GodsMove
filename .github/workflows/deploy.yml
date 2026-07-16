@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 env:
   IMAGE_NAME: vantagac/chamchamcham-api
@@ -80,10 +81,20 @@ jobs:
 
           ssh_opts=(-i ~/.ssh/chamchamcham_deploy_key -o IdentitiesOnly=yes -o BatchMode=yes)
 
+          # shellcheck disable=SC2029
+          if ! ssh "${ssh_opts[@]}" "$DEPLOY_TARGET" \
+            "test -f '$DEPLOY_PATH/.rag-infrastructure-ready' && grep -Fxq 'rag-v1' '$DEPLOY_PATH/.rag-infrastructure-ready'"; then
+            echo "::notice::API image was published, but server deploy was skipped until the one-time rag-v1 migration is verified."
+            exit 0
+          fi
+
+          # shellcheck disable=SC2029
           ssh "${ssh_opts[@]}" "$DEPLOY_TARGET" "mkdir -p '$DEPLOY_PATH'"
           scp "${ssh_opts[@]}" docker-compose.yml "$DEPLOY_TARGET:$DEPLOY_PATH/docker-compose.yml"
 
+          # shellcheck disable=SC2029
           ssh "${ssh_opts[@]}" "$DEPLOY_TARGET" \
             "cd '$DEPLOY_PATH' && test -f .env || { echo '.env is missing in $DEPLOY_PATH'; exit 1; }"
+          # shellcheck disable=SC2029
           ssh "${ssh_opts[@]}" "$DEPLOY_TARGET" \
             "cd '$DEPLOY_PATH' && docker compose pull api && docker compose up -d api"

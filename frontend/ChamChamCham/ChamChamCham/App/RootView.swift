@@ -31,20 +31,11 @@ struct RootView: View {
         }
     }
 
-    /// Cold-launch auto-login: routes off the local cache immediately (offline-first, no network wait),
-    /// then reconciles with the server in the background.
+    /// Cold-launch session reconciliation. `appState`'s initial value is already derived synchronously from
+    /// the local cache in `ChamChamChamApp.initialAppState` (offline-first, no network wait, no logged-out
+    /// flash) — this only handles the background server round-trip.
     private func bootstrap() async {
-        guard await container.authTokenStore.refreshToken() != nil else { return }
-
-        if let cached = CachedMemberProfile.fetchCached(in: modelContext) {
-            appState.isAuthenticated = true
-            appState.isOnboarded = cached.isOnboardingComplete
-        } else {
-            // Refresh token survived (e.g. Keychain persists across an app delete+reinstall) but there's no
-            // local cache row — conservatively resume onboarding rather than optimistically unlocking MainTabView.
-            appState.isAuthenticated = true
-            appState.isOnboarded = false
-        }
+        guard appState.isAuthenticated else { return }
 
         // Proactively rotate the token and detect server-side revocation early — the backend keeps only a
         // single active refresh token per member, so a login on another device silently invalidates this

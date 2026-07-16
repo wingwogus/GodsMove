@@ -68,13 +68,16 @@ struct DesignSystemCaptureStyleTests {
     }
 
     @Test("card sizes map to the 7.8 layout dimensions")
+    @MainActor
     func cardSizes() {
         #expect(AppCard<EmptyView>.Size.xsmall.canvasSize == CGSize(width: 168, height: 168))
         #expect(AppCard<EmptyView>.Size.small.canvasSize == CGSize(width: 350, height: 180))
         #expect(AppCard<EmptyView>.Size.medium.canvasSize == CGSize(width: 258, height: 261))
-        #expect(AppCard<EmptyView>.Size.large.canvasSize == CGSize(width: 350, height: 334))
+        #expect(AppCard<EmptyView>.Size.large.canvasSize == CGSize(width: 350, height: 304))
         #expect(AppCard<EmptyView>.Size.medium.cornerRadius == 20)
         #expect(AppCard<EmptyView>.Size.large.cornerRadius == 24)
+        #expect(hex(AppCard<EmptyView>.borderColor(size: .large, isSelected: false)) == hex(Color.Border.subtle))
+        #expect(hex(AppCard<EmptyView>.borderColor(size: .medium, isSelected: false)) == hex(Color.Border.default))
     }
 
     @Test("card selection matches the captured xsmall and small states")

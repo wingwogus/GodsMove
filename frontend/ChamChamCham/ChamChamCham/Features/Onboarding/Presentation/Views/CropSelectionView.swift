@@ -131,8 +131,7 @@ struct CropSelectionView: View {
             .padding(.vertical, 64)
         } else if filteredCrops.isEmpty {
             VStack(spacing: Spacing.sm) {
-                Image(systemName: "magnifyingglass")
-                    .font(.system(size: 28, weight: .medium))
+                AppIconView(source: .asset("search"), size: 28)
                     .foregroundStyle(Color.Icon.subtle)
                 Text("검색 결과가 없어요")
                     .font(AppTypography.bodyMediumEmphasized.font)
@@ -162,8 +161,7 @@ struct CropSelectionView: View {
             Button {
                 viewModel.goBack()
             } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 20, weight: .semibold))
+                AppIconView(source: .asset("chevron_backward"), size: 24)
                     .foregroundStyle(Color.Icon.default)
                     .frame(width: 48, height: 48)
             }
@@ -242,8 +240,7 @@ struct CropSelectionView: View {
                 Spacer()
 
                 if isSelected {
-                    Image(systemName: "checkmark.circle.fill")
-                        .font(.system(size: 24, weight: .semibold))
+                    AppIconView(source: .asset("check_circle"), size: 24)
                         .foregroundStyle(Color.Object.primary)
                 }
             }

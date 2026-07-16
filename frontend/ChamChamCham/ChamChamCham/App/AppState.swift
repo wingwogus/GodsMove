@@ -10,6 +10,11 @@ import Observation
 @Observable
 @MainActor
 final class AppState {
-    var isAuthenticated = false
-    var isOnboarded = false
+    var isAuthenticated: Bool
+    var isOnboarded: Bool
+
+    init(isAuthenticated: Bool = false, isOnboarded: Bool = false) {
+        self.isAuthenticated = isAuthenticated
+        self.isOnboarded = isOnboarded
+    }
 }

@@ -244,3 +244,18 @@ enum ManagementType: String, CaseIterable, Codable, Sendable {
     case agriculturalCorporation = "AGRICULTURAL_CORPORATION"
     case nonRegisteredFarmer = "NON_REGISTERED_FARMER"
 }
+
+extension OnboardingDraft {
+    /// Seeds a brand-new draft with whatever the social login provider already gave the backend, per
+    /// `docs/figma/onboarding/2026-07-11-onboarding-step-1-social-prefill-default.md`. Only name/phone/nickname/
+    /// birthDate are prefilled — qualification and profile photo are intentionally left untouched.
+    init(prefillingFrom member: CachedMemberProfile) {
+        self.init()
+        if let name = member.name, !name.isEmpty { self.name = name }
+        if let phone = member.phone, !phone.isEmpty { self.phone = phone }
+        if let nickname = member.nickname, !nickname.isEmpty { self.nickname = nickname }
+        if let raw = member.birthDateRaw {
+            self.birthDate = OnboardingCompleteRequestDTO.wireDateFormatter.date(from: raw)
+        }
+    }
+}

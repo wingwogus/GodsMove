@@ -38,10 +38,10 @@ struct AppTopAppBar: View {
     var body: some View {
         content
             .frame(maxWidth: .infinity)
-            .padding(.vertical, isDetail ? Spacing.sm : 6)
-            .padding(.leading, isDetail ? 12 : Spacing.lg)
+            .padding(.vertical, Spacing.sm)
+            .padding(.leading, isDetail ? 12 : 20)
             .padding(.trailing, 12)
-            .frame(height: isDetail ? 64 : 60)
+            .frame(height: 60)
             .background(backgroundColor)
             .overlay(alignment: .bottom) {
                 if showBorder {
@@ -108,7 +108,7 @@ struct AppTopAppBar: View {
         AppTopAppBar(
             title: "타이틀",
             isDetail: true,
-            leading: .init("chevron.left"),
+            leading: .init(.asset("chevron_backward")),
             trailing: [.init("ellipsis")]
         )
     }

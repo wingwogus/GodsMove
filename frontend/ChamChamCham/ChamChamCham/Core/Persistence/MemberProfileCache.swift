@@ -14,6 +14,7 @@ import SwiftData
 protocol MemberProfileCache {
     @discardableResult
     func save(member: MemberProfileResponseDTO, onboarding: OnboardingResponseDTO) -> CachedMemberProfile
+    func fetchCurrent() -> CachedMemberProfile?
 }
 
 @MainActor
@@ -27,5 +28,9 @@ final class SwiftDataMemberProfileCache: MemberProfileCache {
     @discardableResult
     func save(member: MemberProfileResponseDTO, onboarding: OnboardingResponseDTO) -> CachedMemberProfile {
         CachedMemberProfile.upsert(member: member, onboarding: onboarding, in: modelContext)
+    }
+
+    func fetchCurrent() -> CachedMemberProfile? {
+        CachedMemberProfile.fetchCached(in: modelContext)
     }
 }

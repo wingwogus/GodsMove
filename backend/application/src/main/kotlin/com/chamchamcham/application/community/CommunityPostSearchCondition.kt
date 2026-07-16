@@ -6,6 +6,7 @@ import java.util.UUID
 
 data class CommunityPostSearchCondition(
     val memberId: UUID,
+    val authorMemberId: UUID? = null,
     val cropId: UUID?,
     val postType: CommunityPostType?,
     val keyword: String?,

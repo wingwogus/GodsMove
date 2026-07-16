@@ -16,16 +16,22 @@ import SwiftUI
 ///   provide feels-like/low-high/UV/precipitation/humidity/wind/5-day forecast yet).
 /// - The policy card shows `applicationPeriodLabel` under the title instead of a computed D-day badge.
 /// - Policy list row taps open the external application/source URL in the system browser.
-/// - Search icon, notification icon, and the record/community section chevrons are inert placeholders
-///   (no search screen, no unread-count API, no cross-tab navigation wiring yet).
+/// - The record/community section chevrons switch `MainTabView`'s tab `selection` (hoisted in via
+///   `tabSelection`) rather than pushing a duplicate list screen onto Home's own `NavigationStack` —
+///   those screens are tab roots with their own stack (and, for Record, a speed-dial binding owned by
+///   `MainTabView`), so a push here would produce a second, independently-scrolled copy.
+/// - Search icon and notification icon are still inert placeholders (no search screen, no
+///   unread-count API yet).
 struct HomeView: View {
     private let container: DIContainer
     @State private var viewModel: HomeViewModel
     @State private var path = NavigationPath()
     @State private var showCompose = false
+    @Binding private var tabSelection: Int
 
-    init(container: DIContainer) {
+    init(container: DIContainer, tabSelection: Binding<Int>) {
         self.container = container
+        _tabSelection = tabSelection
         _viewModel = State(initialValue: HomeViewModel(
             recordRepository: container.makeRecordRepository(),
             communityRepository: container.makeCommunityRepository(),
@@ -38,21 +44,31 @@ struct HomeView: View {
             VStack(spacing: 0) {
                 AppTopAppBar(
                     title: "홈",
+                    background: .subtle,
                     showBorder: false,
                     trailing: [.init(.asset("search")), .init(.asset("notifications"))]
                 )
                 ScrollView {
-                    VStack(alignment: .leading, spacing: Spacing.lg) {
+                    VStack(alignment: .leading, spacing: Spacing.xl) {
                         weatherAndTipRow
                         recentRecordSection
                         policySection
                         popularPostsSection
                     }
                     .padding(.horizontal, 20)
-                    .padding(.vertical, Spacing.md)
+                    .padding(.top, Spacing.xl)
+                    .padding(.bottom, Spacing.lg)
                 }
                 .background(Color.Background.subtle)
-                .refreshable { await viewModel.reload() }
+                .refreshable {
+                    // `reload()` sets each section's state to `.loading` before awaiting its fetch, which
+                    // triggers a body rebuild. If that rebuild happens on the same Task `.refreshable` owns,
+                    // SwiftUI cancels it mid-flight — the in-flight URLSession call then throws
+                    // `URLError(.cancelled)`, which surfaces as "네트워크 연결을 확인해주세요" even though
+                    // nothing was actually wrong. Running the reload on its own unstructured Task keeps it
+                    // outside that cancellation path.
+                    await Task { await viewModel.reload() }.value
+                }
             }
             .navigationBarHidden(true)
             .navigationDestination(for: HomeRoute.self) { route in
@@ -82,7 +98,7 @@ struct HomeView: View {
     // MARK: - Weather + Tip
 
     private var weatherAndTipRow: some View {
-        HStack(spacing: Spacing.sm) {
+        HStack(spacing: Spacing.md) {
             weatherCard.frame(maxWidth: .infinity)
             tipCard.frame(maxWidth: .infinity)
         }
@@ -127,14 +143,20 @@ struct HomeView: View {
         case let .loaded(value):
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
-                    AppIconView(source: .asset(WeatherIconMapping.assetName(for: value.weather.condition)), size: 40)
+                    AppIconView(source: .asset(WeatherIconMapping.assetName(for: value.weather.condition)), size: 40, renderingMode: .original)
                     Text("\(value.weather.temperature)°")
-                        .appTypography(.headlineMediumEmphasized)
+                        .appTypography(.headlineLarge)
                         .foregroundStyle(Color.Text.default)
                 }
-                Text("최저 \(value.detail.lowTemperature)° | 최고 \(value.detail.highTemperature)°")
-                    .appTypography(.bodyMedium)
-                    .foregroundStyle(Color.Text.muted)
+                HStack(spacing: Spacing.sm) {
+                    Text("최저 \(value.detail.lowTemperature)°")
+                    Rectangle()
+                        .fill(Color.Border.strong)
+                        .frame(width: 1, height: 12)
+                    Text("최고 \(value.detail.highTemperature)°")
+                }
+                .appTypography(.bodyMedium)
+                .foregroundStyle(Color.Text.muted)
             }
         case let .failed(message):
             Text(message)
@@ -148,13 +170,7 @@ struct HomeView: View {
     /// (BR/Swagger both silent, see home backend-conflicts C-7). Replace once that logic exists.
     private var tipCard: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("tip")
-                .appTypography(.labelMedium)
-                .foregroundStyle(Color.Text.inverse)
-                .padding(.horizontal, Spacing.sm)
-                .padding(.vertical, 4)
-                .background(Color.Object.primary)
-                .clipShape(Capsule())
+            AppBadge(label: "tip", size: .small, style: .solid, variant: .primary)
             Text("오늘 날씨엔 관수가 잘 맞아요.\n작물 상태를 살펴보는 건 어떨까요?")
                 .appTypography(.bodyMedium)
                 .foregroundStyle(Color.Text.primary)
@@ -169,8 +185,8 @@ struct HomeView: View {
     // MARK: - Recent record
 
     private var recentRecordSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionHeader("나의 최근 영농 기록")
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            sectionHeader("나의 최근 영농 기록") { tabSelection = 1 }
 
             switch viewModel.recentRecordsState {
             case .loading:
@@ -179,12 +195,12 @@ struct HomeView: View {
                 emptyStateText("아직 작성한 기록이 없어요")
             case let .loaded(records):
                 ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: Spacing.sm) {
+                    HStack(spacing: Spacing.md) {
                         ForEach(records) { record in
                             AppCard(
                                 size: .medium,
-                                title: record.memoPreview.isEmpty ? record.workType.label : record.memoPreview,
-                                captions: [record.workType.label, weatherCaption(for: record)],
+                                title: record.workType.label,
+                                captions: [record.memoPreview],
                                 badges: [record.cropName],
                                 dateText: dateText(record.workedAt)
                             ) {
@@ -197,7 +213,7 @@ struct HomeView: View {
                 emptyStateText(message)
             }
 
-            AppButton("새로 작성하기", systemImage: "plus", variant: .secondary, size: .small, fullWidth: true) {
+            AppButton("새로 작성하기", icon: .asset("add"), variant: .secondary, size: .small, fullWidth: true) {
                 showCompose = true
             }
         }
@@ -217,7 +233,7 @@ struct HomeView: View {
     // MARK: - Policy
 
     private var policySection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
+        VStack(alignment: .leading, spacing: Spacing.md) {
             sectionHeader("오늘의 추천 정책") { path.append(HomeRoute.policyList) }
 
             switch viewModel.policyState {
@@ -230,11 +246,11 @@ struct HomeView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 4) {
                             Text(policy.title)
-                                .appTypography(.titleMedium)
+                                .appTypography(.titleMediumEmphasized)
                                 .foregroundStyle(Color.Text.subtle)
                                 .lineLimit(1)
-                            Text("기간: \(policy.applicationPeriodLabel)")
-                                .appTypography(.labelMedium)
+                            Text(policy.applicationPeriodLabel)
+                                .appTypography(.bodyMedium)
                                 .foregroundStyle(Color.Text.muted)
                                 .lineLimit(1)
                         }
@@ -264,8 +280,8 @@ struct HomeView: View {
     // MARK: - Popular posts
 
     private var popularPostsSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            sectionHeader("나의 게시판 인기글")
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            sectionHeader("나의 게시판 인기글") { tabSelection = 2 }
 
             switch viewModel.popularPostsState {
             case .loading:
@@ -302,8 +318,10 @@ struct HomeView: View {
         }
     }
 
-    private func postBadges(_ post: CommunityPostSummary) -> [String] {
-        post.postType == .question ? ["Q&A", post.cropName] : [post.cropName]
+    private func postBadges(_ post: CommunityPostSummary) -> [AppListItemBadge] {
+        let category = AppListItemBadge(post.cropName, style: .solidPastel, variant: .primary)
+        guard post.postType == .question else { return [category] }
+        return [AppListItemBadge("Q&A", style: .solid, variant: .primary), category]
     }
 
     // MARK: - Shared section chrome
@@ -319,6 +337,8 @@ struct HomeView: View {
             } label: {
                 AppIconView(source: .asset("arrow_forward_ios"), size: 24)
                     .foregroundStyle(Color.Icon.default)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
             }
             .disabled(action == nil)
         }

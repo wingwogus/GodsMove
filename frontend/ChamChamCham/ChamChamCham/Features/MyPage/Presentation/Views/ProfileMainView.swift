@@ -28,34 +28,39 @@ struct ProfileMainView: View {
     }
 
     var body: some View {
-        VStack(spacing: 0) {
-            AppTopAppBar(
-                title: "나의 프로필",
-                trailing: [
-                    .init("gearshape") { isShowingSettings = true },
-                    .init("bell") {} // 알림: 이번 범위 제외
-                ]
-            )
+        NavigationStack {
+            VStack(spacing: 0) {
+                AppTopAppBar(
+                    title: "나의 프로필",
+                    trailing: [
+                        .init(.asset("settings")) { isShowingSettings = true },
+                        .init(.asset("notifications")) {} // 알림: 이번 범위 제외
+                    ]
+                )
 
-            ScrollView {
-                LazyVStack(spacing: 0, pinnedViews: []) {
-                    profileCard
-                        .padding(.horizontal, Spacing.lg - Spacing.xs)
-                        .padding(.top, Spacing.md)
-                        .padding(.bottom, Spacing.md)
+                ScrollView {
+                    LazyVStack(spacing: 0, pinnedViews: []) {
+                        profileCard
+                            .padding(.horizontal, Spacing.lg - Spacing.xs)
+                            .padding(.top, Spacing.md)
+                            .padding(.bottom, Spacing.md)
 
-                    AppTabBar(
-                        titles: ["나의 게시물", "좋아요 누른 글"],
-                        selection: $viewModel.selectedTabIndex
-                    )
+                        AppTabBar(
+                            titles: ["나의 게시물", "좋아요 누른 글"],
+                            selection: $viewModel.selectedTabIndex
+                        )
 
-                    filterRow
+                        filterRow
 
-                    postsSection
+                        postsSection
+                    }
                 }
             }
+            .background(Color.Background.default)
+            .navigationDestination(for: CommunityPostSummary.self) { post in
+                CommunityDetailView(postId: post.id, container: container)
+            }
         }
-        .background(Color.Background.default)
         .task { await viewModel.onAppear() }
         .onChange(of: viewModel.selectedTabIndex) { _, _ in
             Task { await viewModel.onTabChanged() }
@@ -122,8 +127,7 @@ struct ProfileMainView: View {
                     .fill(Color.Object.bold)
                     .frame(width: 36, height: 36)
                     .overlay {
-                        Image(systemName: "pencil")
-                            .font(.system(size: 16))
+                        AppIconView(source: .asset("edit"), size: 16)
                             .foregroundStyle(Color.Icon.inverse)
                     }
             }
@@ -222,9 +226,12 @@ struct ProfileMainView: View {
         } else {
             LazyVStack(spacing: CommunityPostRow.Layout.interRowSpacing) {
                 ForEach(viewModel.posts) { post in
-                    CommunityPostRow(post: post) {
-                        Task { await viewModel.toggleLike(post) }
+                    NavigationLink(value: post) {
+                        CommunityPostRow(post: post) {
+                            Task { await viewModel.toggleLike(post) }
+                        }
                     }
+                    .buttonStyle(.plain)
                     .task { await viewModel.loadMoreIfNeeded(currentItem: post) }
                 }
                 if viewModel.isLoadingMore {

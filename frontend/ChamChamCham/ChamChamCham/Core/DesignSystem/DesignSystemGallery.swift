@@ -19,14 +19,14 @@ import SwiftUI
             AppButton("레이블", variant: .secondary, size: .medium) {}
             AppButton("레이블", variant: .tertiary, size: .medium) {}
             AppButton("레이블", variant: .neutral, size: .small) {}
-            AppButton("레이블", systemImage: "checkmark", variant: .primary, size: .medium) {}
+            AppButton("레이블", icon: .system("checkmark"), variant: .primary, size: .medium) {}
             AppButton("레이블", variant: .primary, size: .medium) {}.disabled(true)
             AppButton("전폭 버튼", variant: .primary, size: .medium, fullWidth: true) {}
             HStack(spacing: Spacing.sm) {
-                AppButton(systemImage: "plus", variant: .primary, size: .small) {}
-                AppButton(systemImage: "plus", variant: .secondary, size: .medium) {}
-                AppButton(systemImage: "plus", variant: .tertiary, size: .large) {}
-                AppButton(systemImage: "plus", variant: .primary, size: .xlarge) {}
+                AppButton(icon: .asset("add"), variant: .primary, size: .small) {}
+                AppButton(icon: .asset("add"), variant: .secondary, size: .medium) {}
+                AppButton(icon: .asset("add"), variant: .tertiary, size: .large) {}
+                AppButton(icon: .asset("add"), variant: .primary, size: .xlarge) {}
             }
         }
         .padding()
@@ -221,11 +221,11 @@ import SwiftUI
 
 #Preview("AppTopAppBar") {
     VStack(spacing: Spacing.xl) {
-        AppTopAppBar(title: "타이틀", trailing: [.init("bell"), .init("gearshape")])
+        AppTopAppBar(title: "타이틀", trailing: [.init(.asset("notifications")), .init(.asset("settings"))])
         AppTopAppBar(title: "타이틀", isDetail: true,
-                     leading: .init("chevron.left"), trailing: [.init("ellipsis")])
+                     leading: .init(.asset("chevron_backward")), trailing: [.init(.asset("more_vert"))])
         AppTopAppBar(title: "타이틀", background: .subtle,
-                     trailing: [.init("bell")])
+                     trailing: [.init(.asset("notifications"))])
     }
 }
 
@@ -356,12 +356,12 @@ import SwiftUI
         VStack(spacing: Spacing.lg) {
             AppCard(size: .xsmall, title: "타이틀", captions: ["캡션", "캡션"])
             AppCard(size: .small, title: "비료 주기", captions: ["캡션"], badges: ["레이블", "레이블"])
-            AppCard(size: .medium, title: "타이틀", captions: ["캡션", "캡션"], badges: ["레이블"])
+            AppCard(size: .medium, title: "타이틀", captions: ["캡션"], badges: ["레이블"])
             AppCard(
                 size: .large,
                 title: "타이틀",
-                captions: ["캡션", "캡션"],
-                badges: ["레이블"]
+                captions: ["mm.dd", "mm.dd"],
+                badges: ["레이블", "레이블"]
             )
         }
         .padding()

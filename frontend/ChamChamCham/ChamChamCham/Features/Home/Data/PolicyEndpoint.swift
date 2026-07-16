@@ -11,13 +11,13 @@ import Foundation
 /// string on the server (no enum in the schema), so a `nil` category means "전체" (no filter applied).
 struct PolicyRecommendationQuery: Sendable, Equatable {
     var benefitCategory: PolicyCategory?
-    var sort: String
+    var sort: PolicySort
     var cursor: String?
     var size: Int
 
     init(
         benefitCategory: PolicyCategory? = nil,
-        sort: String = "RECOMMENDED",
+        sort: PolicySort = .recommended,
         cursor: String? = nil,
         size: Int = 20
     ) {
@@ -54,7 +54,7 @@ enum PolicyEndpoint: Endpoint {
         case let .recommendations(query):
             var items = [
                 URLQueryItem(name: "size", value: String(query.size)),
-                URLQueryItem(name: "sort", value: query.sort),
+                URLQueryItem(name: "sort", value: query.sort.rawValue),
             ]
             if let category = query.benefitCategory {
                 items.append(URLQueryItem(name: "benefitCategory", value: category.rawValue))

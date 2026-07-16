@@ -33,7 +33,7 @@ struct MainTabView: View {
         [
             .init(title: "홈", icon: .asset("home_line"), selectedIcon: .asset("home")),
             .init(title: "영농 기록", icon: .asset("assignment-1"), selectedIcon: .asset("assignment")),
-            .init(title: "정보 공유", icon: .asset("forum_line"), selectedIcon: .asset("forum")),
+            .init(title: "정보 공유", icon: .asset("chat_bubble_line"), selectedIcon: .asset("chat_bubble")),
             .init(title: "프로필", icon: .asset("person_line"), selectedIcon: .asset("person")),
         ]
     }
@@ -77,7 +77,7 @@ struct MainTabView: View {
     private func tabContent(_ index: Int) -> some View {
         switch index {
         case 0:
-            HomeView(container: container)
+            HomeView(container: container, tabSelection: $selection)
         case 1:
             RecordListView(
                 repository: container.makeRecordRepository(),

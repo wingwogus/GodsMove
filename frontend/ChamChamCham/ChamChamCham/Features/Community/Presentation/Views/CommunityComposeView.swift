@@ -58,7 +58,7 @@ struct CommunityComposeView: View {
                 title: "게시물 작성하기",
                 isDetail: true,
                 showBorder: false,
-                leading: .init("chevron.left") { dismiss() }
+                leading: .init(.asset("chevron_backward")) { dismiss() }
             )
 
             ScrollView {
@@ -114,10 +114,8 @@ struct CommunityComposeView: View {
                 Button {
                     showCropPicker = true
                 } label: {
-                    Image(systemName: "plus")
-                        .font(.system(size: 24, weight: .medium))
+                    AppIconView(source: .asset("add"), size: 32)
                         .foregroundStyle(Color.Icon.subtle)
-                        .frame(width: 32, height: 32)
                         .background(Color.Object.default)
                         .overlay(Circle().stroke(Color.Border.default, lineWidth: 1))
                         .clipShape(Circle())
@@ -229,8 +227,7 @@ struct CommunityComposeView: View {
                         .appTypography(.bodyMedium)
                         .foregroundStyle(Color.Text.default)
                     Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 24))
+                    AppIconView(source: .asset("chevron_forward"), size: 24)
                         .foregroundStyle(Color.Icon.subtle)
                 }
                 .frame(height: 24)

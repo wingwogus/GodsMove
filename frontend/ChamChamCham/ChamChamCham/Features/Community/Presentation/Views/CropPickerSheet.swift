@@ -40,8 +40,7 @@ struct CropPickerSheet: View {
                     .foregroundStyle(Color.Text.default)
                 Spacer()
                 Button { dismiss() } label: {
-                    Image(systemName: "xmark")
-                        .font(.system(size: 18))
+                    AppIconView(source: .asset("close"), size: 20)
                         .foregroundStyle(Color.Icon.default)
                 }
             }

@@ -57,8 +57,7 @@ struct CommunityDetailView: View {
     private var header: some View {
         HStack(spacing: 0) {
             Button { dismiss() } label: {
-                Image(systemName: "chevron.backward")
-                    .font(.system(size: 26, weight: .regular))
+                AppIconView(source: .asset("chevron_backward"), size: 32)
                     .foregroundStyle(Color.Icon.default)
                     .frame(width: 48, height: 48)
             }
@@ -74,8 +73,7 @@ struct CommunityDetailView: View {
                     Button {} label: { Label("신고하기", systemImage: "exclamationmark.bubble") }
                         .disabled(true) // 신고 백엔드 미구현
                 } label: {
-                    Image(systemName: "ellipsis")
-                        .font(.system(size: 24))
+                    AppIconView(source: .asset("more_vert"), size: 24)
                         .foregroundStyle(Color.Icon.default)
                         .frame(width: 48, height: 48)
                 }
@@ -111,8 +109,7 @@ struct CommunityDetailView: View {
             }
         } else {
             VStack(spacing: Spacing.md) {
-                Image(systemName: "exclamationmark.triangle")
-                    .font(.system(size: 40))
+                AppIconView(source: .asset("error"), size: 40)
                     .foregroundStyle(Color.Icon.disabled)
                 Text(viewModel.errorMessage ?? "게시글을 불러오지 못했어요.")
                     .appTypography(.bodyMedium)
@@ -176,8 +173,7 @@ struct CommunityDetailView: View {
         Button {
             Task { await viewModel.toggleLike() }
         } label: {
-            Image(systemName: detail.likedByMe ? "heart.fill" : "heart")
-                .font(.system(size: 28, weight: .regular))
+            AppIconView(source: .asset(detail.likedByMe ? "favorite" : "favorite_line"), size: 28)
                 .foregroundStyle(detail.likedByMe ? Color.Icon.red : Color.Icon.default)
                 .frame(width: 32, height: 32)
         }

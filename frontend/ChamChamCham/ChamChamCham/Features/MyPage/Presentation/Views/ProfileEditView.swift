@@ -18,7 +18,7 @@ struct ProfileEditView: View {
             AppTopAppBar(
                 title: "프로필 수정",
                 isDetail: true,
-                leading: .init("chevron.left") { dismiss() }
+                leading: .init(.asset("chevron_backward")) { dismiss() }
             )
 
             AppTabBar(titles: ["기본 정보", "농업 정보"], selection: $selectedTab)

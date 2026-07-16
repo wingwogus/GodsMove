@@ -111,8 +111,15 @@ final class OnboardingViewModel {
                 store.clear()
             }
             self.currentStep = .landing
-            self.draft = OnboardingDraft()
+            self.draft = Self.seededDraft(from: memberProfileCache)
         }
+    }
+
+    /// Seeds a genuinely new draft with whatever the social login provider already gave the backend. Never called
+    /// for a restorable snapshot, so this can't clobber an in-progress draft for the same member.
+    private static func seededDraft(from cache: MemberProfileCache) -> OnboardingDraft {
+        guard let member = cache.fetchCurrent() else { return OnboardingDraft() }
+        return OnboardingDraft(prefillingFrom: member)
     }
 
     func goNext() {
@@ -153,7 +160,7 @@ final class OnboardingViewModel {
         store.clear()
         submissionState = .idle
         currentStep = .basicProfile
-        draft = OnboardingDraft()
+        draft = Self.seededDraft(from: memberProfileCache)
     }
 
     func addFarmFromCompletion() {

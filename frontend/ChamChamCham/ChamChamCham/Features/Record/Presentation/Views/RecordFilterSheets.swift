@@ -42,7 +42,7 @@ struct RecordCropFilterSheet: View {
     }
 
     var body: some View {
-        RecordFilterSheetScaffold(title: "진행중인 작물") {
+        RecordFilterSheetScaffold(title: "진행중인 작물", height: 274) {
             if crops.isEmpty {
                 Text("진행중인 작물이 없어요.")
                     .appTypography(.bodyMedium)
@@ -82,7 +82,7 @@ struct RecordWorkTypeFilterSheet: View {
     }
 
     var body: some View {
-        RecordFilterSheetScaffold(title: "영농 활동") {
+        RecordFilterSheetScaffold(title: "영농 활동", height: 274) {
             RecordChipFlow(
                 items: WorkType.allCases,
                 isSelected: { $0 == draft },
@@ -123,7 +123,7 @@ struct RecordDateFilterSheet: View {
     }
 
     var body: some View {
-        RecordFilterSheetScaffold(title: "작성 기간") {
+        RecordFilterSheetScaffold(title: "작성 기간", height: 258) {
             HStack(alignment: .top, spacing: Spacing.sm) {
                 AppDateField(selection: $draftStart, errorMessage: rangeError.map { _ in "" })
                 AppDateField(selection: $draftEnd, errorMessage: rangeError)
@@ -143,6 +143,9 @@ struct RecordDateFilterSheet: View {
 /// captured filter sheets. The drag grabber and background dim come from the system sheet presentation.
 private struct RecordFilterSheetScaffold<Content: View>: View {
     let title: String
+    /// Total sheet height (Figma `bottom-sheet` frame, grabber included): 274 for the two-row
+    /// chip sheets (작물/영농 활동), 258 for the single-row date-range sheet.
+    let height: CGFloat
     @ViewBuilder let content: Content
     let onComplete: () -> Void
     var isCompleteDisabled: () -> Bool = { false }
@@ -155,15 +158,15 @@ private struct RecordFilterSheetScaffold<Content: View>: View {
 
             content
 
-            AppButton("완료", variant: .secondary, size: .large, fullWidth: true, action: onComplete)
+            AppButton("완료", variant: .secondary, size: .medium, fullWidth: true, action: onComplete)
                 .disabled(isCompleteDisabled())
-                .padding(.top, Spacing.sm)
+                .padding(.top, Spacing.md)
         }
         .padding(.horizontal, 20)
-        .padding(.top, Spacing.md)
-        .padding(.bottom, Spacing.lg)
+        .padding(.top, 20)
+        .padding(.bottom, Spacing.sm)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .presentationDetents([.height(280)])
+        .presentationDetents([.height(height)])
         .presentationDragIndicator(.visible)
     }
 }

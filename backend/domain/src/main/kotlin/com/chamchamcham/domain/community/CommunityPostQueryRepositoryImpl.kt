@@ -54,6 +54,10 @@ class CommunityPostQueryRepositoryImpl(
         val where = mutableListOf("p.isDeleted = false")
         val params = mutableMapOf<String, Any>()
 
+        condition.authorMemberId?.let {
+            where += "p.author.id = :authorMemberId"
+            params["authorMemberId"] = it
+        }
         condition.cropId?.let {
             where += "p.crop.id = :cropId"
             params["cropId"] = it

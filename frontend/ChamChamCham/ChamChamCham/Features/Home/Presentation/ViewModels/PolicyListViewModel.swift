@@ -17,6 +17,7 @@ final class PolicyListViewModel {
     private(set) var errorMessage: String?
     private var nextCursor: String?
     private(set) var selectedCategory: PolicyCategory?
+    private(set) var sort: PolicySort = .recommended
 
     init(repository: PolicyRepository) {
         self.repository = repository
@@ -33,7 +34,7 @@ final class PolicyListViewModel {
         defer { isLoading = false }
         do {
             let page = try await repository.fetchRecommendations(
-                PolicyRecommendationQuery(benefitCategory: selectedCategory, cursor: nil)
+                PolicyRecommendationQuery(benefitCategory: selectedCategory, sort: sort, cursor: nil)
             )
             items = page.items
             nextCursor = page.nextCursor
@@ -50,13 +51,19 @@ final class PolicyListViewModel {
         await reload()
     }
 
+    func selectSort(_ sort: PolicySort) async {
+        guard self.sort != sort else { return }
+        self.sort = sort
+        await reload()
+    }
+
     /// Mirrors Record/Community's `loadMoreIfNeeded`: fetches the next cursor page only when the
     /// row rendering it is the last one currently loaded.
     func loadMoreIfNeeded(currentItem: PolicyRecommendation) async {
         guard currentItem.id == items.last?.id, let nextCursor, !isLoading else { return }
         do {
             let page = try await repository.fetchRecommendations(
-                PolicyRecommendationQuery(benefitCategory: selectedCategory, cursor: nextCursor)
+                PolicyRecommendationQuery(benefitCategory: selectedCategory, sort: sort, cursor: nextCursor)
             )
             items.append(contentsOf: page.items)
             self.nextCursor = page.nextCursor

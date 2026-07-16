@@ -32,7 +32,7 @@ struct FarmAddView: View {
             AppTopAppBar(
                 title: "밭 추가",
                 isDetail: true,
-                leading: .init("chevron.left") { dismiss() }
+                leading: .init(.asset("chevron_backward")) { dismiss() }
             )
 
             ScrollView {
@@ -112,10 +112,8 @@ struct FarmAddView: View {
                                 .appTypography(.bodyLarge)
                                 .foregroundStyle(Color.Text.muted)
                             Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 20))
+                            AppIconView(source: .asset("chevron_forward"), size: 24)
                                 .foregroundStyle(Color.Icon.subtle)
-                                .frame(width: 24, height: 24)
                         }
                     } else {
                         HStack {
@@ -130,10 +128,8 @@ struct FarmAddView: View {
                                 }
                             }
                             Spacer()
-                            Image(systemName: "chevron.right")
-                                .font(.system(size: 20))
+                            AppIconView(source: .asset("chevron_forward"), size: 24)
                                 .foregroundStyle(Color.Icon.subtle)
-                                .frame(width: 24, height: 24)
                         }
                     }
                 }
@@ -172,10 +168,8 @@ struct FarmAddView: View {
                         .foregroundStyle(value == nil ? Color.Text.muted : Color.Text.default)
                         .lineLimit(1)
                     Spacer()
-                    Image(systemName: "chevron.right")
-                        .font(.system(size: 20))
+                    AppIconView(source: .asset("chevron_forward"), size: 24)
                         .foregroundStyle(Color.Icon.subtle)
-                        .frame(width: 24, height: 24)
                 }
                 .padding(.horizontal, Spacing.md)
                 .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)

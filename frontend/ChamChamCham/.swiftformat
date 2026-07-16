@@ -1,0 +1,21 @@
+# SwiftFormat config — conservative, to keep diffs small on a shared repo.
+# Docs: https://github.com/nicklockwood/SwiftFormat
+
+--swiftversion 6.0
+--minversion 0.54
+
+# Preserve the mandatory Xcode file header (see AGENTS.md). Never rewrite it.
+--header ignore
+
+# Only touch files under the app + tests sources.
+--exclude build,DerivedData,**/*.generated.swift
+
+# Turn OFF the rules most likely to produce large, opinionated diffs.
+--disable wrapMultilineStatementBraces, blankLinesAtStartOfScope, organizeDeclarations, blockComments
+
+# Sensible defaults for the rest.
+--indent 4
+--maxwidth 120
+--self remove
+--commas inline
+--trimwhitespace always

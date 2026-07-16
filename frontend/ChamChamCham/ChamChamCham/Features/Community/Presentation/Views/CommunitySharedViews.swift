@@ -29,7 +29,7 @@ struct CommunityAvatar: View {
             }
         } else {
             Color.Object.muted.overlay {
-                Image(systemName: "person.fill")
+                AppIconView(source: .asset("person"), size: 20)
                     .foregroundStyle(Color.Icon.disabled)
             }
         }
@@ -52,8 +52,7 @@ struct CommunityRemoteImage: View {
                         ProgressView()
                     }
                 } else {
-                    Image(systemName: "photo")
-                        .font(.system(size: 24))
+                    AppIconView(source: .asset("photo"), size: 24)
                         .foregroundStyle(Color.Icon.disabled)
                 }
             }
@@ -69,9 +68,9 @@ struct CommunityTagRow: View {
     var body: some View {
         HStack(spacing: Spacing.sm) {
             if postType == .question {
-                AppBadge(label: "Q&A", size: .small, style: .solidPastel, variant: .primary)
+                AppBadge(label: "Q&A", size: .small, style: .solidPastel, variant: .secondary)
             }
-            AppBadge(label: cropName, size: .small, style: .solidPastel, variant: .secondary)
+            AppBadge(label: cropName, size: .small, style: .solidPastel, variant: .primary)
         }
     }
 }

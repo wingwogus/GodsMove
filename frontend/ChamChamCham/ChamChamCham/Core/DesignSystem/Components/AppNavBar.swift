@@ -8,11 +8,12 @@
 import SwiftUI
 
 /// Figma `nav-bar`. Bottom tab bar with equal-width items: the selected item shows a filled icon
-/// and a bold label; others use line icons and a muted medium label.
+/// and a semibold label; others use line icons and a muted medium label.
 ///
-/// Note: the Figma selected label is `label/medium-emphasized` = **Bold 15**, but the codebase's
-/// `AppTypography.labelMediumEmphasized` is defined as Medium. Until that token is reconciled, the
-/// selected label is rendered with Pretendard-Bold explicitly to match the design.
+/// The container's horizontal inset is a literal `20` (Figma spec), not `Spacing.lg` (24) — no
+/// existing token matches, and the extra 4pt/side previously taken from `Spacing.lg` measurably
+/// worsened label clipping on iPhone SE width. `minimumScaleFactor` is the remaining safety net for
+/// the two-word labels ("영농 기록", "정보 공유") on that width, per the Small Device Layout Rule.
 struct AppNavBar: View {
     struct Item: Identifiable {
         let id = UUID()
@@ -41,10 +42,10 @@ struct AppNavBar: View {
                         AppIconView(source: isSelected ? item.selectedIcon : item.icon, size: 24)
                             .foregroundStyle(isSelected ? Color.Icon.default : Color.Icon.subtle)
                         Text(item.title)
-                            .appTypography(.labelMedium)
-                            .font(.custom(isSelected ? "Pretendard-Bold" : "Pretendard-Medium", size: 15))
+                            .appTypography(isSelected ? .labelMediumEmphasized : .labelMedium)
                             .foregroundStyle(isSelected ? Color.Text.default : Color.Text.subtle)
                             .lineLimit(1)
+                            .minimumScaleFactor(0.85)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.horizontal, 12)
@@ -54,8 +55,7 @@ struct AppNavBar: View {
             }
         }
         .frame(height: 72, alignment: .top)
-        .padding(.horizontal, Spacing.lg)
-        .padding(.bottom, Spacing.sm)
+        .padding(.horizontal, 20)
         .background(Color.Background.default)
         .overlay(alignment: .top) {
             Rectangle()
@@ -75,7 +75,7 @@ struct AppNavBar: View {
                     items: [
                         .init(title: "홈", icon: .asset("home_line"), selectedIcon: .asset("home")),
                         .init(title: "영농 기록", icon: .asset("assignment-1"), selectedIcon: .asset("assignment")),
-                        .init(title: "정보 공유", icon: .asset("forum_line"), selectedIcon: .asset("forum")),
+                        .init(title: "정보 공유", icon: .asset("chat_bubble_line"), selectedIcon: .asset("chat_bubble")),
                         .init(title: "프로필", icon: .asset("person_line"), selectedIcon: .asset("person")),
                     ],
                     selection: $selection

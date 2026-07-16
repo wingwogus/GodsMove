@@ -96,8 +96,7 @@ struct RecordDetailView: View {
 
     private func failedState(_ message: String) -> some View {
         VStack(spacing: Spacing.md) {
-            Image(systemName: "exclamationmark.triangle")
-                .font(.system(size: 40))
+            AppIconView(source: .asset("error"), size: 40)
                 .foregroundStyle(Color.Icon.disabled)
             Text(message)
                 .appTypography(.bodyMedium)
@@ -131,8 +130,12 @@ struct RecordDetailView: View {
 
     // MARK: 제목 + 날짜·날씨 칩 + 메모
 
+    /// Figma gap from `top-app-bar` bottom to this section, and between the title row and the memo
+    /// body, is a literal `20` — no `Spacing` token matches (between `md` 16 and `lg` 24).
+    private let headerGap: CGFloat = 20
+
     private func headerSection(_ detail: RecordDetail) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
+        VStack(alignment: .leading, spacing: headerGap) {
             HStack(alignment: .center, spacing: Spacing.sm) {
                 Text(detail.workType.label)
                     .appTypography(.headlineMediumEmphasized)
@@ -147,7 +150,7 @@ struct RecordDetailView: View {
             }
         }
         .padding(.horizontal, horizontalInset)
-        .padding(.top, Spacing.md)
+        .padding(.top, headerGap)
     }
 
     private func dateWeatherChip(_ detail: RecordDetail) -> some View {
@@ -177,7 +180,9 @@ struct RecordDetailView: View {
     private func infoSection(_ detail: RecordDetail) -> some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             sectionHeading("작업 정보")
-            VStack(alignment: .leading, spacing: Spacing.md) {
+            // Figma: title→line and line→details are both a literal `12` — no token between `sm` (8)
+            // and `md` (16) matches.
+            VStack(alignment: .leading, spacing: 12) {
                 Text("\(detail.farmName) - \(detail.cropName)")
                     .appTypography(.titleMediumEmphasized)
                     .foregroundStyle(Color.Text.subtle)
@@ -187,7 +192,9 @@ struct RecordDetailView: View {
                         .frame(height: 1)
                     VStack(alignment: .leading, spacing: Spacing.sm) {
                         ForEach(detail.infoRows) { row in
-                            HStack(alignment: .top, spacing: Spacing.md) {
+                            // No extra HStack spacing: the label's fixed 84pt column already
+                            // reproduces the Figma gap to the value (label text width + slack).
+                            HStack(alignment: .top, spacing: 0) {
                                 Text(row.label)
                                     .appTypography(.labelMediumEmphasized)
                                     .foregroundStyle(Color.Text.muted)
@@ -208,7 +215,6 @@ struct RecordDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 16))
         }
         .padding(.horizontal, horizontalInset)
-        .padding(.vertical, Spacing.lg)
     }
 
     // MARK: 작업 사진
@@ -227,7 +233,8 @@ struct RecordDetailView: View {
                 .padding(.horizontal, horizontalInset)
             }
         }
-        .padding(.vertical, Spacing.lg)
+        // No divider precedes this section (unlike info/coaching), so it carries its own top gap.
+        .padding(.top, Spacing.xl)
     }
 
     // MARK: 참참참의 코칭 (placeholder — C-18)
@@ -251,7 +258,6 @@ struct RecordDetailView: View {
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(.horizontal, horizontalInset)
-        .padding(.vertical, Spacing.lg)
     }
 
     // MARK: - Shared
@@ -262,10 +268,13 @@ struct RecordDetailView: View {
             .foregroundStyle(Color.Text.subtle)
     }
 
+    /// Figma: every divider carries a symmetric `Spacing.xl` (32) gap on both sides — the section
+    /// before and after it never adds its own padding on the divider-facing edge.
     private var divider: some View {
         Rectangle()
             .fill(Color.Border.subtle)
             .frame(height: 2)
+            .padding(.vertical, Spacing.xl)
     }
 
     private static let dateFormatter: DateFormatter = {

@@ -91,7 +91,7 @@ struct FarmingRecordPickerView: View {
                 title: "영농 기록 첨부하기",
                 isDetail: true,
                 showBorder: false,
-                leading: .init("chevron.left") { dismiss() }
+                leading: .init(.asset("chevron_backward")) { dismiss() }
             )
 
             filterArea(state: state)

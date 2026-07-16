@@ -162,7 +162,7 @@ struct RecordListView: View {
             } else if viewModel.records.isEmpty {
                 emptyState(text: "아직 영농 기록이 없어요.", systemImage: "square.stack.3d.up.slash")
             } else {
-                LazyVStack(spacing: 0) {
+                LazyVStack(spacing: 20) {
                     ForEach(viewModel.records) { record in
                         NavigationLink(value: record.id) {
                             RecordRow(record: record)
@@ -174,6 +174,7 @@ struct RecordListView: View {
                         ProgressView().padding(Spacing.md)
                     }
                 }
+                .padding(.top, 20)
                 .padding(.bottom, 112)
             }
         }
@@ -231,7 +232,7 @@ struct RecordListView: View {
             Button {
                 withAnimation(.easeInOut(duration: 0.15)) { isSpeedDialOpen.toggle() }
             } label: {
-                AppIconView(source: isSpeedDialOpen ? .asset("close") : .asset("add_2"), size: 28)
+                AppIconView(source: isSpeedDialOpen ? .asset("close") : .asset("add_2"), size: 40)
                     .foregroundStyle(isSpeedDialOpen ? Color.Icon.default : Color.Icon.inverse)
                     .frame(width: 72, height: 72)
                     .background(isSpeedDialOpen ? Color.Object.default : Color.Object.primary)
@@ -281,9 +282,12 @@ struct RecordRow: View {
     var body: some View {
         AppListItem(
             size: .large,
-            title: record.memoPreview.isEmpty ? record.cropName : record.memoPreview,
-            caption: weatherText,
-            badges: [record.cropName, record.workType.label],
+            title: record.workType.label,
+            caption: record.memoPreview,
+            badges: [
+                AppListItemBadge(record.cropName, style: .solidPastel, variant: .primary),
+                AppListItemBadge(record.workType.label),
+            ],
             dateText: dateText
         ) {
             RecordRemoteImage(url: record.thumbnailUrl)

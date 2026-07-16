@@ -49,34 +49,48 @@ struct PolicyListView: View {
     private var categoryChipRow: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: Spacing.sm) {
-                AppChip(label: "전체", isSelected: viewModel.selectedCategory == nil, style: .solid) {
+                let isAllSelected = viewModel.selectedCategory == nil
+                AppChip(label: "전체", isSelected: isAllSelected, style: isAllSelected ? .solid : .solidPastel) {
                     Task { await viewModel.selectCategory(nil) }
                 }
                 ForEach(PolicyCategory.allCases) { category in
+                    let isSelected = viewModel.selectedCategory == category
                     AppChip(
                         label: category.rawValue,
-                        isSelected: viewModel.selectedCategory == category,
-                        style: .solid
+                        isSelected: isSelected,
+                        style: isSelected ? .solid : .solidPastel
                     ) {
                         Task { await viewModel.selectCategory(category) }
                     }
                 }
             }
             .padding(.horizontal, 20)
-            .padding(.vertical, Spacing.sm)
+            .padding(.vertical, Spacing.md)
         }
         .background(Color.Background.subtle)
     }
 
-    /// Only one sort option ("추천순"/RECOMMENDED) is confirmed from the capture — no dropdown menu
-    /// wired yet since alternate options aren't defined. Static display for now.
+    private var sortSelection: Binding<PolicySort> {
+        Binding(
+            get: { viewModel.sort },
+            set: { newValue in Task { await viewModel.selectSort(newValue) } }
+        )
+    }
+
     private var sortRow: some View {
         HStack {
             Spacer()
-            AppSortButton(title: "추천순")
+            Picker(selection: sortSelection) {
+                Text("추천순").tag(PolicySort.recommended)
+                Text("최신순").tag(PolicySort.latest)
+            } label: {
+                AppSortButton(title: viewModel.sort == .latest ? "최신순" : "추천순")
+            }
+            .pickerStyle(.menu)
+            .tint(Color.Text.subtle)
         }
+        .frame(height: 48)
         .padding(.horizontal, 20)
-        .padding(.vertical, Spacing.sm)
     }
 
     @ViewBuilder private var listContent: some View {
@@ -114,7 +128,6 @@ struct PolicyListView: View {
                         .task { await viewModel.loadMoreIfNeeded(currentItem: item) }
                     }
                 }
-                .padding(.horizontal, 20)
             }
         }
     }
