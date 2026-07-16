@@ -82,6 +82,11 @@ struct HomeView: View {
             .navigationDestination(for: CommunityPostSummary.self) { post in
                 CommunityDetailView(postId: post.id, container: container)
             }
+            .navigationDestination(for: FarmingRecordSummary.self) { record in
+                RecordDetailView(recordId: record.id, repository: container.makeRecordRepository()) {
+                    Task { await viewModel.reload() }
+                }
+            }
         }
         .fullScreenCover(isPresented: $showCompose) {
             RecordComposeView(
@@ -197,15 +202,20 @@ struct HomeView: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: Spacing.md) {
                         ForEach(records) { record in
-                            AppCard(
-                                size: .medium,
-                                title: record.workType.label,
-                                captions: [record.memoPreview],
-                                badges: [record.cropName],
-                                dateText: dateText(record.workedAt)
-                            ) {
-                                RecordRemoteImage(url: record.thumbnailUrl)
+                            Button {
+                                path.append(record)
+                            } label: {
+                                AppCard(
+                                    size: .medium,
+                                    title: record.workType.label,
+                                    captions: [record.memoPreview],
+                                    badges: [record.cropName],
+                                    dateText: dateText(record.workedAt)
+                                ) {
+                                    RecordRemoteImage(url: record.thumbnailUrl)
+                                }
                             }
+                            .buttonStyle(.plain)
                         }
                     }
                 }

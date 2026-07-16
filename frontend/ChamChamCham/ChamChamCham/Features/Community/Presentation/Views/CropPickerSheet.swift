@@ -70,6 +70,7 @@ struct CropPickerSheet: View {
                         }
                     }
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
 
             AppButton("완료하기", variant: .primary, size: .medium, fullWidth: true) {
@@ -79,6 +80,7 @@ struct CropPickerSheet: View {
             .disabled(selectedIds.isEmpty)
         }
         .padding(Spacing.md)
+        .dismissKeyboardOnTap()
         .task {
             crops = await loadCrops()
             isLoading = false

@@ -16,6 +16,9 @@ struct CommunityPostQuery: Sendable, Equatable {
     var keyword: String?
     var likedOnly: Bool
     var mineOnly: Bool
+    /// Filters to posts authored by this member, independent of the authenticated caller
+    /// (which still drives `likedOnly`/`mineOnly`/`likedByMe`). Backend param name: `memberId`.
+    var memberId: UUID?
     var sort: CommunityPostSort
     var cursor: String?
     var size: Int
@@ -26,6 +29,7 @@ struct CommunityPostQuery: Sendable, Equatable {
         keyword: String? = nil,
         likedOnly: Bool = false,
         mineOnly: Bool = false,
+        memberId: UUID? = nil,
         sort: CommunityPostSort = .latest,
         cursor: String? = nil,
         size: Int = 20
@@ -35,6 +39,7 @@ struct CommunityPostQuery: Sendable, Equatable {
         self.keyword = keyword
         self.likedOnly = likedOnly
         self.mineOnly = mineOnly
+        self.memberId = memberId
         self.sort = sort
         self.cursor = cursor
         self.size = size
@@ -120,6 +125,9 @@ enum CommunityEndpoint: Endpoint {
             }
             if query.mineOnly {
                 items.append(URLQueryItem(name: "mineOnly", value: "true"))
+            }
+            if let memberId = query.memberId {
+                items.append(URLQueryItem(name: "memberId", value: memberId.uuidString))
             }
             if let cursor = query.cursor {
                 items.append(URLQueryItem(name: "cursor", value: cursor))

@@ -103,6 +103,10 @@ final class RecordComposeViewModel {
         if let cropId = selectedCropId, !crops.contains(where: { $0.id == cropId }) {
             selectedCropId = nil
         }
+        // 작물이 하나뿐이면 자동 선택.
+        if selectedCropId == nil, crops.count == 1 {
+            selectedCropId = crops[0].id
+        }
         guard let farmId = selectedFarmId else {
             weather = nil
             weatherLoadFailed = false

@@ -66,18 +66,16 @@ struct RecordPage: Sendable {
     let nextCursor: String?
 }
 
-/// The three-axis filter for the record list. All axes optional (nil == 미적용).
+/// The three-axis filter for the record list. All axes optional/empty == 미적용.
 ///
-/// The deployed list endpoint accepts a **single** `cropId` and a **single** `workType`, so these are scalars
-/// even though the Figma sheets suggest multi-select. Multi-select needs backend support first — see the
-/// capture doc's conflict section.
+/// 작물/영농 활동 are multi-select (deployed list endpoint takes `cropIds`/`workTypes` arrays).
 struct RecordFilter: Equatable, Sendable {
-    var cropId: UUID?
-    var workType: WorkType?
+    var cropIds: Set<UUID> = []
+    var workTypes: Set<WorkType> = []
     var startDate: Date?
     var endDate: Date?
 
     var isEmpty: Bool {
-        cropId == nil && workType == nil && startDate == nil && endDate == nil
+        cropIds.isEmpty && workTypes.isEmpty && startDate == nil && endDate == nil
     }
 }

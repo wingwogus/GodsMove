@@ -34,6 +34,9 @@ struct CommunityDetailView: View {
         }
         .background(Color.Background.default)
         .navigationBarHidden(true)
+        .navigationDestination(for: MemberProfileRoute.self) { route in
+            MemberProfileView(memberId: route.memberId, container: container)
+        }
         .safeAreaInset(edge: .bottom) { commentComposer }
         .task {
             currentMemberId = CachedMemberProfile.fetchCached(in: modelContext)?.id
@@ -122,7 +125,7 @@ struct CommunityDetailView: View {
     private func postBody(_ detail: CommunityPostDetail) -> some View {
         VStack(alignment: .leading, spacing: 0) {
             HStack(alignment: .center, spacing: Spacing.sm) {
-                postAuthorLine(detail)
+                authorLine(detail)
                 Spacer(minLength: Spacing.md)
                 likeButton(detail)
             }
@@ -149,6 +152,18 @@ struct CommunityDetailView: View {
                 detailTagRow(detail)
                     .padding(.top, horizontalInset)
             }
+        }
+    }
+
+    @ViewBuilder
+    private func authorLine(_ detail: CommunityPostDetail) -> some View {
+        if isPostAuthor {
+            postAuthorLine(detail)
+        } else {
+            NavigationLink(value: MemberProfileRoute(memberId: detail.author.memberId)) {
+                postAuthorLine(detail)
+            }
+            .buttonStyle(.plain)
         }
     }
 

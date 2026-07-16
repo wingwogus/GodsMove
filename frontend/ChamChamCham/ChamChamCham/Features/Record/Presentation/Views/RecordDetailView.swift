@@ -366,3 +366,70 @@ struct RecordDetailView: View {
         return formatter
     }()
 }
+
+// MARK: - Previews
+
+/// Preview-only stand-in for `RecordRepository`, mirroring `PreviewOnboardingDependencies`. Drives the same
+/// `.task { await viewModel.loadCoaching() }` the real view uses, so these previews exercise the actual polling
+/// path (not a hardcoded snapshot) against a scripted `fetchCoaching` result.
+private struct PreviewCoachingRepository: RecordRepository {
+    let coaching: RecordCoaching
+
+    func fetchDetail(id: UUID) async throws -> RecordDetail {
+        RecordDetail(
+            id: id,
+            workType: .watering,
+            workedAt: Date(),
+            weatherCondition: "맑음",
+            weatherTemperature: 24,
+            farmName: "행복농장",
+            cropName: "인삼",
+            memo: "오전에 물을 줬어요.",
+            imageUrls: [],
+            infoRows: [RecordInfoRow(label: "물의 양", value: "보통")]
+        )
+    }
+
+    func fetchCoaching(id: UUID) async throws -> RecordCoaching { coaching }
+
+    func fetchRecords(_ query: RecordQuery) async throws -> RecordPage { RecordPage(items: [], nextCursor: nil) }
+    func deleteRecord(id: UUID) async throws {}
+    func fetchActiveCrops() async throws -> [ActiveCrop] { [] }
+    func fetchFarmCrops() async throws -> [FarmWithCrops] { [] }
+    func fetchWeather(farmId: UUID) async throws -> CurrentWeather {
+        CurrentWeather(temperature: 24, condition: "맑음")
+    }
+    func searchPesticides(keyword: String?) async throws -> [Pesticide] { [] }
+    func fetchPests(pesticideId: UUID) async throws -> [Pest] { [] }
+    func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { UUID() }
+}
+
+#Preview("코칭 - 준비 중") {
+    RecordDetailView(
+        recordId: UUID(),
+        repository: PreviewCoachingRepository(coaching: RecordCoaching(status: .pending, feedback: nil))
+    )
+}
+
+#Preview("코칭 - 완료") {
+    RecordDetailView(
+        recordId: UUID(),
+        repository: PreviewCoachingRepository(coaching: RecordCoaching(
+            status: .ready,
+            feedback: CoachingFeedback(
+                goodPoint: "적절한 시기에 물을 주셨어요. 최근 강수량을 고려하면 좋은 판단이었어요.",
+                nextActions: [
+                    CoachingNextAction(text: "이틀 뒤 흙 상태를 확인해 보세요.", due: .thisWeek),
+                    CoachingNextAction(text: "잎끝이 마르는지 관찰해 주세요.", due: .nextCheck)
+                ]
+            )
+        ))
+    )
+}
+
+#Preview("코칭 - 실패") {
+    RecordDetailView(
+        recordId: UUID(),
+        repository: PreviewCoachingRepository(coaching: RecordCoaching(status: .failed, feedback: nil))
+    )
+}

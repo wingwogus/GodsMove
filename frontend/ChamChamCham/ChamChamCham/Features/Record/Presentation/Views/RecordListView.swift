@@ -83,13 +83,13 @@ struct RecordListView: View {
             case .crop:
                 RecordCropFilterSheet(
                     crops: viewModel.activeCrops,
-                    selected: viewModel.filter.cropId
-                ) { cropId in
-                    Task { await viewModel.applyCropFilter(cropId) }
+                    selected: viewModel.filter.cropIds
+                ) { cropIds in
+                    Task { await viewModel.applyCropFilter(cropIds) }
                 }
             case .workType:
-                RecordWorkTypeFilterSheet(selected: viewModel.filter.workType) { workType in
-                    Task { await viewModel.applyWorkTypeFilter(workType) }
+                RecordWorkTypeFilterSheet(selected: viewModel.filter.workTypes) { workTypes in
+                    Task { await viewModel.applyWorkTypeFilter(workTypes) }
                 }
             case .dateRange:
                 RecordDateFilterSheet(
@@ -113,8 +113,8 @@ struct RecordListView: View {
 
     private var filterChipRow: some View {
         HStack(spacing: Spacing.sm) {
-            filterChip(title: viewModel.selectedCropName ?? "작물") { activeSheet = .crop }
-            filterChip(title: viewModel.filter.workType?.label ?? "영농 활동") { activeSheet = .workType }
+            filterChip(title: cropChipTitle) { activeSheet = .crop }
+            filterChip(title: workTypeChipTitle) { activeSheet = .workType }
             filterChip(title: dateChipTitle) { activeSheet = .dateRange }
             Spacer(minLength: 0)
         }
@@ -132,6 +132,18 @@ struct RecordListView: View {
             trailingSystemImage: .asset("keyboard_arrow_down"),
             action: action
         )
+    }
+
+    private var cropChipTitle: String {
+        guard let names = viewModel.selectedCropNames, !names.isEmpty else { return "작물" }
+        return names.count == 1 ? names[0] : "\(names[0]) 외 \(names.count - 1)"
+    }
+
+    private var workTypeChipTitle: String {
+        let workTypes = viewModel.filter.workTypes
+        guard !workTypes.isEmpty else { return "영농 활동" }
+        let labels = WorkType.allCases.filter(workTypes.contains).map(\.label)
+        return labels.count == 1 ? labels[0] : "\(labels[0]) 외 \(labels.count - 1)"
     }
 
     private var dateChipTitle: String {

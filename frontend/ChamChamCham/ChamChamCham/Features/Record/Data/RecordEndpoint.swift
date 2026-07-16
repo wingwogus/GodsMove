@@ -10,8 +10,8 @@ import Foundation
 /// Search/paging parameters for `GET /api/v1/farming-records`. Mirrors the backend list query. Defaults match
 /// the server (`size = 20`), so the common "first page, no filter" call is just `RecordQuery()`.
 struct RecordQuery: Sendable, Equatable {
-    var cropId: UUID?
-    var workType: WorkType?
+    var cropIds: Set<UUID>
+    var workTypes: Set<WorkType>
     var startDate: Date?
     var endDate: Date?
     var keyword: String?
@@ -24,8 +24,8 @@ struct RecordQuery: Sendable, Equatable {
         cursor: String? = nil,
         size: Int = 20
     ) {
-        self.cropId = filter.cropId
-        self.workType = filter.workType
+        self.cropIds = filter.cropIds
+        self.workTypes = filter.workTypes
         self.startDate = filter.startDate
         self.endDate = filter.endDate
         self.keyword = keyword
@@ -102,11 +102,11 @@ enum RecordEndpoint: Endpoint {
             return items
         case let .listRecords(query):
             var items = [URLQueryItem(name: "size", value: String(query.size))]
-            if let cropId = query.cropId {
-                items.append(URLQueryItem(name: "cropId", value: cropId.uuidString))
+            for cropId in query.cropIds {
+                items.append(URLQueryItem(name: "cropIds", value: cropId.uuidString))
             }
-            if let workType = query.workType {
-                items.append(URLQueryItem(name: "workType", value: workType.rawValue))
+            for workType in query.workTypes {
+                items.append(URLQueryItem(name: "workTypes", value: workType.rawValue))
             }
             if let startDate = query.startDate {
                 items.append(URLQueryItem(name: "startDate", value: Self.dateFormatter.string(from: startDate)))

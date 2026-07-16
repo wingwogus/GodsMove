@@ -24,17 +24,17 @@ enum RecordFilterKind: Identifiable {
 
 // MARK: - 진행중인 작물
 
-/// Figma `bottom-sheet / 진행중인 작물`. Single-select (the deployed list API takes one `cropId`); tapping the
-/// selected chip clears the filter. Applies on 완료.
+/// Figma `bottom-sheet / 진행중인 작물`. Multi-select (deployed list API takes `cropIds`); tapping a selected
+/// chip removes it from the selection. Applies on 완료.
 struct RecordCropFilterSheet: View {
     let crops: [ActiveCrop]
-    let selected: UUID?
-    let onApply: (UUID?) -> Void
+    let selected: Set<UUID>
+    let onApply: (Set<UUID>) -> Void
 
-    @State private var draft: UUID?
+    @State private var draft: Set<UUID>
     @Environment(\.dismiss) private var dismiss
 
-    init(crops: [ActiveCrop], selected: UUID?, onApply: @escaping (UUID?) -> Void) {
+    init(crops: [ActiveCrop], selected: Set<UUID>, onApply: @escaping (Set<UUID>) -> Void) {
         self.crops = crops
         self.selected = selected
         self.onApply = onApply
@@ -51,10 +51,14 @@ struct RecordCropFilterSheet: View {
             } else {
                 RecordChipFlow(
                     items: crops,
-                    isSelected: { $0.id == draft },
+                    isSelected: { draft.contains($0.id) },
                     label: { $0.name }
                 ) { crop in
-                    draft = (draft == crop.id) ? nil : crop.id
+                    if draft.contains(crop.id) {
+                        draft.remove(crop.id)
+                    } else {
+                        draft.insert(crop.id)
+                    }
                 }
             }
         } onComplete: {
@@ -66,16 +70,16 @@ struct RecordCropFilterSheet: View {
 
 // MARK: - 영농 활동
 
-/// Figma `bottom-sheet / 영농 활동`. Single-select (deployed list API takes one `workType`). Eight types —
+/// Figma `bottom-sheet / 영농 활동`. Multi-select (deployed list API takes `workTypes`). Eight types —
 /// Figma's ninth chip 가공 is omitted because the backend enum has no matching value. Applies on 완료.
 struct RecordWorkTypeFilterSheet: View {
-    let selected: WorkType?
-    let onApply: (WorkType?) -> Void
+    let selected: Set<WorkType>
+    let onApply: (Set<WorkType>) -> Void
 
-    @State private var draft: WorkType?
+    @State private var draft: Set<WorkType>
     @Environment(\.dismiss) private var dismiss
 
-    init(selected: WorkType?, onApply: @escaping (WorkType?) -> Void) {
+    init(selected: Set<WorkType>, onApply: @escaping (Set<WorkType>) -> Void) {
         self.selected = selected
         self.onApply = onApply
         _draft = State(initialValue: selected)
@@ -85,10 +89,14 @@ struct RecordWorkTypeFilterSheet: View {
         RecordFilterSheetScaffold(title: "영농 활동", height: 274) {
             RecordChipFlow(
                 items: WorkType.allCases,
-                isSelected: { $0 == draft },
+                isSelected: { draft.contains($0) },
                 label: { $0.label }
             ) { workType in
-                draft = (draft == workType) ? nil : workType
+                if draft.contains(workType) {
+                    draft.remove(workType)
+                } else {
+                    draft.insert(workType)
+                }
             }
         } onComplete: {
             onApply(draft)

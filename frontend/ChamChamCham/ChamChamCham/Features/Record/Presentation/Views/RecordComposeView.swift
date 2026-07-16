@@ -454,8 +454,10 @@ private struct PesticidePickerSheet: View {
                     }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .padding(20)
+        .dismissKeyboardOnTap()
         .task { results = await search(nil) }
         .task(id: keyword) { results = await search(keyword) }
     }
