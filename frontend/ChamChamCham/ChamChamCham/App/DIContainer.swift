@@ -14,6 +14,7 @@ final class DIContainer {
     let tokenRefreshCoordinator: TokenRefreshCoordinator
     let apiClient: APIClient
     let memberProfileCache: MemberProfileCache
+    let reportCache: ReportCache
     let pendingFarmStore: PendingFarmStore
     let pendingFarmSyncService: PendingFarmSyncService
 
@@ -29,6 +30,7 @@ final class DIContainer {
         )
         self.apiClient = apiClient
         self.memberProfileCache = SwiftDataMemberProfileCache(modelContext: modelContainer.mainContext)
+        self.reportCache = ReportCache(modelContext: modelContainer.mainContext)
         let pendingFarmStore = PendingFarmStore()
         self.pendingFarmStore = pendingFarmStore
         self.pendingFarmSyncService = PendingFarmSyncService(
@@ -73,5 +75,12 @@ extension DIContainer {
 
     func makePolicyRepository() -> some PolicyRepository {
         RemotePolicyRepository(apiClient: apiClient)
+    }
+
+    func makeReportRepository() -> some ReportRepository {
+        DefaultReportRepository(
+            remote: LiveReportRemoteDataSource(apiClient: apiClient),
+            cache: reportCache
+        )
     }
 }
