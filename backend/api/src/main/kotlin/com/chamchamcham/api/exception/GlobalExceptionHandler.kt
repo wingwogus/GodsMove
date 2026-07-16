@@ -11,6 +11,7 @@ import org.springframework.http.ResponseEntity
 import org.springframework.http.converter.HttpMessageNotReadableException
 import org.springframework.validation.BindException
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
@@ -125,6 +126,28 @@ class GlobalExceptionHandler {
             detail = mapOf(
                 "field" to e.name,
                 "reason" to (e.value?.let { "Invalid value: $it" } ?: "Invalid value")
+            )
+        )
+
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(body)
+    }
+
+    /**
+     * 4-1) 필수 쿼리 파라미터 누락
+     * ex: @RequestParam(필수)이 요청에 없음
+     */
+    @ExceptionHandler
+    fun handleMissingServletRequestParameter(e: MissingServletRequestParameterException):
+            ResponseEntity<ApiResponse<Unit>> {
+
+        LoggingUtil.logBusinessError(logger, e)
+
+        val body = ApiResponse.fail(
+            code = ErrorCode.INVALID_INPUT.code,
+            messageKey = ErrorCode.INVALID_INPUT.messageKey,
+            detail = mapOf(
+                "field" to e.parameterName,
+                "reason" to "Required parameter is missing"
             )
         )
 
