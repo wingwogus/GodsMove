@@ -1,6 +1,25 @@
 {
   "components": {
     "schemas": {
+      "AmountByUnitResponse": {
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/CoverageResponse"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "coverage",
+          "unit"
+        ],
+        "type": "object"
+      },
       "ApiError": {
         "properties": {
           "code": {
@@ -125,6 +144,23 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/DailyWeatherResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseDetailResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/DetailResponse"
           },
           "error": {
             "$ref": "#/components/schemas/ApiError"
@@ -292,6 +328,23 @@
         ],
         "type": "object"
       },
+      "ApiResponseListResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ListResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
       "ApiResponseListWorkTypeResponse": {
         "properties": {
           "data": {
@@ -367,6 +420,23 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/OnboardingCompleteResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponsePageResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/PageResponse"
           },
           "error": {
             "$ref": "#/components/schemas/ApiError"
@@ -567,6 +637,23 @@
         ],
         "type": "object"
       },
+      "ApiResponseQueryResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/QueryResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
       "ApiResponseRecordDetailResponse": {
         "properties": {
           "data": {
@@ -605,6 +692,23 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/RecordPageResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseStatusResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/StatusResponse"
           },
           "error": {
             "$ref": "#/components/schemas/ApiError"
@@ -684,6 +788,29 @@
         "required": [
           "identityToken",
           "nonce"
+        ],
+        "type": "object"
+      },
+      "AuditResponse": {
+        "properties": {
+          "status": {
+            "enum": [
+              "PASS",
+              "WARN",
+              "FAIL"
+            ],
+            "type": "string"
+          },
+          "warnings": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "status",
+          "warnings"
         ],
         "type": "object"
       },
@@ -899,6 +1026,70 @@
         },
         "type": "object"
       },
+      "CategoryAmountByUnitResponse": {
+        "properties": {
+          "amount": {
+            "type": "number"
+          },
+          "categoryCode": {
+            "type": "string"
+          },
+          "categoryLabel": {
+            "type": "string"
+          },
+          "coverage": {
+            "$ref": "#/components/schemas/CoverageResponse"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "unit": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "amount",
+          "categoryCode",
+          "categoryLabel",
+          "coverage",
+          "recordCount",
+          "unit"
+        ],
+        "type": "object"
+      },
+      "CategoryMethodStatisticsResponse": {
+        "properties": {
+          "categoryCode": {
+            "type": "string"
+          },
+          "categoryLabel": {
+            "type": "string"
+          },
+          "methodCode": {
+            "type": "string"
+          },
+          "methodLabel": {
+            "type": "string"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "recordRatePct": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "categoryCode",
+          "categoryLabel",
+          "methodCode",
+          "methodLabel",
+          "recordCount",
+          "recordRatePct"
+        ],
+        "type": "object"
+      },
       "CategoryResponse": {
         "properties": {
           "code": {
@@ -911,6 +1102,43 @@
         "required": [
           "code",
           "label"
+        ],
+        "type": "object"
+      },
+      "CitationResponse": {
+        "properties": {
+          "chunkId": {
+            "type": "string"
+          },
+          "displayLabel": {
+            "type": "string"
+          },
+          "documentTitle": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "page": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "source": {
+            "type": "string"
+          },
+          "sourceType": {
+            "enum": [
+              "TECH_DOCUMENT",
+              "FARMING_RECORD"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "chunkId",
+          "displayLabel",
+          "label",
+          "sourceType"
         ],
         "type": "object"
       },
@@ -976,6 +1204,52 @@
           "createdAt",
           "deleted",
           "id"
+        ],
+        "type": "object"
+      },
+      "CommonStatisticsResponse": {
+        "properties": {
+          "averageIntervalDays": {
+            "type": "number"
+          },
+          "averageTemperatureC": {
+            "type": "number"
+          },
+          "firstWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "lastWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "photoAttachedRecordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "photoAttachmentRatePct": {
+            "type": "number"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weatherDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "workedDayCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "photoAttachedRecordCount",
+          "recordCount",
+          "weatherDistribution",
+          "workedDayCount"
         ],
         "type": "object"
       },
@@ -1064,6 +1338,47 @@
           "recordId",
           "sessionId",
           "workType"
+        ],
+        "type": "object"
+      },
+      "CountDistributionResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "label": {
+            "type": "string"
+          },
+          "ratePct": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "code",
+          "count",
+          "label",
+          "ratePct"
+        ],
+        "type": "object"
+      },
+      "CoverageResponse": {
+        "properties": {
+          "recordedCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "targetCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "recordedCount",
+          "targetCount"
         ],
         "type": "object"
       },
@@ -1249,6 +1564,45 @@
         ],
         "type": "object"
       },
+      "CycleStatisticsResponse": {
+        "properties": {
+          "etc": {
+            "$ref": "#/components/schemas/CommonStatisticsResponse"
+          },
+          "fertilizing": {
+            "$ref": "#/components/schemas/FertilizingStatisticsResponse"
+          },
+          "harvest": {
+            "$ref": "#/components/schemas/HarvestStatisticsResponse"
+          },
+          "pestControl": {
+            "$ref": "#/components/schemas/PestControlStatisticsResponse"
+          },
+          "planting": {
+            "$ref": "#/components/schemas/PlantingStatisticsResponse"
+          },
+          "pruning": {
+            "$ref": "#/components/schemas/CommonStatisticsResponse"
+          },
+          "watering": {
+            "$ref": "#/components/schemas/WateringStatisticsResponse"
+          },
+          "weeding": {
+            "$ref": "#/components/schemas/WeedingStatisticsResponse"
+          }
+        },
+        "required": [
+          "etc",
+          "fertilizing",
+          "harvest",
+          "pestControl",
+          "planting",
+          "pruning",
+          "watering",
+          "weeding"
+        ],
+        "type": "object"
+      },
       "DailyWeatherResponse": {
         "properties": {
           "date": {
@@ -1307,6 +1661,17 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "DetailResponse": {
+        "properties": {
+          "selected": {
+            "$ref": "#/components/schemas/SnapshotResponse"
+          }
+        },
+        "required": [
+          "selected"
+        ],
         "type": "object"
       },
       "EnumOptionResponse": {
@@ -1547,6 +1912,45 @@
         ],
         "type": "object"
       },
+      "FeedbackResponse": {
+        "properties": {
+          "comparisons": {
+            "items": {
+              "$ref": "#/components/schemas/ItemResponse"
+            },
+            "type": "array"
+          },
+          "improvements": {
+            "items": {
+              "$ref": "#/components/schemas/ItemResponse"
+            },
+            "type": "array"
+          },
+          "nextActions": {
+            "items": {
+              "$ref": "#/components/schemas/ItemResponse"
+            },
+            "type": "array"
+          },
+          "strengths": {
+            "items": {
+              "$ref": "#/components/schemas/ItemResponse"
+            },
+            "type": "array"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "comparisons",
+          "improvements",
+          "nextActions",
+          "strengths",
+          "summary"
+        ],
+        "type": "object"
+      },
       "FertilizingDetail": {
         "properties": {
           "amount": {
@@ -1638,6 +2042,83 @@
         ],
         "type": "object"
       },
+      "FertilizingStatisticsResponse": {
+        "properties": {
+          "amountCoverage": {
+            "$ref": "#/components/schemas/CoverageResponse"
+          },
+          "averageAmountKg": {
+            "type": "number"
+          },
+          "averageIntervalDays": {
+            "type": "number"
+          },
+          "averageTemperatureC": {
+            "type": "number"
+          },
+          "categoryMethods": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryMethodStatisticsResponse"
+            },
+            "type": "array"
+          },
+          "firstWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "lastWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "materialCategories": {
+            "items": {
+              "$ref": "#/components/schemas/MaterialCategoryStatisticsResponse"
+            },
+            "type": "array"
+          },
+          "methodDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "photoAttachedRecordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "photoAttachmentRatePct": {
+            "type": "number"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalAmountKg": {
+            "type": "number"
+          },
+          "weatherDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "workedDayCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "amountCoverage",
+          "categoryMethods",
+          "materialCategories",
+          "methodDistribution",
+          "photoAttachedRecordCount",
+          "recordCount",
+          "weatherDistribution",
+          "workedDayCount"
+        ],
+        "type": "object"
+      },
       "FieldResponse": {
         "properties": {
           "name": {
@@ -1684,6 +2165,23 @@
         },
         "required": [
           "date"
+        ],
+        "type": "object"
+      },
+      "GrowthPeriodRangeResponse": {
+        "properties": {
+          "maxMonths": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "minMonths": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "maxMonths",
+          "minMonths"
         ],
         "type": "object"
       },
@@ -1824,6 +2322,129 @@
         ],
         "type": "object"
       },
+      "HarvestPartStatisticsResponse": {
+        "properties": {
+          "amountCoverage": {
+            "$ref": "#/components/schemas/CoverageResponse"
+          },
+          "amountRatePct": {
+            "type": "number"
+          },
+          "code": {
+            "type": "string"
+          },
+          "knownAmountKg": {
+            "type": "number"
+          },
+          "label": {
+            "type": "string"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "recordRatePct": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "amountCoverage",
+          "code",
+          "label",
+          "recordCount",
+          "recordRatePct"
+        ],
+        "type": "object"
+      },
+      "HarvestStatisticsResponse": {
+        "properties": {
+          "amountCoverage": {
+            "$ref": "#/components/schemas/CoverageResponse"
+          },
+          "averageAmountKg": {
+            "type": "number"
+          },
+          "averageIntervalDays": {
+            "type": "number"
+          },
+          "averageTemperatureC": {
+            "type": "number"
+          },
+          "finalGrowthPeriodMonths": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "firstHarvestedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "firstWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "growthPeriodRangeMonths": {
+            "$ref": "#/components/schemas/GrowthPeriodRangeResponse"
+          },
+          "lastHarvestedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "lastWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "medicinalParts": {
+            "items": {
+              "$ref": "#/components/schemas/HarvestPartStatisticsResponse"
+            },
+            "type": "array"
+          },
+          "photoAttachedRecordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "photoAttachmentRatePct": {
+            "type": "number"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "totalAmountKg": {
+            "type": "number"
+          },
+          "weatherDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "workedDayCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "amountCoverage",
+          "medicinalParts",
+          "photoAttachedRecordCount",
+          "recordCount",
+          "weatherDistribution",
+          "workedDayCount"
+        ],
+        "type": "object"
+      },
+      "ItemResponse": {
+        "properties": {
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "text"
+        ],
+        "type": "object"
+      },
       "KakaoLoginRequest": {
         "properties": {
           "idToken": {
@@ -1855,6 +2476,25 @@
         "required": [
           "likeCount",
           "liked"
+        ],
+        "type": "object"
+      },
+      "ListResponse": {
+        "properties": {
+          "feedbacks": {
+            "items": {
+              "$ref": "#/components/schemas/StatusResponse"
+            },
+            "type": "array"
+          },
+          "reportId": {
+            "format": "uuid",
+            "type": "string"
+          }
+        },
+        "required": [
+          "feedbacks",
+          "reportId"
         ],
         "type": "object"
       },
@@ -1893,6 +2533,38 @@
           "member",
           "onboarding",
           "refreshToken"
+        ],
+        "type": "object"
+      },
+      "MaterialCategoryStatisticsResponse": {
+        "properties": {
+          "amountKg": {
+            "type": "number"
+          },
+          "amountRatePct": {
+            "type": "number"
+          },
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "recordRatePct": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "amountKg",
+          "amountRatePct",
+          "code",
+          "label",
+          "recordCount",
+          "recordRatePct"
         ],
         "type": "object"
       },
@@ -1947,6 +2619,82 @@
         },
         "required": [
           "id"
+        ],
+        "type": "object"
+      },
+      "MetadataResponse": {
+        "properties": {
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "cropName": {
+            "type": "string"
+          },
+          "endsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "farmName": {
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceRevision": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "startBasis": {
+            "enum": [
+              "FIRST_RECORD",
+              "AFTER_PREVIOUS_FINAL_HARVEST"
+            ],
+            "type": "string"
+          },
+          "startsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "cropId",
+          "cropName",
+          "farmId",
+          "farmName",
+          "id",
+          "sourceRevision",
+          "startBasis",
+          "startsAt",
+          "status"
+        ],
+        "type": "object"
+      },
+      "ModelResponse": {
+        "properties": {
+          "chat": {
+            "type": "string"
+          },
+          "embedding": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "chat",
+          "embedding"
         ],
         "type": "object"
       },
@@ -2039,6 +2787,70 @@
         ],
         "type": "object"
       },
+      "NextActionResponse": {
+        "properties": {
+          "category": {
+            "enum": [
+              "WEATHER",
+              "PEST_DISEASE",
+              "IRRIGATION",
+              "FERTILIZING",
+              "PEST_CONTROL",
+              "HARVEST",
+              "CULTIVATION",
+              "GENERAL"
+            ],
+            "type": "string"
+          },
+          "due": {
+            "enum": [
+              "TODAY",
+              "THIS_WEEK",
+              "NEXT_WEEK",
+              "NEXT_CHECK"
+            ],
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "category",
+          "due",
+          "text"
+        ],
+        "type": "object"
+      },
+      "ObservationResponse": {
+        "properties": {
+          "citationIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "citationLabels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "detail": {
+            "type": "string"
+          },
+          "title": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "citationIds",
+          "citationLabels",
+          "detail",
+          "title"
+        ],
+        "type": "object"
+      },
       "OnboardingCompleteResponse": {
         "properties": {
           "crops": {
@@ -2092,6 +2904,23 @@
         "required": [
           "missingFields",
           "status"
+        ],
+        "type": "object"
+      },
+      "PageResponse": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MetadataResponse"
+            },
+            "type": "array"
+          },
+          "nextCursor": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "items"
         ],
         "type": "object"
       },
@@ -2218,6 +3047,87 @@
           "pesticideName",
           "totalSprayAmount",
           "totalSprayAmountUnit"
+        ],
+        "type": "object"
+      },
+      "PestControlStatisticsResponse": {
+        "properties": {
+          "averageIntervalDays": {
+            "type": "number"
+          },
+          "averageTemperatureC": {
+            "type": "number"
+          },
+          "categoryAmounts": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryAmountByUnitResponse"
+            },
+            "type": "array"
+          },
+          "categoryDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "firstWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "lastWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "pesticideAmounts": {
+            "items": {
+              "$ref": "#/components/schemas/AmountByUnitResponse"
+            },
+            "type": "array"
+          },
+          "photoAttachedRecordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "photoAttachmentRatePct": {
+            "type": "number"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "sprayAmountCoverage": {
+            "$ref": "#/components/schemas/CoverageResponse"
+          },
+          "targets": {
+            "items": {
+              "$ref": "#/components/schemas/TargetCountResponse"
+            },
+            "type": "array"
+          },
+          "totalSprayAmountLiters": {
+            "type": "number"
+          },
+          "weatherDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "workedDayCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "categoryAmounts",
+          "categoryDistribution",
+          "pesticideAmounts",
+          "photoAttachedRecordCount",
+          "recordCount",
+          "sprayAmountCoverage",
+          "targets",
+          "weatherDistribution",
+          "workedDayCount"
         ],
         "type": "object"
       },
@@ -2436,6 +3346,59 @@
         },
         "required": [
           "plantingMethod"
+        ],
+        "type": "object"
+      },
+      "PlantingStatisticsResponse": {
+        "properties": {
+          "averageIntervalDays": {
+            "type": "number"
+          },
+          "averageTemperatureC": {
+            "type": "number"
+          },
+          "firstWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "lastWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "photoAttachedRecordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "photoAttachmentRatePct": {
+            "type": "number"
+          },
+          "propagationMethods": {
+            "items": {
+              "$ref": "#/components/schemas/PropagationStatisticsResponse"
+            },
+            "type": "array"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weatherDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "workedDayCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "photoAttachedRecordCount",
+          "propagationMethods",
+          "recordCount",
+          "weatherDistribution",
+          "workedDayCount"
         ],
         "type": "object"
       },
@@ -2904,6 +3867,40 @@
         ],
         "type": "object"
       },
+      "PropagationStatisticsResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "label": {
+            "type": "string"
+          },
+          "quantityCoverage": {
+            "$ref": "#/components/schemas/CoverageResponse"
+          },
+          "quantityUnit": {
+            "type": "string"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "recordRatePct": {
+            "type": "number"
+          },
+          "totalQuantity": {
+            "type": "number"
+          }
+        },
+        "required": [
+          "code",
+          "label",
+          "quantityCoverage",
+          "recordCount",
+          "recordRatePct"
+        ],
+        "type": "object"
+      },
       "PublicFarmResponse": {
         "properties": {
           "displayRegion": {
@@ -2955,6 +3952,103 @@
           "crops",
           "farms",
           "memberId"
+        ],
+        "type": "object"
+      },
+      "QueryRequest": {
+        "properties": {
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "periodEnd": {
+            "format": "date",
+            "type": "string"
+          },
+          "periodStart": {
+            "format": "date",
+            "type": "string"
+          },
+          "question": {
+            "type": "string"
+          },
+          "recordId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "topK": {
+            "format": "int32",
+            "maximum": 20,
+            "minimum": 1,
+            "type": "integer"
+          }
+        },
+        "required": [
+          "question"
+        ],
+        "type": "object"
+      },
+      "QueryResponse": {
+        "properties": {
+          "audit": {
+            "$ref": "#/components/schemas/AuditResponse"
+          },
+          "model": {
+            "$ref": "#/components/schemas/ModelResponse"
+          },
+          "result": {
+            "$ref": "#/components/schemas/StructuredResultResponse"
+          }
+        },
+        "required": [
+          "audit",
+          "model",
+          "result"
+        ],
+        "type": "object"
+      },
+      "RecommendationResponse": {
+        "properties": {
+          "action": {
+            "type": "string"
+          },
+          "caution": {
+            "type": "string"
+          },
+          "citationIds": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "citationLabels": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "priority": {
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW"
+            ],
+            "type": "string"
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "action",
+          "citationIds",
+          "citationLabels",
+          "priority",
+          "reason"
         ],
         "type": "object"
       },
@@ -3095,6 +4189,34 @@
         },
         "required": [
           "items"
+        ],
+        "type": "object"
+      },
+      "RecordQualityResponse": {
+        "properties": {
+          "comment": {
+            "type": "string"
+          },
+          "missingOrWeakFields": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "score": {
+            "enum": [
+              "HIGH",
+              "MEDIUM",
+              "LOW",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "comment",
+          "missingOrWeakFields",
+          "score"
         ],
         "type": "object"
       },
@@ -3411,6 +4533,212 @@
         ],
         "type": "object"
       },
+      "SnapshotResponse": {
+        "properties": {
+          "cropId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "cropName": {
+            "type": "string"
+          },
+          "endsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "farmName": {
+            "type": "string"
+          },
+          "finalHarvestRecordId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "sourceRevision": {
+            "format": "int64",
+            "type": "integer"
+          },
+          "startBasis": {
+            "enum": [
+              "FIRST_RECORD",
+              "AFTER_PREVIOUS_FINAL_HARVEST"
+            ],
+            "type": "string"
+          },
+          "startsAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "statistics": {
+            "$ref": "#/components/schemas/CycleStatisticsResponse"
+          },
+          "statisticsSchemaVersion": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "ACTIVE",
+              "COMPLETED",
+              "SUPERSEDED"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "cropId",
+          "cropName",
+          "farmId",
+          "farmName",
+          "id",
+          "sourceRevision",
+          "startBasis",
+          "startsAt",
+          "statistics",
+          "statisticsSchemaVersion",
+          "status"
+        ],
+        "type": "object"
+      },
+      "StatusResponse": {
+        "properties": {
+          "createdAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "failureCode": {
+            "type": "string"
+          },
+          "feedback": {
+            "$ref": "#/components/schemas/FeedbackResponse"
+          },
+          "feedbackId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "inputPrepared": {
+            "type": "boolean"
+          },
+          "status": {
+            "enum": [
+              "PENDING",
+              "READY",
+              "FAILED",
+              "STALE"
+            ],
+            "type": "string"
+          },
+          "updatedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "workType": {
+            "enum": [
+              "PLANTING",
+              "WATERING",
+              "FERTILIZING",
+              "PEST_CONTROL",
+              "WEEDING",
+              "PRUNING",
+              "HARVEST",
+              "ETC"
+            ],
+            "type": "string"
+          }
+        },
+        "required": [
+          "createdAt",
+          "feedbackId",
+          "inputPrepared",
+          "status",
+          "updatedAt",
+          "workType"
+        ],
+        "type": "object"
+      },
+      "StructuredResultResponse": {
+        "properties": {
+          "citations": {
+            "items": {
+              "$ref": "#/components/schemas/CitationResponse"
+            },
+            "type": "array"
+          },
+          "confidence": {
+            "format": "double",
+            "type": "number"
+          },
+          "diagnosis": {
+            "type": "string"
+          },
+          "followUpQuestions": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "limitations": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          },
+          "nextActions": {
+            "items": {
+              "$ref": "#/components/schemas/NextActionResponse"
+            },
+            "type": "array"
+          },
+          "observations": {
+            "items": {
+              "$ref": "#/components/schemas/ObservationResponse"
+            },
+            "type": "array"
+          },
+          "recommendations": {
+            "items": {
+              "$ref": "#/components/schemas/RecommendationResponse"
+            },
+            "type": "array"
+          },
+          "recordQuality": {
+            "$ref": "#/components/schemas/RecordQualityResponse"
+          },
+          "riskLevel": {
+            "enum": [
+              "LOW",
+              "MEDIUM",
+              "HIGH",
+              "UNKNOWN"
+            ],
+            "type": "string"
+          },
+          "summary": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "citations",
+          "confidence",
+          "diagnosis",
+          "followUpQuestions",
+          "limitations",
+          "nextActions",
+          "observations",
+          "recommendations",
+          "recordQuality",
+          "riskLevel",
+          "summary"
+        ],
+        "type": "object"
+      },
       "SubmitTurnsRequest": {
         "properties": {
           "candidate": {
@@ -3426,6 +4754,22 @@
         "required": [
           "candidate",
           "turns"
+        ],
+        "type": "object"
+      },
+      "TargetCountResponse": {
+        "properties": {
+          "count": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "target": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "count",
+          "target"
         ],
         "type": "object"
       },
@@ -3648,6 +4992,66 @@
         },
         "type": "object"
       },
+      "WateringStatisticsResponse": {
+        "properties": {
+          "amountDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "averageIntervalDays": {
+            "type": "number"
+          },
+          "averageTemperatureC": {
+            "type": "number"
+          },
+          "firstWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "lastWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "methodDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "photoAttachedRecordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "photoAttachmentRatePct": {
+            "type": "number"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weatherDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "workedDayCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "amountDistribution",
+          "methodDistribution",
+          "photoAttachedRecordCount",
+          "recordCount",
+          "weatherDistribution",
+          "workedDayCount"
+        ],
+        "type": "object"
+      },
       "WeedingDetail": {
         "properties": {
           "weedingMethod": {
@@ -3688,6 +5092,59 @@
             "type": "string"
           }
         },
+        "type": "object"
+      },
+      "WeedingStatisticsResponse": {
+        "properties": {
+          "averageIntervalDays": {
+            "type": "number"
+          },
+          "averageTemperatureC": {
+            "type": "number"
+          },
+          "firstWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "lastWorkedOn": {
+            "format": "date",
+            "type": "string"
+          },
+          "methodDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "photoAttachedRecordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "photoAttachmentRatePct": {
+            "type": "number"
+          },
+          "recordCount": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "weatherDistribution": {
+            "items": {
+              "$ref": "#/components/schemas/CountDistributionResponse"
+            },
+            "type": "array"
+          },
+          "workedDayCount": {
+            "format": "int32",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "methodDistribution",
+          "photoAttachedRecordCount",
+          "recordCount",
+          "weatherDistribution",
+          "workedDayCount"
+        ],
         "type": "object"
       },
       "WorkTypeResponse": {
@@ -4101,6 +5558,36 @@
         },
         "tags": [
           "auth-controller"
+        ]
+      }
+    },
+    "/api/v1/coaching/rag/query": {
+      "post": {
+        "operationId": "query",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/QueryRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseQueryResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "coaching-rag-controller"
         ]
       }
     },
@@ -4807,6 +6294,366 @@
         },
         "tags": [
           "farming-record-controller"
+        ]
+      }
+    },
+    "/api/v1/farming-records/{recordId}/feedback": {
+      "get": {
+        "operationId": "getStatus_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recordId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "record-feedback-controller"
+        ]
+      }
+    },
+    "/api/v1/farming-records/{recordId}/feedback/regenerate": {
+      "post": {
+        "operationId": "regenerate_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "recordId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "record-feedback-controller"
+        ]
+      }
+    },
+    "/api/v1/farming-reports": {
+      "get": {
+        "operationId": "listCompleted",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "farmId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cropId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farming-cycle-report-controller"
+        ]
+      }
+    },
+    "/api/v1/farming-reports/work-items": {
+      "get": {
+        "operationId": "list_1",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "farmId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cropId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "workType",
+            "required": false,
+            "schema": {
+              "enum": [
+                "PLANTING",
+                "WATERING",
+                "FERTILIZING",
+                "PEST_CONTROL",
+                "WEEDING",
+                "PRUNING",
+                "HARVEST",
+                "ETC"
+              ],
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "format": "int32",
+              "maximum": 100,
+              "minimum": 1,
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponsePageResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farming-work-report-controller"
+        ]
+      }
+    },
+    "/api/v1/farming-reports/{reportId}": {
+      "get": {
+        "operationId": "getDetail",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reportId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farming-cycle-report-controller"
+        ]
+      }
+    },
+    "/api/v1/farming-reports/{reportId}/feedback": {
+      "get": {
+        "operationId": "getStatus",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reportId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "report-feedback-controller"
+        ]
+      }
+    },
+    "/api/v1/farming-reports/{reportId}/feedback/{workType}/regenerate": {
+      "post": {
+        "operationId": "regenerate",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reportId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "workType",
+            "required": true,
+            "schema": {
+              "enum": [
+                "PLANTING",
+                "WATERING",
+                "FERTILIZING",
+                "PEST_CONTROL",
+                "WEEDING",
+                "PRUNING",
+                "HARVEST",
+                "ETC"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseStatusResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "report-feedback-controller"
+        ]
+      }
+    },
+    "/api/v1/farming-reports/{reportId}/work-types/{workType}": {
+      "get": {
+        "operationId": "getDetail_1",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "reportId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "workType",
+            "required": true,
+            "schema": {
+              "enum": [
+                "PLANTING",
+                "WATERING",
+                "FERTILIZING",
+                "PEST_CONTROL",
+                "WEEDING",
+                "PRUNING",
+                "HARVEST",
+                "ETC"
+              ],
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "farming-work-report-controller"
         ]
       }
     },
