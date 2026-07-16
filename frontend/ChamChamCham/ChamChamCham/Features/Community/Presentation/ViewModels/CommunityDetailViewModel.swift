@@ -12,6 +12,15 @@ import Foundation
 @MainActor
 @Observable
 final class CommunityDetailViewModel {
+    /// The single image optionally attached to the next comment. `id` is a local temp id (stable while
+    /// uploading); `mediaId` is filled once the upload succeeds and is what gets sent on submit.
+    struct Attachment: Identifiable, Sendable {
+        let id: UUID
+        let previewData: Data
+        var mediaId: UUID?
+        var isUploading: Bool
+    }
+
     let postId: UUID
 
     private(set) var detail: CommunityPostDetail?
@@ -25,17 +34,29 @@ final class CommunityDetailViewModel {
     private(set) var replyTarget: CommunityComment?
     private(set) var isSubmittingComment = false
 
+    /// A comment takes a single optional image. Uploaded as it's picked so submit only sends the `mediaId`.
+    private(set) var attachment: Attachment?
+
     /// Flips true after a successful post deletion so the view can pop itself.
     private(set) var didDeletePost = false
 
     private var commentCursor: String?
 
     private let repository: any CommunityRepository
+    private let mediaRepository: any MediaUploadRepository
 
-    init(postId: UUID, repository: any CommunityRepository) {
+    init(
+        postId: UUID,
+        repository: any CommunityRepository,
+        mediaRepository: any MediaUploadRepository
+    ) {
         self.postId = postId
         self.repository = repository
+        self.mediaRepository = mediaRepository
     }
+
+    /// True while the attached image is still uploading — submit waits for this so no `mediaId` is missed.
+    var isUploadingImage: Bool { attachment?.isUploading == true }
 
     var hasMoreComments: Bool { commentCursor != nil }
 
@@ -75,9 +96,30 @@ final class CommunityDetailViewModel {
         replyTarget = nil
     }
 
+    // MARK: - Image attachment
+
+    func addImage(_ data: Data) async {
+        // Show the picked image immediately with a spinner, then fill in the mediaId once uploaded.
+        let tempId = UUID()
+        attachment = Attachment(id: tempId, previewData: data, mediaId: nil, isUploading: true)
+        do {
+            let uploaded = try await mediaRepository.uploadCommunityImage(data, originalFilename: nil)
+            guard attachment?.id == tempId else { return }
+            attachment?.mediaId = uploaded.mediaId
+            attachment?.isUploading = false
+        } catch {
+            if attachment?.id == tempId { attachment = nil }
+            errorMessage = "사진을 올리지 못했어요. 다시 시도해주세요."
+        }
+    }
+
+    func removeImage() {
+        attachment = nil
+    }
+
     func submitComment() async {
         let body = draftComment.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !body.isEmpty, !isSubmittingComment else { return }
+        guard !body.isEmpty, !isSubmittingComment, !isUploadingImage else { return }
         isSubmittingComment = true
         defer { isSubmittingComment = false }
         do {
@@ -85,10 +127,11 @@ final class CommunityDetailViewModel {
                 postId: postId,
                 parentCommentId: replyTarget?.id,
                 body: body,
-                mediaId: nil
+                mediaId: attachment?.mediaId
             )
             draftComment = ""
             replyTarget = nil
+            attachment = nil
             await reloadComments()
             detail?.commentCount += 1
         } catch {

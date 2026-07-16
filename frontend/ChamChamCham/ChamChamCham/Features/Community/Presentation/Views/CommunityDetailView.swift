@@ -5,6 +5,7 @@
 //  Created by iyungui on 7/7/26.
 //
 
+import PhotosUI
 import SwiftData
 import SwiftUI
 
@@ -18,13 +19,19 @@ struct CommunityDetailView: View {
     /// The logged-in member, read from the local cache — used to show delete only on the user's own content.
     @State private var currentMemberId: UUID?
     @FocusState private var commentFieldFocused: Bool
+    @State private var pickerItems: [PhotosPickerItem] = []
+    @State private var showPhotoPicker = false
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
     init(postId: UUID, container: DIContainer) {
         self.postId = postId
         self.container = container
-        _viewModel = State(initialValue: CommunityDetailViewModel(postId: postId, repository: container.makeCommunityRepository()))
+        _viewModel = State(initialValue: CommunityDetailViewModel(
+            postId: postId,
+            repository: container.makeCommunityRepository(),
+            mediaRepository: container.makeMediaUploadRepository()
+        ))
     }
 
     var body: some View {
@@ -38,6 +45,10 @@ struct CommunityDetailView: View {
             MemberProfileView(memberId: route.memberId, container: container)
         }
         .safeAreaInset(edge: .bottom) { commentComposer }
+        .photosPicker(isPresented: $showPhotoPicker, selection: $pickerItems, maxSelectionCount: 1, matching: .images)
+        .onChange(of: pickerItems) { _, items in
+            Task { await attach(items) }
+        }
         .task {
             currentMemberId = CachedMemberProfile.fetchCached(in: modelContext)?.id
             await viewModel.load()
@@ -127,7 +138,6 @@ struct CommunityDetailView: View {
             HStack(alignment: .center, spacing: Spacing.sm) {
                 authorLine(detail)
                 Spacer(minLength: Spacing.md)
-                likeButton(detail)
             }
             .frame(height: 32)
 
@@ -151,7 +161,30 @@ struct CommunityDetailView: View {
 
                 detailTagRow(detail)
                     .padding(.top, horizontalInset)
+
+                reactionRow(detail)
+                    .padding(.top, Spacing.md)
             }
+        }
+    }
+
+    /// `♥ likeCount   💬 commentCount` under the post body. Tapping 💬 focuses the composer.
+    private func reactionRow(_ detail: CommunityPostDetail) -> some View {
+        HStack(spacing: Spacing.md) {
+            likeButton(detail)
+            Button {
+                commentFieldFocused = true
+            } label: {
+                HStack(spacing: Spacing.xs) {
+                    AppIconView(source: .asset("chat_bubble_line"), size: 24)
+                        .foregroundStyle(Color.Icon.default)
+                    Text("\(detail.commentCount)")
+                        .appTypography(.labelMedium)
+                        .foregroundStyle(Color.Text.subtle)
+                }
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("댓글 달기")
         }
     }
 
@@ -188,9 +221,13 @@ struct CommunityDetailView: View {
         Button {
             Task { await viewModel.toggleLike() }
         } label: {
-            AppIconView(source: .asset(detail.likedByMe ? "favorite" : "favorite_line"), size: 28)
-                .foregroundStyle(detail.likedByMe ? Color.Icon.red : Color.Icon.default)
-                .frame(width: 32, height: 32)
+            HStack(spacing: Spacing.xs) {
+                AppIconView(source: .asset(detail.likedByMe ? "favorite" : "favorite_line"), size: 24)
+                    .foregroundStyle(detail.likedByMe ? Color.Icon.red : Color.Icon.default)
+                Text("\(detail.likeCount)")
+                    .appTypography(.labelMedium)
+                    .foregroundStyle(Color.Text.subtle)
+            }
         }
         .buttonStyle(.plain)
         .accessibilityLabel(detail.likedByMe ? "좋아요 취소" : "좋아요")
@@ -279,18 +316,59 @@ struct CommunityDetailView: View {
                 .padding(.horizontal, Spacing.md)
                 .padding(.top, Spacing.sm)
             }
-            AppCommentInput(
-                text: $viewModel.draftComment,
-                isFocused: $commentFieldFocused,
-                isSubmitting: viewModel.isSubmittingComment,
-                isPhotoEnabled: false,
-                onSubmit: {
-                    commentFieldFocused = false
-                    Task { await viewModel.submitComment() }
-                }
-            )
+            if let attachment = viewModel.attachment {
+                AppCommentInput(
+                    text: $viewModel.draftComment,
+                    isFocused: $commentFieldFocused,
+                    isSubmitting: viewModel.isSubmittingComment,
+                    isPhotoEnabled: true,
+                    onPhotoTap: { showPhotoPicker = true },
+                    onRemoveAttachment: { viewModel.removeImage() },
+                    onSubmit: {
+                        commentFieldFocused = false
+                        Task { await viewModel.submitComment() }
+                    },
+                    attachment: { attachmentThumbnail(attachment) }
+                )
+            } else {
+                AppCommentInput(
+                    text: $viewModel.draftComment,
+                    isFocused: $commentFieldFocused,
+                    isSubmitting: viewModel.isSubmittingComment,
+                    isPhotoEnabled: true,
+                    onPhotoTap: { showPhotoPicker = true },
+                    onSubmit: {
+                        commentFieldFocused = false
+                        Task { await viewModel.submitComment() }
+                    }
+                )
+            }
         }
         .background(Color.Background.default)
+    }
+
+    /// The picked image is shown immediately; while its upload is in flight a dimmed spinner overlays it.
+    @ViewBuilder
+    private func attachmentThumbnail(_ attachment: CommunityDetailViewModel.Attachment) -> some View {
+        ZStack {
+            if let uiImage = UIImage(data: attachment.previewData) {
+                Image(uiImage: uiImage).resizable().scaledToFill()
+            } else {
+                Color.Object.muted
+            }
+            if attachment.isUploading {
+                Color.black.opacity(0.3)
+                ProgressView()
+                    .tint(Color.Icon.inverse)
+            }
+        }
+    }
+
+    private func attach(_ items: [PhotosPickerItem]) async {
+        defer { pickerItems = [] }
+        guard let item = items.first,
+              let data = try? await item.loadTransferable(type: Data.self) else { return }
+        await viewModel.addImage(data)
     }
 }
 

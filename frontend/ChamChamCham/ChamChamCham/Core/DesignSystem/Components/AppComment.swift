@@ -8,7 +8,8 @@
 import SwiftUI
 
 /// Figma `comment`. The collapsed state shows three body lines, while the expanded state lets
-/// the body grow and swaps the read-more action to `간략히 보기`.
+/// the body grow and swaps the read-more action to `간략히 보기`. The `자세히 보기` action only appears
+/// when the body actually overflows `collapsedLineLimit` lines — a short comment shows just `답글`.
 struct AppComment<AvatarContent: View>: View {
     static var avatarSize: CGFloat { 32 }
     static var attachmentSize: CGFloat { 96 }
@@ -36,6 +37,13 @@ struct AppComment<AvatarContent: View>: View {
 
     private let avatar: AvatarContent?
     private let attachment: AnyView?
+
+    /// Measured off-screen so `자세히 보기` is shown only when the body overflows `collapsedLineLimit`.
+    /// Both heights come from hidden probes with fixed line limits, so they stay stable across expand/collapse.
+    @State private var fullBodyHeight: CGFloat = 0
+    @State private var clampedBodyHeight: CGFloat = 0
+
+    private var isBodyTruncated: Bool { fullBodyHeight > clampedBodyHeight + 0.5 }
 
     init<Attachment: View>(
         nickname: String,
@@ -119,6 +127,8 @@ struct AppComment<AvatarContent: View>: View {
                 .foregroundStyle(bodyColor)
                 .lineLimit(isReadMoreActive ? nil : Self.collapsedLineLimit)
                 .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .background { truncationProbe }
                 .padding(.top, Spacing.sm)
 
             if let attachment {
@@ -170,18 +180,55 @@ struct AppComment<AvatarContent: View>: View {
         .frame(minHeight: 20)
     }
 
+    /// `자세히 보기` shows only when the body overflows (or is already expanded); otherwise just `답글`.
+    private var showsReadMore: Bool { isBodyTruncated || isReadMoreActive }
+
     private var actionRow: some View {
         HStack(spacing: 12) {
-            Button(Self.readMoreTitle(isReadMoreActive: isReadMoreActive), action: onReadMore)
-            Rectangle()
-                .fill(Color.Object.strong)
-                .frame(width: 1, height: 12)
+            if showsReadMore {
+                Button(Self.readMoreTitle(isReadMoreActive: isReadMoreActive), action: onReadMore)
+                Rectangle()
+                    .fill(Color.Object.strong)
+                    .frame(width: 1, height: 12)
+            }
             Button("답글", action: onReply)
         }
         .buttonStyle(.plain)
         .appTypography(.labelMedium)
         .foregroundStyle(Color.Text.muted)
         .frame(height: 20)
+    }
+
+    /// Hidden probes that measure the body's intrinsic height at both the clamped line limit and unlimited,
+    /// at the real body width. `isReadMoreActive` doesn't affect these, so the truncation verdict is stable.
+    /// Heights are reported via `onAppear`/`onChange` (MainActor-isolated) rather than a preference so the
+    /// `@State` writes are Swift 6 strict-concurrency clean.
+    private var truncationProbe: some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .topLeading) {
+                probeText(lineLimit: nil)
+                    .background { heightReporter { fullBodyHeight = $0 } }
+                probeText(lineLimit: Self.collapsedLineLimit)
+                    .background { heightReporter { clampedBodyHeight = $0 } }
+            }
+            .frame(width: proxy.size.width, alignment: .topLeading)
+            .hidden()
+        }
+    }
+
+    private func probeText(lineLimit: Int?) -> some View {
+        Text(bodyText)
+            .appTypography(.bodyMedium)
+            .lineLimit(lineLimit)
+            .fixedSize(horizontal: false, vertical: true)
+    }
+
+    private func heightReporter(_ assign: @escaping (CGFloat) -> Void) -> some View {
+        GeometryReader { proxy in
+            Color.clear
+                .onAppear { assign(proxy.size.height) }
+                .onChange(of: proxy.size.height) { _, newValue in assign(newValue) }
+        }
     }
 
     @ViewBuilder private var avatarView: some View {
@@ -260,10 +307,28 @@ extension AppComment where AvatarContent == EmptyView {
     }
 }
 
+/// Intrinsic body height with no line limit — compared against the clamped height to detect overflow.
+private struct BodyFullHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
+/// Body height clamped to `collapsedLineLimit` lines.
+private struct BodyClampedHeightKey: PreferenceKey {
+    static let defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) { value = max(value, nextValue()) }
+}
+
 #Preview {
     VStack(spacing: 0) {
         AppComment(
-            nickname: "닉네임",
+            nickname: "닉네임 (짧은 댓글 — 자세히 보기 없음)",
+            bodyText: "한 줄짜리 댓글입니다.",
+            onReadMore: {}
+        )
+
+        AppComment(
+            nickname: "닉네임 (3줄 초과 — 자세히 보기 표시)",
             bodyText: "댓글은 최대 3줄까지 보여집니다. 댓글은 최대 3줄까지 보여집니다. 댓글은 최대 3줄까지 보여집니다. 댓글은 최대 3줄까지 보여집니다.",
             onReadMore: {}
         )
