@@ -11,9 +11,8 @@ import SwiftUI
 /// farming records, the top recommended policy, and popular community posts. The bottom nav bar is
 /// provided by `MainTabView`, not here.
 ///
-/// Scope decisions confirmed 2026-07-14 (see `docs/figma/home/2026-07-14-home-implementation-plan.md`):
-/// - Weather detail is built with real temperature/condition + dummy extra fields (backend doesn't
-///   provide feels-like/low-high/UV/precipitation/humidity/wind/5-day forecast yet).
+/// Scope decisions confirmed 2026-07-14 (see `docs/figma/home/2026-07-14-home-implementation-plan.md`),
+/// weather now fully wired to real data per the 2026-07-16 `/api/v1/weather/*` redesign:
 /// - The policy card shows `applicationPeriodLabel` under the title instead of a computed D-day badge.
 /// - Policy list row taps open the external application/source URL in the system browser.
 /// - The record/community section chevrons switch `MainTabView`'s tab `selection` (hoisted in via
@@ -28,14 +27,17 @@ struct HomeView: View {
     @State private var path = NavigationPath()
     @State private var showCompose = false
     @Binding private var tabSelection: Int
+    private let tabItems: [AppNavBar.Item]
 
-    init(container: DIContainer, tabSelection: Binding<Int>) {
+    init(container: DIContainer, tabSelection: Binding<Int>, tabItems: [AppNavBar.Item]) {
         self.container = container
         _tabSelection = tabSelection
+        self.tabItems = tabItems
         _viewModel = State(initialValue: HomeViewModel(
             recordRepository: container.makeRecordRepository(),
             communityRepository: container.makeCommunityRepository(),
-            policyRepository: container.makePolicyRepository()
+            policyRepository: container.makePolicyRepository(),
+            weatherRepository: container.makeWeatherRepository()
         ))
     }
 
@@ -46,7 +48,7 @@ struct HomeView: View {
                     title: "홈",
                     background: .subtle,
                     showBorder: false,
-                    trailing: [.init(.asset("search")), .init(.asset("notifications"))]
+                    trailing: [.init(.asset("search"))]
                 )
                 ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.xl) {
@@ -71,10 +73,12 @@ struct HomeView: View {
                 }
             }
             .navigationBarHidden(true)
+            .appTabBarDock(items: tabItems, selection: $tabSelection)
             .navigationDestination(for: HomeRoute.self) { route in
                 switch route {
                 case .weatherDetail:
-                    WeatherDetailView(state: viewModel.weatherState)
+                    WeatherDetailView(state: viewModel.weatherDetailState)
+                        .task { await viewModel.loadWeatherDetailIfNeeded() }
                 case .policyList:
                     PolicyListView(container: container)
                 }
@@ -91,6 +95,7 @@ struct HomeView: View {
         .fullScreenCover(isPresented: $showCompose) {
             RecordComposeView(
                 repository: container.makeRecordRepository(),
+                weatherRepository: container.makeWeatherRepository(),
                 mediaUpload: container.makeMediaUploadRepository()
             ) { _ in
                 showCompose = false
@@ -145,20 +150,20 @@ struct HomeView: View {
         switch viewModel.weatherState {
         case .loading:
             ProgressView().frame(maxWidth: .infinity, alignment: .center)
-        case let .loaded(value):
+        case let .loaded(weather):
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {
-                    AppIconView(source: .asset(WeatherIconMapping.assetName(for: value.weather.condition)), size: 40, renderingMode: .original)
-                    Text("\(value.weather.temperature)°")
+                    AppIconView(source: .asset(WeatherIconMapping.assetName(for: weather.condition.code)), size: 40, renderingMode: .original)
+                    Text("\(weather.temperature)°")
                         .appTypography(.headlineLarge)
                         .foregroundStyle(Color.Text.default)
                 }
                 HStack(spacing: Spacing.sm) {
-                    Text("최저 \(value.detail.lowTemperature)°")
+                    Text("최저 \(weather.minTemperature.map { "\($0)" } ?? "-")°")
                     Rectangle()
                         .fill(Color.Border.strong)
                         .frame(width: 1, height: 12)
-                    Text("최고 \(value.detail.highTemperature)°")
+                    Text("최고 \(weather.maxTemperature.map { "\($0)" } ?? "-")°")
                 }
                 .appTypography(.bodyMedium)
                 .foregroundStyle(Color.Text.muted)

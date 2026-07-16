@@ -65,6 +65,23 @@ struct AppNavBar: View {
     }
 }
 
+extension View {
+    /// Docks `AppNavBar` as a bottom `VStack` sibling of a `NavigationStack` root so that a pushed
+    /// detail view slides over the bar and a pop reveals it again — the native
+    /// `hidesBottomBarWhenPushed` behavior, which a `TabView`-less custom bar can't get from
+    /// `.toolbar(.hidden, for: .tabBar)`. The bar must live *inside* each tab's `NavigationStack` for
+    /// the push transition to cover it. As a sibling (not a `safeAreaInset`, whose value greedy
+    /// `ScrollView`/`ZStack` content ignores) it also keeps the content region physically bounded
+    /// above the bar, so bottom-anchored FABs don't draw under it. See `MainTabView`.
+    func appTabBarDock(items: [AppNavBar.Item], selection: Binding<Int>) -> some View {
+        VStack(spacing: 0) {
+            self.frame(maxWidth: .infinity, maxHeight: .infinity)
+            AppNavBar(items: items, selection: selection)
+                .background(Color.Background.default.ignoresSafeArea(edges: .bottom))
+        }
+    }
+}
+
 #Preview {
     struct Demo: View {
         @State private var selection = 0

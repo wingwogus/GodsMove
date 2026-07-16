@@ -17,7 +17,6 @@ protocol RecordRepository: Sendable {
     func deleteRecord(id: UUID) async throws
     func fetchActiveCrops() async throws -> [ActiveCrop]
     func fetchFarmCrops() async throws -> [FarmWithCrops]
-    func fetchWeather(farmId: UUID) async throws -> CurrentWeather
     func searchPesticides(keyword: String?) async throws -> [Pesticide]
     func fetchPests(pesticideId: UUID) async throws -> [Pest]
 
@@ -74,11 +73,6 @@ struct RemoteRecordRepository: RecordRepository {
     func fetchFarmCrops() async throws -> [FarmWithCrops] {
         let farms: [FarmCropsResponseDTO] = try await apiClient.send(RecordEndpoint.activeCrops)
         return farms.map { $0.toFarmWithCrops() }
-    }
-
-    func fetchWeather(farmId: UUID) async throws -> CurrentWeather {
-        let dto: CurrentWeatherResponseDTO = try await apiClient.send(RecordEndpoint.farmWeather(farmId: farmId))
-        return dto.toDomain()
     }
 
     func searchPesticides(keyword: String?) async throws -> [Pesticide] {

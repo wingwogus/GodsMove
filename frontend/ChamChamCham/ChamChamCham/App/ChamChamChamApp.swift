@@ -5,6 +5,7 @@
 //  Created by iyungui on 7/2/26.
 //
 
+import Foundation
 import SwiftUI
 import SwiftData
 
@@ -12,17 +13,23 @@ import SwiftData
 struct ChamChamChamApp: App {
     @State private var appState: AppState
     private let container: DIContainer
+#if DEBUG
+    private let reportPreviewRepository: ReportPreviewRepository?
+#endif
 
     init() {
         container = DIContainer(modelContainer: .makeApp())
         KakaoSDKBootstrap.initialize()
         NaverSDKBootstrap.initialize()
         _appState = State(initialValue: Self.initialAppState(container: container))
+#if DEBUG
+        reportPreviewRepository = Self.makeReportPreviewRepository()
+#endif
     }
 
     var body: some Scene {
         WindowGroup {
-            RootView(container: container)
+            rootContent
                 .environment(appState)
                 .onOpenURL { url in
                     if KakaoSDKBootstrap.handleOpenURL(url) { return }
@@ -30,6 +37,23 @@ struct ChamChamChamApp: App {
                 }
         }
         .modelContainer(container.modelContainer)
+    }
+
+    @ViewBuilder private var rootContent: some View {
+#if DEBUG
+        if let reportPreviewRepository {
+            NavigationStack {
+                ReportDetailView(
+                    key: reportPreviewRepository.detail.key,
+                    repository: reportPreviewRepository
+                )
+            }
+        } else {
+            RootView(container: container)
+        }
+#else
+        RootView(container: container)
+#endif
     }
 
     /// Derives cold-launch auth state synchronously, before SwiftUI's first render, so `RootView` never
@@ -43,4 +67,35 @@ struct ChamChamChamApp: App {
         }
         return AppState(isAuthenticated: true, isOnboarded: cached.isOnboardingComplete)
     }
+
+#if DEBUG
+    @MainActor
+    private static func makeReportPreviewRepository() -> ReportPreviewRepository? {
+        let arguments = ProcessInfo.processInfo.arguments
+        guard arguments.contains("--report-preview") else { return nil }
+
+        let workType = previewArgument("--report-work-type", in: arguments)
+            .flatMap(WorkType.init(rawValue:)) ?? .harvest
+        let cycleStatus: ReportCycleStatus = arguments.contains("--report-active") ? .active : .completed
+        let feedbackState = previewArgument("--report-feedback", in: arguments)
+            .map(ReportFeedbackState.init(rawValue:)) ?? .ready
+        let source: ReportResource<FarmingWorkReportDetail>.Source = arguments.contains("--report-offline")
+            ? .cache(updatedAt: Date(timeIntervalSince1970: 1_730_000_000))
+            : .network
+
+        return ReportPreviewFixtures.repository(
+            workType: workType,
+            cycleStatus: cycleStatus,
+            feedbackState: feedbackState,
+            source: source
+        )
+    }
+
+    private static func previewArgument(_ name: String, in arguments: [String]) -> String? {
+        guard let index = arguments.firstIndex(of: name), arguments.indices.contains(index + 1) else {
+            return nil
+        }
+        return arguments[index + 1]
+    }
+#endif
 }

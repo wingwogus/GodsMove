@@ -11,38 +11,76 @@ import SwiftUI
 /// filter chip row, a cursor-paged record list, and the floating "+" record button. The bottom nav bar is
 /// provided by `MainTabView`, not here.
 ///
-/// Scope: this is the read-only list from the captured screens. The 리포트 tab, search/notification icons, and
-/// the "+" compose flow are not captured yet, so they render as placeholders / inert affordances.
+/// The record and report tabs share this navigation shell while keeping their repositories and state separate.
 struct RecordListView: View {
     private let repository: any RecordRepository
+    private let reportRepository: any ReportRepository
+    private let weatherRepository: any WeatherRepository
     private let mediaUpload: any MediaUploadRepository
+    private let voiceRepository: any VoiceSessionRepository
     @State private var viewModel: RecordListViewModel
+    @State private var reportViewModel: ReportListViewModel
     @State private var selectedTab = 0
     @State private var activeSheet: RecordFilterKind?
-    /// Owned by the shell (`MainTabView`) so the same flag dims both the content region *and* the
-    /// nav bar in one animation transaction — the two scrims read the same value and fade together.
-    @Binding private var isSpeedDialOpen: Bool
+    /// Local to this tab: the speed-dial scrim dims both the content region and the docked nav bar,
+    /// which live in the same view tree (see `body`), so no cross-view binding is needed.
+    @State private var isSpeedDialOpen = false
     @State private var showCompose = false
-    @State private var path: [UUID] = []
+    @State private var showVoiceCompose = false
+    @State private var path = NavigationPath()
     @State private var toastMessage: String?
+    @Binding private var selection: Int
+    private let tabItems: [AppNavBar.Item]
     private let horizontalInset: CGFloat = 20
 
     init(
         repository: any RecordRepository,
+        reportRepository: any ReportRepository,
+        weatherRepository: any WeatherRepository,
         mediaUpload: any MediaUploadRepository,
-        isSpeedDialOpen: Binding<Bool>
+        voiceRepository: any VoiceSessionRepository,
+        selection: Binding<Int>,
+        tabItems: [AppNavBar.Item]
     ) {
         self.repository = repository
+        self.reportRepository = reportRepository
+        self.weatherRepository = weatherRepository
         self.mediaUpload = mediaUpload
-        _isSpeedDialOpen = isSpeedDialOpen
+        self.voiceRepository = voiceRepository
+        _selection = selection
+        self.tabItems = tabItems
         _viewModel = State(initialValue: RecordListViewModel(repository: repository))
+        _reportViewModel = State(initialValue: ReportListViewModel(repository: reportRepository) {
+            try await repository.fetchFarmCrops()
+        })
     }
 
     var body: some View {
         NavigationStack(path: $path) {
-            recordTabContent
+            VStack(spacing: 0) {
+                recordTabContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                dockedNavBar
+            }
         }
         .recordToast(message: $toastMessage)
+    }
+
+    /// The app tab bar docked at the bottom of this tab's stack root. It carries its own speed-dial
+    /// scrim so the dimming reaches over the bar — the content scrim inside `recordTabContent` can't,
+    /// being bounded above it. Because the bar lives inside the `NavigationStack`, a pushed
+    /// `RecordDetailView` slides over it and a pop reveals it (native `hidesBottomBarWhenPushed`).
+    private var dockedNavBar: some View {
+        AppNavBar(items: tabItems, selection: $selection)
+            .background(Color.Background.default.ignoresSafeArea(edges: .bottom))
+            .overlay {
+                if isSpeedDialOpen {
+                    Color.scrim
+                        .ignoresSafeArea(edges: .bottom)
+                        .transition(.opacity)
+                        .onTapGesture { closeSpeedDial() }
+                }
+            }
     }
 
     private var recordTabContent: some View {
@@ -51,7 +89,7 @@ struct RecordListView: View {
                 AppTopAppBar(
                     title: "영농 기록",
                     showBorder: false,
-                    trailing: [.init(.asset("search")), .init(.asset("notifications"))]
+                    trailing: [.init(.asset("search"))]
                 )
                 AppTabBar(titles: ["기록", "리포트"], selection: $selectedTab)
                     .frame(height: 56)
@@ -60,7 +98,7 @@ struct RecordListView: View {
                     filterChipRow
                     recordList
                 } else {
-                    reportPlaceholder
+                    ReportListView(viewModel: reportViewModel)
                 }
             }
             if selectedTab == 0 {
@@ -70,12 +108,30 @@ struct RecordListView: View {
         .task { await viewModel.onAppear() }
         .fullScreenCover(isPresented: $showCompose) {
             NavigationStack {
-                RecordComposeView(repository: repository, mediaUpload: mediaUpload) { newRecordId in
+                RecordComposeView(
+                    repository: repository,
+                    weatherRepository: weatherRepository,
+                    mediaUpload: mediaUpload
+                ) { newRecordId in
                     // 작성 완료 → 방금 만든 기록 상세로 이동 + 완료 토스트 + 리스트 갱신.
                     path.append(newRecordId)
                     toastMessage = "영농 기록 작성이 완료되었습니다."
                     Task { await viewModel.reload() }
                 }
+            }
+        }
+        .fullScreenCover(isPresented: $showVoiceCompose) {
+            RecordVoiceFlowView(
+                voiceRepository: voiceRepository,
+                recordRepository: repository,
+                weatherRepository: weatherRepository,
+                mediaUpload: mediaUpload,
+                onSessionInvalid: { toastMessage = "이미 처리된 음성 기록이에요." }
+            ) { newRecordId in
+                // 텍스트 작성 완료와 동일한 마무리: 상세 이동 + 토스트 + 리스트 갱신.
+                path.append(newRecordId)
+                toastMessage = "영농 기록 작성이 완료되었습니다."
+                Task { await viewModel.reload() }
             }
         }
         .sheet(item: $activeSheet) { kind in
@@ -105,7 +161,16 @@ struct RecordListView: View {
             RecordDetailView(recordId: recordId, repository: repository) {
                 Task { await viewModel.reload() }
             }
-            .toolbar(.hidden, for: .tabBar)
+        }
+        .navigationDestination(for: ReportRoute.self) { route in
+            switch route {
+            case let .detail(key):
+                ReportDetailView(key: key, repository: reportRepository)
+                    .toolbar(.hidden, for: .tabBar)
+            case let .recordHistory(key):
+                ReportRecordHistoryView(key: key)
+                    .toolbar(.hidden, for: .tabBar)
+            }
         }
     }
 
@@ -206,20 +271,6 @@ struct RecordListView: View {
         .padding(.top, Spacing.xl * 2)
     }
 
-    // MARK: - 리포트 tab (not captured yet)
-
-    private var reportPlaceholder: some View {
-        VStack(spacing: Spacing.md) {
-            Image(systemName: "chart.bar.doc.horizontal")
-                .font(.system(size: 40))
-                .foregroundStyle(Color.Icon.disabled)
-            Text("리포트는 준비 중이에요.")
-                .appTypography(.bodyMedium)
-                .foregroundStyle(Color.Text.muted)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
     // MARK: - Floating record button + 스피드다이얼
 
     /// FAB 탭 시 딤(#1a1a1a@64%) + 음성/텍스트/닫기 스피드다이얼. (Figma `기록 버튼 탭 시`)
@@ -233,8 +284,8 @@ struct RecordListView: View {
         VStack(alignment: .trailing, spacing: 20) {
             if isSpeedDialOpen {
                 speedDialItem(label: "음성으로 기록하기", icon: .asset("mic")) {
-                    // 음성 기록 화면 미수집 — 후속.
                     closeSpeedDial()
+                    showVoiceCompose = true
                 }
                 speedDialItem(label: "텍스트로 기록하기", icon: .asset("edit")) {
                     closeSpeedDial()

@@ -12,6 +12,7 @@
 		CE6491E22FF7FAC20092F2F1 /* KakaoSDKAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491E12FF7FAC20092F2F1 /* KakaoSDKAuth */; };
 		CE6491E82FF7FAC20092F2F1 /* KakaoSDKCommon in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491E72FF7FAC20092F2F1 /* KakaoSDKCommon */; };
 		CE6491EB2FF7FB020092F2F1 /* NidThirdPartyLogin in Frameworks */ = {isa = PBXBuildFile; productRef = CE6491EA2FF7FB020092F2F1 /* NidThirdPartyLogin */; };
+		CEBB00000000000000000003 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = CEBB00000000000000000002 /* WebRTC */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -52,6 +53,7 @@
 				CE6491E82FF7FAC20092F2F1 /* KakaoSDKCommon in Frameworks */,
 				CE6491E22FF7FAC20092F2F1 /* KakaoSDKAuth in Frameworks */,
 				CE6491EB2FF7FB020092F2F1 /* NidThirdPartyLogin in Frameworks */,
+				CEBB00000000000000000003 /* WebRTC in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -116,6 +118,7 @@
 				CE6491E72FF7FAC20092F2F1 /* KakaoSDKCommon */,
 				CE6491EA2FF7FB020092F2F1 /* NidThirdPartyLogin */,
 				CE49AA693004BEDC009333D6 /* KakaoSDKUser */,
+				CEBB00000000000000000002 /* WebRTC */,
 			);
 			productName = ChamChamCham;
 			productReference = CE648D822FF61D6A0092F2F1 /* ChamChamCham.app */;
@@ -175,6 +178,7 @@
 			packageReferences = (
 				CE6491DE2FF7FAC20092F2F1 /* XCRemoteSwiftPackageReference "kakao-ios-sdk" */,
 				CE6491E92FF7FB020092F2F1 /* XCRemoteSwiftPackageReference "naveridlogin-sdk-ios-swift" */,
+				CEBB00000000000000000001 /* XCRemoteSwiftPackageReference "WebRTC" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CE648D832FF61D6A0092F2F1 /* Products */;
@@ -522,6 +526,14 @@
 				minimumVersion = 5.1.0;
 			};
 		};
+		CEBB00000000000000000001 /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stasel/WebRTC.git";
+			requirement = {
+				kind = exactVersion;
+				version = 150.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -549,6 +561,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CE6491E92FF7FB020092F2F1 /* XCRemoteSwiftPackageReference "naveridlogin-sdk-ios-swift" */;
 			productName = NidThirdPartyLogin;
+		};
+		CEBB00000000000000000002 /* WebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CEBB00000000000000000001 /* XCRemoteSwiftPackageReference "WebRTC" */;
+			productName = WebRTC;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

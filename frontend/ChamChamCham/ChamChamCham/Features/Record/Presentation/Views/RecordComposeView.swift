@@ -16,13 +16,27 @@ struct RecordComposeView: View {
     @State private var photoItem: PhotosPickerItem?
     @Environment(\.dismiss) private var dismiss
     private let onComplete: (UUID) -> Void
+    private let onSessionInvalid: (() -> Void)?
 
+    /// `saver`/`prefill`/`onSessionInvalid`는 음성 검토 재사용 전용 — 텍스트 작성 호출부는
+    /// 기본값 그대로 두면 기존 동작과 동일하다.
     init(
         repository: any RecordRepository,
+        weatherRepository: any WeatherRepository,
         mediaUpload: any MediaUploadRepository,
+        saver: (any RecordSaver)? = nil,
+        prefill: VoiceRecordPrefill? = nil,
+        onSessionInvalid: (() -> Void)? = nil,
         onComplete: @escaping (UUID) -> Void
     ) {
-        _viewModel = State(initialValue: RecordComposeViewModel(repository: repository, mediaUpload: mediaUpload))
+        _viewModel = State(initialValue: RecordComposeViewModel(
+            repository: repository,
+            weatherRepository: weatherRepository,
+            mediaUpload: mediaUpload,
+            saver: saver,
+            prefill: prefill
+        ))
+        self.onSessionInvalid = onSessionInvalid
         self.onComplete = onComplete
     }
 
@@ -59,12 +73,16 @@ struct RecordComposeView: View {
             }
         }
         .sheet(isPresented: $showPesticidePicker) {
-            PesticidePickerSheet(search: vm.searchPesticides) { pesticide in
+            PesticidePickerSheet(search: vm.searchPesticides, current: vm.selectedPesticide) { pesticide in
                 Task { await vm.selectPesticide(pesticide) }
             }
+            .presentationDragIndicator(.visible)
         }
         .onChange(of: vm.createdRecordId) { _, newValue in
             if let newValue { onComplete(newValue); dismiss() }
+        }
+        .onChange(of: vm.voiceSessionInvalidated) { _, invalidated in
+            if invalidated { onSessionInvalid?() }
         }
     }
 
@@ -121,7 +139,7 @@ struct RecordComposeView: View {
             if vm.isLoadingWeather {
                 ProgressView()
             } else if let weather = vm.weather {
-                Text(weather.condition)
+                Text(weather.condition.text)
                 Text("\(weather.temperature)°")
             } else if vm.weatherLoadFailed {
                 AppIconView(source: .asset("refresh"), size: 16)
@@ -423,42 +441,82 @@ private struct AppImagePlaceholderSlot: View {
     }
 }
 
-/// 사용 농약 검색 바텀시트 (`GET /pesticides?keyword`).
+/// 사용 농약 검색 바텀시트 (`GET /pesticides?keyword`). 목록에서 고른 항목은 체크 표시로만
+/// 반영되고, 실제 선택은 하단 "완료" 버튼으로 확정한다 (Figma `bottom-sheet` 1500:7963).
 private struct PesticidePickerSheet: View {
     let search: (String?) async -> [Pesticide]
+    var current: Pesticide?
     let onSelect: (Pesticide) -> Void
 
     @State private var keyword = ""
     @State private var results: [Pesticide] = []
+    @State private var selection: Pesticide?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            Text("사용 농약").appTypography(.titleMediumEmphasized).foregroundStyle(Color.Text.default)
-            AppSearchBar(text: $keyword, placeholder: "농약 검색...")
+        VStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 16) {
+                Text("사용 농약").appTypography(.titleMediumEmphasized).foregroundStyle(Color.Text.default)
+                AppSearchBar(text: $keyword, placeholder: "사용한 농약을 검색해보세요.")
+            }
+            .padding(.horizontal, 20)
+            .padding(.top, 20)
+
             ScrollView {
-                LazyVStack(spacing: 0) {
-                    ForEach(results) { pesticide in
-                        Button {
-                            onSelect(pesticide); dismiss()
-                        } label: {
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text(pesticide.itemName).appTypography(.bodyLarge).foregroundStyle(Color.Text.default)
-                                Text(pesticide.brandName).appTypography(.bodyMedium).foregroundStyle(Color.Text.muted)
-                            }
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .padding(.vertical, 12)
+                VStack(spacing: 0) {
+                    ForEach(Array(results.enumerated()), id: \.element.id) { index, pesticide in
+                        row(for: pesticide)
+                        if index < results.count - 1 {
+                            Divider().background(Color.Border.default).padding(.leading, 20)
                         }
-                        .buttonStyle(.plain)
-                        Divider().overlay(Color.Border.subtle)
                     }
                 }
             }
             .scrollDismissesKeyboard(.interactively)
         }
-        .padding(20)
+        .background(Color.Background.default)
+        .safeAreaInset(edge: .bottom, spacing: 0) {
+            AppButton("완료", variant: .secondary, size: .medium, fullWidth: true) {
+                guard let selection else { return }
+                onSelect(selection)
+                dismiss()
+            }
+            .disabled(selection == nil)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color.Background.default)
+        }
         .dismissKeyboardOnTap()
-        .task { results = await search(nil) }
+        .task {
+            selection = current
+            results = await search(nil)
+        }
         .task(id: keyword) { results = await search(keyword) }
+    }
+
+    private func row(for pesticide: Pesticide) -> some View {
+        let isSelected = pesticide == selection
+        return Button {
+            selection = pesticide
+        } label: {
+            HStack(spacing: Spacing.md) {
+                Text(pesticide.itemName)
+                    .appTypography(.titleMediumEmphasized)
+                    .foregroundStyle(isSelected ? Color.Text.primary : Color.Text.subtle)
+                    .lineLimit(1)
+
+                Spacer()
+
+                if isSelected {
+                    AppIconView(source: .asset("check_circle"), size: 24)
+                        .foregroundStyle(Color.Object.primary)
+                }
+            }
+            .padding(.horizontal, 20)
+            .frame(height: 58)
+            .frame(maxWidth: .infinity)
+            .background(isSelected ? Color.Object.primarySubtle : Color.Background.default)
+        }
+        .buttonStyle(.plain)
     }
 }

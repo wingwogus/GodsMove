@@ -22,22 +22,31 @@ final class HomeViewModel {
     private let recordRepository: RecordRepository
     private let communityRepository: CommunityRepository
     private let policyRepository: PolicyRepository
+    private let weatherRepository: WeatherRepository
 
-    private(set) var weatherState: HomeSectionState<(weather: CurrentWeather, detail: WeatherDetail)> = .loading
+    private(set) var weatherState: HomeSectionState<CurrentWeather> = .loading
     private(set) var recentRecordsState: HomeSectionState<[FarmingRecordSummary]> = .loading
     private(set) var policyState: HomeSectionState<PolicyRecommendation?> = .loading
     private(set) var popularPostsState: HomeSectionState<[CommunityPostSummary]> = .loading
+
+    /// 날씨 상세는 홈 카드와 별개로, 화면에 들어갈 때만 조회한다 — 상세 전용 필드(체감/자외선/습도/풍속/
+    /// 5일예보)까지 홈 로드 때마다 같이 부르면 백엔드가 홈/상세를 나눈 목적(불필요한 외부 호출 비용 제거)이
+    /// 사라진다.
+    private(set) var weatherDetailState: HomeSectionState<WeatherDetail> = .loading
+    private var weatherDetailLoaded = false
 
     private var didLoad = false
 
     init(
         recordRepository: RecordRepository,
         communityRepository: CommunityRepository,
-        policyRepository: PolicyRepository
+        policyRepository: PolicyRepository,
+        weatherRepository: WeatherRepository
     ) {
         self.recordRepository = recordRepository
         self.communityRepository = communityRepository
         self.policyRepository = policyRepository
+        self.weatherRepository = weatherRepository
     }
 
     /// Loads once per tab lifetime, matching Record/Community's `posts.isEmpty` re-entry guard —
@@ -49,6 +58,7 @@ final class HomeViewModel {
     }
 
     func reload() async {
+        weatherDetailLoaded = false // 다음 상세 진입 때 재조회하도록 무효화(상세 화면 자체를 새로고침하진 않음).
         async let weatherLoad: Void = loadWeather()
         async let recordsLoad: Void = loadRecentRecords()
         async let policyLoad: Void = loadRecommendedPolicy()
@@ -59,16 +69,24 @@ final class HomeViewModel {
     private func loadWeather() async {
         weatherState = .loading
         do {
-            let farms = try await recordRepository.fetchFarmCrops()
-            guard let farmId = farms.first?.farmId else {
-                weatherState = .failed("등록된 농장이 없어요")
-                return
-            }
-            let weather = try await recordRepository.fetchWeather(farmId: farmId)
-            let detail = WeatherDetail.dummy(temperature: weather.temperature, condition: weather.condition)
-            weatherState = .loaded((weather, detail))
+            // farmId 생략 → 백엔드가 첫 등록 농지로 해석(계획대로), 여기서 별도 농지 조회가 필요 없다.
+            weatherState = .loaded(try await weatherRepository.fetchHome(farmId: nil))
         } catch {
             weatherState = .failed(HomeErrorMessage.text(for: error))
+        }
+    }
+
+    /// `HomeRoute.weatherDetail`로 진입할 때 한 번만 호출. 실패 후 재진입해도 재조회하지 않는 건
+    /// (`reload()`가 아니라 여기서만 리셋) 다른 섹션들과 동일한 "한 번 로드, pull-to-refresh로만 재시도"
+    /// 규칙을 따른 것.
+    func loadWeatherDetailIfNeeded() async {
+        guard !weatherDetailLoaded else { return }
+        weatherDetailLoaded = true
+        weatherDetailState = .loading
+        do {
+            weatherDetailState = .loaded(try await weatherRepository.fetchDetail(farmId: nil))
+        } catch {
+            weatherDetailState = .failed(HomeErrorMessage.text(for: error))
         }
     }
 

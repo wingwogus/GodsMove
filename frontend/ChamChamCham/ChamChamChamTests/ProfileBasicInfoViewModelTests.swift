@@ -23,7 +23,10 @@ struct ProfileBasicInfoViewModelTests {
             experienceLevel: 2,
             managementType: "AGRICULTURAL_CORPORATION"
         )
-        let viewModel = ProfileBasicInfoViewModel(repository: StubMemberProfileRepository(profile: profile))
+        let viewModel = ProfileBasicInfoViewModel(
+            repository: StubMemberProfileRepository(profile: profile),
+            mediaRepository: FakeMediaUploadRepository()
+        )
 
         await viewModel.load()
 
@@ -40,7 +43,10 @@ struct ProfileBasicInfoViewModelTests {
         let profile = MyPageFixtures.profile(
             phone: "", birthDate: nil, experienceLevel: nil, managementType: "AGRICULTURAL_INDIVIDUAL"
         )
-        let viewModel = ProfileBasicInfoViewModel(repository: StubMemberProfileRepository(profile: profile))
+        let viewModel = ProfileBasicInfoViewModel(
+            repository: StubMemberProfileRepository(profile: profile),
+            mediaRepository: FakeMediaUploadRepository()
+        )
         await viewModel.load()
 
         #expect(!viewModel.canSave)
@@ -56,7 +62,10 @@ struct ProfileBasicInfoViewModelTests {
     @Test("validation errors surface only after a save attempt")
     func errorsAfterAttempt() async {
         let profile = MyPageFixtures.profile(phone: "", birthDate: nil, experienceLevel: nil)
-        let viewModel = ProfileBasicInfoViewModel(repository: StubMemberProfileRepository(profile: profile))
+        let viewModel = ProfileBasicInfoViewModel(
+            repository: StubMemberProfileRepository(profile: profile),
+            mediaRepository: FakeMediaUploadRepository()
+        )
         await viewModel.load()
 
         #expect(viewModel.phoneError == nil)
@@ -79,7 +88,10 @@ struct ProfileBasicInfoViewModelTests {
             managementType: "AGRICULTURAL_INDIVIDUAL"
         )
         let repository = StubMemberProfileRepository(profile: profile)
-        let viewModel = ProfileBasicInfoViewModel(repository: repository)
+        let viewModel = ProfileBasicInfoViewModel(
+            repository: repository,
+            mediaRepository: FakeMediaUploadRepository()
+        )
         await viewModel.load()
         viewModel.managementType = .nonRegisteredFarmer
 
@@ -92,5 +104,47 @@ struct ProfileBasicInfoViewModelTests {
         #expect(request?.birthDate == "1990-01-02")
         #expect(request?.experienceLevel == 2)
         #expect(request?.managementType == "NON_REGISTERED_FARMER")
+        #expect(request?.profileMediaId == nil)          // 사진을 새로 고르지 않았다면 변경 없음
+    }
+
+    @Test("picking a photo uploads it and includes the mediaId on save")
+    func pickImageUploadsAndSaves() async {
+        let profile = MyPageFixtures.profile(
+            phone: "010-1234-5678", birthDate: "1990-01-02", experienceLevel: 2
+        )
+        let mediaId = UUID()
+        let repository = StubMemberProfileRepository(profile: profile)
+        let viewModel = ProfileBasicInfoViewModel(
+            repository: repository,
+            mediaRepository: FakeMediaUploadRepository(successMediaId: mediaId)
+        )
+        await viewModel.load()
+
+        await viewModel.pickImage(Data([0x01, 0x02]))
+
+        #expect(viewModel.previewImageData == Data([0x01, 0x02]))
+        #expect(viewModel.imageErrorMessage == nil)
+        #expect(!viewModel.isUploadingImage)
+
+        let saved = await viewModel.save()
+        #expect(saved)
+
+        let request = await repository.lastUpdate()
+        #expect(request?.profileMediaId == mediaId)
+    }
+
+    @Test("a failed photo upload reverts the preview and surfaces an error")
+    func pickImageUploadFailureReverts() async {
+        let profile = MyPageFixtures.profile()
+        let viewModel = ProfileBasicInfoViewModel(
+            repository: StubMemberProfileRepository(profile: profile),
+            mediaRepository: FakeMediaUploadRepository(fails: true)
+        )
+        await viewModel.load()
+
+        await viewModel.pickImage(Data([0x01]))
+
+        #expect(viewModel.previewImageData == nil)
+        #expect(viewModel.imageErrorMessage != nil)
     }
 }

@@ -12,6 +12,8 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import java.util.UUID
 
 @Entity
@@ -24,14 +26,17 @@ class CommunityComment(
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "post_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val post: CommunityPost,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "parent_comment_id")
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val parentComment: CommunityComment? = null,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "author_member_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val author: Member,
 
     @Column(nullable = false, columnDefinition = "text")
@@ -39,6 +44,7 @@ class CommunityComment(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "media_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     val media: UploadedMedia? = null,
 
     @Column(name = "is_deleted", nullable = false)

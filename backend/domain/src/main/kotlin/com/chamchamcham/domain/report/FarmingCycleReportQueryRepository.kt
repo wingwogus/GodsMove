@@ -24,6 +24,7 @@ interface FarmingCycleReportQueryRepository {
     )
 
     data class WorkItemCursor(
+        val lastWorkedOn: LocalDate?,
         val status: FarmingCycleReportStatus,
         val sortAt: LocalDateTime,
         val reportId: UUID,

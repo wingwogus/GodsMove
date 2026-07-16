@@ -228,6 +228,17 @@ data class CycleReportStatistics(
         WorkType.ETC -> etc.recordCount
     }
 
+    fun lastWorkedOnFor(workType: WorkType): LocalDate? = when (workType) {
+        WorkType.PLANTING -> planting.lastWorkedOn
+        WorkType.WATERING -> watering.lastWorkedOn
+        WorkType.FERTILIZING -> fertilizing.lastWorkedOn
+        WorkType.PEST_CONTROL -> pestControl.lastWorkedOn
+        WorkType.WEEDING -> weeding.lastWorkedOn
+        WorkType.PRUNING -> pruning.lastWorkedOn
+        WorkType.HARVEST -> harvest.lastWorkedOn
+        WorkType.ETC -> etc.lastWorkedOn
+    }
+
     companion object {
         fun empty() = CycleReportStatistics()
     }

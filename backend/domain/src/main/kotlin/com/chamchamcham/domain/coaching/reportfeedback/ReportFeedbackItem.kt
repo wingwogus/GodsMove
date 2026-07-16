@@ -12,6 +12,8 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import java.util.UUID
 
 data class ReportFeedbackItemDraft(
@@ -38,6 +40,7 @@ class ReportFeedbackItem(
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "report_feedback_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val reportFeedback: ReportFeedback,
 
     @Column(name = "display_order", nullable = false)

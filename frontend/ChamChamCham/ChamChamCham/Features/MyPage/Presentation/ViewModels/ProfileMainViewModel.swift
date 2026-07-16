@@ -175,6 +175,11 @@ final class ProfileMainViewModel {
         return total - 3
     }
 
+    /// Whether the expand/collapse toggle should be shown at all (more than 3 crops on the profile).
+    var canToggleCrops: Bool {
+        (profile?.crops.count ?? 0) > 3
+    }
+
     var experienceText: String? {
         guard let level = profile?.experienceLevel else { return nil }
         return "\(level)년차"

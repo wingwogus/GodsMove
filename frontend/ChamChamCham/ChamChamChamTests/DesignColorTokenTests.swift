@@ -23,6 +23,18 @@ struct DesignColorTokenTests {
         #expect(hex(Color.Icon.red) == 0xEF4444)
     }
 
+    @Test("report chart palette matches the six approved Figma colors")
+    func reportChartPalette() {
+        #expect(Color.Chart.palette.compactMap(hex) == [
+            0x38C284,
+            0xA5E9B1,
+            0xF7DC11,
+            0xC8F468,
+            0x81DAD8,
+            0xB1CBDF,
+        ])
+    }
+
     private func hex(_ color: Color) -> UInt32? {
         var red: CGFloat = 0
         var green: CGFloat = 0

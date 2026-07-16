@@ -1,3 +1,4 @@
+
 //
 //  ProfileMainView.swift
 //  ChamChamCham
@@ -16,9 +17,13 @@ struct ProfileMainView: View {
     @State private var isShowingSettings = false
     @State private var isShowingBoardSheet = false
     @State private var isShowingProfileEdit = false
+    @Binding private var selection: Int
+    private let tabItems: [AppNavBar.Item]
 
-    init(container: DIContainer) {
+    init(container: DIContainer, selection: Binding<Int>, tabItems: [AppNavBar.Item]) {
         self.container = container
+        _selection = selection
+        self.tabItems = tabItems
         _viewModel = State(
             initialValue: ProfileMainViewModel(
                 profileRepository: container.makeMemberProfileRepository(),
@@ -33,8 +38,7 @@ struct ProfileMainView: View {
                 AppTopAppBar(
                     title: "나의 프로필",
                     trailing: [
-                        .init(.asset("settings")) { isShowingSettings = true },
-                        .init(.asset("notifications")) {} // 알림: 이번 범위 제외
+                        .init(.asset("settings")) { isShowingSettings = true }
                     ]
                 )
 
@@ -57,6 +61,7 @@ struct ProfileMainView: View {
                 }
             }
             .background(Color.Background.default)
+            .appTabBarDock(items: tabItems, selection: $selection)
             .navigationDestination(for: CommunityPostSummary.self) { post in
                 CommunityDetailView(postId: post.id, container: container)
             }
@@ -65,7 +70,7 @@ struct ProfileMainView: View {
         .onChange(of: viewModel.selectedTabIndex) { _, _ in
             Task { await viewModel.onTabChanged() }
         }
-        .sheet(isPresented: $isShowingSettings) {
+        .fullScreenCover(isPresented: $isShowingSettings) {
             SettingsView(authRepository: container.makeAuthRepository())
         }
         .sheet(isPresented: $isShowingBoardSheet) {
@@ -170,20 +175,15 @@ struct ProfileMainView: View {
     private var cropNames: [String] { viewModel.displayedCropNames }
 
     @ViewBuilder private var cropBadges: some View {
-        let rows = chunk(cropNames, size: 5)
-        VStack(spacing: Spacing.sm) {
-            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                HStack(spacing: Spacing.sm) {
-                    ForEach(Array(row.enumerated()), id: \.offset) { _, name in
-                        AppBadge(label: name, style: .solid, variant: .primary)
-                    }
-                }
+        AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm, alignment: .center) {
+            ForEach(Array(cropNames.enumerated()), id: \.offset) { _, name in
+                AppBadge(label: name, style: .solid, variant: .primary)
             }
-            if viewModel.hiddenCropCount > 0 {
+            if viewModel.canToggleCrops {
                 Button {
-                    viewModel.cropsExpanded = true
+                    viewModel.cropsExpanded.toggle()
                 } label: {
-                    Text("외 \(viewModel.hiddenCropCount)종")
+                    Text(viewModel.cropsExpanded ? "접기" : "외 \(viewModel.hiddenCropCount)종")
                         .appTypography(.labelMedium)
                         .foregroundStyle(Color.Text.subtle)
                 }
@@ -261,12 +261,5 @@ struct ProfileMainView: View {
 
     private var emptyMessage: String {
         viewModel.currentTab == .myPosts ? "작성한 게시물이 없어요." : "좋아요 누른 글이 없어요."
-    }
-
-    private func chunk(_ items: [String], size: Int) -> [[String]] {
-        guard size > 0 else { return [items] }
-        return stride(from: 0, to: items.count, by: size).map {
-            Array(items[$0..<min($0 + size, items.count)])
-        }
     }
 }

@@ -2,6 +2,8 @@ package com.chamchamcham.api.security
 
 import com.chamchamcham.api.testsupport.signedTestToken
 import com.chamchamcham.application.security.TokenProvider
+import com.chamchamcham.domain.member.Member
+import com.chamchamcham.domain.member.MemberRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.hamcrest.Matchers.containsString
 import org.junit.jupiter.api.Test
@@ -35,7 +37,8 @@ import java.util.UUID
 @ExtendWith(OutputCaptureExtension::class)
 class AuthSecurityIntegrationTest(
     @Autowired private val mockMvc: MockMvc,
-    @Autowired private val tokenProvider: TokenProvider
+    @Autowired private val tokenProvider: TokenProvider,
+    @Autowired private val memberRepository: MemberRepository
 ) {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000042")
 
@@ -214,14 +217,22 @@ class AuthSecurityIntegrationTest(
 
     @Test
     fun `protected endpoint accepts valid jwt`() {
-        val accessToken = tokenProvider.createAccessToken(memberId, "ROLE_USER")
-
-        mockMvc.perform(
-            get("/api/v1/test/me")
-            .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
+        val existingMember = memberRepository.saveAndFlush(
+            Member(email = "security-${UUID.randomUUID()}@example.com", passwordHash = null)
         )
-            .andExpect(status().isOk)
-            .andExpect(content().string(containsString(memberId.toString())))
+        val existingMemberId = requireNotNull(existingMember.id)
+        val accessToken = tokenProvider.createAccessToken(existingMemberId, "ROLE_USER")
+
+        try {
+            mockMvc.perform(
+                get("/api/v1/test/me")
+                    .header(HttpHeaders.AUTHORIZATION, "Bearer $accessToken")
+            )
+                .andExpect(status().isOk)
+                .andExpect(content().string(containsString(existingMemberId.toString())))
+        } finally {
+            memberRepository.delete(existingMember)
+        }
     }
 
     @Test

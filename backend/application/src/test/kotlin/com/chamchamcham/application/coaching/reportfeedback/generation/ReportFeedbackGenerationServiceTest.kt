@@ -39,7 +39,7 @@ class ReportFeedbackGenerationServiceTest {
     private val previousReportId = UUID.randomUUID()
 
     @Test
-    fun `evidence validation failure is retried with safe diagnostic codes`() {
+    fun `evidence validation failure is retried with an actionable instruction`() {
         val client = FakeChatClient(
             validContent().copy(strengths = listOf(item(evidenceRefs = listOf("unknown")))),
             validContent(),
@@ -48,11 +48,13 @@ class ReportFeedbackGenerationServiceTest {
         service(client).generate(context())
 
         assertThat(client.attempts).isEqualTo(2)
-        assertThat(client.requestSpec.userTexts.last()).contains("unknown_evidence")
+        assertThat(client.requestSpec.userTexts.last())
+            .contains("모든 evidenceRefs에는 허용 evidenceRefs에 나열된 값만 사용하세요.")
+            .doesNotContain("unknown_evidence")
     }
 
     @Test
-    fun `section shape failures are retried with safe diagnostic codes`() {
+    fun `section shape failures are retried with an actionable instruction`() {
         val invalid = validContent().copy(
             strengths = emptyList(),
         )
@@ -62,7 +64,35 @@ class ReportFeedbackGenerationServiceTest {
 
         assertThat(client.attempts).isEqualTo(2)
         assertThat(client.requestSpec.userTexts.last())
-            .contains("strength_count")
+            .contains("strengths 배열은 정확히 1개로 작성하세요.")
+            .doesNotContain("strength_count")
+    }
+
+    @Test
+    fun `blank item fields retry with actionable field instructions`() {
+        val client = FakeChatClient(
+            validContent().copy(
+                strengths = listOf(
+                    ReportFeedbackContentItem(
+                        basis = "",
+                        text = "",
+                        evidenceRefs = emptyList(),
+                    ),
+                ),
+            ),
+            validContent(),
+        )
+
+        service(client).generate(context())
+
+        assertThat(client.attempts).isEqualTo(2)
+        assertThat(client.requestSpec.userTexts.last())
+            .contains(
+                "strengths[0].basis에 판단 근거를 작성하세요.",
+                "strengths[0].text에 잘한 행동과 도움이 된 이유를 공백과 문장부호를 포함해 20~65자로 작성하세요.",
+                "strengths[0].evidenceRefs에 허용 evidenceRefs의 식별자를 하나 이상 포함하세요.",
+            )
+            .doesNotContain("strength_basis_blank", "strength_text_blank", "strength_evidence_refs_blank")
     }
 
     @Test
@@ -93,37 +123,63 @@ class ReportFeedbackGenerationServiceTest {
     }
 
     @Test
-    fun `length failures are retried with safe diagnostic codes`() {
-        val generatedText = "가".repeat(66)
-        val invalid = validContent().copy(
-            summary = generatedText,
-            nextActions = listOf(item(text = generatedText)),
+    fun `length failures retry with field length range and correction direction`() {
+        val overlongSummary = "가".repeat(66)
+        val overlongImprovement = "나".repeat(73)
+        val client = FakeChatClient(
+            validContent().copy(
+                summary = overlongSummary,
+                improvements = listOf(item(text = overlongImprovement)),
+            ),
+            validContent(),
         )
-        val client = FakeChatClient(invalid, validContent())
 
         service(client).generate(context())
 
         assertThat(client.attempts).isEqualTo(2)
         assertThat(client.requestSpec.userTexts.last())
-            .contains("summary_text_length", "next_action_text_length")
-            .doesNotContain(generatedText)
+            .contains(
+                "summary는 현재 66자입니다.",
+                "improvements[0].text는 현재 73자입니다.",
+                "공백과 문장부호를 포함해 20~65자로 줄이세요.",
+                "부족한 점, 영향, 보완 방향을 유지하면서",
+            )
+            .doesNotContain(
+                overlongSummary,
+                overlongImprovement,
+                "summary_text_length",
+                "improvement_text_length",
+            )
     }
 
     @Test
-    fun `minimum length failures are retried with safe diagnostic codes`() {
-        val generatedText = "가".repeat(19)
-        val invalid = validContent().copy(
-            summary = "가".repeat(19),
-            nextActions = listOf(item(text = generatedText)),
+    fun `minimum length failures retry with field length range and correction direction`() {
+        val shortSummary = "가".repeat(19)
+        val shortImprovement = "나".repeat(18)
+        val client = FakeChatClient(
+            validContent().copy(
+                summary = shortSummary,
+                improvements = listOf(item(text = shortImprovement)),
+            ),
+            validContent(),
         )
-        val client = FakeChatClient(invalid, validContent())
 
         service(client).generate(context())
 
         assertThat(client.attempts).isEqualTo(2)
         assertThat(client.requestSpec.userTexts.last())
-            .contains("summary_text_length", "next_action_text_length")
-            .doesNotContain(generatedText)
+            .contains(
+                "summary는 현재 19자입니다.",
+                "improvements[0].text는 현재 18자입니다.",
+                "공백과 문장부호를 포함해 20~65자로 늘리세요.",
+                "부족한 점, 영향, 보완 방향을 유지하면서",
+            )
+            .doesNotContain(
+                shortSummary,
+                shortImprovement,
+                "summary_text_length",
+                "improvement_text_length",
+            )
     }
 
     @Test
@@ -163,7 +219,7 @@ class ReportFeedbackGenerationServiceTest {
     }
 
     @Test
-    fun `unavailable comparison is retried with a fixed diagnostic code only`() {
+    fun `unavailable comparison is retried with an empty array instruction`() {
         val generatedText = "직전 재배보다 물 주기 기록이 한 번 늘었어요."
         val client = FakeChatClient(
             validContent().copy(
@@ -179,12 +235,12 @@ class ReportFeedbackGenerationServiceTest {
 
         assertThat(client.attempts).isEqualTo(2)
         assertThat(client.requestSpec.userTexts.last())
-            .contains("comparison_not_available")
-            .doesNotContain(generatedText)
+            .contains("comparisons는 빈 배열로 반환하세요.")
+            .doesNotContain(generatedText, "comparison_not_available")
     }
 
     @Test
-    fun `missing comparison report reference is retried with a fixed diagnostic code only`() {
+    fun `missing comparison report reference is retried without exposing report ids`() {
         val client = FakeChatClient(
             validContent().copy(
                 comparisons = listOf(
@@ -197,10 +253,17 @@ class ReportFeedbackGenerationServiceTest {
         service(client).generate(context())
 
         assertThat(client.attempts).isEqualTo(2)
-        val retryDiagnostic = client.requestSpec.userTexts.last().substringAfter("직전 응답은")
-        assertThat(retryDiagnostic)
-            .contains("comparison_current_report_ref_required")
-            .doesNotContain(reportId.toString(), previousReportId.toString())
+        val retryInstruction = client.requestSpec.userTexts.last().substringAfter("직전 응답은")
+        assertThat(retryInstruction)
+            .contains(
+                "comparisons[0].evidenceRefs에 현재 리포트 근거를 " +
+                    "허용 evidenceRefs에서 선택해 포함하세요.",
+            )
+            .doesNotContain(
+                reportId.toString(),
+                previousReportId.toString(),
+                "comparison_current_report_ref_required",
+            )
     }
 
     @Test
@@ -227,8 +290,8 @@ class ReportFeedbackGenerationServiceTest {
         service(client).generate(context())
 
         assertThat(client.requestSpec.userTexts.last())
-            .contains("unknown_evidence")
-            .doesNotContain(privateValue)
+            .contains("모든 evidenceRefs에는 허용 evidenceRefs에 나열된 값만 사용하세요.")
+            .doesNotContain(privateValue, "unknown_evidence")
     }
 
     @Test
@@ -261,7 +324,12 @@ class ReportFeedbackGenerationServiceTest {
         service(client).generate(context())
 
         assertThat(client.attempts).isEqualTo(2)
-        assertThat(client.requestSpec.userTexts.last()).contains("structured_output_parse_failed")
+        assertThat(client.requestSpec.userTexts.last())
+            .contains(
+                "설명이나 Markdown 없이 JSON Schema의 필드명과 타입을 그대로 따른 완전한 JSON만 반환하세요.",
+                "summary는 문자열이고 comparisons, strengths, improvements, nextActions는 배열입니다.",
+            )
+            .doesNotContain("structured_output_parse_failed")
     }
 
     @Test
@@ -277,6 +345,9 @@ class ReportFeedbackGenerationServiceTest {
                     .doesNotContain(rawMessage)
             }
         assertThat(client.attempts).isEqualTo(2)
+        assertThat(client.requestSpec.userTexts.last())
+            .contains("JSON Schema의 필드명과 타입")
+            .doesNotContain(rawMessage, "structured_output_parse_failed")
     }
 
     @Test

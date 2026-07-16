@@ -253,6 +253,7 @@ struct AppListItem<Thumbnail: View>: View {
                 .foregroundStyle(Color.Text.default)
             }
         }
+        .padding(.top, 20)
         // Same reasoning as `mediaBody`: natural height, top-aligned by `body`'s outer frame
         // (Figma xlarge: 0 top / 20 bottom).
     }

@@ -23,7 +23,7 @@ class AsyncConfigTest {
         assertThat(execution.corePoolSize).isEqualTo(2)
         assertThat(execution.maxPoolSize).isEqualTo(4)
         assertThat(execution.queueCapacity).isEqualTo(32)
-        assertThat(execution.pendingTimeoutMillis).isEqualTo(120_000L)
+        assertThat(execution.pendingTimeoutMillis).isEqualTo(240_000L)
         assertThat(execution.scanIntervalMillis).isEqualTo(60_000L)
     }
 

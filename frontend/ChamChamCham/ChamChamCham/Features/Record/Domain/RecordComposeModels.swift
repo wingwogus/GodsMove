@@ -183,8 +183,3 @@ struct Pest: Identifiable, Hashable, Sendable {
     let name: String
 }
 
-/// 농지 현재 날씨 (`GET /farms/{id}/weather`). 자동 조회 표시값.
-struct CurrentWeather: Hashable, Sendable {
-    let temperature: Int
-    let condition: String
-}

@@ -11,6 +11,7 @@ import jakarta.validation.Valid
 import org.springframework.http.ResponseEntity
 import org.springframework.security.core.annotation.AuthenticationPrincipal
 import org.springframework.web.bind.annotation.GetMapping
+import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestBody
@@ -29,6 +30,14 @@ class MemberController(
     ): ResponseEntity<ApiResponse<MemberResponses.MyProfileResponse>> {
         val profile = memberProfileService.getMyProfile(parseMemberId(memberId))
         return ResponseEntity.ok(ApiResponse.ok(MemberResponses.MyProfileResponse.from(profile)))
+    }
+
+    @DeleteMapping("/me")
+    fun withdraw(
+        @AuthenticationPrincipal memberId: String?
+    ): ResponseEntity<ApiResponse<Unit>> {
+        memberProfileService.withdraw(parseMemberId(memberId))
+        return ResponseEntity.ok(ApiResponse.empty(Unit))
     }
 
     @GetMapping("/me/farm-crops")

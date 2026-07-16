@@ -16,6 +16,8 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.OrderColumn
 import jakarta.persistence.Table
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -29,6 +31,7 @@ class Farm(
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "owner_member_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val owner: Member,
 
     @Column(nullable = false, length = 128)
@@ -60,6 +63,7 @@ class Farm(
 
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "farm_boundary_coordinate", joinColumns = [JoinColumn(name = "farm_id")])
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @OrderColumn(name = "sequence")
     val boundaryCoordinates: MutableList<FarmBoundaryCoordinate> = mutableListOf(),
 

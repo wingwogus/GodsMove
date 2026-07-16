@@ -9,7 +9,7 @@ interface CommunityPostQueryRepository {
     fun count(condition: SearchCondition): Long
 
     data class SearchCondition(
-        val memberId: UUID,
+        val memberId: UUID?,
         val authorMemberId: UUID? = null,
         val cropId: UUID?,
         val postType: CommunityPostType?,

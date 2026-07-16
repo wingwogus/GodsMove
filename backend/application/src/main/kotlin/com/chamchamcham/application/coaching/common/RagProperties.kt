@@ -27,7 +27,7 @@ data class RagProperties(
         val corePoolSize: Int = 2,
         val maxPoolSize: Int = 4,
         val queueCapacity: Int = 32,
-        val pendingTimeoutMillis: Long = 120_000,
+        val pendingTimeoutMillis: Long = 240_000,
         val scanIntervalMillis: Long = 60_000,
     )
 }

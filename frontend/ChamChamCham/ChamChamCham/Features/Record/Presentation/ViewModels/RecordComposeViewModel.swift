@@ -72,13 +72,28 @@ final class RecordComposeViewModel {
     private(set) var isSubmitting = false
     private(set) var errorMessage: String?
     private(set) var createdRecordId: UUID?
+    /// 음성 검토 전용: confirm이 VOICE_002(이미 처리됨)로 거부된 상태. 재시도 금지 —
+    /// 뷰가 onSessionInvalid로 플로우를 닫는다.
+    private(set) var voiceSessionInvalidated = false
 
     private let repository: any RecordRepository
+    private let weatherRepository: any WeatherRepository
     private let mediaUpload: any MediaUploadRepository
+    private let saver: any RecordSaver
+    private let prefill: VoiceRecordPrefill?
 
-    init(repository: any RecordRepository, mediaUpload: any MediaUploadRepository) {
+    init(
+        repository: any RecordRepository,
+        weatherRepository: any WeatherRepository,
+        mediaUpload: any MediaUploadRepository,
+        saver: (any RecordSaver)? = nil,
+        prefill: VoiceRecordPrefill? = nil
+    ) {
         self.repository = repository
+        self.weatherRepository = weatherRepository
         self.mediaUpload = mediaUpload
+        self.saver = saver ?? CreateRecordSaver(repository: repository)
+        self.prefill = prefill
     }
 
     var crops: [ActiveCrop] {
@@ -92,10 +107,69 @@ final class RecordComposeViewModel {
     func onAppear() async {
         guard farms.isEmpty else { return }
         farms = (try? await repository.fetchFarmCrops()) ?? []
+        if let prefill {
+            applyPrefill(prefill)
+        }
         // 농지가 하나뿐이면 자동 선택 → 진입 즉시 날씨 조회(불필요한 탭 제거). didSet이 loadWeather 트리거.
         if selectedFarmId == nil, farms.count == 1 {
             selectedFarmId = farms[0].farmId
         }
+    }
+
+    /// 음성 후보(AI 초안)를 폼에 채운다. farms 로드 뒤에 불러야 farmId 설정의 didSet이
+    /// 작물 정리·날씨 조회까지 이어진다. 실소유가 아닌 farm/crop id는 버린다(검증 문구가 안내).
+    private func applyPrefill(_ prefill: VoiceRecordPrefill) {
+        if let farmId = prefill.farmId, farms.contains(where: { $0.farmId == farmId }) {
+            selectedFarmId = farmId
+        }
+        if let cropId = prefill.cropId, crops.contains(where: { $0.id == cropId }) {
+            selectedCropId = cropId
+        }
+        workType = prefill.workType
+        if let workedAt = prefill.workedAt { date = workedAt }
+        memo = prefill.memo ?? ""
+
+        plantingMethod = prefill.plantingMethod
+        seedAmount = Self.numberText(prefill.seedAmount)
+        seedlingCount = prefill.seedlingCount.map(String.init) ?? ""
+        propagationMethod = prefill.propagationMethod
+
+        irrigationAmount = prefill.irrigationAmount
+        irrigationMethod = prefill.irrigationMethod
+
+        fertilizerMaterialName = prefill.fertilizerMaterialName ?? ""
+        fertilizerAmount = Self.numberText(prefill.fertilizerAmount)
+        if let unit = prefill.fertilizerAmountUnit { fertilizerAmountUnit = unit }
+        fertilizingMethod = prefill.fertilizingMethod
+
+        if let pesticide = prefill.pesticide {
+            selectedPesticide = pesticide
+            selectedPest = prefill.pest
+            Task { pests = (try? await repository.fetchPests(pesticideId: pesticide.id)) ?? [] }
+        }
+        pesticideAmount = Self.numberText(prefill.pesticideAmount)
+        if let unit = prefill.pesticideAmountUnit { pesticideAmountUnit = unit }
+        totalSprayAmount = Self.numberText(prefill.totalSprayAmount)
+
+        weedingMethod = prefill.weedingMethod
+
+        growthPeriod = prefill.growthPeriod.map(String.init) ?? ""
+        harvestAmount = Self.numberText(prefill.harvestAmount)
+        harvestAmountUnknown = prefill.harvestAmountUnknown
+        medicinalPart = prefill.medicinalPart
+
+        // 서버가 알려준 누락 필드는 진입 즉시 기존 필수값 문구로 표시한다 (BR-EXCEPTION-005).
+        if !prefill.missingFields.isEmpty {
+            showValidation = true
+        }
+    }
+
+    /// 정수로 떨어지는 값은 "30.0"이 아니라 "30"으로 채운다.
+    private static func numberText(_ value: Double?) -> String {
+        guard let value else { return "" }
+        return value.truncatingRemainder(dividingBy: 1) == 0
+            ? String(Int(value))
+            : String(value)
     }
 
     private func onFarmChanged() {
@@ -128,7 +202,7 @@ final class RecordComposeViewModel {
         weatherLoadFailed = false
         isLoadingWeather = true
         do {
-            let result = try await repository.fetchWeather(farmId: farmId)
+            let result = try await weatherRepository.fetchHome(farmId: farmId)
             guard token == weatherLoadToken else { return } // 더 최근 선택이 있으면 무시
             weather = result
         } catch {
@@ -232,7 +306,9 @@ final class RecordComposeViewModel {
         errorMessage = nil
         defer { isSubmitting = false }
         do {
-            createdRecordId = try await repository.createRecord(request)
+            createdRecordId = try await saver.save(request)
+        } catch VoiceSessionError.alreadyProcessed {
+            voiceSessionInvalidated = true
         } catch {
             errorMessage = RecordErrorMessage.text(for: error)
         }
@@ -246,7 +322,7 @@ final class RecordComposeViewModel {
             cropId: cropId,
             workType: workType.rawValue,
             workedAt: Self.dateTimeFormatter.string(from: date),
-            weatherCondition: weather.condition,
+            weatherCondition: weather.condition.text,
             weatherTemperature: weather.temperature,
             memo: memo,
             planting: workType == .planting ? plantingDetail() : nil,
@@ -256,7 +332,7 @@ final class RecordComposeViewModel {
             weeding: workType == .weeding ? weedingDetail() : nil,
             harvest: workType == .harvest ? harvestDetail() : nil,
             mediaIds: mediaIds,
-            entryMode: EntryMode.manual.rawValue
+            entryMode: saver.entryMode.rawValue
         )
     }
 

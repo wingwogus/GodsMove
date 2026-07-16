@@ -5,7 +5,7 @@ import com.chamchamcham.domain.community.CommunityPostType
 import java.util.UUID
 
 data class CommunityPostSearchCondition(
-    val memberId: UUID,
+    val memberId: UUID?,
     val authorMemberId: UUID? = null,
     val cropId: UUID?,
     val postType: CommunityPostType?,

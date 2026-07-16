@@ -55,7 +55,7 @@ class CommunityController(
     ): ResponseEntity<ApiResponse<CommunityResponses.PostPageResponse>> {
         val page = communityPostService.search(
             CommunityPostSearchCondition(
-                memberId = parseMemberId(memberId),
+                memberId = parseOptionalMemberId(memberId),
                 authorMemberId = authorMemberId,
                 cropId = cropId,
                 postType = postType,
@@ -94,7 +94,7 @@ class CommunityController(
         @AuthenticationPrincipal memberId: String?,
         @PathVariable postId: UUID
     ): ResponseEntity<ApiResponse<CommunityResponses.PostDetailResponse>> {
-        val detail = communityPostService.getDetail(parseMemberId(memberId), postId)
+        val detail = communityPostService.getDetail(parseOptionalMemberId(memberId), postId)
         return ResponseEntity.ok(ApiResponse.ok(CommunityResponses.PostDetailResponse.from(detail)))
     }
 
@@ -187,4 +187,9 @@ class CommunityController(
             throw BusinessException(ErrorCode.UNAUTHORIZED)
         }
     }
+
+    private fun parseOptionalMemberId(memberId: String?): UUID? =
+        memberId
+            ?.takeIf(String::isNotBlank)
+            ?.let { runCatching { UUID.fromString(it) }.getOrNull() }
 }

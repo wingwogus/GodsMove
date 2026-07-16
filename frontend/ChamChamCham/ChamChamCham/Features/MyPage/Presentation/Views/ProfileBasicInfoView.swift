@@ -6,15 +6,23 @@
 //
 
 import SwiftUI
+import PhotosUI
 
-/// 프로필 수정 · 기본 정보 탭 폼. 이름(수정 불가) / 닉네임(선택) / 연락처 / 생년월일 / 자격 / 귀농 연차
-/// + 저장. 아바타 편집(profileMediaId)은 후속.
+/// 프로필 수정 · 기본 정보 탭 폼. 아바타(profileMediaId) / 이름(수정 불가) / 닉네임(선택) / 연락처 /
+/// 생년월일 / 자격 / 귀농 연차 + 저장.
 struct ProfileBasicInfoView: View {
     @State private var viewModel: ProfileBasicInfoViewModel
+    @State private var pickerItem: PhotosPickerItem?
     var onSaved: () -> Void = {}
 
-    init(repository: any MemberProfileRepository, onSaved: @escaping () -> Void = {}) {
-        _viewModel = State(initialValue: ProfileBasicInfoViewModel(repository: repository))
+    init(
+        repository: any MemberProfileRepository,
+        mediaRepository: any MediaUploadRepository,
+        onSaved: @escaping () -> Void = {}
+    ) {
+        _viewModel = State(
+            initialValue: ProfileBasicInfoViewModel(repository: repository, mediaRepository: mediaRepository)
+        )
         self.onSaved = onSaved
     }
 
@@ -23,6 +31,8 @@ struct ProfileBasicInfoView: View {
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: Spacing.lg) {
+                avatarSection
+
                 AppTextField(
                     label: "이름",
                     placeholder: "이름",
@@ -87,6 +97,69 @@ struct ProfileBasicInfoView: View {
             .background(Color.Background.default)
         }
         .task { await viewModel.load() }
+        .task(id: pickerItem) {
+            guard let pickerItem,
+                  let data = try? await pickerItem.loadTransferable(type: Data.self) else { return }
+            await viewModel.pickImage(data)
+        }
+    }
+
+    // MARK: - Avatar
+
+    private var avatarSection: some View {
+        VStack(spacing: Spacing.sm) {
+            avatar
+
+            if let message = viewModel.imageErrorMessage {
+                Text(message)
+                    .appTypography(.labelMedium)
+                    .foregroundStyle(Color.Text.red)
+            }
+        }
+        .frame(maxWidth: .infinity)
+    }
+
+    private var avatar: some View {
+        PhotosPicker(selection: $pickerItem, matching: .images) {
+            avatarContent
+                .overlay {
+                    if viewModel.isUploadingImage {
+                        Circle().fill(Color.black.opacity(0.35))
+                        ProgressView().tint(.white)
+                    }
+                }
+                .overlay(alignment: .bottomTrailing) {
+                    Circle()
+                        .fill(Color.Object.bold)
+                        .frame(width: 36, height: 36)
+                        .overlay {
+                            AppIconView(source: .asset("edit"), size: 16)
+                                .foregroundStyle(Color.Icon.inverse)
+                        }
+                }
+        }
+        .disabled(viewModel.isUploadingImage)
+        .accessibilityLabel("프로필 사진 수정")
+    }
+
+    @ViewBuilder private var avatarContent: some View {
+        if let data = viewModel.previewImageData, let uiImage = UIImage(data: data) {
+            AppAvatar(size: .large) {
+                Image(uiImage: uiImage)
+                    .resizable()
+                    .scaledToFill()
+            }
+        } else if let urlString = viewModel.profileImageUrl, let url = URL(string: urlString) {
+            AppAvatar(size: .large) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    ProgressView()
+                }
+            }
+        } else {
+            AppAvatar(size: .large)
+        }
     }
 
     private var qualificationSection: some View {

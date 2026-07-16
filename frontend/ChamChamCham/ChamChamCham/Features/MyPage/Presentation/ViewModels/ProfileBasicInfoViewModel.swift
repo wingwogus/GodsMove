@@ -27,10 +27,22 @@ final class ProfileBasicInfoViewModel {
     var saveErrorMessage: String?
     var hasAttemptedSave = false
 
-    @ObservationIgnored private let repository: any MemberProfileRepository
+    // Avatar
+    private(set) var profileImageUrl: String?
+    private(set) var previewImageData: Data?
+    private(set) var isUploadingImage = false
+    var imageErrorMessage: String?
+    /// Set only when a new photo is picked and uploaded this session. Left `nil` otherwise so `save()`
+    /// keeps sending the previous behavior (the API has no "leave unchanged" signal for this field —
+    /// see `save()`).
+    @ObservationIgnored private var profileMediaId: UUID?
 
-    init(repository: any MemberProfileRepository) {
+    @ObservationIgnored private let repository: any MemberProfileRepository
+    @ObservationIgnored private let mediaRepository: any MediaUploadRepository
+
+    init(repository: any MemberProfileRepository, mediaRepository: any MediaUploadRepository) {
         self.repository = repository
+        self.mediaRepository = mediaRepository
     }
 
     func load() async {
@@ -47,8 +59,27 @@ final class ProfileBasicInfoViewModel {
             experienceYears = profile.experienceLevel
             managementType = profile.managementType
                 .flatMap(ManagementType.init(rawValue:)) ?? .agriculturalIndividual
+            profileImageUrl = profile.profileImageUrl
         } catch {
             loadErrorMessage = "프로필을 불러오지 못했어요. 다시 시도해주세요."
+        }
+    }
+
+    // MARK: - Avatar
+
+    /// Uploads a newly picked photo and stashes its `mediaId` for the next `save()`. Shows the picked
+    /// image immediately; reverts to the previous avatar if the upload fails.
+    func pickImage(_ data: Data) async {
+        previewImageData = data
+        isUploadingImage = true
+        imageErrorMessage = nil
+        defer { isUploadingImage = false }
+        do {
+            let uploaded = try await mediaRepository.uploadProfileImage(data, originalFilename: nil)
+            profileMediaId = uploaded.mediaId
+        } catch {
+            previewImageData = nil
+            imageErrorMessage = "사진을 올리지 못했어요. 다시 시도해주세요."
         }
     }
 
@@ -74,6 +105,7 @@ final class ProfileBasicInfoViewModel {
             && birthDate != nil
             && experienceYears != nil
             && !isSubmitting
+            && !isUploadingImage
     }
 
     // MARK: - Save
@@ -92,7 +124,7 @@ final class ProfileBasicInfoViewModel {
             nickname: nickname,
             experienceLevel: experienceYears,
             managementType: managementType.rawValue,
-            profileMediaId: nil
+            profileMediaId: profileMediaId
         )
         do {
             _ = try await repository.updateMyProfile(request)

@@ -7,12 +7,10 @@
 
 import SwiftUI
 
-/// 날씨 상세 (Figma `홈 -> 날씨 상세`). `temperature`/`condition` are real (`GET /farms/{id}/weather`);
-/// every other field (체감/최저·최고/자외선/강수확률/습도/풍속/5일 예보/주소) is dummy — the backend
-/// doesn't expose them yet. Confirmed 2026-07-14: build the full Figma UI now with dummy values and
-/// swap to real data once the backend adds the fields (see home backend-conflicts C-1).
+/// 날씨 상세 (Figma `홈 -> 날씨 상세`). `GET /weather/detail` 실데이터 — 선택 소스 조회에 실패한 값은
+/// backend가 null로 내려주고, 이 화면은 그 값들을 "-"로 표시한다.
 struct WeatherDetailView: View {
-    let state: HomeSectionState<(weather: CurrentWeather, detail: WeatherDetail)>
+    let state: HomeSectionState<WeatherDetail>
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -36,13 +34,13 @@ struct WeatherDetailView: View {
         switch state {
         case .loading:
             ProgressView().frame(maxWidth: .infinity, minHeight: 300)
-        case let .loaded(value):
+        case let .loaded(detail):
             VStack(alignment: .leading, spacing: Spacing.lg) {
-                todaySection(value.weather, value.detail)
+                todaySection(detail)
                 tipBanner
-                detailGrid(value.detail)
+                detailGrid(detail)
                 Divider().foregroundStyle(Color.Border.subtle)
-                weeklyForecast(value.detail.forecast)
+                weeklyForecast(detail.forecast)
             }
         case let .failed(message):
             Text(message)
@@ -52,18 +50,18 @@ struct WeatherDetailView: View {
         }
     }
 
-    private func todaySection(_ weather: CurrentWeather, _ detail: WeatherDetail) -> some View {
+    private func todaySection(_ detail: WeatherDetail) -> some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             HStack(spacing: Spacing.md) {
-                AppIconView(source: .asset(WeatherIconMapping.assetName(for: weather.condition)), size: 96, renderingMode: .original)
+                AppIconView(source: .asset(WeatherIconMapping.assetName(for: detail.condition.code)), size: 96, renderingMode: .original)
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("\(weather.temperature)°")
+                    Text("\(detail.temperature)°")
                         .appTypography(.headlineLargeEmphasized)
                         .foregroundStyle(Color.Text.default)
                     HStack(spacing: 4) {
-                        Text("체감 \(detail.feelsLike)°")
+                        Text("체감 \(optionalDegree(detail.feelsLikeTemperature))")
                         Text("|")
-                        Text("최저 \(detail.lowTemperature)° - 최고 \(detail.highTemperature)°")
+                        Text("최저 \(optionalDegree(detail.minTemperature)) - 최고 \(optionalDegree(detail.maxTemperature))")
                     }
                     .appTypography(.bodyMedium)
                     .foregroundStyle(Color.Text.subtle)
@@ -89,9 +87,9 @@ struct WeatherDetailView: View {
         let columns = [GridItem(.flexible(), spacing: Spacing.sm), GridItem(.flexible(), spacing: Spacing.sm)]
         return LazyVGrid(columns: columns, spacing: Spacing.sm) {
             detailCard(label: "자외선 지수", value: detail.uvIndexLabel)
-            detailCard(label: "강수확률", value: "\(detail.precipitationChancePercent)%")
-            detailCard(label: "습도", value: "\(detail.humidityPercent)%")
-            detailCard(label: "풍속", value: "\(detail.windSpeedMps)m/s")
+            detailCard(label: "강수확률", value: optionalPercent(detail.precipitationProbabilityPercent))
+            detailCard(label: "습도", value: optionalPercent(detail.humidityPercent))
+            detailCard(label: "풍속", value: detail.windSpeedMps.map { String(format: "%.1fm/s", $0) } ?? "-")
         }
     }
 
@@ -124,8 +122,8 @@ struct WeatherDetailView: View {
                         Text(day.dayLabel)
                             .appTypography(day.dayLabel == "오늘" ? .labelMediumEmphasized : .labelMedium)
                             .foregroundStyle(day.dayLabel == "오늘" ? Color.Text.default : Color.Text.subtle)
-                        AppIconView(source: .asset(day.conditionAssetName), size: 40, renderingMode: .original)
-                        Text("\(day.temperature)°")
+                        AppIconView(source: .asset(WeatherIconMapping.assetName(for: day.condition.code)), size: 40, renderingMode: .original)
+                        Text(optionalDegree(day.temperature))
                             .appTypography(.bodyMedium)
                             .foregroundStyle(Color.Text.default)
                     }
@@ -137,5 +135,13 @@ struct WeatherDetailView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.Background.subtle)
         .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private func optionalDegree(_ value: Int?) -> String {
+        value.map { "\($0)°" } ?? "-"
+    }
+
+    private func optionalPercent(_ value: Int?) -> String {
+        value.map { "\($0)%" } ?? "-"
     }
 }

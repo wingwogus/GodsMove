@@ -81,8 +81,11 @@ struct CommunityComposeView: View {
             submitBar
         }
         .task { await viewModel.loadBoards() }
-        .sheet(isPresented: $showCropPicker) {
-            CropPickerSheet(loadCrops: viewModel.catalogCrops) { crops in
+        .fullScreenCover(isPresented: $showCropPicker) {
+            CropPickerView(
+                loadCrops: viewModel.catalogCrops,
+                loadCategories: viewModel.catalogCategories
+            ) { crops in
                 viewModel.addBoards(from: crops)
             }
         }
