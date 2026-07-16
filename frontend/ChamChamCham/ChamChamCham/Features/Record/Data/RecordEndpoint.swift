@@ -34,9 +34,10 @@ struct RecordQuery: Sendable, Equatable {
     }
 }
 
-/// Requires auth. `activeCrops` targets the members tree (`/members/me/farm-crops`); `pesticides`/`pests`/
-/// `farmWeather` target other trees — they're the compose form's catalog/weather sources and only consumed
-/// here, so they live in this endpoint for locality.
+/// Requires auth. `activeCrops` targets the members tree (`/members/me/farm-crops`); `pesticides`/`pests`
+/// target other trees — they're the compose form's catalog sources and only consumed here, so they live
+/// in this endpoint for locality. Weather now lives in `WeatherEndpoint` (`Features/Weather`) since both
+/// this feature and Home consume it.
 enum RecordEndpoint: Endpoint {
     case listRecords(RecordQuery)
     case recordDetail(id: UUID)
@@ -46,7 +47,6 @@ enum RecordEndpoint: Endpoint {
     case createRecord(SaveRecordRequestDTO)
     case pesticides(keyword: String?, cursor: String?, size: Int)
     case pests(pesticideId: UUID)
-    case farmWeather(farmId: UUID)
 
     var path: String {
         switch self {
@@ -62,8 +62,6 @@ enum RecordEndpoint: Endpoint {
             "api/v1/pesticides"
         case let .pests(pesticideId):
             "api/v1/pesticides/\(pesticideId.uuidString)/pests"
-        case let .farmWeather(farmId):
-            "api/v1/farms/\(farmId.uuidString)/weather"
         }
     }
 
@@ -73,7 +71,7 @@ enum RecordEndpoint: Endpoint {
             .post
         case .deleteRecord:
             .delete
-        case .listRecords, .recordDetail, .recordFeedback, .activeCrops, .pesticides, .pests, .farmWeather:
+        case .listRecords, .recordDetail, .recordFeedback, .activeCrops, .pesticides, .pests:
             .get
         }
     }
@@ -121,7 +119,7 @@ enum RecordEndpoint: Endpoint {
                 items.append(URLQueryItem(name: "cursor", value: cursor))
             }
             return items
-        case .recordDetail, .recordFeedback, .deleteRecord, .activeCrops, .createRecord, .pests, .farmWeather:
+        case .recordDetail, .recordFeedback, .deleteRecord, .activeCrops, .createRecord, .pests:
             return []
         }
     }

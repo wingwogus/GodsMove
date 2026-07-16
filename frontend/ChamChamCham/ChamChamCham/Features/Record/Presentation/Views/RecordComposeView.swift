@@ -19,10 +19,15 @@ struct RecordComposeView: View {
 
     init(
         repository: any RecordRepository,
+        weatherRepository: any WeatherRepository,
         mediaUpload: any MediaUploadRepository,
         onComplete: @escaping (UUID) -> Void
     ) {
-        _viewModel = State(initialValue: RecordComposeViewModel(repository: repository, mediaUpload: mediaUpload))
+        _viewModel = State(initialValue: RecordComposeViewModel(
+            repository: repository,
+            weatherRepository: weatherRepository,
+            mediaUpload: mediaUpload
+        ))
         self.onComplete = onComplete
     }
 
@@ -122,7 +127,7 @@ struct RecordComposeView: View {
             if vm.isLoadingWeather {
                 ProgressView()
             } else if let weather = vm.weather {
-                Text(weather.condition)
+                Text(weather.condition.text)
                 Text("\(weather.temperature)°")
             } else if vm.weatherLoadFailed {
                 AppIconView(source: .asset("refresh"), size: 16)

@@ -1,25 +1,6 @@
 {
   "components": {
     "schemas": {
-      "AmountByUnitResponse": {
-        "properties": {
-          "amount": {
-            "type": "number"
-          },
-          "coverage": {
-            "$ref": "#/components/schemas/CoverageResponse"
-          },
-          "unit": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "amount",
-          "coverage",
-          "unit"
-        ],
-        "type": "object"
-      },
       "ApiError": {
         "properties": {
           "code": {
@@ -123,27 +104,10 @@
         ],
         "type": "object"
       },
-      "ApiResponseCurrentWeatherResponse": {
+      "ApiResponseDailyResponse": {
         "properties": {
           "data": {
-            "$ref": "#/components/schemas/CurrentWeatherResponse"
-          },
-          "error": {
-            "$ref": "#/components/schemas/ApiError"
-          },
-          "success": {
-            "type": "boolean"
-          }
-        },
-        "required": [
-          "success"
-        ],
-        "type": "object"
-      },
-      "ApiResponseDailyWeatherResponse": {
-        "properties": {
-          "data": {
-            "$ref": "#/components/schemas/DailyWeatherResponse"
+            "$ref": "#/components/schemas/DailyResponse"
           },
           "error": {
             "$ref": "#/components/schemas/ApiError"
@@ -178,6 +142,23 @@
         "properties": {
           "data": {
             "$ref": "#/components/schemas/FarmResponse"
+          },
+          "error": {
+            "$ref": "#/components/schemas/ApiError"
+          },
+          "success": {
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "success"
+        ],
+        "type": "object"
+      },
+      "ApiResponseHomeResponse": {
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/HomeResponse"
           },
           "error": {
             "$ref": "#/components/schemas/ApiError"
@@ -1026,70 +1007,6 @@
         },
         "type": "object"
       },
-      "CategoryAmountByUnitResponse": {
-        "properties": {
-          "amount": {
-            "type": "number"
-          },
-          "categoryCode": {
-            "type": "string"
-          },
-          "categoryLabel": {
-            "type": "string"
-          },
-          "coverage": {
-            "$ref": "#/components/schemas/CoverageResponse"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "unit": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "amount",
-          "categoryCode",
-          "categoryLabel",
-          "coverage",
-          "recordCount",
-          "unit"
-        ],
-        "type": "object"
-      },
-      "CategoryMethodStatisticsResponse": {
-        "properties": {
-          "categoryCode": {
-            "type": "string"
-          },
-          "categoryLabel": {
-            "type": "string"
-          },
-          "methodCode": {
-            "type": "string"
-          },
-          "methodLabel": {
-            "type": "string"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "recordRatePct": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "categoryCode",
-          "categoryLabel",
-          "methodCode",
-          "methodLabel",
-          "recordCount",
-          "recordRatePct"
-        ],
-        "type": "object"
-      },
       "CategoryResponse": {
         "properties": {
           "code": {
@@ -1207,52 +1124,6 @@
         ],
         "type": "object"
       },
-      "CommonStatisticsResponse": {
-        "properties": {
-          "averageIntervalDays": {
-            "type": "number"
-          },
-          "averageTemperatureC": {
-            "type": "number"
-          },
-          "firstWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "lastWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "photoAttachedRecordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "photoAttachmentRatePct": {
-            "type": "number"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "weatherDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "workedDayCount": {
-            "format": "int32",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "photoAttachedRecordCount",
-          "recordCount",
-          "weatherDistribution",
-          "workedDayCount"
-        ],
-        "type": "object"
-      },
       "CompleteOnboardingRequest": {
         "properties": {
           "birthDate": {
@@ -1310,6 +1181,21 @@
         ],
         "type": "object"
       },
+      "ConditionResponse": {
+        "properties": {
+          "code": {
+            "type": "string"
+          },
+          "text": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "code",
+          "text"
+        ],
+        "type": "object"
+      },
       "ConfirmedResponse": {
         "properties": {
           "recordId": {
@@ -1338,47 +1224,6 @@
           "recordId",
           "sessionId",
           "workType"
-        ],
-        "type": "object"
-      },
-      "CountDistributionResponse": {
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "count": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "label": {
-            "type": "string"
-          },
-          "ratePct": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "code",
-          "count",
-          "label",
-          "ratePct"
-        ],
-        "type": "object"
-      },
-      "CoverageResponse": {
-        "properties": {
-          "recordedCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "targetCount": {
-            "format": "int32",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "recordedCount",
-          "targetCount"
         ],
         "type": "object"
       },
@@ -1504,20 +1349,14 @@
         ],
         "type": "object"
       },
-      "CurrentWeatherResponse": {
+      "CurrentResponse": {
         "properties": {
-          "address": {
-            "type": "string"
+          "condition": {
+            "$ref": "#/components/schemas/ConditionResponse"
           },
           "feelsLikeTemperature": {
             "format": "int32",
             "type": "integer"
-          },
-          "forecast": {
-            "items": {
-              "$ref": "#/components/schemas/ForecastDayResponse"
-            },
-            "type": "array"
           },
           "humidity": {
             "format": "int32",
@@ -1531,10 +1370,6 @@
             "format": "int32",
             "type": "integer"
           },
-          "observedAt": {
-            "format": "date-time",
-            "type": "string"
-          },
           "precipitationProbability": {
             "format": "int32",
             "type": "integer"
@@ -1547,64 +1382,22 @@
             "format": "int32",
             "type": "integer"
           },
-          "weatherCondition": {
-            "type": "string"
-          },
           "windSpeed": {
             "format": "double",
             "type": "number"
           }
         },
         "required": [
-          "address",
-          "forecast",
-          "observedAt",
-          "temperature",
-          "weatherCondition"
+          "condition",
+          "temperature"
         ],
         "type": "object"
       },
-      "CycleStatisticsResponse": {
+      "DailyResponse": {
         "properties": {
-          "etc": {
-            "$ref": "#/components/schemas/CommonStatisticsResponse"
+          "condition": {
+            "$ref": "#/components/schemas/ConditionResponse"
           },
-          "fertilizing": {
-            "$ref": "#/components/schemas/FertilizingStatisticsResponse"
-          },
-          "harvest": {
-            "$ref": "#/components/schemas/HarvestStatisticsResponse"
-          },
-          "pestControl": {
-            "$ref": "#/components/schemas/PestControlStatisticsResponse"
-          },
-          "planting": {
-            "$ref": "#/components/schemas/PlantingStatisticsResponse"
-          },
-          "pruning": {
-            "$ref": "#/components/schemas/CommonStatisticsResponse"
-          },
-          "watering": {
-            "$ref": "#/components/schemas/WateringStatisticsResponse"
-          },
-          "weeding": {
-            "$ref": "#/components/schemas/WeedingStatisticsResponse"
-          }
-        },
-        "required": [
-          "etc",
-          "fertilizing",
-          "harvest",
-          "pestControl",
-          "planting",
-          "pruning",
-          "watering",
-          "weeding"
-        ],
-        "type": "object"
-      },
-      "DailyWeatherResponse": {
-        "properties": {
           "date": {
             "format": "date",
             "type": "string"
@@ -1616,16 +1409,13 @@
           "minTemperature": {
             "format": "int32",
             "type": "integer"
-          },
-          "weatherCondition": {
-            "type": "string"
           }
         },
         "required": [
+          "condition",
           "date",
           "maxTemperature",
-          "minTemperature",
-          "weatherCondition"
+          "minTemperature"
         ],
         "type": "object"
       },
@@ -1665,12 +1455,37 @@
       },
       "DetailResponse": {
         "properties": {
-          "selected": {
-            "$ref": "#/components/schemas/SnapshotResponse"
+          "address": {
+            "type": "string"
+          },
+          "current": {
+            "$ref": "#/components/schemas/CurrentResponse"
+          },
+          "farmId": {
+            "format": "uuid",
+            "type": "string"
+          },
+          "forecast": {
+            "items": {
+              "$ref": "#/components/schemas/ForecastResponse"
+            },
+            "type": "array"
+          },
+          "observedAt": {
+            "format": "date-time",
+            "type": "string"
+          },
+          "partial": {
+            "$ref": "#/components/schemas/PartialResponse"
           }
         },
         "required": [
-          "selected"
+          "address",
+          "current",
+          "farmId",
+          "forecast",
+          "observedAt",
+          "partial"
         ],
         "type": "object"
       },
@@ -2042,83 +1857,6 @@
         ],
         "type": "object"
       },
-      "FertilizingStatisticsResponse": {
-        "properties": {
-          "amountCoverage": {
-            "$ref": "#/components/schemas/CoverageResponse"
-          },
-          "averageAmountKg": {
-            "type": "number"
-          },
-          "averageIntervalDays": {
-            "type": "number"
-          },
-          "averageTemperatureC": {
-            "type": "number"
-          },
-          "categoryMethods": {
-            "items": {
-              "$ref": "#/components/schemas/CategoryMethodStatisticsResponse"
-            },
-            "type": "array"
-          },
-          "firstWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "lastWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "materialCategories": {
-            "items": {
-              "$ref": "#/components/schemas/MaterialCategoryStatisticsResponse"
-            },
-            "type": "array"
-          },
-          "methodDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "photoAttachedRecordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "photoAttachmentRatePct": {
-            "type": "number"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "totalAmountKg": {
-            "type": "number"
-          },
-          "weatherDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "workedDayCount": {
-            "format": "int32",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "amountCoverage",
-          "categoryMethods",
-          "materialCategories",
-          "methodDistribution",
-          "photoAttachedRecordCount",
-          "recordCount",
-          "weatherDistribution",
-          "workedDayCount"
-        ],
-        "type": "object"
-      },
       "FieldResponse": {
         "properties": {
           "name": {
@@ -2145,10 +1883,16 @@
         ],
         "type": "object"
       },
-      "ForecastDayResponse": {
+      "ForecastResponse": {
         "properties": {
+          "condition": {
+            "$ref": "#/components/schemas/ConditionResponse"
+          },
           "date": {
             "format": "date",
+            "type": "string"
+          },
+          "dayOfWeek": {
             "type": "string"
           },
           "maxTemperature": {
@@ -2158,30 +1902,12 @@
           "minTemperature": {
             "format": "int32",
             "type": "integer"
-          },
-          "weatherCondition": {
-            "type": "string"
           }
         },
         "required": [
-          "date"
-        ],
-        "type": "object"
-      },
-      "GrowthPeriodRangeResponse": {
-        "properties": {
-          "maxMonths": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "minMonths": {
-            "format": "int32",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "maxMonths",
-          "minMonths"
+          "condition",
+          "date",
+          "dayOfWeek"
         ],
         "type": "object"
       },
@@ -2322,115 +2048,41 @@
         ],
         "type": "object"
       },
-      "HarvestPartStatisticsResponse": {
+      "HomeResponse": {
         "properties": {
-          "amountCoverage": {
-            "$ref": "#/components/schemas/CoverageResponse"
+          "condition": {
+            "$ref": "#/components/schemas/ConditionResponse"
           },
-          "amountRatePct": {
-            "type": "number"
-          },
-          "code": {
+          "farmId": {
+            "format": "uuid",
             "type": "string"
           },
-          "knownAmountKg": {
-            "type": "number"
-          },
-          "label": {
-            "type": "string"
-          },
-          "recordCount": {
+          "maxTemperature": {
             "format": "int32",
             "type": "integer"
           },
-          "recordRatePct": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "amountCoverage",
-          "code",
-          "label",
-          "recordCount",
-          "recordRatePct"
-        ],
-        "type": "object"
-      },
-      "HarvestStatisticsResponse": {
-        "properties": {
-          "amountCoverage": {
-            "$ref": "#/components/schemas/CoverageResponse"
-          },
-          "averageAmountKg": {
-            "type": "number"
-          },
-          "averageIntervalDays": {
-            "type": "number"
-          },
-          "averageTemperatureC": {
-            "type": "number"
-          },
-          "finalGrowthPeriodMonths": {
+          "minTemperature": {
             "format": "int32",
             "type": "integer"
           },
-          "firstHarvestedOn": {
-            "format": "date",
+          "observedAt": {
+            "format": "date-time",
             "type": "string"
           },
-          "firstWorkedOn": {
-            "format": "date",
-            "type": "string"
+          "partial": {
+            "$ref": "#/components/schemas/PartialResponse"
           },
-          "growthPeriodRangeMonths": {
-            "$ref": "#/components/schemas/GrowthPeriodRangeResponse"
-          },
-          "lastHarvestedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "lastWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "medicinalParts": {
-            "items": {
-              "$ref": "#/components/schemas/HarvestPartStatisticsResponse"
-            },
-            "type": "array"
-          },
-          "photoAttachedRecordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "photoAttachmentRatePct": {
-            "type": "number"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "totalAmountKg": {
-            "type": "number"
-          },
-          "weatherDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "workedDayCount": {
+          "temperature": {
             "format": "int32",
             "type": "integer"
           }
         },
         "required": [
-          "amountCoverage",
-          "medicinalParts",
-          "photoAttachedRecordCount",
-          "recordCount",
-          "weatherDistribution",
-          "workedDayCount"
+          "condition",
+          "farmId",
+          "observedAt",
+          "partial",
+          "temperature"
         ],
         "type": "object"
       },
@@ -2533,38 +2185,6 @@
           "member",
           "onboarding",
           "refreshToken"
-        ],
-        "type": "object"
-      },
-      "MaterialCategoryStatisticsResponse": {
-        "properties": {
-          "amountKg": {
-            "type": "number"
-          },
-          "amountRatePct": {
-            "type": "number"
-          },
-          "code": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "recordRatePct": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "amountKg",
-          "amountRatePct",
-          "code",
-          "label",
-          "recordCount",
-          "recordRatePct"
         ],
         "type": "object"
       },
@@ -2924,6 +2544,24 @@
         ],
         "type": "object"
       },
+      "PartialResponse": {
+        "properties": {
+          "degraded": {
+            "type": "boolean"
+          },
+          "missing": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array"
+          }
+        },
+        "required": [
+          "degraded",
+          "missing"
+        ],
+        "type": "object"
+      },
       "PestControlDetail": {
         "properties": {
           "pestId": {
@@ -3047,87 +2685,6 @@
           "pesticideName",
           "totalSprayAmount",
           "totalSprayAmountUnit"
-        ],
-        "type": "object"
-      },
-      "PestControlStatisticsResponse": {
-        "properties": {
-          "averageIntervalDays": {
-            "type": "number"
-          },
-          "averageTemperatureC": {
-            "type": "number"
-          },
-          "categoryAmounts": {
-            "items": {
-              "$ref": "#/components/schemas/CategoryAmountByUnitResponse"
-            },
-            "type": "array"
-          },
-          "categoryDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "firstWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "lastWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "pesticideAmounts": {
-            "items": {
-              "$ref": "#/components/schemas/AmountByUnitResponse"
-            },
-            "type": "array"
-          },
-          "photoAttachedRecordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "photoAttachmentRatePct": {
-            "type": "number"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "sprayAmountCoverage": {
-            "$ref": "#/components/schemas/CoverageResponse"
-          },
-          "targets": {
-            "items": {
-              "$ref": "#/components/schemas/TargetCountResponse"
-            },
-            "type": "array"
-          },
-          "totalSprayAmountLiters": {
-            "type": "number"
-          },
-          "weatherDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "workedDayCount": {
-            "format": "int32",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "categoryAmounts",
-          "categoryDistribution",
-          "pesticideAmounts",
-          "photoAttachedRecordCount",
-          "recordCount",
-          "sprayAmountCoverage",
-          "targets",
-          "weatherDistribution",
-          "workedDayCount"
         ],
         "type": "object"
       },
@@ -3346,59 +2903,6 @@
         },
         "required": [
           "plantingMethod"
-        ],
-        "type": "object"
-      },
-      "PlantingStatisticsResponse": {
-        "properties": {
-          "averageIntervalDays": {
-            "type": "number"
-          },
-          "averageTemperatureC": {
-            "type": "number"
-          },
-          "firstWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "lastWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "photoAttachedRecordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "photoAttachmentRatePct": {
-            "type": "number"
-          },
-          "propagationMethods": {
-            "items": {
-              "$ref": "#/components/schemas/PropagationStatisticsResponse"
-            },
-            "type": "array"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "weatherDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "workedDayCount": {
-            "format": "int32",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "photoAttachedRecordCount",
-          "propagationMethods",
-          "recordCount",
-          "weatherDistribution",
-          "workedDayCount"
         ],
         "type": "object"
       },
@@ -3864,40 +3368,6 @@
           "missingFields",
           "sessionId",
           "status"
-        ],
-        "type": "object"
-      },
-      "PropagationStatisticsResponse": {
-        "properties": {
-          "code": {
-            "type": "string"
-          },
-          "label": {
-            "type": "string"
-          },
-          "quantityCoverage": {
-            "$ref": "#/components/schemas/CoverageResponse"
-          },
-          "quantityUnit": {
-            "type": "string"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "recordRatePct": {
-            "type": "number"
-          },
-          "totalQuantity": {
-            "type": "number"
-          }
-        },
-        "required": [
-          "code",
-          "label",
-          "quantityCoverage",
-          "recordCount",
-          "recordRatePct"
         ],
         "type": "object"
       },
@@ -4533,80 +4003,6 @@
         ],
         "type": "object"
       },
-      "SnapshotResponse": {
-        "properties": {
-          "cropId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "cropName": {
-            "type": "string"
-          },
-          "endsAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "farmId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "farmName": {
-            "type": "string"
-          },
-          "finalHarvestRecordId": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "id": {
-            "format": "uuid",
-            "type": "string"
-          },
-          "sourceRevision": {
-            "format": "int64",
-            "type": "integer"
-          },
-          "startBasis": {
-            "enum": [
-              "FIRST_RECORD",
-              "AFTER_PREVIOUS_FINAL_HARVEST"
-            ],
-            "type": "string"
-          },
-          "startsAt": {
-            "format": "date-time",
-            "type": "string"
-          },
-          "statistics": {
-            "$ref": "#/components/schemas/CycleStatisticsResponse"
-          },
-          "statisticsSchemaVersion": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "status": {
-            "enum": [
-              "ACTIVE",
-              "COMPLETED",
-              "SUPERSEDED"
-            ],
-            "type": "string"
-          }
-        },
-        "required": [
-          "cropId",
-          "cropName",
-          "farmId",
-          "farmName",
-          "id",
-          "sourceRevision",
-          "startBasis",
-          "startsAt",
-          "statistics",
-          "statisticsSchemaVersion",
-          "status"
-        ],
-        "type": "object"
-      },
       "StatusResponse": {
         "properties": {
           "createdAt": {
@@ -4754,22 +4150,6 @@
         "required": [
           "candidate",
           "turns"
-        ],
-        "type": "object"
-      },
-      "TargetCountResponse": {
-        "properties": {
-          "count": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "target": {
-            "type": "string"
-          }
-        },
-        "required": [
-          "count",
-          "target"
         ],
         "type": "object"
       },
@@ -4992,66 +4372,6 @@
         },
         "type": "object"
       },
-      "WateringStatisticsResponse": {
-        "properties": {
-          "amountDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "averageIntervalDays": {
-            "type": "number"
-          },
-          "averageTemperatureC": {
-            "type": "number"
-          },
-          "firstWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "lastWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "methodDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "photoAttachedRecordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "photoAttachmentRatePct": {
-            "type": "number"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "weatherDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "workedDayCount": {
-            "format": "int32",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "amountDistribution",
-          "methodDistribution",
-          "photoAttachedRecordCount",
-          "recordCount",
-          "weatherDistribution",
-          "workedDayCount"
-        ],
-        "type": "object"
-      },
       "WeedingDetail": {
         "properties": {
           "weedingMethod": {
@@ -5092,59 +4412,6 @@
             "type": "string"
           }
         },
-        "type": "object"
-      },
-      "WeedingStatisticsResponse": {
-        "properties": {
-          "averageIntervalDays": {
-            "type": "number"
-          },
-          "averageTemperatureC": {
-            "type": "number"
-          },
-          "firstWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "lastWorkedOn": {
-            "format": "date",
-            "type": "string"
-          },
-          "methodDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "photoAttachedRecordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "photoAttachmentRatePct": {
-            "type": "number"
-          },
-          "recordCount": {
-            "format": "int32",
-            "type": "integer"
-          },
-          "weatherDistribution": {
-            "items": {
-              "$ref": "#/components/schemas/CountDistributionResponse"
-            },
-            "type": "array"
-          },
-          "workedDayCount": {
-            "format": "int32",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "methodDistribution",
-          "photoAttachedRecordCount",
-          "recordCount",
-          "weatherDistribution",
-          "workedDayCount"
-        ],
         "type": "object"
       },
       "WorkTypeResponse": {
@@ -6714,57 +5981,6 @@
         ]
       }
     },
-    "/api/v1/farms/weather": {
-      "get": {
-        "operationId": "getCurrentWeatherForDefaultFarm",
-        "responses": {
-          "200": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseCurrentWeatherResponse"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "tags": [
-          "farm-weather-controller"
-        ]
-      }
-    },
-    "/api/v1/farms/weather/daily": {
-      "get": {
-        "operationId": "getDailyWeatherForDefaultFarm",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "date",
-            "required": true,
-            "schema": {
-              "format": "date",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseDailyWeatherResponse"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "tags": [
-          "farm-weather-controller"
-        ]
-      }
-    },
     "/api/v1/farms/{farmId}": {
       "delete": {
         "operationId": "delete",
@@ -6825,77 +6041,6 @@
         },
         "tags": [
           "farm-controller"
-        ]
-      }
-    },
-    "/api/v1/farms/{farmId}/weather": {
-      "get": {
-        "operationId": "getCurrentWeather",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "farmId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseCurrentWeatherResponse"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "tags": [
-          "farm-weather-controller"
-        ]
-      }
-    },
-    "/api/v1/farms/{farmId}/weather/daily": {
-      "get": {
-        "operationId": "getDailyWeather",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "farmId",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "date",
-            "required": true,
-            "schema": {
-              "format": "date",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "*/*": {
-                "schema": {
-                  "$ref": "#/components/schemas/ApiResponseDailyWeatherResponse"
-                }
-              }
-            },
-            "description": "OK"
-          }
-        },
-        "tags": [
-          "farm-weather-controller"
         ]
       }
     },
@@ -7460,6 +6605,108 @@
         },
         "tags": [
           "voice-session-controller"
+        ]
+      }
+    },
+    "/api/v1/weather/daily": {
+      "get": {
+        "operationId": "daily",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "farmId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date",
+            "required": true,
+            "schema": {
+              "format": "date",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDailyResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "weather-controller"
+        ]
+      }
+    },
+    "/api/v1/weather/detail": {
+      "get": {
+        "operationId": "detail",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "farmId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseDetailResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "weather-controller"
+        ]
+      }
+    },
+    "/api/v1/weather/home": {
+      "get": {
+        "operationId": "home",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "farmId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseHomeResponse"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "weather-controller"
         ]
       }
     },

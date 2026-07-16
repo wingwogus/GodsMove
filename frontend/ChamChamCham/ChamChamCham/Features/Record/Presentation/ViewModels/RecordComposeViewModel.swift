@@ -74,10 +74,16 @@ final class RecordComposeViewModel {
     private(set) var createdRecordId: UUID?
 
     private let repository: any RecordRepository
+    private let weatherRepository: any WeatherRepository
     private let mediaUpload: any MediaUploadRepository
 
-    init(repository: any RecordRepository, mediaUpload: any MediaUploadRepository) {
+    init(
+        repository: any RecordRepository,
+        weatherRepository: any WeatherRepository,
+        mediaUpload: any MediaUploadRepository
+    ) {
         self.repository = repository
+        self.weatherRepository = weatherRepository
         self.mediaUpload = mediaUpload
     }
 
@@ -128,7 +134,7 @@ final class RecordComposeViewModel {
         weatherLoadFailed = false
         isLoadingWeather = true
         do {
-            let result = try await repository.fetchWeather(farmId: farmId)
+            let result = try await weatherRepository.fetchHome(farmId: farmId)
             guard token == weatherLoadToken else { return } // 더 최근 선택이 있으면 무시
             weather = result
         } catch {
@@ -246,7 +252,7 @@ final class RecordComposeViewModel {
             cropId: cropId,
             workType: workType.rawValue,
             workedAt: Self.dateTimeFormatter.string(from: date),
-            weatherCondition: weather.condition,
+            weatherCondition: weather.condition.text,
             weatherTemperature: weather.temperature,
             memo: memo,
             planting: workType == .planting ? plantingDetail() : nil,

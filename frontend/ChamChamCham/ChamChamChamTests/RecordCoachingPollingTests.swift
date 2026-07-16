@@ -122,7 +122,6 @@ private actor StubCoachingRecordRepository: RecordRepository {
     func deleteRecord(id: UUID) async throws { throw StubCoachingError.unused }
     func fetchActiveCrops() async throws -> [ActiveCrop] { throw StubCoachingError.unused }
     func fetchFarmCrops() async throws -> [FarmWithCrops] { throw StubCoachingError.unused }
-    func fetchWeather(farmId: UUID) async throws -> CurrentWeather { throw StubCoachingError.unused }
     func searchPesticides(keyword: String?) async throws -> [Pesticide] { throw StubCoachingError.unused }
     func fetchPests(pesticideId: UUID) async throws -> [Pest] { throw StubCoachingError.unused }
     func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { throw StubCoachingError.unused }

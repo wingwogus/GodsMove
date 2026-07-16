@@ -93,15 +93,6 @@ struct PestSummaryResponseDTO: Decodable, Sendable {
     func toDomain() -> Pest { Pest(id: id, name: name) }
 }
 
-struct CurrentWeatherResponseDTO: Decodable, Sendable {
-    let temperature: Int
-    let weatherCondition: String
-
-    func toDomain() -> CurrentWeather {
-        CurrentWeather(temperature: temperature, condition: weatherCondition)
-    }
-}
-
 // MARK: - farm-crops (그룹) 매핑
 
 extension FarmCropsResponseDTO {

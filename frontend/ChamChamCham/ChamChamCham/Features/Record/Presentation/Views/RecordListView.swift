@@ -15,6 +15,7 @@ import SwiftUI
 struct RecordListView: View {
     private let repository: any RecordRepository
     private let reportRepository: any ReportRepository
+    private let weatherRepository: any WeatherRepository
     private let mediaUpload: any MediaUploadRepository
     @State private var viewModel: RecordListViewModel
     @State private var reportViewModel: ReportListViewModel
@@ -33,12 +34,14 @@ struct RecordListView: View {
     init(
         repository: any RecordRepository,
         reportRepository: any ReportRepository,
+        weatherRepository: any WeatherRepository,
         mediaUpload: any MediaUploadRepository,
         selection: Binding<Int>,
         tabItems: [AppNavBar.Item]
     ) {
         self.repository = repository
         self.reportRepository = reportRepository
+        self.weatherRepository = weatherRepository
         self.mediaUpload = mediaUpload
         _selection = selection
         self.tabItems = tabItems
@@ -101,7 +104,11 @@ struct RecordListView: View {
         .task { await viewModel.onAppear() }
         .fullScreenCover(isPresented: $showCompose) {
             NavigationStack {
-                RecordComposeView(repository: repository, mediaUpload: mediaUpload) { newRecordId in
+                RecordComposeView(
+                    repository: repository,
+                    weatherRepository: weatherRepository,
+                    mediaUpload: mediaUpload
+                ) { newRecordId in
                     // 작성 완료 → 방금 만든 기록 상세로 이동 + 완료 토스트 + 리스트 갱신.
                     path.append(newRecordId)
                     toastMessage = "영농 기록 작성이 완료되었습니다."

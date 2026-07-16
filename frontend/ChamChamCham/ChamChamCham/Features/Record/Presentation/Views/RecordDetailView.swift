@@ -396,9 +396,6 @@ private struct PreviewCoachingRepository: RecordRepository {
     func deleteRecord(id: UUID) async throws {}
     func fetchActiveCrops() async throws -> [ActiveCrop] { [] }
     func fetchFarmCrops() async throws -> [FarmWithCrops] { [] }
-    func fetchWeather(farmId: UUID) async throws -> CurrentWeather {
-        CurrentWeather(temperature: 24, condition: "맑음")
-    }
     func searchPesticides(keyword: String?) async throws -> [Pesticide] { [] }
     func fetchPests(pesticideId: UUID) async throws -> [Pest] { [] }
     func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { UUID() }

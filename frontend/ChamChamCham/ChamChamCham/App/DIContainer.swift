@@ -77,6 +77,10 @@ extension DIContainer {
         RemotePolicyRepository(apiClient: apiClient)
     }
 
+    func makeWeatherRepository() -> some WeatherRepository {
+        RemoteWeatherRepository(apiClient: apiClient)
+    }
+
     func makeReportRepository() -> some ReportRepository {
         DefaultReportRepository(
             remote: LiveReportRemoteDataSource(apiClient: apiClient),
