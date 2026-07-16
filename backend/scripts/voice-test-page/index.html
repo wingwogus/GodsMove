@@ -22,6 +22,10 @@
   #counters span { margin-right: 16px; font-weight: 600; }
   .warn { color: #b26a00; }
   .hidden { display: none; }
+  #limitBanner { display: none; margin: 8px 0; padding: 8px 12px; border-radius: 6px; font-weight: 600; }
+  #limitBanner.show { display: block; }
+  #limitBanner.stop { background: #fdecea; color: #b00020; border: 1px solid #f5c2c7; }
+  #limitBanner.expired { background: #fff4e5; color: #8a5300; border: 1px solid #ffdca8; }
 </style>
 </head>
 <body>
@@ -46,6 +50,7 @@
 
 <fieldset><legend>3. 대화</legend>
   <div id="counters"><span>라운드 <b id="round">0</b>/<b id="maxRound">-</b></span><span>경과 <b id="elapsed">0</b>s/<b id="maxSec">-</b>s</span><span id="limitNote"></span></div>
+  <div id="limitBanner"></div>
   <button onclick="connectRealtime()">연결(마이크 시작)</button>
   <button onclick="finishConversation()">대화 종료 → 턴 제출</button>
   <audio id="remoteAudio" autoplay></audio>
@@ -75,11 +80,23 @@ let turns = [];               // {role, content}
 let functionArgs = null;      // save_farming_record 인자
 let userRounds = 0, startedAt = null, timerId = null, softWarned = false, hardStopped = false;
 let resolvedPesticide = null; // {id, label}
+let intentionalClose = false; // pc.close()를 우리가 직접 호출했는지(하드컷/취소) — 아니면 예기치 않은 만료로 본다
+let finishing = false; // finishConversation() 중복 호출 방지(하드컷과 ICE 끊김이 동시에 걸릴 수 있음)
 
 const $ = (id) => document.getElementById(id);
 const setState = (s) => { $('state').textContent = s; };
 const setError = (e) => { $('error').textContent = e ? ('오류: ' + e) : ''; };
 const base = () => $('baseUrl').value.replace(/\/$/, '');
+
+// 대화가 왜/어떻게 끝났는지 사용자에게 눈에 띄게 알려준다(AI의 음성 마무리와 별개로,
+// 화면에도 명확한 이유를 남겨야 헷갈리지 않는다).
+function showBanner(kind, text) {
+  const el = $('limitBanner');
+  el.className = 'show ' + kind;
+  el.textContent = text;
+}
+function hideBanner() { $('limitBanner').className = ''; $('limitBanner').textContent = ''; }
+function closeIntentionally() { intentionalClose = true; if (pc) pc.close(); }
 
 async function api(method, path, body) {
   setError('');
@@ -130,7 +147,7 @@ function refreshCropSelect() {
 
 async function cancelSession() {
   if (!session) return;
-  stopTimer(); if (pc) pc.close();
+  stopTimer(); closeIntentionally();
   const data = await api('POST', `/api/v1/voice-sessions/${session.sessionId}/cancel`);
   setState(data.status);
 }
@@ -141,6 +158,13 @@ async function connectRealtime() {
   pc = new RTCPeerConnection();
   stream.getTracks().forEach(t => pc.addTrack(t, stream));
   pc.ontrack = (e) => { $('remoteAudio').srcObject = e.streams[0]; };
+  pc.oniceconnectionstatechange = () => {
+    logDebug({ type: 'ice.' + pc.iceConnectionState });
+    if (!intentionalClose && (pc.iceConnectionState === 'disconnected' || pc.iceConnectionState === 'failed')) {
+      showBanner('expired', '🔌 세션이 만료되어 연결이 끊어졌습니다. 지금까지 나눈 대화로 자동 제출합니다.');
+      finishConversation();
+    }
+  };
   dc = pc.createDataChannel('oai-events');
   dc.onopen = () => {
     dc.send(JSON.stringify({ type: 'session.update', session: { type: 'realtime',
@@ -214,7 +238,9 @@ function checkLimits(sec) {
   }
   if (userRounds >= session.maxRounds || sec >= session.maxDurationSeconds) {
     hardStopped = true;
-    addLine('SYSTEM', '한도 도달 — 대화를 강제 종료하고 지금까지 내용으로 제출합니다.');
+    const reason = userRounds >= session.maxRounds ? `최대 라운드(${session.maxRounds})` : `최대 시간(${session.maxDurationSeconds}초)`;
+    addLine('SYSTEM', `${reason} 도달 — 대화를 강제 종료하고 지금까지 내용으로 제출합니다.`);
+    showBanner('stop', `⏱ ${reason}에 도달해 대화를 종료했습니다. 지금까지 나눈 내용으로 자동 제출됐으니, 아래 검토 화면에서 부족한 항목을 채워주세요.`);
     finishConversation();
   }
 }
@@ -243,7 +269,9 @@ function buildCandidate(a) {
 }
 
 async function finishConversation() {
-  stopTimer(); if (pc) pc.close();
+  if (finishing) return;
+  finishing = true;
+  stopTimer(); closeIntentionally();
   if (!turns.length) { setError('제출할 턴이 없습니다'); return; }
   setState('SUBMITTED');
   // 방제 기록인데 농약이 아직 UUID로 해석되지 않았으면 카탈로그에서 자동 검색 시도
@@ -367,9 +395,12 @@ async function confirmRecord() {
 
 function resetConversation() {
   turns = []; functionArgs = null; userRounds = 0; softWarned = false; hardStopped = false; resolvedPesticide = null;
+  intentionalClose = true; finishing = false;
   stopTimer(); if (pc) { pc.close(); pc = null; }
+  intentionalClose = false;
   $('transcript').innerHTML = ''; $('debug').innerHTML = ''; $('round').textContent = '0'; $('elapsed').textContent = '0';
   $('limitNote').textContent = ''; $('submitInfo').textContent = ''; $('confirmInfo').textContent = '';
+  hideBanner();
 }
 </script>
 </body>
