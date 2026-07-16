@@ -54,7 +54,7 @@ class OpenClawChatModelTest {
                 .isEqualTo("\${OPENCLAW_CONNECT_TIMEOUT_MILLIS:3000}")
             assertThat(properties.getProperty("openclaw.read-timeout-millis"))
                 .describedAs("%s OpenClaw read timeout", profile)
-                .isEqualTo("\${OPENCLAW_READ_TIMEOUT_MILLIS:30000}")
+                .isEqualTo("\${OPENCLAW_READ_TIMEOUT_MILLIS:60000}")
         }
     }
 
@@ -67,7 +67,7 @@ class OpenClawChatModelTest {
 
         assertThat(values)
             .containsEntry("connectTimeoutMillis", 3_000)
-            .containsEntry("readTimeoutMillis", 30_000)
+            .containsEntry("readTimeoutMillis", 60_000)
     }
 
     @Test

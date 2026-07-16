@@ -8,5 +8,5 @@ data class OpenClawProperties(
     val apiKey: String = "",
     val agentId: String = "agri-rag-coach",
     val connectTimeoutMillis: Int = 3_000,
-    val readTimeoutMillis: Int = 30_000
+    val readTimeoutMillis: Int = 60_000
 )

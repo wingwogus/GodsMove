@@ -58,7 +58,7 @@ class PendingFeedbackExpirySchedulerTest {
         val cutoff = arguments[0] as LocalDateTime
         val failedAt = arguments[1] as LocalDateTime
 
-        assertThat(cutoff).isEqualTo(failedAt.minusSeconds(120))
+        assertThat(cutoff).isEqualTo(failedAt.minusSeconds(240))
         assertThat(arguments[2]).isEqualTo("PROCESSING_TIMEOUT")
     }
 }

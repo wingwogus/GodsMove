@@ -31,7 +31,7 @@ class RagExecutionProfileConfigurationTest {
                 .isEqualTo("\${RAG_EXECUTOR_QUEUE_CAPACITY:32}")
             assertThat(properties.getProperty("rag.execution.pending-timeout-millis"))
                 .describedAs("%s coaching pending timeout", profile)
-                .isEqualTo("\${RAG_PENDING_TIMEOUT_MILLIS:120000}")
+                .isEqualTo("\${RAG_PENDING_TIMEOUT_MILLIS:240000}")
             assertThat(properties.getProperty("rag.execution.scan-interval-millis"))
                 .describedAs("%s coaching scan interval", profile)
                 .isEqualTo("\${RAG_PENDING_SCAN_INTERVAL_MILLIS:60000}")

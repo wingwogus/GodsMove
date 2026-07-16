@@ -145,7 +145,7 @@ rag:
     core-pool-size: ${RAG_EXECUTOR_CORE_SIZE:2}
     max-pool-size: ${RAG_EXECUTOR_MAX_SIZE:4}
     queue-capacity: ${RAG_EXECUTOR_QUEUE_CAPACITY:32}
-    pending-timeout-millis: ${RAG_PENDING_TIMEOUT_MILLIS:120000}
+    pending-timeout-millis: ${RAG_PENDING_TIMEOUT_MILLIS:240000}
     scan-interval-millis: ${RAG_PENDING_SCAN_INTERVAL_MILLIS:60000}
 
 openclaw:
@@ -153,4 +153,4 @@ openclaw:
   api-key: ${OPENCLAW_API_KEY}
   agent-id: ${OPENCLAW_AGENT_ID:agri-rag-coach}
   connect-timeout-millis: ${OPENCLAW_CONNECT_TIMEOUT_MILLIS:3000}
-  read-timeout-millis: ${OPENCLAW_READ_TIMEOUT_MILLIS:30000}
+  read-timeout-millis: ${OPENCLAW_READ_TIMEOUT_MILLIS:60000}
