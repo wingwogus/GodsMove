@@ -117,6 +117,68 @@ enum ReportFixtures {
         FarmingWorkReportPage(items: items, nextCursor: nextCursor)
     }
 
+    static func domainDetail(
+        workType: WorkType = .planting,
+        status: ReportCycleStatus = .completed,
+        cropName: String = "황기",
+        feedback: ReportFeedbackStatus? = nil
+    ) -> FarmingWorkReportDetail {
+        FarmingWorkReportDetail(
+            key: WorkReportKey(reportId: reportId, workType: workType),
+            status: status,
+            workTypeLabel: workTypeLabel(workType),
+            farmId: farmId,
+            farmName: "북쪽 밭",
+            cropId: cropId,
+            cropName: cropName,
+            startsAt: Date(timeIntervalSince1970: 1_712_000_000),
+            endsAt: status == .active ? nil : Date(timeIntervalSince1970: 1_730_000_000),
+            statistics: FarmingWorkReportStatistics(
+                common: ReportCommonStatistics(
+                    recordCount: 2,
+                    firstWorkedOn: nil,
+                    lastWorkedOn: nil,
+                    workedDayCount: 2,
+                    averageIntervalDays: 9,
+                    photoAttachedRecordCount: 1,
+                    photoAttachmentRatePct: 50,
+                    weatherDistribution: [],
+                    averageTemperatureC: 18.5
+                ),
+                planting: nil,
+                watering: nil,
+                fertilizing: nil,
+                pestControl: nil,
+                weeding: nil,
+                harvest: nil
+            ),
+            feedback: feedback
+        )
+    }
+
+    static func domainFeedback(
+        workType: WorkType = .planting,
+        state: ReportFeedbackState = .ready,
+        content: ReportFeedbackContent? = ReportFeedbackContent(
+            summary: "좋은 흐름이에요",
+            comparisons: [],
+            strengths: ["간격이 안정적이에요"],
+            improvements: [],
+            nextActions: []
+        )
+    ) -> ReportFeedbackItem {
+        ReportFeedbackItem(
+            id: UUID(),
+            workType: workType,
+            state: state,
+            inputPrepared: true,
+            failureCode: nil,
+            content: state == .ready ? content : nil,
+            createdAt: Date(timeIntervalSince1970: 1_721_100_000),
+            updatedAt: Date(timeIntervalSince1970: 1_721_100_300)
+        )
+    }
+
     static func farms() -> [FarmWithCrops] {
         [
             FarmWithCrops(
@@ -229,11 +291,48 @@ final class StubReportRepository: ReportRepository {
         Int
     ) async throws -> ReportResource<FarmingWorkReportPage>
 
-    var fetchHandler: FetchHandler
-    private(set) var fetchCalls: [ReportFetchCall] = []
+    typealias CachedDetailHandler = @MainActor (
+        WorkReportKey
+    ) -> ReportResource<FarmingWorkReportDetail>?
+    typealias DetailHandler = @MainActor (
+        WorkReportKey
+    ) async throws -> ReportResource<FarmingWorkReportDetail>
+    typealias FeedbackHandler = @MainActor (
+        UUID,
+        WorkType
+    ) async throws -> ReportResource<ReportFeedbackItem?>
+    typealias RegenerateHandler = @MainActor (
+        WorkReportKey
+    ) async throws -> ReportFeedbackItem
 
-    init(fetchHandler: @escaping FetchHandler) {
+    var fetchHandler: FetchHandler
+    var cachedDetailHandler: CachedDetailHandler
+    var detailHandler: DetailHandler
+    var feedbackHandler: FeedbackHandler
+    var regenerateHandler: RegenerateHandler
+    private(set) var fetchCalls: [ReportFetchCall] = []
+    private(set) var detailCalls: [WorkReportKey] = []
+    private(set) var feedbackCalls: [WorkReportKey] = []
+    private(set) var regenerateCalls: [WorkReportKey] = []
+
+    init(
+        fetchHandler: @escaping FetchHandler,
+        cachedDetailHandler: @escaping CachedDetailHandler = { _ in nil },
+        detailHandler: @escaping DetailHandler = { _ in
+            throw APIError.network(URLError(.unknown))
+        },
+        feedbackHandler: @escaping FeedbackHandler = { _, _ in
+            throw APIError.network(URLError(.unknown))
+        },
+        regenerateHandler: @escaping RegenerateHandler = { _ in
+            throw APIError.network(URLError(.unknown))
+        }
+    ) {
         self.fetchHandler = fetchHandler
+        self.cachedDetailHandler = cachedDetailHandler
+        self.detailHandler = detailHandler
+        self.feedbackHandler = feedbackHandler
+        self.regenerateHandler = regenerateHandler
     }
 
     func fetchReports(
@@ -246,17 +345,24 @@ final class StubReportRepository: ReportRepository {
     }
 
     func fetchDetail(_ key: WorkReportKey) async throws -> ReportResource<FarmingWorkReportDetail> {
-        throw APIError.network(URLError(.unknown))
+        detailCalls.append(key)
+        return try await detailHandler(key)
+    }
+
+    func loadCachedDetail(_ key: WorkReportKey) -> ReportResource<FarmingWorkReportDetail>? {
+        cachedDetailHandler(key)
     }
 
     func fetchFeedback(
         reportId: UUID,
         workType: WorkType
     ) async throws -> ReportResource<ReportFeedbackItem?> {
-        throw APIError.network(URLError(.unknown))
+        feedbackCalls.append(WorkReportKey(reportId: reportId, workType: workType))
+        return try await feedbackHandler(reportId, workType)
     }
 
     func regenerate(_ key: WorkReportKey) async throws -> ReportFeedbackItem {
-        throw APIError.network(URLError(.unknown))
+        regenerateCalls.append(key)
+        return try await regenerateHandler(key)
     }
 }

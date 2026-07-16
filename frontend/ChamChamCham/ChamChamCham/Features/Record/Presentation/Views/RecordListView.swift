@@ -115,8 +115,12 @@ struct RecordListView: View {
         }
         .navigationDestination(for: ReportRoute.self) { route in
             switch route {
-            case let .detail(key), let .recordHistory(key):
-                ReportRouteLoadingView(key: key)
+            case let .detail(key):
+                ReportDetailView(key: key, repository: reportRepository)
+                    .toolbar(.hidden, for: .tabBar)
+            case let .recordHistory(key):
+                ReportRecordHistoryView(key: key)
+                    .toolbar(.hidden, for: .tabBar)
             }
         }
     }
@@ -266,26 +270,6 @@ struct RecordListView: View {
             .buttonStyle(.plain)
         }
         .transition(.move(edge: .trailing).combined(with: .opacity))
-    }
-}
-
-/// Replaced by the full detail and history destinations in the next report implementation slice.
-private struct ReportRouteLoadingView: View {
-    let key: WorkReportKey
-
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        VStack(spacing: 0) {
-            AppTopAppBar(
-                title: key.workType.label,
-                isDetail: true,
-                leading: .init(.asset("chevron_backward")) { dismiss() }
-            )
-            ProgressView("리포트를 불러오고 있어요.")
-                .frame(maxWidth: .infinity, maxHeight: .infinity)
-        }
-        .toolbar(.hidden, for: .navigationBar)
     }
 }
 

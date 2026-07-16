@@ -29,6 +29,10 @@ protocol ReportRepository: Sendable {
         _ key: WorkReportKey
     ) async throws -> ReportResource<FarmingWorkReportDetail>
 
+    func loadCachedDetail(
+        _ key: WorkReportKey
+    ) -> ReportResource<FarmingWorkReportDetail>?
+
     func fetchFeedback(
         reportId: UUID,
         workType: WorkType
@@ -91,6 +95,13 @@ final class DefaultReportRepository: ReportRepository {
             else { throw error }
             return ReportResource(value: cached.value, source: .cache(updatedAt: cached.updatedAt))
         }
+    }
+
+    func loadCachedDetail(
+        _ key: WorkReportKey
+    ) -> ReportResource<FarmingWorkReportDetail>? {
+        guard let cached = cachedDetail(for: key) else { return nil }
+        return ReportResource(value: cached.value, source: .cache(updatedAt: cached.updatedAt))
     }
 
     func fetchFeedback(
