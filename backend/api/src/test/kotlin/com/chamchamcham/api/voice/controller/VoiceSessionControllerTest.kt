@@ -118,6 +118,19 @@ class VoiceSessionControllerTest(
     }
 
     @Test
+    fun `submit turns rejects more than 40 turns`() {
+        val turns = (1..41).joinToString(",") { """{"role":"USER","content":"발화 $it"}""" }
+
+        mockMvc.perform(
+            patch("/api/v1/voice-sessions/$sessionId/turns")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"turns":[$turns],"candidate":{"workType":"WATERING"}}""")
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
     fun `confirm forces entryMode to VOICE regardless of request body`() {
         `when`(voiceSessionService.confirm(expectedConfirmCommand()))
             .thenReturn(VoiceSessionResult.Confirmed(sessionId = sessionId, recordId = recordId, workType = WorkType.WATERING))
