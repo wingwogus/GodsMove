@@ -56,6 +56,10 @@
 - [텍스트로 기록하기 / 입력 검증(에러) 케이스](2026-07-13-record-text-compose-error-cases.md) —
   참고 이미지 기반. 2필드 1영역(진행 작물/작업 내용)의 조합 에러 문구 + red border 변형 규칙,
   500자 초과 문구. 확정 워딩 목록 포함
+- [음성으로 기록하기 / default](2026-07-16-record-voice-compose-default.md) —
+  프롬프트+사용자 말풍선(`AppChatBubble`) + 96pt 원형 마이크 버튼(idle) + 완료(disabled).
+  색/폰트 전부 DS 토큰과 일치, 충돌 없음. 정적 목업 화면(`RecordVoiceComposeView`) 구현 완료,
+  녹음 상태 머신/STT/AI 구조화는 계획 단계에서 정의
 - ⚠️ [Figma/스펙 ↔ 백엔드 충돌 트래킹](2026-07-13-record-backend-conflicts.md) —
   C-1~C-6 (필터 복수선택/시판 구매 enum/필수 여부/날씨 온도 등 백엔드 협의 항목)
 

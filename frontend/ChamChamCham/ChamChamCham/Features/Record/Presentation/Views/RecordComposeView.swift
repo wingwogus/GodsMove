@@ -46,8 +46,10 @@ struct RecordComposeView: View {
                 .padding(.horizontal, 20)
                 .padding(.vertical, 16)
             }
+            .scrollDismissesKeyboard(.interactively)
             bottomButton
         }
+        .dismissKeyboardOnTap()
         .navigationBarHidden(true)
         .task { await vm.onAppear() }
         .task(id: photoItem) {
@@ -76,6 +78,9 @@ struct RecordComposeView: View {
                 HStack(alignment: .top, spacing: 8) {
                     AppDateField(selection: Binding(get: { vm.date }, set: { vm.date = $0 ?? Date() }))
                     weatherBox
+                }
+                if vm.showValidation, let error = vm.weatherError {
+                    errorLine(error)
                 }
             }
 
@@ -118,17 +123,25 @@ struct RecordComposeView: View {
             } else if let weather = vm.weather {
                 Text(weather.condition)
                 Text("\(weather.temperature)°")
+            } else if vm.weatherLoadFailed {
+                AppIconView(source: .asset("refresh"), size: 16)
+                Text("다시 시도")
             } else {
                 Text("날씨").foregroundStyle(Color.Text.muted)
             }
         }
         .appTypography(.bodyLarge)
-        .foregroundStyle(Color.Text.subtle)
+        .foregroundStyle(vm.weatherLoadFailed ? Color.Text.red : Color.Text.subtle)
         .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
         .padding(.horizontal, 16)
         .background(Color.Object.secondarySubtle)
-        .overlay(RoundedRectangle(cornerRadius: 8).stroke(Color.Border.default, lineWidth: 1))
+        .overlay(RoundedRectangle(cornerRadius: 8)
+            .stroke(vm.weatherLoadFailed ? Color.Border.error : Color.Border.default, lineWidth: 1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if vm.weatherLoadFailed { Task { await vm.retryWeather() } }
+        }
     }
 
     // MARK: - 작업 내용 + 상세
@@ -441,8 +454,10 @@ private struct PesticidePickerSheet: View {
                     }
                 }
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .padding(20)
+        .dismissKeyboardOnTap()
         .task { results = await search(nil) }
         .task(id: keyword) { results = await search(keyword) }
     }

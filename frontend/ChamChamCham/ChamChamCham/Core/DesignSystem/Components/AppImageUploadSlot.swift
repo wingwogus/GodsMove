@@ -45,6 +45,9 @@ struct AppImageUploadSlot<Thumbnail: View>: View {
 
     var size: Size = .medium
     var label: String = "n/n"
+    /// Set to `false` when this slot is used as a `PhotosPicker` label — an inner `Button` would
+    /// intercept the tap before the picker's own gesture ever sees it.
+    var isInteractive: Bool = true
     var onTap: () -> Void = {}
     var onRemove: (() -> Void)? = nil
 
@@ -53,12 +56,14 @@ struct AppImageUploadSlot<Thumbnail: View>: View {
     init(
         size: Size = .medium,
         label: String = "n/n",
+        isInteractive: Bool = true,
         onTap: @escaping () -> Void = {},
         onRemove: (() -> Void)? = nil,
         @ViewBuilder thumbnail: () -> Thumbnail
     ) {
         self.size = size
         self.label = label
+        self.isInteractive = isInteractive
         self.onTap = onTap
         self.onRemove = onRemove
         self.thumbnail = thumbnail()
@@ -66,12 +71,18 @@ struct AppImageUploadSlot<Thumbnail: View>: View {
 
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            Button(action: onTap) {
+            if isInteractive {
+                Button(action: onTap) {
+                    slotContent
+                        .frame(width: size.dimension, height: size.dimension)
+                        .clipShape(RoundedRectangle(cornerRadius: size.cornerRadius))
+                }
+                .buttonStyle(.plain)
+            } else {
                 slotContent
                     .frame(width: size.dimension, height: size.dimension)
                     .clipShape(RoundedRectangle(cornerRadius: size.cornerRadius))
             }
-            .buttonStyle(.plain)
 
             if thumbnail != nil, let onRemove {
                 Button(action: onRemove) {
@@ -94,8 +105,7 @@ struct AppImageUploadSlot<Thumbnail: View>: View {
             thumbnail
         } else {
             VStack(spacing: 2) {
-                Image(systemName: "camera.fill")
-                    .font(.system(size: 32))
+                AppIconView(source: .asset("photo_camera"), size: 32)
                     .foregroundStyle(Color.Icon.default)
                 Text(label)
                     .appTypography(.bodyMedium)
@@ -111,10 +121,12 @@ extension AppImageUploadSlot where Thumbnail == EmptyView {
     init(
         size: Size = .medium,
         label: String = "n/n",
+        isInteractive: Bool = true,
         onTap: @escaping () -> Void = {}
     ) {
         self.size = size
         self.label = label
+        self.isInteractive = isInteractive
         self.onTap = onTap
         self.onRemove = nil
         self.thumbnail = nil

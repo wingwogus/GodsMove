@@ -63,6 +63,7 @@ class CommunityPostService(
         val result = communityPostQueryRepository.search(
             CommunityPostQueryRepository.SearchCondition(
                 memberId = condition.memberId,
+                authorMemberId = condition.authorMemberId,
                 cropId = condition.cropId,
                 postType = condition.postType,
                 keyword = condition.keyword,
@@ -90,6 +91,7 @@ class CommunityPostService(
         return communityPostQueryRepository.count(
             CommunityPostQueryRepository.SearchCondition(
                 memberId = condition.memberId,
+                authorMemberId = condition.authorMemberId,
                 cropId = condition.cropId,
                 postType = condition.postType,
                 keyword = condition.keyword,

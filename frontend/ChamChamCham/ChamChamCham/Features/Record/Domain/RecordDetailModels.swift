@@ -11,9 +11,8 @@ import Foundation
 /// backend `RecordDetailResponse` (`GET /farming-records/{id}`). The only part that varies by `workType` is the
 /// `infoRows` list — the header (제목/메모/사진) and AI 코칭 slot are common across all eight types.
 ///
-/// The AI 코칭 ("참참참의 코칭") section has no backend data source yet (see
-/// `docs/figma/record/2026-07-13-record-backend-conflicts.md` C-18), so it renders as a placeholder in the view
-/// and is not modeled here.
+/// The AI 코칭 ("참참참의 코칭") section is a separate resource (`GET /farming-records/{id}/feedback`), modeled by
+/// `RecordCoaching` and loaded independently by the view model — it is intentionally not part of this type.
 struct RecordDetail: Identifiable, Sendable, Hashable {
     let id: UUID
     let workType: WorkType

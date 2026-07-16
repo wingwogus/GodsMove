@@ -43,6 +43,7 @@ class CommunityController(
     @GetMapping("/posts")
     fun listPosts(
         @AuthenticationPrincipal memberId: String?,
+        @RequestParam(required = false) authorMemberId: UUID?,
         @RequestParam(required = false) cropId: UUID?,
         @RequestParam(required = false) postType: CommunityPostType?,
         @RequestParam(required = false) keyword: String?,
@@ -55,6 +56,7 @@ class CommunityController(
         val page = communityPostService.search(
             CommunityPostSearchCondition(
                 memberId = parseMemberId(memberId),
+                authorMemberId = authorMemberId,
                 cropId = cropId,
                 postType = postType,
                 keyword = keyword,

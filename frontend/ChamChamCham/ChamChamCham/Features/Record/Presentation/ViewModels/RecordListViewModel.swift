@@ -29,10 +29,10 @@ final class RecordListViewModel {
 
     var hasMore: Bool { nextCursor != nil }
 
-    /// Name of the crop currently filtered on, for the chip label. `nil` when no crop filter.
-    var selectedCropName: String? {
-        guard let cropId = filter.cropId else { return nil }
-        return activeCrops.first { $0.id == cropId }?.name
+    /// Names of the crops currently filtered on, for the chip label. `nil` when no crop filter.
+    var selectedCropNames: [String]? {
+        guard !filter.cropIds.isEmpty else { return nil }
+        return activeCrops.filter { filter.cropIds.contains($0.id) }.map(\.name)
     }
 
     func onAppear() async {
@@ -78,15 +78,15 @@ final class RecordListViewModel {
 
     // MARK: - Filters (apply on 완료)
 
-    func applyCropFilter(_ cropId: UUID?) async {
-        guard filter.cropId != cropId else { return }
-        filter.cropId = cropId
+    func applyCropFilter(_ cropIds: Set<UUID>) async {
+        guard filter.cropIds != cropIds else { return }
+        filter.cropIds = cropIds
         await reload()
     }
 
-    func applyWorkTypeFilter(_ workType: WorkType?) async {
-        guard filter.workType != workType else { return }
-        filter.workType = workType
+    func applyWorkTypeFilter(_ workTypes: Set<WorkType>) async {
+        guard filter.workTypes != workTypes else { return }
+        filter.workTypes = workTypes
         await reload()
     }
 

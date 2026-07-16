@@ -72,11 +72,11 @@ struct CommunityComposeView: View {
                     questionToggle
                     errorMessage
                 }
-                .padding(.bottom, Spacing.lg)
             }
             .scrollDismissesKeyboard(.interactively)
         }
         .background(Color.Background.default)
+        .dismissKeyboardOnTap()
         .safeAreaInset(edge: .bottom) {
             submitBar
         }
@@ -267,7 +267,8 @@ struct CommunityComposeView: View {
         let attachmentCount = viewModel.attachments.count
         let remainingSelectionCount = CommunityComposeViewModel.maxImages - attachmentCount
         let uploadSlot = AppImageUploadSlot(
-            label: "\(attachmentCount)/\(CommunityComposeViewModel.maxImages)"
+            label: "\(attachmentCount)/\(CommunityComposeViewModel.maxImages)",
+            isInteractive: false
         )
 
         return VStack(alignment: .leading, spacing: Layout.imageSpacing) {

@@ -119,32 +119,32 @@ struct ProfileMainView: View {
         Button {
             isShowingProfileEdit = true
         } label: {
-            AppAvatar(size: .large) {
-                profileImage
-            }
-            .overlay(alignment: .bottomTrailing) {
-                Circle()
-                    .fill(Color.Object.bold)
-                    .frame(width: 36, height: 36)
-                    .overlay {
-                        AppIconView(source: .asset("edit"), size: 16)
-                            .foregroundStyle(Color.Icon.inverse)
-                    }
-            }
+            avatarContent
+                .overlay(alignment: .bottomTrailing) {
+                    Circle()
+                        .fill(Color.Object.bold)
+                        .frame(width: 36, height: 36)
+                        .overlay {
+                            AppIconView(source: .asset("edit"), size: 16)
+                                .foregroundStyle(Color.Icon.inverse)
+                        }
+                }
         }
         .buttonStyle(.plain)
         .accessibilityLabel("프로필 수정")
     }
 
-    @ViewBuilder private var profileImage: some View {
+    @ViewBuilder private var avatarContent: some View {
         if let urlString = viewModel.profile?.profileImageUrl, let url = URL(string: urlString) {
-            AsyncImage(url: url) { image in
-                image.resizable().scaledToFill()
-            } placeholder: {
-                ProgressView()
+            AppAvatar(size: .large) {
+                AsyncImage(url: url) { image in
+                    image.resizable().scaledToFill()
+                } placeholder: {
+                    ProgressView()
+                }
             }
         } else {
-            AppImagePlaceholder(isCircle: true, squareSize: 12)
+            AppAvatar(size: .large)
         }
     }
 

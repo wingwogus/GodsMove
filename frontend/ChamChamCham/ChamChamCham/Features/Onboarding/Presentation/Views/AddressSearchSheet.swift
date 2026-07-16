@@ -45,6 +45,7 @@ struct AddressSearchSheet: View {
                         }
                     }
                     .listStyle(.plain)
+                    .scrollDismissesKeyboard(.interactively)
                 }
 
                 Spacer()

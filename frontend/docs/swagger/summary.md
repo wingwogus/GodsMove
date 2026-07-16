@@ -2,10 +2,10 @@
 
 - Source title: `ChamChamCham API`
 - Version: `v1`
-- SHA-256: `5715356eacc78c14154bc91c497d7bb1a3a790958e39f0acb0d5da75f36fab81`
-- Paths: `48`
-- Operations: `57`
-- Schemas: `134`
+- SHA-256: `8628ca5fe26a4fbec4d7000f84ff524a063d0a1ecc13fb1d600257fca20c3946`
+- Paths: `57`
+- Operations: `66`
+- Schemas: `175`
 
 ## Operations
 
@@ -24,6 +24,7 @@
 | POST | `/api/v1/auth/onboarding/complete` | `completeOnboarding` |
 | POST | `/api/v1/auth/reissue` | `reissue` |
 | POST | `/api/v1/auth/signup` | `signUp` |
+| POST | `/api/v1/coaching/rag/query` | `query` |
 | GET | `/api/v1/community/boards` | `listBoards` |
 | DELETE | `/api/v1/community/comments/{commentId}` | `deleteComment` |
 | GET | `/api/v1/community/posts` | `listPosts` |
@@ -42,6 +43,14 @@
 | DELETE | `/api/v1/farming-records/{recordId}` | `deleteRecord` |
 | GET | `/api/v1/farming-records/{recordId}` | `getRecord` |
 | PATCH | `/api/v1/farming-records/{recordId}` | `updateRecord` |
+| GET | `/api/v1/farming-records/{recordId}/feedback` | `getStatus_1` |
+| POST | `/api/v1/farming-records/{recordId}/feedback/regenerate` | `regenerate_1` |
+| GET | `/api/v1/farming-reports` | `listCompleted` |
+| GET | `/api/v1/farming-reports/work-items` | `list_1` |
+| GET | `/api/v1/farming-reports/{reportId}` | `getDetail` |
+| GET | `/api/v1/farming-reports/{reportId}/feedback` | `getStatus` |
+| POST | `/api/v1/farming-reports/{reportId}/feedback/{workType}/regenerate` | `regenerate` |
+| GET | `/api/v1/farming-reports/{reportId}/work-types/{workType}` | `getDetail_1` |
 | GET | `/api/v1/farms` | `list` |
 | POST | `/api/v1/farms` | `create` |
 | GET | `/api/v1/farms/weather` | `getCurrentWeatherForDefaultFarm` |
@@ -71,6 +80,7 @@
 
 ## Schemas
 
+- `AmountByUnitResponse`
 - `ApiError`
 - `ApiResponseCancelledResponse`
 - `ApiResponseCommentIdResponse`
@@ -79,6 +89,7 @@
 - `ApiResponseCreatedResponse`
 - `ApiResponseCurrentWeatherResponse`
 - `ApiResponseDailyWeatherResponse`
+- `ApiResponseDetailResponse`
 - `ApiResponseFarmResponse`
 - `ApiResponseLikeToggleResponse`
 - `ApiResponseListBoardResponse`
@@ -87,11 +98,13 @@
 - `ApiResponseListFarmCropsResponse`
 - `ApiResponseListFarmResponse`
 - `ApiResponseListPestSummaryResponse`
+- `ApiResponseListResponse`
 - `ApiResponseListWorkTypeResponse`
 - `ApiResponseLoginResponse`
 - `ApiResponseMyProfileResponse`
 - `ApiResponseObject`
 - `ApiResponseOnboardingCompleteResponse`
+- `ApiResponsePageResponse`
 - `ApiResponsePesticidePageResponse`
 - `ApiResponsePesticideSyncResult`
 - `ApiResponsePolicyProgramDetailResponse`
@@ -103,13 +116,16 @@
 - `ApiResponsePostPageResponse`
 - `ApiResponseProcessedResponse`
 - `ApiResponsePublicProfileResponse`
+- `ApiResponseQueryResponse`
 - `ApiResponseRecordDetailResponse`
 - `ApiResponseRecordIdResponse`
 - `ApiResponseRecordPageResponse`
+- `ApiResponseStatusResponse`
 - `ApiResponseTokenResponse`
 - `ApiResponseUnit`
 - `ApiResponseUploadedImageResponse`
 - `AppleLoginRequest`
+- `AuditResponse`
 - `AuthorResponse`
 - `BoardResponse`
 - `BoundaryCoordinateRequest`
@@ -117,49 +133,71 @@
 - `CancelledResponse`
 - `CandidateRequest`
 - `CandidateResponse`
+- `CategoryAmountByUnitResponse`
+- `CategoryMethodStatisticsResponse`
 - `CategoryResponse`
+- `CitationResponse`
 - `CommentIdResponse`
 - `CommentPageResponse`
 - `CommentResponse`
+- `CommonStatisticsResponse`
 - `CompleteOnboardingRequest`
 - `ConfirmedResponse`
+- `CountDistributionResponse`
+- `CoverageResponse`
 - `CreateCommentRequest`
 - `CreatedResponse`
 - `CropOptionResponse`
 - `CropProfileResponse`
 - `CropResponse`
 - `CurrentWeatherResponse`
+- `CycleStatisticsResponse`
 - `DailyWeatherResponse`
 - `DataSourceRequest`
 - `DataSourceResponse`
+- `DetailResponse`
 - `EnumOptionResponse`
 - `FarmCropsResponse`
 - `FarmDraftRequest`
 - `FarmOptionResponse`
 - `FarmRequest`
 - `FarmResponse`
+- `FeedbackResponse`
 - `FertilizingDetail`
 - `FertilizingDetailRequest`
 - `FertilizingDetailResponse`
+- `FertilizingStatisticsResponse`
 - `FieldResponse`
 - `ForecastDayResponse`
+- `GrowthPeriodRangeResponse`
 - `HarvestDetail`
 - `HarvestDetailRequest`
 - `HarvestDetailResponse`
+- `HarvestPartStatisticsResponse`
+- `HarvestStatisticsResponse`
+- `ItemResponse`
 - `KakaoLoginRequest`
 - `LikeToggleResponse`
+- `ListResponse`
 - `LoginRequest`
 - `LoginResponse`
+- `MaterialCategoryStatisticsResponse`
 - `MediaResponse`
 - `MemberProfileResponse`
+- `MetadataResponse`
+- `ModelResponse`
 - `MyFarmResponse`
 - `MyProfileResponse`
 - `NaverLoginRequest`
+- `NextActionResponse`
+- `ObservationResponse`
 - `OnboardingCompleteResponse`
 - `OnboardingResponse`
+- `PageResponse`
 - `PestControlDetail`
 - `PestControlDetailRequest`
 - `PestControlDetailResponse`
+- `PestControlStatisticsResponse`
 - `PestSummaryResponse`
 - `PesticidePageResponse`
 - `PesticideSummaryResponse`
@@ -167,6 +205,7 @@
 - `PlantingDetail`
 - `PlantingDetailRequest`
 - `PlantingDetailResponse`
+- `PlantingStatisticsResponse`
 - `PolicyAttachmentResponse`
 - `PolicyContactResponse`
 - `PolicyProgramDetailResponse`
@@ -179,11 +218,16 @@
 - `PostPageResponse`
 - `PostSummaryResponse`
 - `ProcessedResponse`
+- `PropagationStatisticsResponse`
 - `PublicFarmResponse`
 - `PublicProfileResponse`
+- `QueryRequest`
+- `QueryResponse`
+- `RecommendationResponse`
 - `RecordDetailResponse`
 - `RecordIdResponse`
 - `RecordPageResponse`
+- `RecordQualityResponse`
 - `RecordSummaryResponse`
 - `ReissueRequest`
 - `SaveFarmRequest`
@@ -191,7 +235,11 @@
 - `SaveRecordRequest`
 - `SendVerificationCodeRequest`
 - `SignUpRequest`
+- `SnapshotResponse`
+- `StatusResponse`
+- `StructuredResultResponse`
 - `SubmitTurnsRequest`
+- `TargetCountResponse`
 - `TokenResponse`
 - `TurnRequest`
 - `UpdateMyProfileRequest`
@@ -201,7 +249,9 @@
 - `WateringDetail`
 - `WateringDetailRequest`
 - `WateringDetailResponse`
+- `WateringStatisticsResponse`
 - `WeedingDetail`
 - `WeedingDetailRequest`
 - `WeedingDetailResponse`
+- `WeedingStatisticsResponse`
 - `WorkTypeResponse`

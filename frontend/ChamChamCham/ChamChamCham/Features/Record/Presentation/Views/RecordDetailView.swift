@@ -12,7 +12,9 @@ import SwiftUI
 ///
 /// Scope (2026-07-14): read + delete. The ⋮ menu uses native confirmation dialogs (no custom UI). 수정(edit) is
 /// deferred — the deployed detail response returns no media ids, so an edit can't preserve existing photos
-/// (conflict C-19). The "참참참의 코칭" (AI) section is a placeholder: the backend has no coaching source (C-18).
+/// (conflict C-19). The "참참참의 코칭" (AI) section is now wired to per-record feedback
+/// (`GET /api/v1/farming-records/{id}/feedback`, backend commit `b943ba9e`), polled via the view model;
+/// regeneration (STALE/FAILED) is out of scope for now.
 struct RecordDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: RecordDetailViewModel
@@ -49,6 +51,7 @@ struct RecordDetailView: View {
         .navigationBarBackButtonHidden(true)
         .toolbar(.hidden, for: .navigationBar)
         .task { await viewModel.onAppear() }
+        .task { await viewModel.loadCoaching() }
         .confirmationDialog("기록 관리", isPresented: $showActions, titleVisibility: .hidden) {
             Button("삭제", role: .destructive) { showDeleteConfirm = true }
             Button("취소", role: .cancel) {}
@@ -237,27 +240,106 @@ struct RecordDetailView: View {
         .padding(.top, Spacing.xl)
     }
 
-    // MARK: 참참참의 코칭 (placeholder — C-18)
+    // MARK: 참참참의 코칭
 
+    /// Backed by `RecordFeedbackQueryService` (`GET /api/v1/farming-records/{id}/feedback`, backend commit
+    /// `b943ba9e`). The view model polls while the feedback is generated; this renders the current state.
     private var coachingSection: some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             sectionHeading("참참참의 코칭")
-            HStack(spacing: Spacing.sm) {
+            switch viewModel.coachingState {
+            case .loading, .preparing:
+                coachingPreparingCard
+            case let .ready(feedback):
+                coachingReadyCard(feedback)
+            case .unavailable:
+                coachingUnavailableCard
+            }
+        }
+        .padding(.horizontal, horizontalInset)
+    }
+
+    /// Coaching not generated yet (or still generating) — the view model keeps polling behind this.
+    private var coachingPreparingCard: some View {
+        HStack(spacing: Spacing.sm) {
+            Image(systemName: "sparkles")
+                .font(.system(size: 20))
+                .foregroundStyle(Color.Icon.primary)
+            Text("작업 기록을 바탕으로 맞춤 코칭을 준비하고 있어요.")
+                .appTypography(.bodyMedium)
+                .foregroundStyle(Color.Text.subtle)
+                .fixedSize(horizontal: false, vertical: true)
+            Spacer(minLength: 0)
+        }
+        .padding(Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Object.secondarySubtle)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func coachingReadyCard(_ feedback: CoachingFeedback) -> some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            // 잘한 점
+            HStack(alignment: .top, spacing: Spacing.sm) {
                 Image(systemName: "sparkles")
                     .font(.system(size: 20))
                     .foregroundStyle(Color.Icon.primary)
-                Text("작업 기록을 바탕으로 맞춤 코칭을 준비하고 있어요.")
+                Text(feedback.goodPoint)
                     .appTypography(.bodyMedium)
                     .foregroundStyle(Color.Text.subtle)
                     .fixedSize(horizontal: false, vertical: true)
                 Spacer(minLength: 0)
             }
-            .padding(Spacing.lg)
+            if !feedback.nextActions.isEmpty {
+                Rectangle()
+                    .fill(Color.Border.default)
+                    .frame(height: 1)
+                VStack(alignment: .leading, spacing: Spacing.sm) {
+                    Text("다음 할 일")
+                        .appTypography(.labelMediumEmphasized)
+                        .foregroundStyle(Color.Text.muted)
+                    // nextActions have no server id (2~3 items, order-stable) — index key is fine.
+                    ForEach(Array(feedback.nextActions.enumerated()), id: \.offset) { _, action in
+                        HStack(alignment: .top, spacing: Spacing.sm) {
+                            if let due = action.due.label {
+                                dueChip(due)
+                            }
+                            Text(action.text)
+                                .appTypography(.bodyMedium)
+                                .foregroundStyle(Color.Text.subtle)
+                                .fixedSize(horizontal: false, vertical: true)
+                            Spacer(minLength: 0)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(Spacing.lg)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Object.secondarySubtle)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private func dueChip(_ label: String) -> some View {
+        Text(label)
+            .appTypography(.labelMedium)
+            .foregroundStyle(Color.Text.muted)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 4)
+            .background(Color.Object.subtle)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    /// Generation failed. Quiet copy, no retry affordance (regenerate is out of scope for now).
+    private var coachingUnavailableCard: some View {
+        Text("코칭을 준비하지 못했어요.")
+            .appTypography(.bodyMedium)
+            .foregroundStyle(Color.Text.subtle)
+            .fixedSize(horizontal: false, vertical: true)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(Spacing.lg)
             .background(Color.Object.secondarySubtle)
             .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .padding(.horizontal, horizontalInset)
     }
 
     // MARK: - Shared
@@ -283,4 +365,71 @@ struct RecordDetailView: View {
         formatter.dateFormat = "yyyy. MM. dd."
         return formatter
     }()
+}
+
+// MARK: - Previews
+
+/// Preview-only stand-in for `RecordRepository`, mirroring `PreviewOnboardingDependencies`. Drives the same
+/// `.task { await viewModel.loadCoaching() }` the real view uses, so these previews exercise the actual polling
+/// path (not a hardcoded snapshot) against a scripted `fetchCoaching` result.
+private struct PreviewCoachingRepository: RecordRepository {
+    let coaching: RecordCoaching
+
+    func fetchDetail(id: UUID) async throws -> RecordDetail {
+        RecordDetail(
+            id: id,
+            workType: .watering,
+            workedAt: Date(),
+            weatherCondition: "맑음",
+            weatherTemperature: 24,
+            farmName: "행복농장",
+            cropName: "인삼",
+            memo: "오전에 물을 줬어요.",
+            imageUrls: [],
+            infoRows: [RecordInfoRow(label: "물의 양", value: "보통")]
+        )
+    }
+
+    func fetchCoaching(id: UUID) async throws -> RecordCoaching { coaching }
+
+    func fetchRecords(_ query: RecordQuery) async throws -> RecordPage { RecordPage(items: [], nextCursor: nil) }
+    func deleteRecord(id: UUID) async throws {}
+    func fetchActiveCrops() async throws -> [ActiveCrop] { [] }
+    func fetchFarmCrops() async throws -> [FarmWithCrops] { [] }
+    func fetchWeather(farmId: UUID) async throws -> CurrentWeather {
+        CurrentWeather(temperature: 24, condition: "맑음")
+    }
+    func searchPesticides(keyword: String?) async throws -> [Pesticide] { [] }
+    func fetchPests(pesticideId: UUID) async throws -> [Pest] { [] }
+    func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { UUID() }
+}
+
+#Preview("코칭 - 준비 중") {
+    RecordDetailView(
+        recordId: UUID(),
+        repository: PreviewCoachingRepository(coaching: RecordCoaching(status: .pending, feedback: nil))
+    )
+}
+
+#Preview("코칭 - 완료") {
+    RecordDetailView(
+        recordId: UUID(),
+        repository: PreviewCoachingRepository(coaching: RecordCoaching(
+            status: .ready,
+            feedback: CoachingFeedback(
+                goodPoint: "적절한 시기에 물을 주셨어요. 최근 강수량을 고려하면 좋은 판단이었어요.",
+                nextActions: [
+                    CoachingNextAction(text: "이틀 뒤 흙 상태를 확인해 보세요.", due: .thisWeek),
+                    CoachingNextAction(text: "잎끝이 마르는지 관찰해 주세요.", due: .nextCheck)
+                ]
+            )
+        ))
+    )
+}
+
+#Preview("코칭 - 실패") {
+    RecordDetailView(
+        recordId: UUID(),
+        repository: PreviewCoachingRepository(coaching: RecordCoaching(status: .failed, feedback: nil))
+    )
 }

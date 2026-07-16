@@ -13,6 +13,7 @@ import Foundation
 protocol RecordRepository: Sendable {
     func fetchRecords(_ query: RecordQuery) async throws -> RecordPage
     func fetchDetail(id: UUID) async throws -> RecordDetail
+    func fetchCoaching(id: UUID) async throws -> RecordCoaching
     func deleteRecord(id: UUID) async throws
     func fetchActiveCrops() async throws -> [ActiveCrop]
     func fetchFarmCrops() async throws -> [FarmWithCrops]
@@ -35,6 +36,25 @@ struct RemoteRecordRepository: RecordRepository {
     func fetchDetail(id: UUID) async throws -> RecordDetail {
         let dto: RecordDetailResponseDTO = try await apiClient.send(RecordEndpoint.recordDetail(id: id))
         return dto.toDomain()
+    }
+
+    func fetchCoaching(id: UUID) async throws -> RecordCoaching {
+        do {
+            let dto: RecordFeedbackStatusResponseDTO = try await apiClient.send(RecordEndpoint.recordFeedback(id: id))
+            return dto.toDomain()
+        } catch let error as APIError {
+            // No feedback row yet → the backend answers COACHING_001/404. That's a valid "준비 중" state, not a
+            // failure: fold it into `.notFound` so the view keeps polling. (Match the 404 status too in case the
+            // backend ever returns a non-envelope 404.)
+            switch error {
+            case .apiError(let code, _) where code == "COACHING_001":
+                return RecordCoaching(status: .notFound, feedback: nil)
+            case .server(statusCode: 404):
+                return RecordCoaching(status: .notFound, feedback: nil)
+            default:
+                throw error
+            }
+        }
     }
 
     func deleteRecord(id: UUID) async throws {

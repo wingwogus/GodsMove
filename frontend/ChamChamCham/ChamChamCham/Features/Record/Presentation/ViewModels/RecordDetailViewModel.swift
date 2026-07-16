@@ -19,16 +19,38 @@ final class RecordDetailViewModel {
         case failed(String)
     }
 
+    /// "참참참의 코칭" card state, driven independently of the record so it never blocks the detail render.
+    /// `preparing` covers both "still generating" and "not requested yet" — the view shows the same 준비 중 copy.
+    enum CoachingState {
+        case loading
+        case preparing
+        case ready(CoachingFeedback)
+        case unavailable
+    }
+
     private(set) var state: LoadState = .loading
+    private(set) var coachingState: CoachingState = .loading
     private(set) var isDeleting = false
     var deleteError: String?
 
     private let recordId: UUID
     private let repository: any RecordRepository
+    private let coachingPollInterval: Duration
+    private let coachingMaxAttempts: Int
+    private var coachingStarted = false
 
-    init(recordId: UUID, repository: any RecordRepository) {
+    /// `coachingPollInterval`/`coachingMaxAttempts` are injectable so tests can poll instantly. Defaults poll
+    /// every 3s up to 8 times (~24s) before settling on the last observed state.
+    init(
+        recordId: UUID,
+        repository: any RecordRepository,
+        coachingPollInterval: Duration = .seconds(3),
+        coachingMaxAttempts: Int = 8
+    ) {
         self.recordId = recordId
         self.repository = repository
+        self.coachingPollInterval = coachingPollInterval
+        self.coachingMaxAttempts = coachingMaxAttempts
     }
 
     func onAppear() async {
@@ -43,6 +65,48 @@ final class RecordDetailViewModel {
             state = .loaded(try await repository.fetchDetail(id: recordId))
         } catch {
             state = .failed(RecordErrorMessage.text(for: error))
+        }
+    }
+
+    /// Loads the record's AI coaching, polling while it's still being generated. Feedback is created
+    /// asynchronously server-side, so an early GET commonly returns notFound/pending; we retry up to
+    /// `coachingMaxAttempts` before giving up and leaving the card in its last state. Runs once per view
+    /// appearance; safe to re-invoke (guarded). Respects cancellation (the driving `.task` cancels on disappear).
+    func loadCoaching() async {
+        guard !coachingStarted else { return }
+        coachingStarted = true
+
+        for attempt in 0..<coachingMaxAttempts {
+            do {
+                let coaching = try await repository.fetchCoaching(id: recordId)
+                switch coaching.status {
+                case .ready:
+                    // READY without a body is a backend contract violation; treat as still-preparing.
+                    if let feedback = coaching.feedback {
+                        coachingState = .ready(feedback)
+                    } else {
+                        coachingState = .preparing
+                    }
+                    return
+                case .failed:
+                    coachingState = .unavailable
+                    return
+                case .pending, .stale, .notFound:
+                    coachingState = .preparing
+                }
+            } catch is CancellationError {
+                return
+            } catch {
+                // Network/server hiccup: stay quiet (준비 중) mid-poll; only surface failure once attempts run out.
+                coachingState = (attempt == coachingMaxAttempts - 1) ? .unavailable : .preparing
+            }
+
+            guard attempt < coachingMaxAttempts - 1 else { return }
+            do {
+                try await Task.sleep(for: coachingPollInterval)
+            } catch {
+                return // cancelled while waiting
+            }
         }
     }
 

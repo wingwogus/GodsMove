@@ -92,10 +92,12 @@ struct CropSelectionView: View {
                         }
                     }
                 }
+                .scrollDismissesKeyboard(.interactively)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
             .background(Color.Background.default)
             .ignoresSafeArea(.container, edges: .bottom)
+            .dismissKeyboardOnTap()
             .overlay(alignment: .bottom) {
                 bottomTray
                     .padding(.bottom, -proxy.safeAreaInsets.bottom)

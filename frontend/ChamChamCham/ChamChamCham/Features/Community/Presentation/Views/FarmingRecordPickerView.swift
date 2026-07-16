@@ -125,8 +125,10 @@ struct FarmingRecordPickerView: View {
                 .padding(.top, Layout.listTopInset)
                 .padding(.bottom, Spacing.lg)
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .background(Color.Background.default)
+        .dismissKeyboardOnTap()
         .safeAreaInset(edge: .bottom) {
             selectBar
         }
