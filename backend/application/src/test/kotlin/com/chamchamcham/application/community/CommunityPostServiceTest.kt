@@ -354,6 +354,7 @@ class CommunityPostServiceTest {
             communityPostQueryRepository.search(
                 CommunityPostQueryRepository.SearchCondition(
                     memberId = memberId,
+                    authorMemberId = otherMemberId,
                     cropId = cropId,
                     postType = CommunityPostType.QUESTION,
                     keyword = "발아",
@@ -376,6 +377,7 @@ class CommunityPostServiceTest {
         val page = service.search(
             CommunityPostSearchCondition(
                 memberId = memberId,
+                authorMemberId = otherMemberId,
                 cropId = cropId,
                 postType = CommunityPostType.QUESTION,
                 keyword = "발아",
@@ -594,6 +596,7 @@ class CommunityPostServiceTest {
             communityPostQueryRepository.count(
                 CommunityPostQueryRepository.SearchCondition(
                     memberId = memberId,
+                    authorMemberId = otherMemberId,
                     cropId = cropId,
                     postType = CommunityPostType.QUESTION,
                     keyword = "발아",
@@ -606,7 +609,7 @@ class CommunityPostServiceTest {
             )
         ).thenReturn(5L)
 
-        val total = service.count(searchCondition())
+        val total = service.count(searchCondition(authorMemberId = otherMemberId))
 
         assertEquals(5L, total)
         verifyNoInteractions(communityPostRepository)
@@ -665,12 +668,14 @@ class CommunityPostServiceTest {
         )
 
     private fun searchCondition(
+        authorMemberId: UUID? = null,
         sort: CommunityPostSort = CommunityPostSort.LATEST,
         cursor: String? = null,
         size: Int = 20
     ): CommunityPostSearchCondition =
         CommunityPostSearchCondition(
             memberId = memberId,
+            authorMemberId = authorMemberId,
             cropId = cropId,
             postType = CommunityPostType.QUESTION,
             keyword = "발아",

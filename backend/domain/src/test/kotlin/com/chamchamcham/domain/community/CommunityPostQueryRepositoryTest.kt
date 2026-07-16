@@ -115,6 +115,22 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
     }
 
     @Test
+    fun `search filters by author member id without changing viewer like state`() {
+        val targetPost = persistPost(title = "다른 회원 글", author = otherMember)
+        persistPost(title = "내 글", author = member)
+        persist(CommunityPostLike(post = targetPost, member = member), LocalDateTime.of(2026, 6, 12, 10, 10))
+        entityManager.flush()
+        entityManager.clear()
+
+        val result = queryRepository.search(
+            condition(authorMemberId = requireNotNull(otherMember.id))
+        )
+
+        assertThat(result.rows.map { it.post.title }).containsExactly("다른 회원 글")
+        assertThat(result.rows.single().likedByMe).isTrue()
+    }
+
+    @Test
     fun `search sorts by like count then latest`() {
         persistPost(title = "좋아요 둘 오래된 글", createdAt = LocalDateTime.of(2026, 6, 12, 8, 0), likeCount = 2)
         persistPost(title = "좋아요 하나 글", createdAt = LocalDateTime.of(2026, 6, 12, 10, 0), likeCount = 1)
@@ -269,6 +285,20 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
         assertThat(total).isEqualTo(1)
     }
 
+    @Test
+    fun `count filters by author member id`() {
+        persistPost(title = "다른 회원 글", author = otherMember)
+        persistPost(title = "내 글", author = member)
+        entityManager.flush()
+        entityManager.clear()
+
+        val total = queryRepository.count(
+            condition(authorMemberId = requireNotNull(otherMember.id))
+        )
+
+        assertThat(total).isEqualTo(1)
+    }
+
     private fun persistPost(
         title: String,
         body: String = "본문",
@@ -338,6 +368,7 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
     }
 
     private fun condition(
+        authorMemberId: UUID? = null,
         cropId: UUID? = null,
         postType: CommunityPostType? = null,
         keyword: String? = null,
@@ -349,6 +380,7 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
     ): CommunityPostQueryRepository.SearchCondition =
         CommunityPostQueryRepository.SearchCondition(
             memberId = memberId,
+            authorMemberId = authorMemberId,
             cropId = cropId,
             postType = postType,
             keyword = keyword,

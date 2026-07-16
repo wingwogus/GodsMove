@@ -10,6 +10,7 @@ interface CommunityPostQueryRepository {
 
     data class SearchCondition(
         val memberId: UUID,
+        val authorMemberId: UUID? = null,
         val cropId: UUID?,
         val postType: CommunityPostType?,
         val keyword: String?,

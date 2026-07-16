@@ -42,6 +42,7 @@ class CommunityControllerTest(
     @Autowired private val mockMvc: MockMvc
 ) {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
+    private val authorMemberId = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val postId = UUID.fromString("00000000-0000-0000-0000-000000000101")
     private val cropId = UUID.fromString("00000000-0000-0000-0000-000000000201")
     private val recordId = UUID.fromString("00000000-0000-0000-0000-000000000301")
@@ -128,6 +129,34 @@ class CommunityControllerTest(
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-1")))
+    }
+
+    @Test
+    fun `list posts maps author member id separately from authenticated member id`() {
+        `when`(
+            communityPostService.search(
+                CommunityPostSearchCondition(
+                    memberId = memberId,
+                    authorMemberId = authorMemberId,
+                    cropId = null,
+                    postType = null,
+                    keyword = null,
+                    likedOnly = false,
+                    mineOnly = false,
+                    sort = CommunityPostSort.LATEST,
+                    cursor = null,
+                    size = 20
+                )
+            )
+        ).thenReturn(postPageResult())
+
+        mockMvc.perform(
+            get("/api/v1/community/posts")
+                .with(authenticatedMember(memberId.toString()))
+                .param("authorMemberId", authorMemberId.toString())
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.items[0].id", equalTo(postId.toString())))
     }
 
     @Test
