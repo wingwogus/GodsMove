@@ -5648,6 +5648,15 @@
         "parameters": [
           {
             "in": "query",
+            "name": "authorMemberId",
+            "required": false,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
             "name": "cropId",
             "required": false,
             "schema": {

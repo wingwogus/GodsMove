@@ -2,7 +2,7 @@
 
 - Source title: `ChamChamCham API`
 - Version: `v1`
-- SHA-256: `8628ca5fe26a4fbec4d7000f84ff524a063d0a1ecc13fb1d600257fca20c3946`
+- SHA-256: `5e35272c0615b2f30c0ff8a9f7aaa641d8a3b7ce6d44b89515341ed555f49d2e`
 - Paths: `57`
 - Operations: `66`
 - Schemas: `175`
