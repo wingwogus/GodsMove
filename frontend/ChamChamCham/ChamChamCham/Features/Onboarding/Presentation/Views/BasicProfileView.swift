@@ -98,8 +98,10 @@ struct BasicProfileView: View {
                 .padding(.horizontal, 20)
                 .padding(.bottom, 40)
             }
+            .scrollDismissesKeyboard(.interactively)
         }
         .background(Color.Background.default)
+        .dismissKeyboardOnTap()
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomCTA
         }

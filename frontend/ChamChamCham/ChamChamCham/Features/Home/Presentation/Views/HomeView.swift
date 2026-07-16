@@ -209,6 +209,8 @@ struct HomeView: View {
                         }
                     }
                 }
+                .contentMargins(.horizontal, 20, for: .scrollContent)
+                .padding(.horizontal, -20)
             case let .failed(message):
                 emptyStateText(message)
             }
@@ -244,7 +246,7 @@ struct HomeView: View {
                     path.append(HomeRoute.policyList)
                 } label: {
                     HStack {
-                        VStack(alignment: .leading, spacing: 4) {
+                        VStack(alignment: .leading, spacing: Spacing.sm) {
                             Text(policy.title)
                                 .appTypography(.titleMediumEmphasized)
                                 .foregroundStyle(Color.Text.subtle)
@@ -327,21 +329,22 @@ struct HomeView: View {
     // MARK: - Shared section chrome
 
     private func sectionHeader(_ title: String, action: (() -> Void)? = nil) -> some View {
-        HStack {
-            Text(title)
-                .appTypography(.titleLargeEmphasized)
-                .foregroundStyle(Color.Text.default)
-            Spacer()
-            Button {
-                action?()
-            } label: {
+        Button {
+            action?()
+        } label: {
+            HStack {
+                Text(title)
+                    .appTypography(.titleLargeEmphasized)
+                    .foregroundStyle(Color.Text.default)
+                Spacer()
                 AppIconView(source: .asset("arrow_forward_ios"), size: 24)
                     .foregroundStyle(Color.Icon.default)
                     .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
             }
-            .disabled(action == nil)
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .disabled(action == nil)
     }
 
     private func sectionLoading(height: CGFloat) -> some View {

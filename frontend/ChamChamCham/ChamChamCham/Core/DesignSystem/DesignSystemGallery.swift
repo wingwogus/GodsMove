@@ -349,6 +349,18 @@ import SwiftUI
     .frame(width: 390)
 }
 
+// MARK: - Chat
+
+#Preview("AppChatBubble") {
+    VStack(alignment: .leading, spacing: Spacing.md) {
+        AppChatBubble(message: "오늘 어떤 작업을 하셨나요?  마이크를 누르고 자유롭게  말씀해주세요!")
+        AppChatBubble(message: "오늘 사과밭 전체적으로 소독약 쳤어. 아침 8시부터 12시까지 했고.", isMine: true)
+    }
+    .padding()
+    .frame(width: 390)
+    .background(Color.Background.subtle)
+}
+
 // MARK: - Cards
 
 #Preview("AppCard") {

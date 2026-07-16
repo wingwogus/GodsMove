@@ -23,6 +23,10 @@ final class RecordComposeViewModel {
     private(set) var farms: [FarmWithCrops] = []
     private(set) var weather: CurrentWeather?
     private(set) var isLoadingWeather = false
+    /// 날씨 조회가 실패로 끝났는지. 로드 중/성공이면 false. 재시도 어포던스 노출용.
+    private(set) var weatherLoadFailed = false
+    /// 농지를 빠르게 바꿀 때 이전 요청의 늦은 응답이 최신 상태를 덮어쓰지 않게 하는 세대 토큰.
+    private var weatherLoadToken = 0
 
     // MARK: 사진 (0~5)
     private(set) var mediaIds: [UUID] = []
@@ -88,6 +92,10 @@ final class RecordComposeViewModel {
     func onAppear() async {
         guard farms.isEmpty else { return }
         farms = (try? await repository.fetchFarmCrops()) ?? []
+        // 농지가 하나뿐이면 자동 선택 → 진입 즉시 날씨 조회(불필요한 탭 제거). didSet이 loadWeather 트리거.
+        if selectedFarmId == nil, farms.count == 1 {
+            selectedFarmId = farms[0].farmId
+        }
     }
 
     private func onFarmChanged() {
@@ -95,14 +103,35 @@ final class RecordComposeViewModel {
         if let cropId = selectedCropId, !crops.contains(where: { $0.id == cropId }) {
             selectedCropId = nil
         }
-        guard let farmId = selectedFarmId else { weather = nil; return }
+        guard let farmId = selectedFarmId else {
+            weather = nil
+            weatherLoadFailed = false
+            return
+        }
         Task { await loadWeather(farmId: farmId) }
     }
 
+    /// 날씨 조회 실패 후 사용자가 재시도할 때 호출.
+    func retryWeather() async {
+        guard let farmId = selectedFarmId else { return }
+        await loadWeather(farmId: farmId)
+    }
+
     private func loadWeather(farmId: UUID) async {
+        weatherLoadToken &+= 1
+        let token = weatherLoadToken
+        weather = nil
+        weatherLoadFailed = false
         isLoadingWeather = true
-        defer { isLoadingWeather = false }
-        weather = try? await repository.fetchWeather(farmId: farmId)
+        do {
+            let result = try await repository.fetchWeather(farmId: farmId)
+            guard token == weatherLoadToken else { return } // 더 최근 선택이 있으면 무시
+            weather = result
+        } catch {
+            guard token == weatherLoadToken else { return }
+            weatherLoadFailed = true
+        }
+        if token == weatherLoadToken { isLoadingWeather = false }
     }
 
     // MARK: - 병해충: 농약 선택 시 대상 병해충 목록 로드
@@ -154,6 +183,12 @@ final class RecordComposeViewModel {
     }
 
     var workTypeError: String? { workType == nil ? "작업 내용은 필수로 선택해주세요." : nil }
+
+    /// 농지는 선택됐지만 날씨를 못 불러온 상태. 농지 미선택은 farmCropError가 담당하므로 여기선 제외.
+    var weatherError: String? {
+        guard selectedFarmId != nil, !isLoadingWeather, weather == nil else { return nil }
+        return "날씨 정보를 불러오지 못했어요. 날씨를 눌러 다시 시도해주세요."
+    }
 
     /// 선택된 workType 상세의 필수값 충족 여부(제출 가능성 판단용, 문구는 각 필드에서).
     var detailValid: Bool {

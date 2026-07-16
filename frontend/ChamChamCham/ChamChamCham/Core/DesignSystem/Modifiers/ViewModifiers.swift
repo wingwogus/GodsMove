@@ -20,4 +20,16 @@ extension View {
     func cardStyle() -> some View {
         modifier(CardStyle())
     }
+
+    /// Resigns the active text field/editor's first-responder status when the user taps
+    /// anywhere else on this view. SwiftUI has no built-in "tap outside to dismiss keyboard"
+    /// modifier, so this covers screens where the keyboard would otherwise stay up when the
+    /// user taps a non-interactive area instead of scrolling.
+    func dismissKeyboardOnTap() -> some View {
+        onTapGesture {
+            UIApplication.shared.sendAction(
+                #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+            )
+        }
+    }
 }
