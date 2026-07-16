@@ -175,20 +175,15 @@ struct ProfileMainView: View {
     private var cropNames: [String] { viewModel.displayedCropNames }
 
     @ViewBuilder private var cropBadges: some View {
-        let rows = chunk(cropNames, size: 5)
-        VStack(spacing: Spacing.sm) {
-            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                HStack(spacing: Spacing.sm) {
-                    ForEach(Array(row.enumerated()), id: \.offset) { _, name in
-                        AppBadge(label: name, style: .solid, variant: .primary)
-                    }
-                }
+        AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm, alignment: .center) {
+            ForEach(Array(cropNames.enumerated()), id: \.offset) { _, name in
+                AppBadge(label: name, style: .solid, variant: .primary)
             }
-            if viewModel.hiddenCropCount > 0 {
+            if viewModel.canToggleCrops {
                 Button {
-                    viewModel.cropsExpanded = true
+                    viewModel.cropsExpanded.toggle()
                 } label: {
-                    Text("외 \(viewModel.hiddenCropCount)종")
+                    Text(viewModel.cropsExpanded ? "접기" : "외 \(viewModel.hiddenCropCount)종")
                         .appTypography(.labelMedium)
                         .foregroundStyle(Color.Text.subtle)
                 }
@@ -266,12 +261,5 @@ struct ProfileMainView: View {
 
     private var emptyMessage: String {
         viewModel.currentTab == .myPosts ? "작성한 게시물이 없어요." : "좋아요 누른 글이 없어요."
-    }
-
-    private func chunk(_ items: [String], size: Int) -> [[String]] {
-        guard size > 0 else { return [items] }
-        return stride(from: 0, to: items.count, by: size).map {
-            Array(items[$0..<min($0 + size, items.count)])
-        }
     }
 }

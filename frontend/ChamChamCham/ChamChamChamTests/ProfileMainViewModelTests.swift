@@ -37,9 +37,10 @@ struct ProfileMainViewModelTests {
 
         #expect(viewModel.displayedCropNames.count == 3)
         #expect(viewModel.hiddenCropCount == 0)
+        #expect(!viewModel.canToggleCrops)
     }
 
-    @Test("more than 3 crops collapse to 3 + overflow, and expand to all")
+    @Test("more than 3 crops collapse to 3 + overflow, and toggle expands/collapses back")
     func cropsCollapseAndExpand() async {
         let profile = MyPageFixtures.profile(crops: [
             MyPageFixtures.crop("인삼"), MyPageFixtures.crop("고추"), MyPageFixtures.crop("배추"),
@@ -49,12 +50,18 @@ struct ProfileMainViewModelTests {
 
         await viewModel.loadProfile()
 
+        #expect(viewModel.canToggleCrops)
         #expect(viewModel.displayedCropNames.count == 3)
         #expect(viewModel.hiddenCropCount == 2)
 
-        viewModel.cropsExpanded = true
+        viewModel.cropsExpanded.toggle()
         #expect(viewModel.displayedCropNames.count == 5)
         #expect(viewModel.hiddenCropCount == 0)
+        #expect(viewModel.canToggleCrops)
+
+        viewModel.cropsExpanded.toggle()
+        #expect(viewModel.displayedCropNames.count == 3)
+        #expect(viewModel.hiddenCropCount == 2)
     }
 
     @Test("experience and region text derive from the profile")
