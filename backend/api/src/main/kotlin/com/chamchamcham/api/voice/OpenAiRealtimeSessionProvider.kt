@@ -48,6 +48,17 @@ class OpenAiRealtimeSessionProvider internal constructor(
         properties.voice,
     )
 
+    init {
+        // 키가 비어 있거나 local/test 프로필의 placeholder면 모든 음성 세션 발급이 401로
+        // 실패한다(VOICE_003으로만 보임). 기동 로그에서 바로 보이게 남긴다. local 개발을
+        // 막지 않도록 예외는 던지지 않는다.
+        if (apiKey.isBlank() || apiKey == PLACEHOLDER_API_KEY) {
+            logger.warn {
+                "OPENAI_API_KEY가 비어 있거나 placeholder입니다 — 음성 세션 발급이 전부 실패합니다(VOICE_003)."
+            }
+        }
+    }
+
     override fun createEphemeralSession(request: RealtimeSessionRequest): RealtimeSessionResult {
         val body = mapOf(
             "session" to mapOf(
@@ -99,6 +110,8 @@ class OpenAiRealtimeSessionProvider internal constructor(
     companion object {
         private val logger = KotlinLogging.logger {}
         private const val DEFAULT_EXPIRY_MINUTES = 10L
+        /** application-local.yml / application-test.yml의 기본값. 실 발급은 불가능한 더미 키. */
+        private const val PLACEHOLDER_API_KEY = "test-openai-api-key"
 
         private fun createRequestFactory(
             connectTimeoutMillis: Int,
