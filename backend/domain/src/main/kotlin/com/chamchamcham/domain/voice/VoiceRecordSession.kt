@@ -14,6 +14,8 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -27,10 +29,12 @@ class VoiceRecordSession(
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val member: Member,
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "draft_record_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     var draftRecord: FarmingRecord? = null,
 
     @Enumerated(EnumType.STRING)

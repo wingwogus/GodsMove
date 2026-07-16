@@ -19,6 +19,8 @@ import jakarta.persistence.OrderBy
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
 import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.type.SqlTypes
 import java.util.UUID
 
@@ -40,10 +42,12 @@ class RecordFeedback(
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val member: Member,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "record_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val record: FarmingRecord,
 
     status: RecordFeedbackStatus,

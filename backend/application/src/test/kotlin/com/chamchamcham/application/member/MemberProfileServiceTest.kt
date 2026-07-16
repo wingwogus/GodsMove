@@ -19,6 +19,7 @@ import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Assertions.assertEquals
+import org.junit.jupiter.api.Assertions.assertNull
 import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -28,9 +29,11 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
+import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
+import org.springframework.context.ApplicationEventPublisher
 import java.math.BigDecimal
 import java.time.LocalDate
 import java.util.Optional
@@ -51,6 +54,7 @@ class MemberProfileServiceTest {
     @Mock private lateinit var memberCropRepository: MemberCropRepository
     @Mock private lateinit var cropRepository: CropRepository
     @Mock private lateinit var uploadedMediaRepository: UploadedMediaRepository
+    @Mock private lateinit var eventPublisher: ApplicationEventPublisher
 
     private lateinit var service: MemberProfileService
     private lateinit var member: Member
@@ -70,7 +74,8 @@ class MemberProfileServiceTest {
             farmRepository = farmRepository,
             memberCropRepository = memberCropRepository,
             cropRepository = cropRepository,
-            uploadedMediaRepository = uploadedMediaRepository
+            uploadedMediaRepository = uploadedMediaRepository,
+            eventPublisher = eventPublisher
         )
     }
 
@@ -306,6 +311,35 @@ class MemberProfileServiceTest {
         assertEquals(ErrorCode.MEDIA_NOT_OWNED, exception.errorCode)
     }
 
+    @Test
+    fun `withdraw clears profile deletes member and publishes distinct Cloudinary ids`() {
+        `when`(memberRepository.findByIdForUpdate(memberId)).thenReturn(member)
+        `when`(uploadedMediaRepository.findCloudinaryPublicIdsByOwnerId(memberId))
+            .thenReturn(listOf("profile/image", "community/image", "community/image"))
+
+        service.withdraw(memberId)
+
+        assertNull(member.profileMedia)
+        verify(memberRepository, times(2)).flush()
+        verify(memberRepository).delete(member)
+        val event = capturedWithdrawalEvent()
+        assertEquals(memberId, event.memberId)
+        assertThat(event.cloudinaryPublicIds)
+            .containsExactlyInAnyOrder("profile/image", "community/image")
+    }
+
+    @Test
+    fun `withdraw rejects missing member before media lookup`() {
+        `when`(memberRepository.findByIdForUpdate(memberId)).thenReturn(null)
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.withdraw(memberId)
+        }
+
+        assertEquals(ErrorCode.UNAUTHORIZED, exception.errorCode)
+        verifyNoInteractions(uploadedMediaRepository, eventPublisher)
+    }
+
     private fun member(): Member =
         Member(id = memberId, email = "hwanggi@example.com", passwordHash = null).also {
             it.name = "이황기"
@@ -395,5 +429,11 @@ class MemberProfileServiceTest {
         val captor = ArgumentCaptor.forClass(Iterable::class.java) as ArgumentCaptor<Iterable<MemberCrop>>
         verify(memberCropRepository).saveAll(captor.capture())
         return captor.value.toList()
+    }
+
+    private fun capturedWithdrawalEvent(): MemberWithdrawalCommitted {
+        val captor = ArgumentCaptor.forClass(MemberWithdrawalCommitted::class.java)
+        verify(eventPublisher).publishEvent(captor.capture())
+        return captor.value
     }
 }

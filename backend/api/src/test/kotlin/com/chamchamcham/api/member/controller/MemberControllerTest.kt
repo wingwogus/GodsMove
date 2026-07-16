@@ -24,6 +24,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority
 import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.request.RequestPostProcessor
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -54,6 +55,18 @@ class MemberControllerTest(
             .andExpect(jsonPath("$.data.memberId", equalTo(memberId.toString())))
             .andExpect(jsonPath("$.data.farms[0].farmId", equalTo(farmId.toString())))
             .andExpect(jsonPath("$.data.crops[0].cropName", equalTo("황기")))
+    }
+
+    @Test
+    fun `delete me delegates authenticated member hard withdrawal`() {
+        mockMvc.perform(
+            delete("/api/v1/members/me")
+                .with(authenticatedMember(memberId.toString()))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.success", equalTo(true)))
+
+        verify(memberProfileService).withdraw(memberId)
     }
 
     @Test

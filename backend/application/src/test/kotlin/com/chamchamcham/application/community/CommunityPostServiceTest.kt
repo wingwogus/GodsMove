@@ -344,6 +344,20 @@ class CommunityPostServiceTest {
     }
 
     @Test
+    fun `guest detail returns false without like lookup`() {
+        setCreatedAt(existingPost, postCreatedAt)
+        `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)
+        `when`(communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)).thenReturn(emptyList())
+        `when`(communityCommentRepository.countByPostIdAndIsDeletedFalse(postId)).thenReturn(0)
+        `when`(communityPostLikeRepository.countByPostId(postId)).thenReturn(0)
+
+        val detail = service.getDetail(memberId = null, postId = postId)
+
+        assertFalse(detail.likedByMe)
+        verify(communityPostLikeRepository, never()).existsByPostIdAndMemberId(postId, memberId)
+    }
+
+    @Test
     fun `search maps application condition to query repository and next cursor`() {
         val requestedSize = 1
         val overflowPost = existingPost(member, crop, secondPostId).also {
@@ -397,6 +411,50 @@ class CommunityPostServiceTest {
         assertEquals(null, nextCursor.score)
         assertEquals(postCreatedAt, nextCursor.createdAt)
         assertEquals(postId, nextCursor.id)
+    }
+
+    @Test
+    fun `guest search delegates without viewer personalization`() {
+        `when`(
+            communityPostQueryRepository.search(
+                CommunityPostQueryRepository.SearchCondition(
+                    memberId = null,
+                    authorMemberId = otherMemberId,
+                    cropId = cropId,
+                    postType = CommunityPostType.QUESTION,
+                    keyword = "발아",
+                    likedOnly = false,
+                    mineOnly = false,
+                    sort = CommunityPostSort.LATEST,
+                    cursor = null,
+                    size = 21
+                )
+            )
+        ).thenReturn(CommunityPostQueryRepository.SearchResult(emptyList()))
+
+        val page = service.search(searchCondition(memberId = null, authorMemberId = otherMemberId))
+
+        assertThat(page.items).isEmpty()
+    }
+
+    @Test
+    fun `guest search rejects liked only before repository access`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            service.search(searchCondition(memberId = null, likedOnly = true))
+        }
+
+        assertEquals(ErrorCode.UNAUTHORIZED, exception.errorCode)
+        verifyNoInteractions(communityPostQueryRepository)
+    }
+
+    @Test
+    fun `guest search rejects mine only before repository access`() {
+        val exception = assertThrows(BusinessException::class.java) {
+            service.search(searchCondition(memberId = null, mineOnly = true))
+        }
+
+        assertEquals(ErrorCode.UNAUTHORIZED, exception.errorCode)
+        verifyNoInteractions(communityPostQueryRepository)
     }
 
     @Test
@@ -668,7 +726,10 @@ class CommunityPostServiceTest {
         )
 
     private fun searchCondition(
+        memberId: UUID? = this.memberId,
         authorMemberId: UUID? = null,
+        likedOnly: Boolean = false,
+        mineOnly: Boolean = false,
         sort: CommunityPostSort = CommunityPostSort.LATEST,
         cursor: String? = null,
         size: Int = 20
@@ -679,8 +740,8 @@ class CommunityPostServiceTest {
             cropId = cropId,
             postType = CommunityPostType.QUESTION,
             keyword = "발아",
-            likedOnly = false,
-            mineOnly = false,
+            likedOnly = likedOnly,
+            mineOnly = mineOnly,
             sort = sort,
             cursor = cursor,
             size = size

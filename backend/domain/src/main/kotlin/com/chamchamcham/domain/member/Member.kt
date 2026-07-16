@@ -13,6 +13,8 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
@@ -62,6 +64,7 @@ class Member(
 
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "profile_media_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     var profileMedia: UploadedMedia? = null,
 ) : BaseTimeEntity() {
     fun completeOnboarding(

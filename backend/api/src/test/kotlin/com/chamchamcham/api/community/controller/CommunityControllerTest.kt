@@ -99,6 +99,15 @@ class CommunityControllerTest(
     }
 
     @Test
+    fun `guest list maps null viewer`() {
+        `when`(communityPostService.search(anySearchCondition(memberId = null)))
+            .thenReturn(CommunityPostResult.Page(emptyList(), null))
+
+        mockMvc.perform(get("/api/v1/community/posts"))
+            .andExpect(status().isOk)
+    }
+
+    @Test
     fun `list posts maps sort and cursor parameters`() {
         `when`(
             communityPostService.search(
@@ -181,6 +190,15 @@ class CommunityControllerTest(
         )
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.title", equalTo("황기 발아율 질문")))
+    }
+
+    @Test
+    fun `guest detail maps null viewer`() {
+        `when`(communityPostService.getDetail(null, postId)).thenReturn(postDetailResult(likedByMe = false))
+
+        mockMvc.perform(get("/api/v1/community/posts/{postId}", postId))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.likedByMe", equalTo(false)))
     }
 
     @Test
@@ -327,7 +345,7 @@ class CommunityControllerTest(
             nextCursor = "cursor-1"
         )
 
-    private fun postDetailResult(): CommunityPostResult.PostDetail =
+    private fun postDetailResult(likedByMe: Boolean = true): CommunityPostResult.PostDetail =
         CommunityPostResult.PostDetail(
             id = postId,
             cropId = cropId,
@@ -340,7 +358,7 @@ class CommunityControllerTest(
             author = authorResult(),
             commentCount = 3,
             likeCount = 8,
-            likedByMe = true,
+            likedByMe = likedByMe,
             createdAt = createdAt
         )
 
@@ -384,7 +402,7 @@ class CommunityControllerTest(
             profileImageUrl = "https://example.test/profile.jpg"
         )
 
-    private fun anySearchCondition(): CommunityPostSearchCondition =
+    private fun anySearchCondition(memberId: UUID? = this.memberId): CommunityPostSearchCondition =
         CommunityPostSearchCondition(
             memberId = memberId,
             cropId = null,

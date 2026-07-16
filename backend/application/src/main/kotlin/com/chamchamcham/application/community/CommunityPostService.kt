@@ -58,6 +58,9 @@ class CommunityPostService(
 
     @Transactional(readOnly = true)
     fun search(condition: CommunityPostSearchCondition): CommunityPostResult.Page {
+        if (condition.memberId == null && (condition.likedOnly || condition.mineOnly)) {
+            throw BusinessException(ErrorCode.UNAUTHORIZED)
+        }
         validatePageSize(condition.size)
         val cursor = decodeCursor(condition.sort, condition.cursor)
         val result = communityPostQueryRepository.search(
@@ -111,7 +114,7 @@ class CommunityPostService(
     }
 
     @Transactional(readOnly = true)
-    fun getDetail(memberId: UUID, postId: UUID): CommunityPostResult.PostDetail {
+    fun getDetail(memberId: UUID?, postId: UUID): CommunityPostResult.PostDetail {
         val post = findPost(postId)
         val imageUrls = communityPostMediaRepository.findByPostIdOrderByDisplayOrderAsc(postId)
             .map { it.uploadedMedia.fileUrl }
@@ -127,7 +130,9 @@ class CommunityPostService(
             author = authorOf(post.author),
             commentCount = communityCommentRepository.countByPostIdAndIsDeletedFalse(postId),
             likeCount = communityPostLikeRepository.countByPostId(postId),
-            likedByMe = communityPostLikeRepository.existsByPostIdAndMemberId(postId, memberId),
+            likedByMe = memberId?.let {
+                communityPostLikeRepository.existsByPostIdAndMemberId(postId, it)
+            } ?: false,
             createdAt = post.createdAt
         )
     }
