@@ -12,6 +12,7 @@ import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.WeedingMethod
 import com.chamchamcham.domain.farming.WorkType
 import org.springframework.stereotype.Component
+import java.math.RoundingMode
 
 @Component
 class ReportFeedbackPromptBuilder {
@@ -24,7 +25,7 @@ class ReportFeedbackPromptBuilder {
         val allowedEvidenceRefs = buildList {
             add("- report:${context.report.id} : 현재 완료 리포트")
             context.records.forEach { add("- record:${it.id} : 대상 영농기록") }
-            context.previousReport?.let { add("- report:${it.id} : 직전 완료 리포트") }
+            context.previousReport?.let { add("- report:${it.id} : 지난 재배 리포트") }
             evidence.forEach { add("- ${it.id} : ${it.title}") }
         }.joinToString("\n")
 
@@ -41,7 +42,7 @@ class ReportFeedbackPromptBuilder {
                 formatStatistics(context.workType, context.report.statistics)
                     .forEach { appendLine("- $it") }
                 appendLine(formatPreviousReport(context))
-                appendLine("서버가 계산한 직전 동일 작업 비교:")
+                appendLine("서버가 계산한 지난 재배의 동일 작업 비교:")
                 if (context.comparisons.isEmpty()) {
                     appendLine("없음")
                 } else {
@@ -59,8 +60,19 @@ class ReportFeedbackPromptBuilder {
         return """
             당신은 약용작물 재배 회고 코치다. 제공된 근거에 없는 수치나 사실을 만들지 않는다.
             지정된 대상 작업 타입 하나만 회고하고 다른 작업을 비교하거나 권고하지 않는다.
-            직전 리포트 비교는 제공된 동일 작업 통계만 사용하고 이전 기록이나 메모를 본 것처럼 말하지 않는다.
+            지난 재배 비교는 제공된 동일 작업 통계만 사용하고 이전 기록이나 메모를 본 것처럼 말하지 않는다.
             summary, comparisons, strengths, improvements, nextActions를 구조화해 응답한다.
+            summary는 이번 재배에서 확인한 핵심을 작업과 기록 중심으로 균형 있게 요약한다.
+            comparisons는 지난 재배와 달라진 사실만 설명하고 평가나 권고를 넣지 않는다.
+            strengths는 근거에서 확인한 잘한 행동과 그 행동이 도움이 된 이유를 함께 설명한다.
+            improvements는 부족한 점, 그 점이 판단이나 관리에 미친 영향, 앞으로 보완할 방향을 함께 설명한다.
+            자료가 부족해도 판단이 어렵거나 해석이 제한됐다는 설명으로 끝내지 않고, 다음에 함께 남길 기록 항목을 안내한다.
+            nextActions는 다음 작업에서 언제 무엇을 기록하거나 확인할지 실행 가능한 한 가지 행동으로 작성한다.
+            사용자에게 내부 보고서나 시스템을 설명하지 말고 농부가 남긴 작업과 기록을 먼저 말한다.
+            공식 기술 문서를 근거로 사용해도 문서를 문장의 주어로 내세우지 않는다.
+            다음 개선점 예시는 형식만 참고하고 내용을 복사하지 않는다.
+            나쁜 예: "정보가 없어 해석이 제한됐어요."
+            좋은 예: "기록에 필요한 정보가 빠져 판단하기 어려웠어요. 다음에는 빠진 정보도 함께 기록해 보세요."
             strengths, improvements, nextActions는 각각 정확히 1개의 항목으로 응답한다.
             서버가 계산한 비교값이 있으면 comparisons는 정확히 1개의 항목으로 응답한다.
             서버가 계산한 비교값이 없으면 comparisons는 반드시 빈 배열로 응답한다.
@@ -69,30 +81,31 @@ class ReportFeedbackPromptBuilder {
             summary는 20~65자로 작성한다.
             comparisons의 text는 20~65자로 작성한다.
             strengths, improvements, nextActions의 text는 각각 20~65자로 작성한다.
+            JSON을 반환하기 전에 공백과 문장부호를 포함한 summary와 모든 text의 글자 수가 20~65자인지 확인한다.
             최소 길이를 맞출 때 의미 없는 표현을 덧붙이지 말고 근거, 판단, 실행 방법을 보강해 다시 쓴다.
             65자를 넘으면 문장을 자르지 말고 핵심 내용을 남겨 다시 쓴다.
             각 항목은 basis, text, evidenceRefs를 가져야 한다.
             evidenceRefs에는 허용 evidenceRefs에 나열된 값을 정확히 그대로 사용한다.
             통계 필드명이나 통계값은 evidenceRefs로 사용하지 않는다.
             기술 문서가 없더라도 현재 리포트와 대상 기록을 근거로 strengths, improvements, nextActions를 각각 작성한다.
-            공식문서가 필요한 기술적 주장은 문서 근거 없이 만들지 않는다.
+            공식 기술 문서가 필요한 기술적 주장은 문서 근거 없이 만들지 않는다.
             서버가 계산한 비교값을 그대로 사용하고 다시 계산하지 않는다.
-            comparisons에는 변화 사실만 쉬운 문장으로 쓰고 칭찬, 문제 진단, 권고를 넣지 않는다.
             comparison, strength, improvement, next-action 사이에 같은 내용을 반복하지 않는다.
-            같은 항목을 반복하지 말고, 선택한 작업의 다음 행동은 실행 방법이 드러나게 작성한다.
             summary와 모든 text는 친근한 존댓말로 끝낸다.
-            다음 행동은 "~하세요."처럼, 회고와 요약은 "~했어요."처럼 작성한다.
+            summary, comparisons, strengths는 "~했어요."처럼 회고형 존댓말로 작성한다.
+            improvements는 부족한 점을 부드럽게 설명하고 보완 방향은 "~해 보세요."처럼 제안한다.
+            nextActions는 "~하세요."처럼 분명한 행동형 존댓말로 작성한다.
         """.trimIndent() + "\n" + CoachingTextPolicy.promptInstructions
     }
 
     private fun formatPreviousReport(context: ReportFeedbackContext): String {
-        val previous = context.previousReport ?: return "직전 완료 리포트 없음"
+        val previous = context.previousReport ?: return "지난 재배 리포트 없음"
         return buildString {
             appendLine(
-                "직전 완료 리포트(report:${previous.id}): " +
+                "지난 재배 리포트(report:${previous.id}): " +
                     "${previous.startsAt}~${previous.endsAt}",
             )
-            formatStatistics(context.workType, previous.statistics, prefix = "직전 ")
+            formatStatistics(context.workType, previous.statistics, prefix = "지난 재배 ")
                 .forEach { appendLine("- $it") }
         }.trim()
     }
@@ -101,22 +114,25 @@ class ReportFeedbackPromptBuilder {
         val unit = comparison.unit.unitText() ?: comparison.unit
         val difference = comparison.difference
         val direction = when {
-            difference.signum() > 0 -> "${difference.abs().toPlainString()}$unit 늘었고"
-            difference.signum() < 0 -> "${difference.abs().toPlainString()}$unit 줄었고"
-            else -> "변화가 없고"
+            difference.signum() > 0 -> "${difference.abs().toPlainString()}$unit 늘었어요."
+            difference.signum() < 0 -> "${difference.abs().toPlainString()}$unit 줄었어요."
+            else -> "변화가 없어요."
         }
         val relative = comparison.relativeChangePct?.let {
-            " 변화율은 ${it.abs().toPlainString()}퍼센트예요."
-        } ?: " 변화율은 계산하지 않았어요."
+            val rounded = it.abs().setScale(0, RoundingMode.HALF_UP).toPlainString()
+            " 변화율은 ${rounded}퍼센트예요."
+        }.orEmpty()
         val coverage = formatCoverage(comparison)
-        return "직전보다 ${comparison.metricLabel}${comparison.metricLabel.subjectParticle()} $direction$relative$coverage"
+        return "지난 재배보다 " +
+            "${comparison.metricLabel}${comparison.metricLabel.subjectParticle()} " +
+            "$direction$relative$coverage"
     }
 
     private fun formatCoverage(comparison: ReportFeedbackComparison): String {
         val current = comparison.currentCoverage ?: return ""
         val previous = comparison.previousCoverage ?: return ""
         return " 입력 범위는 이번 ${current.recordedCount}/${current.targetCount}건, " +
-            "직전 ${previous.recordedCount}/${previous.targetCount}건이에요."
+            "지난 재배 ${previous.recordedCount}/${previous.targetCount}건이에요."
     }
 
     private fun String.subjectParticle(): String {

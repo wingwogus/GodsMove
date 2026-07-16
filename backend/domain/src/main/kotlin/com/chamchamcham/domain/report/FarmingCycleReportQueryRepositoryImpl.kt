@@ -3,6 +3,7 @@ package com.chamchamcham.domain.report
 import com.chamchamcham.domain.farming.WorkType
 import jakarta.persistence.EntityManager
 import org.springframework.stereotype.Repository
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -181,7 +182,7 @@ class FarmingCycleReportQueryRepositoryImpl(
         val statistics: CycleReportStatistics,
     ) {
         fun toWorkItem(workType: WorkType): FarmingCycleReportQueryRepository.WorkItem? {
-            val (recordCount, lastWorkedOn) = statistics.summary(workType)
+            val recordCount = statistics.recordCountFor(workType)
             if (recordCount <= 0) return null
             return FarmingCycleReportQueryRepository.WorkItem(
                 reportId = reportId,
@@ -195,26 +196,32 @@ class FarmingCycleReportQueryRepositoryImpl(
                 finalHarvestRecordId = finalHarvestRecordId,
                 workType = workType,
                 recordCount = recordCount,
-                lastWorkedOn = lastWorkedOn,
+                lastWorkedOn = statistics.lastWorkedOnFor(workType),
             )
         }
     }
 
     private fun FarmingCycleReportQueryRepository.WorkItem.isAfter(
         cursor: FarmingCycleReportQueryRepository.WorkItemCursor,
-    ): Boolean {
-        val itemStatusRank = status.rank()
-        val cursorStatusRank = cursor.status.rank()
-        return itemStatusRank > cursorStatusRank ||
-            (itemStatusRank == cursorStatusRank && sortAt < cursor.sortAt) ||
-            (itemStatusRank == cursorStatusRank && sortAt == cursor.sortAt && reportId < cursor.reportId) ||
-            (
-                itemStatusRank == cursorStatusRank &&
-                    sortAt == cursor.sortAt &&
-                    reportId == cursor.reportId &&
-                    workType.ordinal > cursor.workType.ordinal
-            )
-    }
+    ): Boolean = workItemSortKeyComparator.compare(sortKey(), cursor.sortKey()) > 0
+
+    private fun FarmingCycleReportQueryRepository.WorkItem.sortKey() =
+        WorkItemSortKey(
+            lastWorkedOn = lastWorkedOn,
+            statusRank = status.rank(),
+            sortAt = sortAt,
+            reportId = reportId,
+            workTypeOrdinal = workType.ordinal,
+        )
+
+    private fun FarmingCycleReportQueryRepository.WorkItemCursor.sortKey() =
+        WorkItemSortKey(
+            lastWorkedOn = lastWorkedOn,
+            statusRank = status.rank(),
+            sortAt = sortAt,
+            reportId = reportId,
+            workTypeOrdinal = workType.ordinal,
+        )
 
     private fun FarmingCycleReportStatus.rank(): Int = when (this) {
         FarmingCycleReportStatus.ACTIVE -> 0
@@ -222,28 +229,23 @@ class FarmingCycleReportQueryRepositoryImpl(
         FarmingCycleReportStatus.SUPERSEDED -> 2
     }
 
-    private companion object {
-        val workItemComparator =
-            compareBy<FarmingCycleReportQueryRepository.WorkItem> { item ->
-                when (item.status) {
-                    FarmingCycleReportStatus.ACTIVE -> 0
-                    FarmingCycleReportStatus.COMPLETED -> 1
-                    FarmingCycleReportStatus.SUPERSEDED -> 2
-                }
-            }
-                .thenByDescending { it.sortAt }
-                .thenByDescending { it.reportId }
-                .thenBy { it.workType.ordinal }
-    }
-}
+    private data class WorkItemSortKey(
+        val lastWorkedOn: LocalDate?,
+        val statusRank: Int,
+        val sortAt: LocalDateTime,
+        val reportId: UUID,
+        val workTypeOrdinal: Int,
+    )
 
-private fun CycleReportStatistics.summary(workType: WorkType) = when (workType) {
-    WorkType.PLANTING -> planting.recordCount to planting.lastWorkedOn
-    WorkType.WATERING -> watering.recordCount to watering.lastWorkedOn
-    WorkType.FERTILIZING -> fertilizing.recordCount to fertilizing.lastWorkedOn
-    WorkType.PEST_CONTROL -> pestControl.recordCount to pestControl.lastWorkedOn
-    WorkType.WEEDING -> weeding.recordCount to weeding.lastWorkedOn
-    WorkType.PRUNING -> pruning.recordCount to pruning.lastWorkedOn
-    WorkType.HARVEST -> harvest.recordCount to harvest.lastWorkedOn
-    WorkType.ETC -> etc.recordCount to etc.lastWorkedOn
+    private val workItemSortKeyComparator =
+        compareByDescending<WorkItemSortKey> { it.lastWorkedOn ?: LocalDate.MIN }
+            .thenBy { it.statusRank }
+            .thenByDescending { it.sortAt }
+            .thenByDescending { it.reportId }
+            .thenBy { it.workTypeOrdinal }
+
+    private val workItemComparator =
+        Comparator<FarmingCycleReportQueryRepository.WorkItem> { left, right ->
+            workItemSortKeyComparator.compare(left.sortKey(), right.sortKey())
+        }
 }

@@ -4,6 +4,7 @@ import com.chamchamcham.application.coaching.common.RagProperties
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.config.OpenClawProperties
+import com.chamchamcham.config.SpringAiRagConfig
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.sun.net.httpserver.HttpServer
 import org.assertj.core.api.Assertions.assertThat
@@ -53,7 +54,7 @@ class OpenClawChatModelTest {
                 .isEqualTo("\${OPENCLAW_CONNECT_TIMEOUT_MILLIS:3000}")
             assertThat(properties.getProperty("openclaw.read-timeout-millis"))
                 .describedAs("%s OpenClaw read timeout", profile)
-                .isEqualTo("\${OPENCLAW_READ_TIMEOUT_MILLIS:30000}")
+                .isEqualTo("\${OPENCLAW_READ_TIMEOUT_MILLIS:60000}")
         }
     }
 
@@ -66,7 +67,7 @@ class OpenClawChatModelTest {
 
         assertThat(values)
             .containsEntry("connectTimeoutMillis", 3_000)
-            .containsEntry("readTimeoutMillis", 30_000)
+            .containsEntry("readTimeoutMillis", 60_000)
     }
 
     @Test
@@ -152,6 +153,49 @@ class OpenClawChatModelTest {
         }
     }
 
+    @Test
+    fun `entity appends JSON schema instructions for OpenClaw`() {
+        val requestBody = AtomicReference<String>()
+        val server = HttpServer.create(InetSocketAddress("127.0.0.1", 0), 0).apply {
+            createContext("/v1/chat/completions") { exchange ->
+                requestBody.set(exchange.requestBody.bufferedReader().use { it.readText() })
+                val body = """{"choices":[{"message":{"role":"assistant","content":"{\"summary\":\"ok\"}"}}]}"""
+                    .toByteArray()
+                exchange.responseHeaders.add(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
+                exchange.sendResponseHeaders(200, body.size.toLong())
+                exchange.responseBody.use { it.write(body) }
+            }
+            start()
+        }
+
+        try {
+            contextRunner
+                .withPropertyValues(
+                    "openclaw.base-url=http://127.0.0.1:${server.address.port}",
+                    "openclaw.api-key=test-key",
+                    "openclaw.agent-id=agent-1"
+                )
+                .run { context ->
+                    val model = context.getBean(OpenClawChatModel::class.java)
+                    val chatClient = SpringAiRagConfig().chatClient(model)
+
+                    assertThat(
+                        chatClient.prompt()
+                            .user("안녕")
+                            .call()
+                            .entity(NativeStructuredResponse::class.java)
+                    ).isEqualTo(NativeStructuredResponse(summary = "ok"))
+                }
+
+            val json = jacksonObjectMapper().readTree(requestBody.get())
+            assertThat(json.has("response_format")).isFalse()
+            assertThat(json.at("/messages/0/content").asText())
+                .contains("안녕", "JSON Schema", "summary", "string")
+        } finally {
+            server.stop(0)
+        }
+    }
+
     private val contextRunner = ApplicationContextRunner()
         .withUserConfiguration(OpenClawTestConfiguration::class.java)
         .withBean(RestClient.Builder::class.java, { RestClient.builder() })
@@ -164,4 +208,8 @@ class OpenClawChatModelTest {
     @Configuration(proxyBeanMethods = false)
     @EnableConfigurationProperties(OpenClawProperties::class)
     private class OpenClawTestConfiguration
+
+    private data class NativeStructuredResponse(
+        val summary: String
+    )
 }

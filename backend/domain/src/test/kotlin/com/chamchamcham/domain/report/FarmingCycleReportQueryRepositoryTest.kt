@@ -212,8 +212,9 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
             ),
         )
         val active = persistActive(
+            startsAt = day(10),
             statistics = CycleReportStatistics(
-                watering = WateringStatistics(recordCount = 4, lastWorkedOn = day(52).toLocalDate()),
+                watering = WateringStatistics(recordCount = 4, lastWorkedOn = day(20).toLocalDate()),
             ),
         )
         persistSuperseded(endedAt = day(60))
@@ -224,35 +225,24 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
             workCondition(farmId = null, cropId = null, size = 20),
         ).rows
 
-        assertThat(all.first().reportId).isEqualTo(active.id)
-        assertThat(all.first().status).isEqualTo(FarmingCycleReportStatus.ACTIVE)
-        assertThat(all.first().endsAt).isNull()
-        assertThat(all.first().finalHarvestRecordId).isNull()
         assertThat(all.map { it.reportId to it.workType })
-            .containsExactlyElementsOf(
-                all.sortedWith(
-                    compareBy<FarmingCycleReportQueryRepository.WorkItem> {
-                        if (it.status == FarmingCycleReportStatus.ACTIVE) 0 else 1
-                    }
-                        .thenByDescending { it.sortAt }
-                        .thenByDescending { it.reportId }
-                        .thenBy { it.workType.ordinal },
-                ).map { it.reportId to it.workType },
-            )
-        assertThat(all.map { it.reportId to it.workType })
-            .containsExactlyInAnyOrder(
-                requireNotNull(latest.id) to WorkType.WATERING,
+            .containsExactly(
                 requireNotNull(latest.id) to WorkType.HARVEST,
-                requireNotNull(sameEndOtherScope.id) to WorkType.PLANTING,
+                requireNotNull(latest.id) to WorkType.WATERING,
                 requireNotNull(active.id) to WorkType.WATERING,
+                requireNotNull(sameEndOtherScope.id) to WorkType.PLANTING,
             )
+        val activeItem = all.first { it.reportId == active.id }
+        assertThat(activeItem.status).isEqualTo(FarmingCycleReportStatus.ACTIVE)
+        assertThat(activeItem.endsAt).isNull()
+        assertThat(activeItem.finalHarvestRecordId).isNull()
         assertThat(all.map { it.recordCount }).containsExactlyInAnyOrder(2, 1, 3, 4)
         assertThat(all.map { it.lastWorkedOn })
             .containsExactlyInAnyOrder(
                 day(38).toLocalDate(),
                 day(40).toLocalDate(),
                 day(15).toLocalDate(),
-                day(52).toLocalDate(),
+                day(20).toLocalDate(),
             )
 
         assertThat(repository.searchWorkItems(workCondition(farmId = farmId, cropId = null)).rows.map { it.reportId })
@@ -264,6 +254,56 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
                 workCondition(farmId = null, cropId = null, workType = WorkType.PLANTING),
             ).rows.map { it.reportId },
         ).containsExactly(sameEndOtherScope.id)
+    }
+
+    @Test
+    fun `work items without a last worked date are ordered last`() {
+        val recentWithoutWorkedOn = persistCompleted(
+            endedAt = day(70),
+            statistics = CycleReportStatistics(
+                etc = CommonOnlyStatistics(recordCount = 1, lastWorkedOn = null),
+            ),
+        )
+        val olderWithWorkedOn = persistCompleted(
+            endedAt = day(30),
+            statistics = CycleReportStatistics(
+                watering = WateringStatistics(recordCount = 1, lastWorkedOn = day(20).toLocalDate()),
+            ),
+        )
+        entityManager.flush()
+        entityManager.clear()
+
+        val items = repository.searchWorkItems(workCondition(size = 20)).rows
+
+        assertThat(items.map { it.reportId to it.workType }).containsExactly(
+            requireNotNull(olderWithWorkedOn.id) to WorkType.WATERING,
+            requireNotNull(recentWithoutWorkedOn.id) to WorkType.ETC,
+        )
+    }
+
+    @Test
+    fun `work items on the same date keep active status first`() {
+        val tiedActive = persistActive(
+            startsAt = day(5),
+            statistics = CycleReportStatistics(
+                watering = WateringStatistics(recordCount = 1, lastWorkedOn = day(25).toLocalDate()),
+            ),
+        )
+        val tiedCompleted = persistCompleted(
+            endedAt = day(30),
+            statistics = CycleReportStatistics(
+                watering = WateringStatistics(recordCount = 1, lastWorkedOn = day(25).toLocalDate()),
+            ),
+        )
+        entityManager.flush()
+        entityManager.clear()
+
+        val items = repository.searchWorkItems(workCondition(size = 20)).rows
+
+        assertThat(items.map { it.reportId }).containsExactly(
+            requireNotNull(tiedActive.id),
+            requireNotNull(tiedCompleted.id),
+        )
     }
 
     @Test
@@ -289,6 +329,7 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
         val secondPage = repository.searchWorkItems(
             workCondition(
                 cursor = FarmingCycleReportQueryRepository.WorkItemCursor(
+                    lastWorkedOn = first.lastWorkedOn,
                     status = first.status,
                     sortAt = first.sortAt,
                     reportId = first.reportId,
@@ -299,10 +340,10 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
         ).rows
 
         assertThat(first.reportId).isEqualTo(active.id)
-        assertThat(first.workType).isEqualTo(WorkType.WATERING)
+        assertThat(first.workType).isEqualTo(WorkType.HARVEST)
         assertThat(secondPage.map { it.reportId to it.workType })
             .containsExactly(
-                requireNotNull(active.id) to WorkType.HARVEST,
+                requireNotNull(active.id) to WorkType.WATERING,
                 requireNotNull(completed.id) to WorkType.WATERING,
             )
         assertThat((firstPage + secondPage).map { it.reportId to it.workType }).doesNotHaveDuplicates()

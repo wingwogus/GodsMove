@@ -3,6 +3,7 @@ package com.chamchamcham.application.coaching.reportfeedback.generation
 import com.chamchamcham.application.coaching.common.CoachingTextPolicy
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.WorkType
+import com.chamchamcham.domain.report.Coverage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -31,11 +32,11 @@ class ReportFeedbackPromptBuilderTest {
             .contains("대상 작업 타입 하나만")
             .contains("nextActions")
             .contains("빈 배열")
-            .contains("선택한 작업의 다음 행동은 실행 방법이 드러나게 작성한다.")
+            .contains("nextActions는 다음 작업에서 언제 무엇을 기록하거나 확인할지")
             .contains("summary와 모든 text는 친근한 존댓말로 끝낸다.")
             .contains("comparisons")
             .contains("서버가 계산한 비교값을 그대로 사용하고 다시 계산하지 않는다.")
-            .contains("comparisons에는 변화 사실만")
+            .contains("comparisons는 지난 재배와 달라진 사실만")
             .contains("comparison, strength, improvement, next-action 사이에 같은 내용을 반복하지 않는다.")
             .contains(CoachingTextPolicy.promptInstructions)
             .doesNotContain("다음 사이클 계획")
@@ -49,25 +50,29 @@ class ReportFeedbackPromptBuilderTest {
                 "summary는 20~65자로 작성한다.",
                 "comparisons의 text는 20~65자로 작성한다.",
                 "strengths, improvements, nextActions의 text는 각각 20~65자로 작성한다.",
+                "JSON을 반환하기 전에 공백과 문장부호를 포함한 summary와 모든 text의 글자 수가 20~65자인지 확인한다.",
                 "최소 길이를 맞출 때 의미 없는 표현을 덧붙이지 말고 근거, 판단, 실행 방법을 보강해 다시 쓴다.",
                 "65자를 넘으면 문장을 자르지 말고 핵심 내용을 남겨 다시 쓴다.",
             )
             .doesNotContain(
                 "comparisons, strengths, improvements, nextActions는 근거가 없으면 빈 배열로 응답해도 된다.",
+                "45~55자",
             )
         assertThat(prompt.user)
             .contains("대상 작업: 물 주기")
             .contains("기록 횟수: 4회")
             .contains("평균 작업 간격: 3.5일")
             .contains("물을 준 방법: 호스로 조금씩 물을 줌")
-            .contains("직전 기록 횟수: 3회")
+            .contains("지난 재배 기록 횟수: 3회")
             .contains("record:$recordId")
             .contains("report:$currentReportId")
             .contains("report:$previousReportId")
-            .contains("직전보다 기록 횟수가 1회 늘었고 변화율은 33.33퍼센트")
+            .contains("지난 재배보다 기록 횟수가 1회 늘었어요. 변화율은 33퍼센트예요.")
             .contains("document-1")
             .contains("황기 관수 기술", "관수 후 토양 수분을 확인한다.")
             .doesNotContain(
+                "직전",
+                "33.33퍼센트",
                 "WATERING",
                 "recordCount",
                 "averageIntervalDays",
@@ -80,6 +85,99 @@ class ReportFeedbackPromptBuilderTest {
             )
             .doesNotContain("FERTILIZING")
             .doesNotContain("수확량")
+    }
+
+    @Test
+    fun `prompt defines friendly and distinct roles for every public section`() {
+        val prompt = ReportFeedbackPromptBuilder().build(context(), emptyList())
+
+        assertThat(prompt.system).contains(
+            "summary는 이번 재배에서 확인한 핵심을 작업과 기록 중심으로 균형 있게 요약한다.",
+            "comparisons는 지난 재배와 달라진 사실만 설명하고 평가나 권고를 넣지 않는다.",
+            "strengths는 근거에서 확인한 잘한 행동과 그 행동이 도움이 된 이유를 함께 설명한다.",
+            "improvements는 부족한 점, 그 점이 판단이나 관리에 미친 영향, 앞으로 보완할 방향을 함께 설명한다.",
+            "자료가 부족해도 판단이 어렵거나 해석이 제한됐다는 설명으로 끝내지 않고, 다음에 함께 남길 기록 항목을 안내한다.",
+            "nextActions는 다음 작업에서 언제 무엇을 기록하거나 확인할지 실행 가능한 한 가지 행동으로 작성한다.",
+            "사용자에게 내부 보고서나 시스템을 설명하지 말고 농부가 남긴 작업과 기록을 먼저 말한다.",
+            "공식 기술 문서를 근거로 사용해도 문서를 문장의 주어로 내세우지 않는다.",
+            "다음 개선점 예시는 형식만 참고하고 내용을 복사하지 않는다.",
+            "나쁜 예: \"정보가 없어 해석이 제한됐어요.\"",
+            "좋은 예: \"기록에 필요한 정보가 빠져 판단하기 어려웠어요. 다음에는 빠진 정보도 함께 기록해 보세요.\"",
+            "summary, comparisons, strengths는 \"~했어요.\"처럼 회고형 존댓말로 작성한다.",
+            "improvements는 부족한 점을 부드럽게 설명하고 보완 방향은 \"~해 보세요.\"처럼 제안한다.",
+            "nextActions는 \"~하세요.\"처럼 분명한 행동형 존댓말로 작성한다.",
+        )
+    }
+
+    @Test
+    fun `comparison percentage uses half up rounding without decimals`() {
+        listOf(
+            BigDecimal("33.33") to "33",
+            BigDecimal("33.50") to "34",
+            BigDecimal("0.49") to "0",
+        ).forEach { (rawPercentage, expectedPercentage) ->
+            val base = context()
+            val comparison = base.comparisons.single().copy(relativeChangePct = rawPercentage)
+
+            val prompt = ReportFeedbackPromptBuilder().build(
+                base.copy(comparisons = listOf(comparison)),
+                emptyList(),
+            )
+
+            assertThat(prompt.user)
+                .contains("변화율은 ${expectedPercentage}퍼센트예요.")
+                .doesNotContain("변화율은 ${rawPercentage.toPlainString()}퍼센트예요.")
+        }
+    }
+
+    @Test
+    fun `comparison keeps decrease direction while rounding the absolute percentage`() {
+        val base = context()
+        val comparison = base.comparisons.single().copy(
+            difference = BigDecimal("-1"),
+            relativeChangePct = BigDecimal("-12.50"),
+        )
+
+        val prompt = ReportFeedbackPromptBuilder().build(
+            base.copy(comparisons = listOf(comparison)),
+            emptyList(),
+        )
+
+        assertThat(prompt.user)
+            .contains("지난 재배보다 기록 횟수가 1회 줄었어요. 변화율은 13퍼센트예요.")
+    }
+
+    @Test
+    fun `comparison omits unavailable percentage instead of explaining the calculation limit`() {
+        val base = context()
+        val comparison = base.comparisons.single().copy(relativeChangePct = null)
+
+        val prompt = ReportFeedbackPromptBuilder().build(
+            base.copy(comparisons = listOf(comparison)),
+            emptyList(),
+        )
+
+        assertThat(prompt.user)
+            .contains("지난 재배보다 기록 횟수가 1회 늘었어요.")
+            .doesNotContain("변화율")
+    }
+
+    @Test
+    fun `comparison coverage calls the prior period last cultivation`() {
+        val base = context()
+        val comparison = base.comparisons.single().copy(
+            currentCoverage = Coverage(recordedCount = 3, targetCount = 4),
+            previousCoverage = Coverage(recordedCount = 2, targetCount = 3),
+        )
+
+        val prompt = ReportFeedbackPromptBuilder().build(
+            base.copy(comparisons = listOf(comparison)),
+            emptyList(),
+        )
+
+        assertThat(prompt.user)
+            .contains("입력 범위는 이번 3/4건, 지난 재배 2/3건이에요.")
+            .doesNotContain("직전")
     }
 
     @Test
