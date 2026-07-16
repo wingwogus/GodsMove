@@ -35,6 +35,10 @@ final class FarmAddViewModel {
         (try? await cropCatalog.fetchCrops()) ?? []
     }
 
+    func loadCategories() async -> [CropCategory] {
+        (try? await cropCatalog.fetchCategories()) ?? []
+    }
+
     func selectAddress(_ address: JusoAddress) async {
         await location.selectAddress(address)
     }

@@ -28,10 +28,12 @@ struct HomeView: View {
     @State private var path = NavigationPath()
     @State private var showCompose = false
     @Binding private var tabSelection: Int
+    private let tabItems: [AppNavBar.Item]
 
-    init(container: DIContainer, tabSelection: Binding<Int>) {
+    init(container: DIContainer, tabSelection: Binding<Int>, tabItems: [AppNavBar.Item]) {
         self.container = container
         _tabSelection = tabSelection
+        self.tabItems = tabItems
         _viewModel = State(initialValue: HomeViewModel(
             recordRepository: container.makeRecordRepository(),
             communityRepository: container.makeCommunityRepository(),
@@ -71,6 +73,7 @@ struct HomeView: View {
                 }
             }
             .navigationBarHidden(true)
+            .appTabBarDock(items: tabItems, selection: $tabSelection)
             .navigationDestination(for: HomeRoute.self) { route in
                 switch route {
                 case .weatherDetail:

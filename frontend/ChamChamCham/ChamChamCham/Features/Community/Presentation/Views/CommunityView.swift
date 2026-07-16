@@ -14,10 +14,14 @@ struct CommunityView: View {
     @State private var viewModel: CommunityFeedViewModel
     @State private var showCompose = false
     @State private var showCropPicker = false
+    @Binding private var selection: Int
+    private let tabItems: [AppNavBar.Item]
     private let horizontalInset: CGFloat = 20
 
-    init(container: DIContainer) {
+    init(container: DIContainer, selection: Binding<Int>, tabItems: [AppNavBar.Item]) {
         self.container = container
+        _selection = selection
+        self.tabItems = tabItems
         _viewModel = State(
             initialValue: CommunityFeedViewModel(
                 repository: container.makeCommunityRepository(),
@@ -41,6 +45,7 @@ struct CommunityView: View {
                 }
                 writeButton
             }
+            .appTabBarDock(items: tabItems, selection: $selection)
             .navigationBarHidden(true)
             .navigationDestination(for: CommunityPostSummary.self) { post in
                 CommunityDetailView(postId: post.id, container: container)
@@ -52,8 +57,11 @@ struct CommunityView: View {
                 Task { await viewModel.reload() }
             }
         }
-        .sheet(isPresented: $showCropPicker) {
-            CropPickerSheet(loadCrops: viewModel.catalogCrops) { crops in
+        .fullScreenCover(isPresented: $showCropPicker) {
+            CropPickerView(
+                loadCrops: viewModel.catalogCrops,
+                loadCategories: viewModel.catalogCategories
+            ) { crops in
                 Task { await viewModel.addBoards(from: crops) }
             }
         }

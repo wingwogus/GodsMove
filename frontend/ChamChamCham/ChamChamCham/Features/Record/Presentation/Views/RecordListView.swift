@@ -19,30 +19,55 @@ struct RecordListView: View {
     @State private var viewModel: RecordListViewModel
     @State private var selectedTab = 0
     @State private var activeSheet: RecordFilterKind?
-    /// Owned by the shell (`MainTabView`) so the same flag dims both the content region *and* the
-    /// nav bar in one animation transaction — the two scrims read the same value and fade together.
-    @Binding private var isSpeedDialOpen: Bool
+    /// Local to this tab: the speed-dial scrim dims both the content region and the docked nav bar,
+    /// which live in the same view tree (see `body`), so no cross-view binding is needed.
+    @State private var isSpeedDialOpen = false
     @State private var showCompose = false
     @State private var path: [UUID] = []
     @State private var toastMessage: String?
+    @Binding private var selection: Int
+    private let tabItems: [AppNavBar.Item]
     private let horizontalInset: CGFloat = 20
 
     init(
         repository: any RecordRepository,
         mediaUpload: any MediaUploadRepository,
-        isSpeedDialOpen: Binding<Bool>
+        selection: Binding<Int>,
+        tabItems: [AppNavBar.Item]
     ) {
         self.repository = repository
         self.mediaUpload = mediaUpload
-        _isSpeedDialOpen = isSpeedDialOpen
+        _selection = selection
+        self.tabItems = tabItems
         _viewModel = State(initialValue: RecordListViewModel(repository: repository))
     }
 
     var body: some View {
         NavigationStack(path: $path) {
-            recordTabContent
+            VStack(spacing: 0) {
+                recordTabContent
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                dockedNavBar
+            }
         }
         .recordToast(message: $toastMessage)
+    }
+
+    /// The app tab bar docked at the bottom of this tab's stack root. It carries its own speed-dial
+    /// scrim so the dimming reaches over the bar — the content scrim inside `recordTabContent` can't,
+    /// being bounded above it. Because the bar lives inside the `NavigationStack`, a pushed
+    /// `RecordDetailView` slides over it and a pop reveals it (native `hidesBottomBarWhenPushed`).
+    private var dockedNavBar: some View {
+        AppNavBar(items: tabItems, selection: $selection)
+            .background(Color.Background.default.ignoresSafeArea(edges: .bottom))
+            .overlay {
+                if isSpeedDialOpen {
+                    Color.scrim
+                        .ignoresSafeArea(edges: .bottom)
+                        .transition(.opacity)
+                        .onTapGesture { closeSpeedDial() }
+                }
+            }
     }
 
     private var recordTabContent: some View {
@@ -105,7 +130,6 @@ struct RecordListView: View {
             RecordDetailView(recordId: recordId, repository: repository) {
                 Task { await viewModel.reload() }
             }
-            .toolbar(.hidden, for: .tabBar)
         }
     }
 

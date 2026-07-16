@@ -101,6 +101,10 @@ final class CommunityComposeViewModel {
         (try? await cropCatalog.fetchCrops()) ?? []
     }
 
+    func catalogCategories() async -> [CropCategory] {
+        (try? await cropCatalog.fetchCategories()) ?? []
+    }
+
     /// Adds picker-selected crops as chips (de-duped) and selects the first newly added one.
     func addBoards(from crops: [Crop]) {
         guard !crops.isEmpty else { return }

@@ -88,9 +88,11 @@ struct FarmAddView: View {
                 Task { await viewModel.selectAddress(address) }
             }
         }
-        .sheet(isPresented: $isShowingCropPicker) {
-            CropPickerSheet(
+        .fullScreenCover(isPresented: $isShowingCropPicker) {
+            CropPickerView(
                 loadCrops: { await viewModel.loadCrops() },
+                loadCategories: { await viewModel.loadCategories() },
+                initialSelection: viewModel.selectedCrops,
                 onComplete: { crops in viewModel.selectedCrops = crops }
             )
         }

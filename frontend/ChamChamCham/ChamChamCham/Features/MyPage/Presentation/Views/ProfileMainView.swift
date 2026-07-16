@@ -16,9 +16,13 @@ struct ProfileMainView: View {
     @State private var isShowingSettings = false
     @State private var isShowingBoardSheet = false
     @State private var isShowingProfileEdit = false
+    @Binding private var selection: Int
+    private let tabItems: [AppNavBar.Item]
 
-    init(container: DIContainer) {
+    init(container: DIContainer, selection: Binding<Int>, tabItems: [AppNavBar.Item]) {
         self.container = container
+        _selection = selection
+        self.tabItems = tabItems
         _viewModel = State(
             initialValue: ProfileMainViewModel(
                 profileRepository: container.makeMemberProfileRepository(),
@@ -57,6 +61,7 @@ struct ProfileMainView: View {
                 }
             }
             .background(Color.Background.default)
+            .appTabBarDock(items: tabItems, selection: $selection)
             .navigationDestination(for: CommunityPostSummary.self) { post in
                 CommunityDetailView(postId: post.id, container: container)
             }

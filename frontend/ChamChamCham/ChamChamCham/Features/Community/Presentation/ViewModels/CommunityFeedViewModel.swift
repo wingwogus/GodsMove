@@ -49,8 +49,9 @@ final class CommunityFeedViewModel {
 
     func loadBoards() async {
         // Board loading is non-fatal — the feed still works with just the "전체" chip if this fails.
-        guard let serverBoards = try? await repository.fetchBoards() else { return }
-        mergeBoards(serverBoards)
+        guard let fetchedBoards = try? await repository.fetchBoards() else { return }
+        serverBoards = fetchedBoards
+        mergeBoards(fetchedBoards)
     }
 
     func reload() async {
@@ -59,7 +60,7 @@ final class CommunityFeedViewModel {
         defer { isLoading = false }
         do {
             let page = try await repository.fetchPosts(query(cursor: nil))
-            posts = page.items
+            posts = filteredForAllCrops(page.items)
             nextCursor = page.nextCursor
         } catch {
             posts = []
@@ -75,7 +76,7 @@ final class CommunityFeedViewModel {
         defer { isLoadingMore = false }
         do {
             let page = try await repository.fetchPosts(query(cursor: cursor))
-            posts.append(contentsOf: page.items)
+            posts.append(contentsOf: filteredForAllCrops(page.items))
             nextCursor = page.nextCursor
         } catch {
             // Keep what we have; the row can retry on the next scroll trigger.
@@ -104,9 +105,14 @@ final class CommunityFeedViewModel {
 
     // MARK: - Board picker (작물 추가)
 
-    /// Full crop catalog for the "작물 추가" sheet. Empty on failure — the sheet just shows nothing to add.
+    /// Full crop catalog for the "작물 추가" picker. Empty on failure — the picker just shows nothing to add.
     func catalogCrops() async -> [Crop] {
         (try? await cropCatalog.fetchCrops()) ?? []
+    }
+
+    /// Crop categories for the picker's category tabs. Empty on failure — the picker just hides the tabs.
+    func catalogCategories() async -> [CropCategory] {
+        (try? await cropCatalog.fetchCategories()) ?? []
     }
 
     /// Adds crops chosen in the picker as session-local board chips and selects the first one.
@@ -137,6 +143,14 @@ final class CommunityFeedViewModel {
 
     private func query(cursor: String?) -> CommunityPostQuery {
         CommunityPostQuery(cropId: selectedCropId, postType: postType, sort: sort, cursor: cursor)
+    }
+
+    /// "전체" (`selectedCropId == nil`) means every crop registered under 나의 작물, not the whole community —
+    /// the backend has no multi-cropId filter, so restrict to `serverBoards` client-side.
+    private func filteredForAllCrops(_ items: [CommunityPostSummary]) -> [CommunityPostSummary] {
+        guard selectedCropId == nil else { return items }
+        let myCropIds = Set(serverBoards.map(\.cropId))
+        return items.filter { myCropIds.contains($0.cropId) }
     }
 
     /// Merges server + session-added boards, de-duplicating by cropId and preserving insertion order.
