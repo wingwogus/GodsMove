@@ -11,31 +11,37 @@ import SwiftUI
 /// filter chip row, a cursor-paged record list, and the floating "+" record button. The bottom nav bar is
 /// provided by `MainTabView`, not here.
 ///
-/// Scope: this is the read-only list from the captured screens. The 리포트 tab, search/notification icons, and
-/// the "+" compose flow are not captured yet, so they render as placeholders / inert affordances.
+/// The record and report tabs share this navigation shell while keeping their repositories and state separate.
 struct RecordListView: View {
     private let repository: any RecordRepository
+    private let reportRepository: any ReportRepository
     private let mediaUpload: any MediaUploadRepository
     @State private var viewModel: RecordListViewModel
+    @State private var reportViewModel: ReportListViewModel
     @State private var selectedTab = 0
     @State private var activeSheet: RecordFilterKind?
     /// Owned by the shell (`MainTabView`) so the same flag dims both the content region *and* the
     /// nav bar in one animation transaction — the two scrims read the same value and fade together.
     @Binding private var isSpeedDialOpen: Bool
     @State private var showCompose = false
-    @State private var path: [UUID] = []
+    @State private var path = NavigationPath()
     @State private var toastMessage: String?
     private let horizontalInset: CGFloat = 20
 
     init(
         repository: any RecordRepository,
+        reportRepository: any ReportRepository,
         mediaUpload: any MediaUploadRepository,
         isSpeedDialOpen: Binding<Bool>
     ) {
         self.repository = repository
+        self.reportRepository = reportRepository
         self.mediaUpload = mediaUpload
         _isSpeedDialOpen = isSpeedDialOpen
         _viewModel = State(initialValue: RecordListViewModel(repository: repository))
+        _reportViewModel = State(initialValue: ReportListViewModel(repository: reportRepository) {
+            try await repository.fetchFarmCrops()
+        })
     }
 
     var body: some View {
@@ -60,7 +66,7 @@ struct RecordListView: View {
                     filterChipRow
                     recordList
                 } else {
-                    reportPlaceholder
+                    ReportListView(viewModel: reportViewModel)
                 }
             }
             if selectedTab == 0 {
@@ -106,6 +112,12 @@ struct RecordListView: View {
                 Task { await viewModel.reload() }
             }
             .toolbar(.hidden, for: .tabBar)
+        }
+        .navigationDestination(for: ReportRoute.self) { route in
+            switch route {
+            case let .detail(key), let .recordHistory(key):
+                ReportRouteLoadingView(key: key)
+            }
         }
     }
 
@@ -194,20 +206,6 @@ struct RecordListView: View {
         .padding(.top, Spacing.xl * 2)
     }
 
-    // MARK: - 리포트 tab (not captured yet)
-
-    private var reportPlaceholder: some View {
-        VStack(spacing: Spacing.md) {
-            Image(systemName: "chart.bar.doc.horizontal")
-                .font(.system(size: 40))
-                .foregroundStyle(Color.Icon.disabled)
-            Text("리포트는 준비 중이에요.")
-                .appTypography(.bodyMedium)
-                .foregroundStyle(Color.Text.muted)
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
     // MARK: - Floating record button + 스피드다이얼
 
     /// FAB 탭 시 딤(#1a1a1a@64%) + 음성/텍스트/닫기 스피드다이얼. (Figma `기록 버튼 탭 시`)
@@ -268,6 +266,26 @@ struct RecordListView: View {
             .buttonStyle(.plain)
         }
         .transition(.move(edge: .trailing).combined(with: .opacity))
+    }
+}
+
+/// Replaced by the full detail and history destinations in the next report implementation slice.
+private struct ReportRouteLoadingView: View {
+    let key: WorkReportKey
+
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        VStack(spacing: 0) {
+            AppTopAppBar(
+                title: key.workType.label,
+                isDetail: true,
+                leading: .init(.asset("chevron_backward")) { dismiss() }
+            )
+            ProgressView("리포트를 불러오고 있어요.")
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+        .toolbar(.hidden, for: .navigationBar)
     }
 }
 

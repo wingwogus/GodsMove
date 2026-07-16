@@ -81,6 +81,7 @@ struct MainTabView: View {
         case 1:
             RecordListView(
                 repository: container.makeRecordRepository(),
+                reportRepository: container.makeReportRepository(),
                 mediaUpload: container.makeMediaUploadRepository(),
                 isSpeedDialOpen: $isSpeedDialOpen
             )

@@ -102,6 +102,39 @@ enum ReportFixtures {
         ReportFeedbackListResponseDTO(reportId: reportId, feedbacks: feedbacks)
     }
 
+    static func summary(
+        reportId: UUID = reportId,
+        workType: WorkType = .planting,
+        cropName: String = "황기"
+    ) -> FarmingWorkReportSummary {
+        item(reportId: reportId, workType: workType, cropName: cropName).toDomain()!
+    }
+
+    static func domainPage(
+        items: [FarmingWorkReportSummary] = [summary()],
+        nextCursor: String? = nil
+    ) -> FarmingWorkReportPage {
+        FarmingWorkReportPage(items: items, nextCursor: nextCursor)
+    }
+
+    static func farms() -> [FarmWithCrops] {
+        [
+            FarmWithCrops(
+                farmId: farmId,
+                farmName: "북쪽 밭",
+                crops: [ActiveCrop(id: cropId, name: "황기")]
+            ),
+            FarmWithCrops(
+                farmId: UUID(uuidString: "44444444-4444-4444-4444-444444444444")!,
+                farmName: "남쪽 밭",
+                crops: [ActiveCrop(
+                    id: UUID(uuidString: "55555555-5555-5555-5555-555555555555")!,
+                    name: "당귀"
+                )]
+            ),
+        ]
+    }
+
     private static let commonStatistics = ReportCommonStatisticsResponseDTO(
         recordCount: 2,
         firstWorkedOn: "2026-04-01",
@@ -179,5 +212,51 @@ final class StubReportRemoteDataSource: ReportRemoteDataSource {
         case let .success(value): return value
         case let .failure(error): throw error
         }
+    }
+}
+
+struct ReportFetchCall: Equatable {
+    let filter: ReportFilter
+    let cursor: String?
+    let size: Int
+}
+
+@MainActor
+final class StubReportRepository: ReportRepository {
+    typealias FetchHandler = @MainActor (
+        ReportFilter,
+        String?,
+        Int
+    ) async throws -> ReportResource<FarmingWorkReportPage>
+
+    var fetchHandler: FetchHandler
+    private(set) var fetchCalls: [ReportFetchCall] = []
+
+    init(fetchHandler: @escaping FetchHandler) {
+        self.fetchHandler = fetchHandler
+    }
+
+    func fetchReports(
+        filter: ReportFilter,
+        cursor: String?,
+        size: Int
+    ) async throws -> ReportResource<FarmingWorkReportPage> {
+        fetchCalls.append(ReportFetchCall(filter: filter, cursor: cursor, size: size))
+        return try await fetchHandler(filter, cursor, size)
+    }
+
+    func fetchDetail(_ key: WorkReportKey) async throws -> ReportResource<FarmingWorkReportDetail> {
+        throw APIError.network(URLError(.unknown))
+    }
+
+    func fetchFeedback(
+        reportId: UUID,
+        workType: WorkType
+    ) async throws -> ReportResource<ReportFeedbackItem?> {
+        throw APIError.network(URLError(.unknown))
+    }
+
+    func regenerate(_ key: WorkReportKey) async throws -> ReportFeedbackItem {
+        throw APIError.network(URLError(.unknown))
     }
 }
