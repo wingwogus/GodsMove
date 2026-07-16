@@ -37,7 +37,7 @@ struct CommunityView: View {
                     AppTopAppBar(
                         title: "정보 공유",
                         showBorder: false,
-                        trailing: [.init(.asset("search")), .init(.asset("notifications"))]
+                        trailing: [.init(.asset("search"))]
                     )
                     postTypeTabs
                     cropChipRow

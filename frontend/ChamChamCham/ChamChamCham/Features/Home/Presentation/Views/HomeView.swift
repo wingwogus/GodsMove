@@ -48,7 +48,7 @@ struct HomeView: View {
                     title: "홈",
                     background: .subtle,
                     showBorder: false,
-                    trailing: [.init(.asset("search")), .init(.asset("notifications"))]
+                    trailing: [.init(.asset("search"))]
                 )
                 ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.xl) {

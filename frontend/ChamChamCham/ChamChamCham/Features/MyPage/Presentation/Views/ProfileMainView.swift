@@ -37,8 +37,7 @@ struct ProfileMainView: View {
                 AppTopAppBar(
                     title: "나의 프로필",
                     trailing: [
-                        .init(.asset("settings")) { isShowingSettings = true },
-                        .init(.asset("notifications")) {} // 알림: 이번 범위 제외
+                        .init(.asset("settings")) { isShowingSettings = true }
                     ]
                 )
 
@@ -70,7 +69,7 @@ struct ProfileMainView: View {
         .onChange(of: viewModel.selectedTabIndex) { _, _ in
             Task { await viewModel.onTabChanged() }
         }
-        .sheet(isPresented: $isShowingSettings) {
+        .fullScreenCover(isPresented: $isShowingSettings) {
             SettingsView(authRepository: container.makeAuthRepository())
         }
         .sheet(isPresented: $isShowingBoardSheet) {

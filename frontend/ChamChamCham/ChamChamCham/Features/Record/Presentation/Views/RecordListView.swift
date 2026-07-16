@@ -76,7 +76,7 @@ struct RecordListView: View {
                 AppTopAppBar(
                     title: "영농 기록",
                     showBorder: false,
-                    trailing: [.init(.asset("search")), .init(.asset("notifications"))]
+                    trailing: [.init(.asset("search"))]
                 )
                 AppTabBar(titles: ["기록", "리포트"], selection: $selectedTab)
                     .frame(height: 56)
