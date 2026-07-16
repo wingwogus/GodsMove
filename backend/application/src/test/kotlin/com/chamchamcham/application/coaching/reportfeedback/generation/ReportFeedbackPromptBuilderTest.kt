@@ -3,6 +3,7 @@ package com.chamchamcham.application.coaching.reportfeedback.generation
 import com.chamchamcham.application.coaching.common.CoachingTextPolicy
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.WorkType
+import com.chamchamcham.domain.report.Coverage
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import java.math.BigDecimal
@@ -60,14 +61,16 @@ class ReportFeedbackPromptBuilderTest {
             .contains("기록 횟수: 4회")
             .contains("평균 작업 간격: 3.5일")
             .contains("물을 준 방법: 호스로 조금씩 물을 줌")
-            .contains("직전 기록 횟수: 3회")
+            .contains("지난 재배 기록 횟수: 3회")
             .contains("record:$recordId")
             .contains("report:$currentReportId")
             .contains("report:$previousReportId")
-            .contains("직전보다 기록 횟수가 1회 늘었고 변화율은 33.33퍼센트")
+            .contains("지난 재배보다 기록 횟수가 1회 늘었어요. 변화율은 33퍼센트예요.")
             .contains("document-1")
             .contains("황기 관수 기술", "관수 후 토양 수분을 확인한다.")
             .doesNotContain(
+                "직전",
+                "33.33퍼센트",
                 "WATERING",
                 "recordCount",
                 "averageIntervalDays",
@@ -80,6 +83,77 @@ class ReportFeedbackPromptBuilderTest {
             )
             .doesNotContain("FERTILIZING")
             .doesNotContain("수확량")
+    }
+
+    @Test
+    fun `comparison percentage uses half up rounding without decimals`() {
+        listOf(
+            BigDecimal("33.33") to "33",
+            BigDecimal("33.50") to "34",
+            BigDecimal("0.49") to "0",
+        ).forEach { (rawPercentage, expectedPercentage) ->
+            val base = context()
+            val comparison = base.comparisons.single().copy(relativeChangePct = rawPercentage)
+
+            val prompt = ReportFeedbackPromptBuilder().build(
+                base.copy(comparisons = listOf(comparison)),
+                emptyList(),
+            )
+
+            assertThat(prompt.user)
+                .contains("변화율은 ${expectedPercentage}퍼센트예요.")
+                .doesNotContain("변화율은 ${rawPercentage.toPlainString()}퍼센트예요.")
+        }
+    }
+
+    @Test
+    fun `comparison keeps decrease direction while rounding the absolute percentage`() {
+        val base = context()
+        val comparison = base.comparisons.single().copy(
+            difference = BigDecimal("-1"),
+            relativeChangePct = BigDecimal("-12.50"),
+        )
+
+        val prompt = ReportFeedbackPromptBuilder().build(
+            base.copy(comparisons = listOf(comparison)),
+            emptyList(),
+        )
+
+        assertThat(prompt.user)
+            .contains("지난 재배보다 기록 횟수가 1회 줄었어요. 변화율은 13퍼센트예요.")
+    }
+
+    @Test
+    fun `comparison omits unavailable percentage instead of explaining the calculation limit`() {
+        val base = context()
+        val comparison = base.comparisons.single().copy(relativeChangePct = null)
+
+        val prompt = ReportFeedbackPromptBuilder().build(
+            base.copy(comparisons = listOf(comparison)),
+            emptyList(),
+        )
+
+        assertThat(prompt.user)
+            .contains("지난 재배보다 기록 횟수가 1회 늘었어요.")
+            .doesNotContain("변화율")
+    }
+
+    @Test
+    fun `comparison coverage calls the prior period last cultivation`() {
+        val base = context()
+        val comparison = base.comparisons.single().copy(
+            currentCoverage = Coverage(recordedCount = 3, targetCount = 4),
+            previousCoverage = Coverage(recordedCount = 2, targetCount = 3),
+        )
+
+        val prompt = ReportFeedbackPromptBuilder().build(
+            base.copy(comparisons = listOf(comparison)),
+            emptyList(),
+        )
+
+        assertThat(prompt.user)
+            .contains("입력 범위는 이번 3/4건, 지난 재배 2/3건이에요.")
+            .doesNotContain("직전")
     }
 
     @Test

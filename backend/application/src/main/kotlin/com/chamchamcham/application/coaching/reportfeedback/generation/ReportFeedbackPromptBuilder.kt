@@ -12,6 +12,7 @@ import com.chamchamcham.domain.farming.PropagationMethod
 import com.chamchamcham.domain.farming.WeedingMethod
 import com.chamchamcham.domain.farming.WorkType
 import org.springframework.stereotype.Component
+import java.math.RoundingMode
 
 @Component
 class ReportFeedbackPromptBuilder {
@@ -24,7 +25,7 @@ class ReportFeedbackPromptBuilder {
         val allowedEvidenceRefs = buildList {
             add("- report:${context.report.id} : 현재 완료 리포트")
             context.records.forEach { add("- record:${it.id} : 대상 영농기록") }
-            context.previousReport?.let { add("- report:${it.id} : 직전 완료 리포트") }
+            context.previousReport?.let { add("- report:${it.id} : 지난 재배 리포트") }
             evidence.forEach { add("- ${it.id} : ${it.title}") }
         }.joinToString("\n")
 
@@ -41,7 +42,7 @@ class ReportFeedbackPromptBuilder {
                 formatStatistics(context.workType, context.report.statistics)
                     .forEach { appendLine("- $it") }
                 appendLine(formatPreviousReport(context))
-                appendLine("서버가 계산한 직전 동일 작업 비교:")
+                appendLine("서버가 계산한 지난 재배의 동일 작업 비교:")
                 if (context.comparisons.isEmpty()) {
                     appendLine("없음")
                 } else {
@@ -86,13 +87,13 @@ class ReportFeedbackPromptBuilder {
     }
 
     private fun formatPreviousReport(context: ReportFeedbackContext): String {
-        val previous = context.previousReport ?: return "직전 완료 리포트 없음"
+        val previous = context.previousReport ?: return "지난 재배 리포트 없음"
         return buildString {
             appendLine(
-                "직전 완료 리포트(report:${previous.id}): " +
+                "지난 재배 리포트(report:${previous.id}): " +
                     "${previous.startsAt}~${previous.endsAt}",
             )
-            formatStatistics(context.workType, previous.statistics, prefix = "직전 ")
+            formatStatistics(context.workType, previous.statistics, prefix = "지난 재배 ")
                 .forEach { appendLine("- $it") }
         }.trim()
     }
@@ -101,22 +102,25 @@ class ReportFeedbackPromptBuilder {
         val unit = comparison.unit.unitText() ?: comparison.unit
         val difference = comparison.difference
         val direction = when {
-            difference.signum() > 0 -> "${difference.abs().toPlainString()}$unit 늘었고"
-            difference.signum() < 0 -> "${difference.abs().toPlainString()}$unit 줄었고"
-            else -> "변화가 없고"
+            difference.signum() > 0 -> "${difference.abs().toPlainString()}$unit 늘었어요."
+            difference.signum() < 0 -> "${difference.abs().toPlainString()}$unit 줄었어요."
+            else -> "변화가 없어요."
         }
         val relative = comparison.relativeChangePct?.let {
-            " 변화율은 ${it.abs().toPlainString()}퍼센트예요."
-        } ?: " 변화율은 계산하지 않았어요."
+            val rounded = it.abs().setScale(0, RoundingMode.HALF_UP).toPlainString()
+            " 변화율은 ${rounded}퍼센트예요."
+        }.orEmpty()
         val coverage = formatCoverage(comparison)
-        return "직전보다 ${comparison.metricLabel}${comparison.metricLabel.subjectParticle()} $direction$relative$coverage"
+        return "지난 재배보다 " +
+            "${comparison.metricLabel}${comparison.metricLabel.subjectParticle()} " +
+            "$direction$relative$coverage"
     }
 
     private fun formatCoverage(comparison: ReportFeedbackComparison): String {
         val current = comparison.currentCoverage ?: return ""
         val previous = comparison.previousCoverage ?: return ""
         return " 입력 범위는 이번 ${current.recordedCount}/${current.targetCount}건, " +
-            "직전 ${previous.recordedCount}/${previous.targetCount}건이에요."
+            "지난 재배 ${previous.recordedCount}/${previous.targetCount}건이에요."
     }
 
     private fun String.subjectParticle(): String {
