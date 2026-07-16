@@ -38,15 +38,19 @@ class KmaMidTermForecastAdapter(
             linkedMapOf("regId" to station.taRegId, "tmFc" to tmFc, "numOfRows" to "10"),
             JsonNode::class.java
         )
-        val landItems = kmaApiClient.getItems(
-            properties.baseUrl.midFcst,
-            "getMidLandFcst",
-            linkedMapOf("regId" to station.landRegId, "tmFc" to tmFc, "numOfRows" to "10"),
-            JsonNode::class.java
-        )
+        // 기온과 육상은 지역 체계가 다르다. 기온은 시/군 지점코드를 그대로 쓰지만, 육상은 광역
+        // 구역코드 10개만 받으므로 taRegId에서 계산한다(자세한 근거는 MidTermLandRegion).
+        val landRegId = MidTermLandRegion.of(station.taRegId)
+        val landNode = landRegId?.let {
+            kmaApiClient.getItems(
+                properties.baseUrl.midFcst,
+                "getMidLandFcst",
+                linkedMapOf("regId" to it, "tmFc" to tmFc, "numOfRows" to "10"),
+                JsonNode::class.java
+            ).firstOrNull()
+        }
 
         val taNode = taItems.firstOrNull()
-        val landNode = landItems.firstOrNull()
 
         val minTemperature = taNode?.get("taMin$n")?.asText()?.toIntOrNull()
         val maxTemperature = taNode?.get("taMax$n")?.asText()?.toIntOrNull()

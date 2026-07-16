@@ -17,8 +17,8 @@ import java.time.ZoneId
 
 /**
  * n(= tmFc 날짜 기준 date까지의 일수) 경계를 계획(pure-sauteeing-perlis.md) §1 실측대로 검증한다.
- * 서울 좌표는 NearestMidFcstStationResolver가 taRegId=11B10101/landRegId=11B10000("서울")로
- * 최근접 매칭한다.
+ * 서울 좌표는 NearestMidFcstStationResolver가 taRegId=11B10101("서울")로 잡고,
+ * MidTermLandRegion이 거기서 육상 구역코드 11B00000(서울.인천.경기)을 계산한다.
  */
 class KmaMidTermForecastAdapterTest {
     private lateinit var server: MockRestServiceServer
@@ -46,7 +46,7 @@ class KmaMidTermForecastAdapterTest {
 
         server.expect(requestTo(taUri("11B10101", "202607150600")))
             .andRespond(withJson(itemsBody(mapOf("taMin4" to "24", "taMax4" to "30"))))
-        server.expect(requestTo(landUri("11B10000", "202607150600")))
+        server.expect(requestTo(landUri("11B00000", "202607150600")))
             .andRespond(withJson(itemsBody(mapOf("wf4Pm" to "흐리고 비"))))
 
         val result = adapter.fetch(seoulLocation, date)
@@ -65,7 +65,7 @@ class KmaMidTermForecastAdapterTest {
 
         server.expect(requestTo(taUri("11B10101", "202607141800")))
             .andRespond(withJson(itemsBody(mapOf("taMin5" to "24", "taMax5" to "30"))))
-        server.expect(requestTo(landUri("11B10000", "202607141800")))
+        server.expect(requestTo(landUri("11B00000", "202607141800")))
             .andRespond(withJson(itemsBody(mapOf("wf5Pm" to "흐림"))))
 
         val result = adapter.fetch(seoulLocation, date)
@@ -84,7 +84,7 @@ class KmaMidTermForecastAdapterTest {
 
         server.expect(requestTo(taUri("11B10101", "202607150600")))
             .andRespond(withJson(itemsBody(emptyMap())))
-        server.expect(requestTo(landUri("11B10000", "202607150600")))
+        server.expect(requestTo(landUri("11B00000", "202607150600")))
             .andRespond(withJson(itemsBody(emptyMap())))
 
         val result = adapter.fetch(seoulLocation, date)
@@ -112,7 +112,7 @@ class KmaMidTermForecastAdapterTest {
 
         server.expect(requestTo(taUri("11B10101", "202607150600")))
             .andRespond(withJson(itemsBody(mapOf("taMin4" to "20", "taMax4" to "26"))))
-        server.expect(requestTo(landUri("11B10000", "202607150600")))
+        server.expect(requestTo(landUri("11B00000", "202607150600")))
             .andRespond(withJson(itemsBody(mapOf("wf4Am" to "맑음"))))
 
         val result = adapter.fetch(seoulLocation, date)
@@ -129,7 +129,7 @@ class KmaMidTermForecastAdapterTest {
 
         server.expect(requestTo(taUri("11B10101", "202607150600")))
             .andRespond(withJson(itemsBody(emptyMap())))
-        server.expect(requestTo(landUri("11B10000", "202607150600")))
+        server.expect(requestTo(landUri("11B00000", "202607150600")))
             .andRespond(withJson(itemsBody(emptyMap())))
 
         val result = adapter.fetch(seoulLocation, date)
@@ -139,15 +139,15 @@ class KmaMidTermForecastAdapterTest {
     }
 
     @Test
-    fun `getMidTa는 taRegId를, getMidLandFcst는 landRegId를 사용한다`() {
+    fun `getMidTa는 지점코드를, getMidLandFcst는 규칙으로 계산한 광역 구역코드를 사용한다`() {
         val adapter = adapterAt(LocalDateTime.of(2026, 7, 15, 10, 0)) // tmFc=202607150600
         val date = LocalDate.of(2026, 7, 19) // n=4
 
-        // taRegId(11B10101)와 landRegId(11B10000)가 서로 다른 코드다 — 각 요청이 서로 다른
+        // taRegId(11B10101)와 landRegId(11B00000)가 서로 다른 코드다 — 각 요청이 서로 다른
         // regId 값으로 정확히 매칭되지 않으면 MockRestServiceServer가 미기대 요청으로 실패시킨다.
         server.expect(requestTo(taUri("11B10101", "202607150600")))
             .andRespond(withJson(itemsBody(mapOf("taMin4" to "24", "taMax4" to "30"))))
-        server.expect(requestTo(landUri("11B10000", "202607150600")))
+        server.expect(requestTo(landUri("11B00000", "202607150600")))
             .andRespond(withJson(itemsBody(mapOf("wf4Pm" to "맑음"))))
 
         val result = adapter.fetch(seoulLocation, date)
