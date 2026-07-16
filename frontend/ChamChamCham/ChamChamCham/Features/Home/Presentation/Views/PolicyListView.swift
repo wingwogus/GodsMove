@@ -108,7 +108,7 @@ struct PolicyListView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ScrollView {
-                LazyVStack(spacing: 20) {
+                LazyVStack(spacing: 0) {
                     ForEach(viewModel.items) { item in
                         Button {
                             openExternalLink(for: item)
