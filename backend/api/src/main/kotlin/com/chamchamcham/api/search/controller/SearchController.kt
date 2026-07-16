@@ -5,7 +5,6 @@ import com.chamchamcham.api.search.dto.SearchResponses
 import com.chamchamcham.api.search.dto.SearchSuggestionResponses
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
-import com.chamchamcham.application.search.SearchCategory
 import com.chamchamcham.application.search.SearchQuery
 import com.chamchamcham.application.search.SearchService
 import com.chamchamcham.application.search.SearchSuggestionService
@@ -24,31 +23,58 @@ class SearchController(
     private val searchSuggestionService: SearchSuggestionService,
 ) {
     @GetMapping
-    fun search(
+    fun searchAll(
         @AuthenticationPrincipal memberId: String?,
         @RequestParam(required = false) keyword: String?,
-        @RequestParam(defaultValue = "ALL") category: SearchCategory,
+    ): ResponseEntity<ApiResponse<SearchResponses.SearchAllResponse>> {
+        val result = searchService.searchAll(parseMemberId(memberId), keyword)
+        return ResponseEntity.ok(ApiResponse.ok(SearchResponses.SearchAllResponse.from(result)))
+    }
+
+    @GetMapping("/records")
+    fun searchRecords(
+        @AuthenticationPrincipal memberId: String?,
+        @RequestParam(required = false) keyword: String?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") size: Int,
-    ): ResponseEntity<ApiResponse<*>> {
-        val query = SearchQuery(
-            memberId = parseMemberId(memberId),
-            keyword = keyword,
-            cursor = cursor,
-            size = size,
+    ): ResponseEntity<ApiResponse<SearchResponses.SearchRecordPageResponse>> {
+        val result = searchService.searchRecords(
+            SearchQuery(memberId = parseMemberId(memberId), keyword = keyword, cursor = cursor, size = size)
         )
-        return if (category == SearchCategory.ALL) {
-            ResponseEntity.ok(ApiResponse.ok(SearchResponses.SectionsResponse.from(searchService.searchAll(query))))
-        } else {
-            ResponseEntity.ok(ApiResponse.ok(SearchResponses.PageResponse.from(searchService.search(category, query))))
-        }
+        return ResponseEntity.ok(ApiResponse.ok(SearchResponses.SearchRecordPageResponse.from(result)))
+    }
+
+    @GetMapping("/policies")
+    fun searchPolicies(
+        @AuthenticationPrincipal memberId: String?,
+        @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false) cursor: String?,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ResponseEntity<ApiResponse<SearchResponses.SearchPolicyPageResponse>> {
+        val result = searchService.searchPolicies(
+            SearchQuery(memberId = parseMemberId(memberId), keyword = keyword, cursor = cursor, size = size)
+        )
+        return ResponseEntity.ok(ApiResponse.ok(SearchResponses.SearchPolicyPageResponse.from(result)))
+    }
+
+    @GetMapping("/posts")
+    fun searchPosts(
+        @AuthenticationPrincipal memberId: String?,
+        @RequestParam(required = false) keyword: String?,
+        @RequestParam(required = false) cursor: String?,
+        @RequestParam(defaultValue = "20") size: Int,
+    ): ResponseEntity<ApiResponse<SearchResponses.SearchPostPageResponse>> {
+        val result = searchService.searchPosts(
+            SearchQuery(memberId = parseMemberId(memberId), keyword = keyword, cursor = cursor, size = size)
+        )
+        return ResponseEntity.ok(ApiResponse.ok(SearchResponses.SearchPostPageResponse.from(result)))
     }
 
     @GetMapping("/suggestions")
     fun suggestions(
         @AuthenticationPrincipal memberId: String?,
         @RequestParam(required = false) keyword: String?,
-    ): ResponseEntity<ApiResponse<*>> {
+    ): ResponseEntity<ApiResponse<SearchSuggestionResponses.SuggestionsResponse>> {
         parseMemberId(memberId)
         return ResponseEntity.ok(
             ApiResponse.ok(SearchSuggestionResponses.SuggestionsResponse.from(searchSuggestionService.suggest(keyword)))
