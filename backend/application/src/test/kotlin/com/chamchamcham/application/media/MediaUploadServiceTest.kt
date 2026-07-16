@@ -150,5 +150,7 @@ class MediaUploadServiceTest {
                 cloudinaryPublicId = "cloud/community/sprout"
             )
         }
+
+        override fun delete(cloudinaryPublicId: String) = Unit
     }
 }

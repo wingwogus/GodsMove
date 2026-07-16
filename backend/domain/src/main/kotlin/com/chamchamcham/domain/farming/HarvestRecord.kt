@@ -13,6 +13,8 @@ import jakarta.persistence.Id
 import jakarta.persistence.JoinColumn
 import jakarta.persistence.OneToOne
 import jakarta.persistence.Table
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import java.math.BigDecimal
 import java.util.UUID
 
@@ -26,6 +28,7 @@ class   HarvestRecord(
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "record_id", nullable = false, unique = true)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val record: FarmingRecord,
 
     @Column(name = "harvest_amount", precision = 18, scale = 4)

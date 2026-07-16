@@ -72,11 +72,15 @@ class CommunityPostQueryRepositoryImpl(
         }
         if (condition.mineOnly) {
             where += "p.author.id = :memberId"
-            params["memberId"] = condition.memberId
+            params["memberId"] = requireNotNull(condition.memberId) {
+                "Member id is required for mine-only search"
+            }
         }
         if (condition.likedOnly) {
             where += "exists (select 1 from CommunityPostLike l where l.post = p and l.member.id = :memberId)"
-            params["memberId"] = condition.memberId
+            params["memberId"] = requireNotNull(condition.memberId) {
+                "Member id is required for liked-only search"
+            }
         }
 
         return where to params
@@ -157,7 +161,11 @@ class CommunityPostQueryRepositoryImpl(
             .mapValues { (_, rows) -> rows.first().uploadedMedia.fileUrl }
     }
 
-    private fun findLikedPostIds(postIds: List<UUID>, memberId: UUID): Set<UUID> {
+    private fun findLikedPostIds(postIds: List<UUID>, memberId: UUID?): Set<UUID> {
+        if (memberId == null) {
+            return emptySet()
+        }
+
         return entityManager.createQuery(
             """
             select l.post.id

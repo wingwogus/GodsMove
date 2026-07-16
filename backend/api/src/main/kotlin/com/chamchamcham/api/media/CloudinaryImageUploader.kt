@@ -28,4 +28,25 @@ class CloudinaryImageUploader(
             throw BusinessException(ErrorCode.MEDIA_UPLOAD_FAILED)
         }
     }
+
+    override fun delete(cloudinaryPublicId: String) {
+        try {
+            val result = cloudinary.uploader().destroy(
+                cloudinaryPublicId,
+                ObjectUtils.asMap(
+                    "resource_type", "image",
+                    "invalidate", true
+                )
+            )["result"] as? String
+
+            when (result) {
+                "ok", "not found" -> Unit
+                else -> throw BusinessException(ErrorCode.MEDIA_DELETE_FAILED)
+            }
+        } catch (exception: BusinessException) {
+            throw exception
+        } catch (exception: Exception) {
+            throw BusinessException(ErrorCode.MEDIA_DELETE_FAILED)
+        }
+    }
 }

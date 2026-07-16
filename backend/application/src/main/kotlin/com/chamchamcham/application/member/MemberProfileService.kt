@@ -16,6 +16,7 @@ import com.chamchamcham.domain.media.UploadedMediaRepository
 import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.util.UUID
@@ -27,7 +28,8 @@ class MemberProfileService(
     private val farmRepository: FarmRepository,
     private val memberCropRepository: MemberCropRepository,
     private val cropRepository: CropRepository,
-    private val uploadedMediaRepository: UploadedMediaRepository
+    private val uploadedMediaRepository: UploadedMediaRepository,
+    private val eventPublisher: ApplicationEventPublisher
 ) {
     @Transactional(readOnly = true)
     fun getMyProfile(memberId: UUID): MemberProfileResult.MyProfile {
@@ -102,6 +104,26 @@ class MemberProfileService(
         }
 
         return getMyProfile(command.memberId)
+    }
+
+    fun withdraw(memberId: UUID) {
+        val member = memberRepository.findByIdForUpdate(memberId)
+            ?: throw BusinessException(ErrorCode.UNAUTHORIZED)
+        val cloudinaryPublicIds = uploadedMediaRepository
+            .findCloudinaryPublicIdsByOwnerId(memberId)
+            .distinct()
+
+        member.updateProfileMedia(null)
+        memberRepository.flush()
+        memberRepository.delete(member)
+        memberRepository.flush()
+
+        eventPublisher.publishEvent(
+            MemberWithdrawalCommitted(
+                memberId = memberId,
+                cloudinaryPublicIds = cloudinaryPublicIds
+            )
+        )
     }
 
     private fun findMember(memberId: UUID): Member =

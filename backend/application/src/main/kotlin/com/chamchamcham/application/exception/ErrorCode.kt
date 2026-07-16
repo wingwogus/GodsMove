@@ -24,6 +24,7 @@ enum class ErrorCode(
     MEDIA_NOT_ATTACHABLE("MEDIA_004", "error.media_not_attachable", 400),
     MEDIA_TOO_LARGE("MEDIA_005", "error.media_too_large", 400),
     MEDIA_UPLOAD_FAILED("MEDIA_006", "error.media_upload_failed", 503),
+    MEDIA_DELETE_FAILED("MEDIA_007", "error.media_delete_failed", 503),
     COMMUNITY_POST_NOT_FOUND("COMMUNITY_001", "error.community_post_not_found", 404),
     COMMUNITY_COMMENT_NOT_FOUND("COMMUNITY_002", "error.community_comment_not_found", 404),
     COMMUNITY_FORBIDDEN("COMMUNITY_003", "error.community_forbidden", 403),

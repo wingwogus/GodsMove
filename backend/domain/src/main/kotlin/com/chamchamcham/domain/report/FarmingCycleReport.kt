@@ -17,6 +17,8 @@ import jakarta.persistence.JoinColumn
 import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.annotations.OnDelete
+import org.hibernate.annotations.OnDeleteAction
 import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 import java.util.UUID
@@ -41,10 +43,12 @@ class FarmingCycleReport private constructor(
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "member_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val member: Member,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "farm_id", nullable = false)
+    @OnDelete(action = OnDeleteAction.CASCADE)
     val farm: Farm,
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -80,6 +84,7 @@ class FarmingCycleReport private constructor(
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "final_harvest_record_id")
+    @OnDelete(action = OnDeleteAction.SET_NULL)
     var finalHarvestRecord: FarmingRecord? = finalHarvestRecord
         private set
 
