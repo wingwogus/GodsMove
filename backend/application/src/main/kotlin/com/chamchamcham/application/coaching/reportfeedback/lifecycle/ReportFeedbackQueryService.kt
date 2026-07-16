@@ -11,6 +11,7 @@ import com.chamchamcham.domain.report.FarmingCycleReportRepository
 import com.chamchamcham.domain.report.FarmingCycleReportStatus
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -27,7 +28,11 @@ class ReportFeedbackQueryService(
             reportId = requireNotNull(report.id),
             feedbacks = feedbackRepository.findAllByReport_IdAndMember_Id(reportId, memberId)
                 .filter { report.statistics.recordCountFor(it.workType) > 0 }
-                .sortedBy { it.workType.ordinal }
+                .sortedWith(
+                    compareByDescending<ReportFeedback> {
+                        report.statistics.lastWorkedOnFor(it.workType) ?: LocalDate.MIN
+                    }.thenBy { it.workType.ordinal },
+                )
                 .map { it.toDetailResult() },
         )
     }

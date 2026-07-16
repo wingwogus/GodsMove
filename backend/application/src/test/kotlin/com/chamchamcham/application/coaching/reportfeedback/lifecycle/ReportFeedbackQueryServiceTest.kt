@@ -34,6 +34,7 @@ import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.Mockito.`when`
 import org.mockito.junit.jupiter.MockitoExtension
 import org.springframework.test.util.ReflectionTestUtils
+import java.time.LocalDate
 import java.time.LocalDateTime
 import java.util.UUID
 
@@ -66,7 +67,7 @@ class ReportFeedbackQueryServiceTest {
     }
 
     @Test
-    fun `completed report returns work type feedbacks in catalog order with ready content only`() {
+    fun `completed report returns work type feedbacks by latest work date with ready content only`() {
         val watering = readyFeedback()
         val fertilizing = pendingFeedback()
         val harvest = failedFeedback()
@@ -78,12 +79,12 @@ class ReportFeedbackQueryServiceTest {
 
         assertThat(result.reportId).isEqualTo(reportId)
         assertThat(result.feedbacks.map { it.workType }).containsExactly(
+            WorkType.HARVEST,
             WorkType.WATERING,
             WorkType.FERTILIZING,
-            WorkType.HARVEST,
         )
 
-        val ready = result.feedbacks[0]
+        val ready = result.feedbacks.first { it.workType == WorkType.WATERING }
         assertThat(ready.feedbackId).isEqualTo(wateringFeedbackId)
         assertThat(ready.status).isEqualTo(ReportFeedbackStatus.READY)
         assertThat(ready.inputPrepared).isTrue()
@@ -97,14 +98,14 @@ class ReportFeedbackQueryServiceTest {
         assertThat(ready.createdAt).isEqualTo(createdAt)
         assertThat(ready.updatedAt).isEqualTo(updatedAt)
 
-        val pending = result.feedbacks[1]
+        val pending = result.feedbacks.first { it.workType == WorkType.FERTILIZING }
         assertThat(pending.feedbackId).isEqualTo(fertilizingFeedbackId)
         assertThat(pending.status).isEqualTo(ReportFeedbackStatus.PENDING)
         assertThat(pending.inputPrepared).isFalse()
         assertThat(pending.failureCode).isNull()
         assertThat(pending.content).isNull()
 
-        val failed = result.feedbacks[2]
+        val failed = result.feedbacks.first { it.workType == WorkType.HARVEST }
         assertThat(failed.feedbackId).isEqualTo(harvestFeedbackId)
         assertThat(failed.status).isEqualTo(ReportFeedbackStatus.FAILED)
         assertThat(failed.inputPrepared).isTrue()
@@ -322,9 +323,18 @@ class ReportFeedbackQueryServiceTest {
     }
 
     private fun statisticsFor(vararg workTypes: WorkType) = CycleReportStatistics(
-        watering = WateringStatistics(recordCount = WorkType.WATERING.countIn(workTypes)),
-        fertilizing = FertilizingStatistics(recordCount = WorkType.FERTILIZING.countIn(workTypes)),
-        harvest = HarvestStatistics(recordCount = WorkType.HARVEST.countIn(workTypes)),
+        watering = WateringStatistics(
+            recordCount = WorkType.WATERING.countIn(workTypes),
+            lastWorkedOn = LocalDate.of(2026, 6, 2),
+        ),
+        fertilizing = FertilizingStatistics(
+            recordCount = WorkType.FERTILIZING.countIn(workTypes),
+            lastWorkedOn = LocalDate.of(2026, 6, 1),
+        ),
+        harvest = HarvestStatistics(
+            recordCount = WorkType.HARVEST.countIn(workTypes),
+            lastWorkedOn = LocalDate.of(2026, 6, 3),
+        ),
     )
 
     private fun WorkType.countIn(workTypes: Array<out WorkType>): Int =
