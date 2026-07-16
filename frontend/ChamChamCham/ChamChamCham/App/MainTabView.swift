@@ -62,6 +62,7 @@ struct MainTabView: View {
                 reportRepository: container.makeReportRepository(),
                 weatherRepository: container.makeWeatherRepository(),
                 mediaUpload: container.makeMediaUploadRepository(),
+                voiceRepository: container.makeVoiceSessionRepository(),
                 selection: $selection,
                 tabItems: tabItems
             )

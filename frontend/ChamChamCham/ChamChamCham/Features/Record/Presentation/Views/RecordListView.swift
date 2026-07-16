@@ -17,6 +17,7 @@ struct RecordListView: View {
     private let reportRepository: any ReportRepository
     private let weatherRepository: any WeatherRepository
     private let mediaUpload: any MediaUploadRepository
+    private let voiceRepository: any VoiceSessionRepository
     @State private var viewModel: RecordListViewModel
     @State private var reportViewModel: ReportListViewModel
     @State private var selectedTab = 0
@@ -25,6 +26,7 @@ struct RecordListView: View {
     /// which live in the same view tree (see `body`), so no cross-view binding is needed.
     @State private var isSpeedDialOpen = false
     @State private var showCompose = false
+    @State private var showVoiceCompose = false
     @State private var path = NavigationPath()
     @State private var toastMessage: String?
     @Binding private var selection: Int
@@ -36,6 +38,7 @@ struct RecordListView: View {
         reportRepository: any ReportRepository,
         weatherRepository: any WeatherRepository,
         mediaUpload: any MediaUploadRepository,
+        voiceRepository: any VoiceSessionRepository,
         selection: Binding<Int>,
         tabItems: [AppNavBar.Item]
     ) {
@@ -43,6 +46,7 @@ struct RecordListView: View {
         self.reportRepository = reportRepository
         self.weatherRepository = weatherRepository
         self.mediaUpload = mediaUpload
+        self.voiceRepository = voiceRepository
         _selection = selection
         self.tabItems = tabItems
         _viewModel = State(initialValue: RecordListViewModel(repository: repository))
@@ -114,6 +118,20 @@ struct RecordListView: View {
                     toastMessage = "영농 기록 작성이 완료되었습니다."
                     Task { await viewModel.reload() }
                 }
+            }
+        }
+        .fullScreenCover(isPresented: $showVoiceCompose) {
+            RecordVoiceFlowView(
+                voiceRepository: voiceRepository,
+                recordRepository: repository,
+                weatherRepository: weatherRepository,
+                mediaUpload: mediaUpload,
+                onSessionInvalid: { toastMessage = "이미 처리된 음성 기록이에요." }
+            ) { newRecordId in
+                // 텍스트 작성 완료와 동일한 마무리: 상세 이동 + 토스트 + 리스트 갱신.
+                path.append(newRecordId)
+                toastMessage = "영농 기록 작성이 완료되었습니다."
+                Task { await viewModel.reload() }
             }
         }
         .sheet(item: $activeSheet) { kind in
@@ -266,8 +284,8 @@ struct RecordListView: View {
         VStack(alignment: .trailing, spacing: 20) {
             if isSpeedDialOpen {
                 speedDialItem(label: "음성으로 기록하기", icon: .asset("mic")) {
-                    // 음성 기록 화면 미수집 — 후속.
                     closeSpeedDial()
+                    showVoiceCompose = true
                 }
                 speedDialItem(label: "텍스트로 기록하기", icon: .asset("edit")) {
                     closeSpeedDial()

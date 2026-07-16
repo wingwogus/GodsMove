@@ -16,18 +16,27 @@ struct RecordComposeView: View {
     @State private var photoItem: PhotosPickerItem?
     @Environment(\.dismiss) private var dismiss
     private let onComplete: (UUID) -> Void
+    private let onSessionInvalid: (() -> Void)?
 
+    /// `saver`/`prefill`/`onSessionInvalid`는 음성 검토 재사용 전용 — 텍스트 작성 호출부는
+    /// 기본값 그대로 두면 기존 동작과 동일하다.
     init(
         repository: any RecordRepository,
         weatherRepository: any WeatherRepository,
         mediaUpload: any MediaUploadRepository,
+        saver: (any RecordSaver)? = nil,
+        prefill: VoiceRecordPrefill? = nil,
+        onSessionInvalid: (() -> Void)? = nil,
         onComplete: @escaping (UUID) -> Void
     ) {
         _viewModel = State(initialValue: RecordComposeViewModel(
             repository: repository,
             weatherRepository: weatherRepository,
-            mediaUpload: mediaUpload
+            mediaUpload: mediaUpload,
+            saver: saver,
+            prefill: prefill
         ))
+        self.onSessionInvalid = onSessionInvalid
         self.onComplete = onComplete
     }
 
@@ -71,6 +80,9 @@ struct RecordComposeView: View {
         }
         .onChange(of: vm.createdRecordId) { _, newValue in
             if let newValue { onComplete(newValue); dismiss() }
+        }
+        .onChange(of: vm.voiceSessionInvalidated) { _, invalidated in
+            if invalidated { onSessionInvalid?() }
         }
     }
 
