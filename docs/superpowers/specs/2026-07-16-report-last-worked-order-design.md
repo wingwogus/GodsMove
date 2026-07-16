@@ -49,8 +49,9 @@
 
 ## 커서 설계와 호환성
 
-작업 리포트 목록 커서에 `lastWorkedOn`을 필수 필드로 포함한다. 도메인 `WorkItemCursor`와 애플리케이션 `FarmingWorkReportCursorPayload`가 목록 비교에 필요한 다음 키를 모두 가진다.
+작업 리포트 목록 커서에 정렬 버전과 `lastWorkedOn`을 포함한다. 도메인 `WorkItemCursor`와 애플리케이션 `FarmingWorkReportCursorPayload`가 목록 비교에 필요한 다음 키를 모두 가진다.
 
+- `version`
 - `lastWorkedOn`
 - `status`
 - `sortAt`
@@ -59,7 +60,7 @@
 
 커서 이후 항목 판정은 목록 comparator와 완전히 같은 키 순서를 사용한다. `lastWorkedOn`이 null이면 정렬상 가장 오래된 값으로 취급한다.
 
-배포 전에 발급된 커서는 `lastWorkedOn` 필드가 없어 디코딩 시 `INVALID_CURSOR`가 된다. 커서는 불투명한 단기 페이지 토큰이므로 클라이언트가 첫 페이지부터 새로 조회하는 방식으로 복구한다. 서로 다른 정렬 의미를 가진 구형 커서를 억지로 수용해 중복 또는 누락을 만드는 것보다 명시적으로 거절하는 편을 선택한다.
+`lastWorkedOn`은 nullable이라 필드가 없는 구형 payload도 null로 역직렬화될 수 있다. 따라서 서비스는 현재 정렬 버전을 명시적으로 검증하고, 배포 전에 발급된 버전 없는 커서를 `INVALID_CURSOR`로 거절한다. 커서는 불투명한 단기 페이지 토큰이므로 클라이언트가 첫 페이지부터 새로 조회하는 방식으로 복구한다. 서로 다른 정렬 의미를 가진 구형 커서를 억지로 수용해 중복 또는 누락을 만드는 것보다 명시적으로 거절하는 편을 선택한다.
 
 ## 오류 및 예외 데이터 처리
 
@@ -78,4 +79,3 @@
 - 애플리케이션 서비스 테스트에서 새 커서가 `lastWorkedOn`을 인코딩·디코딩하는지 검증한다.
 - 코칭 조회 서비스 테스트에서 `WorkType` 선언 순서가 아니라 마지막 작업일 최신순으로 반환되는지 검증한다.
 - 관련 모듈 테스트 후 backend 전체 `check --rerun-tasks`를 실행한다.
-

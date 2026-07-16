@@ -156,7 +156,11 @@ class FarmingWorkReportQueryService(
     private fun decodeCursor(cursor: String?): FarmingCycleReportQueryRepository.WorkItemCursor? {
         if (cursor.isNullOrBlank()) return null
         val payload = cursorCodec.decode(cursor, FarmingWorkReportCursorPayload::class.java)
+        if (payload.version != FarmingWorkReportCursorPayload.CURRENT_VERSION) {
+            throw BusinessException(ErrorCode.INVALID_CURSOR)
+        }
         return FarmingCycleReportQueryRepository.WorkItemCursor(
+            lastWorkedOn = payload.lastWorkedOn,
             status = payload.status,
             sortAt = payload.sortAt,
             reportId = payload.reportId,
@@ -167,6 +171,8 @@ class FarmingWorkReportQueryService(
     private fun encodeCursor(row: FarmingCycleReportQueryRepository.WorkItem): String =
         cursorCodec.encode(
             FarmingWorkReportCursorPayload(
+                version = FarmingWorkReportCursorPayload.CURRENT_VERSION,
+                lastWorkedOn = row.lastWorkedOn,
                 status = row.status,
                 sortAt = row.sortAt,
                 reportId = row.reportId,

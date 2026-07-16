@@ -321,6 +321,8 @@ class FarmingWorkReportQueryServiceTest {
             requireNotNull(page.nextCursor),
             FarmingWorkReportCursorPayload::class.java,
         )
+        assertThat(decoded.version).isEqualTo(FarmingWorkReportCursorPayload.CURRENT_VERSION)
+        assertThat(decoded.lastWorkedOn).isEqualTo(page.items.last().lastWorkedOn)
         assertThat(decoded.status).isEqualTo(FarmingCycleReportStatus.COMPLETED)
         assertThat(decoded.sortAt).isEqualTo(page.items.last().endsAt)
         assertThat(decoded.reportId).isEqualTo(page.items.last().reportId)
@@ -381,6 +383,8 @@ class FarmingWorkReportQueryServiceTest {
     @Test
     fun `list decodes item cursor and returns null thumbnail without a pictured matching record`() {
         val cursorPayload = FarmingWorkReportCursorPayload(
+            version = FarmingWorkReportCursorPayload.CURRENT_VERSION,
+            lastWorkedOn = day(29).toLocalDate(),
             status = FarmingCycleReportStatus.ACTIVE,
             sortAt = day(30),
             reportId = id("399"),
@@ -393,6 +397,7 @@ class FarmingWorkReportQueryServiceTest {
             cropId = null,
             workType = WorkType.PEST_CONTROL,
             cursor = FarmingCycleReportQueryRepository.WorkItemCursor(
+                lastWorkedOn = cursorPayload.lastWorkedOn,
                 status = cursorPayload.status,
                 sortAt = cursorPayload.sortAt,
                 reportId = cursorPayload.reportId,
@@ -429,6 +434,35 @@ class FarmingWorkReportQueryServiceTest {
         assertThat(page.nextCursor).isNull()
         verify(queryRepository).searchWorkItems(expectedCondition)
         verify(sourceRepository).load(memberId, setOf(farmId), setOf(cropId))
+    }
+
+    @Test
+    fun `list rejects a cursor created before last worked ordering`() {
+        val legacyCursor = cursorCodec.encode(
+            LegacyFarmingWorkReportCursorPayload(
+                status = FarmingCycleReportStatus.ACTIVE,
+                sortAt = day(30),
+                reportId = id("399"),
+                workType = WorkType.WATERING,
+            ),
+        )
+
+        assertThatThrownBy {
+            service.list(
+                FarmingWorkReportSearchCondition(
+                    memberId = memberId,
+                    farmId = null,
+                    cropId = null,
+                    workType = null,
+                    cursor = legacyCursor,
+                    size = 1,
+                ),
+            )
+        }
+            .isInstanceOf(BusinessException::class.java)
+            .extracting("errorCode")
+            .isEqualTo(ErrorCode.INVALID_CURSOR)
+        verifyNoInteractions(queryRepository, sourceRepository)
     }
 
     @Test
@@ -724,4 +758,11 @@ class FarmingWorkReportQueryServiceTest {
 
     private fun id(suffix: String): UUID =
         UUID.fromString("00000000-0000-0000-0000-000000000$suffix")
+
+    private data class LegacyFarmingWorkReportCursorPayload(
+        val status: FarmingCycleReportStatus,
+        val sortAt: LocalDateTime,
+        val reportId: UUID,
+        val workType: WorkType,
+    )
 }
