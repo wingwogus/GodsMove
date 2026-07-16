@@ -27,7 +27,7 @@ struct SaveRecordRequestDTO: Encodable, Sendable {
     let entryMode: String
 }
 
-struct PlantingDetailRequestDTO: Encodable, Sendable {
+struct PlantingDetailRequestDTO: Encodable, Sendable, Equatable {
     let plantingMethod: String
     let seedAmount: Double?
     let seedAmountUnit: String?
@@ -36,19 +36,19 @@ struct PlantingDetailRequestDTO: Encodable, Sendable {
     let propagationMethod: String?
 }
 
-struct WateringDetailRequestDTO: Encodable, Sendable {
+struct WateringDetailRequestDTO: Encodable, Sendable, Equatable {
     let irrigationAmount: String?
     let irrigationMethod: String?
 }
 
-struct FertilizingDetailRequestDTO: Encodable, Sendable {
+struct FertilizingDetailRequestDTO: Encodable, Sendable, Equatable {
     let materialName: String
     let amount: Double
     let amountUnit: String
     let applicationMethod: String?
 }
 
-struct PestControlDetailRequestDTO: Encodable, Sendable {
+struct PestControlDetailRequestDTO: Encodable, Sendable, Equatable {
     let pesticideId: UUID
     let pesticideAmount: Double
     let pesticideAmountUnit: String
@@ -57,11 +57,11 @@ struct PestControlDetailRequestDTO: Encodable, Sendable {
     let pestId: UUID?
 }
 
-struct WeedingDetailRequestDTO: Encodable, Sendable {
+struct WeedingDetailRequestDTO: Encodable, Sendable, Equatable {
     let weedingMethod: String?
 }
 
-struct HarvestDetailRequestDTO: Encodable, Sendable {
+struct HarvestDetailRequestDTO: Encodable, Sendable, Equatable {
     let harvestAmount: Double?
     let harvestAmountUnknown: Bool
     let medicinalPart: String?

@@ -73,6 +73,10 @@ extension DIContainer {
         RemoteRecordRepository(apiClient: apiClient)
     }
 
+    func makeVoiceSessionRepository() -> some VoiceSessionRepository {
+        RemoteVoiceSessionRepository(apiClient: apiClient)
+    }
+
     func makePolicyRepository() -> some PolicyRepository {
         RemotePolicyRepository(apiClient: apiClient)
     }
