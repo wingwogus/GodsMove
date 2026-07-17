@@ -177,18 +177,31 @@ a follow-up session should start deciding fix vs. defer):
      visible when expanded) are still unfixed — confirm with the user before
      touching `ReportChartCard.swift`/`ReportChartModel`, since both chart
      styles share one `highlightedEntry(isExpanded:)` codepath.
-2. Capture the remaining Report Detail workType variants one at a time
-   (물주기/비료 주기/병해충 관리/잡초 관리/가지·순 정리/수확/기타) — user's
-   explicit plan: "화면 하나씩 캡처하고 바로 구현" (capture one screen, then
-   implement immediately), except chart UI/UX, which gets documented
-   separately before implementing (already mostly done via the chart-spec
-   doc). Header/badges/metrics/coaching/history layout is shared across
-   workTypes per this capture — likely only the metric fields and chart data
-   shape differ per type; confirm against each capture rather than assuming.
-   Since findings 1–5 were structural (icons/typography/color on the shared
-   detail-screen chrome), they should already apply to every workType capture
-   going forward — no need to re-flag them per workType.
-3. `ReportCoachingSection.swift` (AI coaching cards) has not been compared
+2. **물주기 (Watering) capture done** —
+   [2026-07-18-report-detail-watering.md](2026-07-18-report-detail-watering.md).
+   Re-confirmed findings 1–5's fixes hold on this screen too (no regressions).
+   2 new findings, both documented only, **not fixed** (user's plan is
+   "capture first" — decide fix/defer only after all workTypes are
+   captured, then plan the full pass):
+   - Watering-specific metric title/semantics mismatch: code's
+     "가장 자주 준 물의 양" (mode) vs Figma's "평균 물 준 양" (average) — a
+     product decision, not a copy fix (see doc's finding 1).
+   - Chart order + titles differ: code renders `[물의 양, 물 주는 방법]`,
+     Figma shows `[진행한 물주기 방식, 물 준 양]` — reversed order, different
+     titles on both charts (see doc's finding 2).
+   - Reconfirmed (not new): date-separator `-` vs `~` question and the
+     inline record-row-preview scope gap both recur identically on this
+     screen — not workType-specific, systemic to the Detail screen.
+3. Capture the remaining Report Detail workType variants one at a time
+   (비료 주기/병해충 관리/잡초 관리/가지·순 정리/수확/기타) — user's explicit
+   plan: capture each screen first (no fixing yet), then once all workTypes
+   are captured, plan a full remediation pass together. Header/badges/
+   metrics/coaching/history layout is shared across workTypes; only the
+   metric fields and chart data/titles differ per type — confirm against
+   each capture rather than assuming. Findings 1–5 are structural fixes
+   already applied to the shared chrome, so no need to re-flag them per
+   workType (just spot-check for regressions, as done for 물주기).
+4. `ReportCoachingSection.swift` (AI coaching cards) has not been compared
    against Figma yet — the 심기 capture shows 4 example coaching cards
    (잘한 점/이전 리포트과의 비교/개선 필요점/추천 행동) worth checking once a
    real coaching-populated capture is available.
@@ -212,10 +225,19 @@ dev에 병합돼 해결됨). 그래프 포맷 스펙 캡처 완료(turquoise 색
 WorkType 타이틀 폰트/메트릭 카드 라벨·값 스타일)은 커밋 3aa1457b로 수정 완료.
 6번(날짜 구분자 `-` vs `~`)은 디자이너 확인 필요한 열린 질문, 7번(기록 내역
 인라인 프리뷰)은 별도 기능 구현이 필요한 제품 스코프 갭으로 둘 다 미수정.
+물주기(Watering) 화면도 캡처 완료 — 1~5번 수정이 여기서도 그대로 맞음을
+재확인했고, 새 발견 2개(메트릭 타이틀 "가장 자주 준 물의 양" vs Figma
+"평균 물 준 양" 의미 불일치, 차트 순서/타이틀이 코드와 반대)는 문서화만 하고
+미수정.
 
-다음 단계: 차트 스펙의 2개 미해결 항목(범례 스타일, 도넛 라벨) 수정 여부를
-사용자에게 확인하거나, 바로 나머지 workType(물주기/비료 주기/병해충 관리/잡초
-관리/가지·순 정리/수확/기타) 캡처를 하나씩 이어가면 돼. 이 워크트리엔
+**사용자 방침(중요)**: 지금은 캡처만 한다 — workType 하나씩 다 캡처한 뒤에야
+"리포트 전체 보완 수정 계획"을 별도로 세울 예정. 발견한 이슈를 캡처 중간에
+바로 고치지 말 것.
+
+다음 단계: 나머지 workType(비료 주기/병해충 관리/잡초 관리/가지·순 정리/수확/
+기타) 캡처를 하나씩 이어가면 돼. 각 캡처 때 findings 1–5(아이콘/타이포/컬러)가
+재발하지 않는지만 가볍게 재확인하고, 새로 나오는 workType별 메트릭/차트 타이틀
+불일치는 물주기 캡처 문서 형식대로 기록만 해두면 됨. 이 워크트리엔
 Core/Config/Secrets.swift가 없으니(gitignore) 빌드 확인이 필요하면 메인
 체크아웃에서 복사해와.
 ```
