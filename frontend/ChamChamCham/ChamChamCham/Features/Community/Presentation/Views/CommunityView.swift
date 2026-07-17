@@ -245,7 +245,7 @@ struct CommunityView: View {
             .frame(maxWidth: .infinity)
             .padding(.top, Spacing.xl * 2)
         } else {
-            emptyState(text: "아직 게시글이 없어요.\n첫 이야기를 남겨보세요!", systemImage: "square.stack.3d.up.slash")
+            emptyState(text: "여기에는 아직 게시글이 없어요.\n첫 이야기를 남기거나 다른 작물을 추가해보세요!", systemImage: "square.stack.3d.up.slash")
         }
     }
 
