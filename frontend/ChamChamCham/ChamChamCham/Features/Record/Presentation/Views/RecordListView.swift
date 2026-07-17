@@ -244,7 +244,12 @@ struct RecordListView: View {
             } else if let errorMessage = viewModel.errorMessage {
                 emptyState(text: errorMessage, systemImage: "exclamationmark.triangle")
             } else if viewModel.records.isEmpty {
-                emptyState(text: "아직 영농 기록이 없어요.", systemImage: "square.stack.3d.up.slash")
+                emptyState(
+                    text: viewModel.filter.isEmpty
+                        ? "아직 작성한 영농 기록이 없어요.\n오른쪽 아래 + 버튼으로 첫 기록을 남겨보세요."
+                        : "선택한 조건에 맞는 기록이 없어요.\n다른 작물이나 기간으로 다시 확인해보세요.",
+                    systemImage: "square.stack.3d.up.slash"
+                )
             } else {
                 LazyVStack(spacing: 20) {
                     ForEach(viewModel.records) { record in
@@ -279,6 +284,7 @@ struct RecordListView: View {
             Text(text)
                 .appTypography(.bodyMedium)
                 .foregroundStyle(Color.Text.muted)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, Spacing.xl * 2)

@@ -221,8 +221,17 @@ struct ProfileMainView: View {
         } else if let error = viewModel.postsErrorMessage, viewModel.posts.isEmpty {
             errorState(error)
         } else if viewModel.posts.isEmpty {
-            EmptyStateView(message: emptyMessage)
-                .padding(.top, Spacing.xl)
+            VStack(spacing: Spacing.md) {
+                EmptyStateView(message: emptyMessage)
+                if !viewModel.selectedBoardCropIds.isEmpty {
+                    Button("전체 게시판 보기") {
+                        Task { await viewModel.applyBoardFilter(cropIds: []) }
+                    }
+                    .appTypography(.bodyMediumEmphasized)
+                    .foregroundStyle(Color.Text.primary)
+                }
+            }
+            .padding(.top, Spacing.xl)
         } else {
             LazyVStack(spacing: CommunityPostRow.Layout.interRowSpacing) {
                 ForEach(viewModel.posts) { post in
@@ -260,6 +269,12 @@ struct ProfileMainView: View {
     }
 
     private var emptyMessage: String {
-        viewModel.currentTab == .myPosts ? "작성한 게시물이 없어요." : "좋아요 누른 글이 없어요."
+        let hasBoardFilter = !viewModel.selectedBoardCropIds.isEmpty
+        switch (viewModel.currentTab, hasBoardFilter) {
+        case (.myPosts, false): return "작성한 게시물이 없어요."
+        case (.myPosts, true): return "선택한 게시판에 작성한 게시물이 없어요."
+        case (.likedPosts, false): return "좋아요 누른 글이 없어요."
+        case (.likedPosts, true): return "선택한 게시판에 좋아요 누른 글이 없어요."
+        }
     }
 }

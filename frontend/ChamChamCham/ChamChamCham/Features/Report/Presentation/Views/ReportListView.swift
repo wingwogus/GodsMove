@@ -140,7 +140,11 @@ struct ReportListView: View {
         VStack(spacing: Spacing.md) {
             AppIconView(source: .asset("assignment-1"), size: 40)
                 .foregroundStyle(Color.Icon.disabled)
-            Text(viewModel.filter.isEmpty ? "아직 생성된 리포트가 없어요." : "조건에 맞는 리포트가 없어요.")
+            Text(
+                viewModel.filter.isEmpty
+                    ? "아직 생성된 리포트가 없어요.\n영농 기록을 쌓으면 리포트가 자동으로 만들어져요."
+                    : "선택한 조건에 맞는 리포트가 없어요.\n다른 작물이나 기간으로 다시 확인해보세요."
+            )
                 .appTypography(.bodyMedium)
                 .foregroundStyle(Color.Text.muted)
                 .multilineTextAlignment(.center)

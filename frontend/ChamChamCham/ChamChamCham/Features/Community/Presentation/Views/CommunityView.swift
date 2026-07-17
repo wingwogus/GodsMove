@@ -5,6 +5,7 @@
 //  Created by iyungui on 7/6/26.
 //
 
+import SwiftData
 import SwiftUI
 
 /// Community tab root: 자유 이야기 / Q&A tabs, crop board chips, sort control, and a cursor-paged post list.
@@ -15,6 +16,7 @@ struct CommunityView: View {
     /// `@Environment` isn't populated yet at init time.
     private let isGuest: Bool
     @Environment(AppState.self) private var appState
+    @Environment(\.modelContext) private var modelContext
     @State private var viewModel: CommunityFeedViewModel
     @State private var showCompose = false
     @State private var showCropPicker = false
@@ -33,6 +35,7 @@ struct CommunityView: View {
             initialValue: CommunityFeedViewModel(
                 repository: container.makeCommunityRepository(),
                 cropCatalog: container.makeCropCatalogService(),
+                extraBoardStore: container.extraCropBoardStore,
                 isGuest: isGuest
             )
         )
@@ -69,7 +72,10 @@ struct CommunityView: View {
                 CommunityDetailView(postId: post.id, container: container, isGuest: isGuest)
             }
         }
-        .task { await viewModel.onAppear() }
+        .task {
+            let memberId = isGuest ? nil : CachedMemberProfile.fetchCached(in: modelContext)?.id
+            await viewModel.onAppear(memberId: memberId)
+        }
         .fullScreenCover(isPresented: $showCompose) {
             CommunityComposeView(container: container) { _ in
                 Task { await viewModel.reload() }
@@ -170,7 +176,7 @@ struct CommunityView: View {
             } else if let errorMessage = viewModel.errorMessage {
                 emptyState(text: errorMessage, systemImage: "exclamationmark.triangle")
             } else if viewModel.posts.isEmpty {
-                emptyState(text: "아직 게시글이 없어요.", systemImage: "square.stack.3d.up.slash")
+                communityEmptyState
             } else {
                 LazyVStack(spacing: CommunityPostRow.Layout.interRowSpacing) {
                     ForEach(viewModel.posts) { post in
@@ -216,6 +222,32 @@ struct CommunityView: View {
         .background(Color.Background.default)
     }
 
+    /// A crop-board chip filtered down to nothing is easy to mistake for "community is empty" — name
+    /// the selected board and offer a one-tap way back to "전체" rather than a bare "no posts" message.
+    @ViewBuilder private var communityEmptyState: some View {
+        if let cropId = viewModel.selectedCropId,
+           let cropName = viewModel.boards.first(where: { $0.cropId == cropId })?.cropName {
+            VStack(spacing: Spacing.md) {
+                Image(systemName: "square.stack.3d.up.slash")
+                    .font(.system(size: 40))
+                    .foregroundStyle(Color.Icon.disabled)
+                Text("'\(cropName)' 게시판에는 아직 게시글이 없어요.\n다른 작물 게시판이나 '전체'를 확인해보세요.")
+                    .appTypography(.bodyMedium)
+                    .foregroundStyle(Color.Text.muted)
+                    .multilineTextAlignment(.center)
+                Button("전체 게시글 보기") {
+                    Task { await viewModel.selectCrop(nil) }
+                }
+                .appTypography(.bodyMediumEmphasized)
+                .foregroundStyle(Color.Text.primary)
+            }
+            .frame(maxWidth: .infinity)
+            .padding(.top, Spacing.xl * 2)
+        } else {
+            emptyState(text: "아직 게시글이 없어요.\n첫 이야기를 남겨보세요!", systemImage: "square.stack.3d.up.slash")
+        }
+    }
+
     private func emptyState(text: String, systemImage: String) -> some View {
         VStack(spacing: Spacing.md) {
             Image(systemName: systemImage)
@@ -224,6 +256,7 @@ struct CommunityView: View {
             Text(text)
                 .appTypography(.bodyMedium)
                 .foregroundStyle(Color.Text.muted)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, Spacing.xl * 2)
