@@ -63,6 +63,9 @@ app:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS}
   auth:
     refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:true}
+  voice-session:
+    max-rounds: ${VOICE_SESSION_MAX_ROUNDS:20}
+    max-duration-seconds: ${VOICE_SESSION_MAX_DURATION_SECONDS:330}
   mail:
     from-name: ${PROD_MAIL_FROM_NAME:Example}
   media:
