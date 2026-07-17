@@ -8,6 +8,10 @@
 import AuthenticationServices
 import Observation
 
+enum AppleSignInError: Error {
+    case missingIdentityToken
+}
+
 @Observable
 @MainActor
 final class AuthViewModel {
@@ -21,29 +25,27 @@ final class AuthViewModel {
 
     private let authRepository: AuthRepository
     private let memberProfileCache: MemberProfileCache
-    private let appleSignInCoordinator = AppleSignInCoordinator()
 
     init(authRepository: AuthRepository, memberProfileCache: MemberProfileCache) {
         self.authRepository = authRepository
         self.memberProfileCache = memberProfileCache
     }
 
-    func loginWithApple(appState: AppState) async {
+    /// Called from SwiftUI's official `SignInWithAppleButton` `onCompletion`. `rawNonce` is the same
+    /// value the button's `onRequest` hashed into `request.nonce` — the backend hashes it again itself
+    /// and compares against the ID token's claim, so the raw (unhashed) value must be sent here.
+    func loginWithApple(result: Result<ASAuthorization, Error>, rawNonce: String, appState: AppState) async {
         guard loginState != .loggingIn else { return }
         loginState = .loggingIn
         do {
-            let rawNonce = NonceGenerator.generate()
-            let hashedNonce = NonceGenerator.sha256Hex(rawNonce)
-            let credential = try await appleSignInCoordinator.signIn(hashedNonce: hashedNonce)
-
-            guard let tokenData = credential.identityToken,
+            let authorization = try result.get()
+            guard let credential = authorization.credential as? ASAuthorizationAppleIDCredential,
+                  let tokenData = credential.identityToken,
                   let identityToken = String(data: tokenData, encoding: .utf8) else {
                 throw AppleSignInError.missingIdentityToken
             }
             let authorizationCode = credential.authorizationCode.flatMap { String(data: $0, encoding: .utf8) }
 
-            // Raw (unhashed) nonce — the backend hashes it itself and compares against the ID token's claim.
-            // Sending the already-hashed value here would make every Apple login fail nonce verification.
             let response = try await authRepository.loginWithApple(
                 identityToken: identityToken,
                 nonce: rawNonce,
