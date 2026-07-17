@@ -9,5 +9,5 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 @ConfigurationProperties(prefix = "app.voice-session")
 data class VoiceSessionProperties(
     val maxRounds: Int = 20,
-    val maxDurationSeconds: Int = 480,
+    val maxDurationSeconds: Int = 330,
 )

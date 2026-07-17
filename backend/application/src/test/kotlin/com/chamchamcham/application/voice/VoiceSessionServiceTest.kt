@@ -82,7 +82,7 @@ class VoiceSessionServiceTest {
             voiceRecordSessionRepository = voiceRecordSessionRepository,
             voiceRecordTurnRepository = voiceRecordTurnRepository,
             realtimeSessionProvider = realtimeSessionProvider,
-            voiceSessionProperties = VoiceSessionProperties(maxRounds = 20, maxDurationSeconds = 480),
+            voiceSessionProperties = VoiceSessionProperties(maxRounds = 20, maxDurationSeconds = 330),
             pesticideQueryRepository = pesticideQueryRepository,
         )
         member = Member(id = memberId, email = "$memberId@example.com", passwordHash = null)
@@ -107,7 +107,16 @@ class VoiceSessionServiceTest {
         assertThat(result.farms).extracting("farmId").containsExactly(farmId)
         assertThat(result.cropsByFarm[farmId.toString()]).extracting("cropId").containsExactly(cropId)
         assertThat(result.maxRounds).isEqualTo(20)
-        assertThat(result.maxDurationSeconds).isEqualTo(480)
+        assertThat(result.maxDurationSeconds).isEqualTo(330)
+    }
+
+    @Test
+    fun `OpenAI 토큰 만료는 대화 시간 한도보다 30초 길게 파생된다`() {
+        stubCreateCollaborators()
+
+        service.create(VoiceSessionCommand.Create(memberId = memberId))
+
+        assertThat(capturedRequest!!.expiresAfterSeconds).isEqualTo(360)
     }
 
     @Test

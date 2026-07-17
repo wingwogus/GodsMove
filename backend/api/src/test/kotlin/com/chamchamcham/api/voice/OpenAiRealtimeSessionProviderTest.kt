@@ -26,7 +26,7 @@ class OpenAiRealtimeSessionProviderTest {
     fun setUp() {
         val restClientBuilder = RestClient.builder()
         server = MockRestServiceServer.bindTo(restClientBuilder).build()
-        provider = OpenAiRealtimeSessionProvider(restClientBuilder.build(), BASE_URL, API_KEY, MODEL, VOICE, EXPIRES_AFTER_SECONDS)
+        provider = OpenAiRealtimeSessionProvider(restClientBuilder.build(), BASE_URL, API_KEY, MODEL, VOICE)
     }
 
     @Test
@@ -41,7 +41,7 @@ class OpenAiRealtimeSessionProviderTest {
             )
 
         val result = provider.createEphemeralSession(
-            RealtimeSessionRequest(instructions = "안내", tools = listOf(mapOf("type" to "function")))
+            RealtimeSessionRequest(instructions = "안내", tools = listOf(mapOf("type" to "function")), expiresAfterSeconds = EXPIRES_AFTER_SECONDS)
         )
 
         assertThat(result.clientSecret).isEqualTo("ek_test_123")
@@ -55,7 +55,7 @@ class OpenAiRealtimeSessionProviderTest {
             .andRespond(withException(IOException("connection reset")))
 
         val exception = assertThrows(BusinessException::class.java) {
-            provider.createEphemeralSession(RealtimeSessionRequest(instructions = "안내", tools = emptyList()))
+            provider.createEphemeralSession(RealtimeSessionRequest(instructions = "안내", tools = emptyList(), expiresAfterSeconds = EXPIRES_AFTER_SECONDS))
         }
 
         assertThat(exception.errorCode).isEqualTo(ErrorCode.VOICE_SESSION_PROVIDER_UNAVAILABLE)
@@ -67,7 +67,7 @@ class OpenAiRealtimeSessionProviderTest {
             .andRespond(withStatus(HttpStatus.OK).contentType(MediaType.APPLICATION_JSON).body("{}"))
 
         val exception = assertThrows(BusinessException::class.java) {
-            provider.createEphemeralSession(RealtimeSessionRequest(instructions = "안내", tools = emptyList()))
+            provider.createEphemeralSession(RealtimeSessionRequest(instructions = "안내", tools = emptyList(), expiresAfterSeconds = EXPIRES_AFTER_SECONDS))
         }
 
         assertThat(exception.errorCode).isEqualTo(ErrorCode.VOICE_SESSION_PROVIDER_UNAVAILABLE)

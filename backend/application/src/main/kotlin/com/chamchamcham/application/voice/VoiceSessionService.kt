@@ -58,7 +58,11 @@ class VoiceSessionService(
         )
 
         val providerResult = realtimeSessionProvider.createEphemeralSession(
-            RealtimeSessionRequest(instructions = instructions, tools = listOf(tool))
+            RealtimeSessionRequest(
+                instructions = instructions,
+                tools = listOf(tool),
+                expiresAfterSeconds = voiceSessionProperties.maxDurationSeconds + EXPIRY_BUFFER_SECONDS,
+            )
         )
 
         val session = voiceRecordSessionRepository.save(
@@ -173,5 +177,11 @@ class VoiceSessionService(
         private const val MAX_PESTICIDE_CATALOG_ROWS = 200
         private const val MAX_PESTICIDE_OPTIONS = 50
         private const val MAX_PESTS_PER_PESTICIDE = 5
+
+        /**
+         * OpenAI client_secret 만료를 대화 시간 한도보다 살짝 길게(30초) 파생시켜, 두 값이
+         * 서로 다른 설정으로 따로 관리되며 어긋나는 것(예: 대화시간>토큰수명)을 막는다.
+         */
+        private const val EXPIRY_BUFFER_SECONDS = 30
     }
 }

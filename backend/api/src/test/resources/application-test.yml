@@ -62,7 +62,7 @@ app:
     refresh-cookie-secure: false
   voice-session:
     max-rounds: 20
-    max-duration-seconds: 480
+    max-duration-seconds: 330
   mail:
     from-name: ChamChamCham
   media:
@@ -99,7 +99,6 @@ openai:
     voice: marin
     connect-timeout-millis: 2000
     read-timeout-millis: 2000
-    expires-after-seconds: 360
 
 auth:
   kakao:

@@ -64,7 +64,7 @@ app:
     refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:true}
   voice-session:
     max-rounds: ${VOICE_SESSION_MAX_ROUNDS:20}
-    max-duration-seconds: ${VOICE_SESSION_MAX_DURATION_SECONDS:480}
+    max-duration-seconds: ${VOICE_SESSION_MAX_DURATION_SECONDS:330}
   mail:
     from-name: ${DEV_MAIL_FROM_NAME:Example}
   media:
@@ -102,7 +102,6 @@ openai:
     voice: marin
     connect-timeout-millis: ${OPENAI_CONNECT_TIMEOUT_MILLIS:3000}
     read-timeout-millis: ${OPENAI_READ_TIMEOUT_MILLIS:8000}
-    expires-after-seconds: ${OPENAI_REALTIME_EXPIRES_AFTER_SECONDS:360}
 
 auth:
   kakao:

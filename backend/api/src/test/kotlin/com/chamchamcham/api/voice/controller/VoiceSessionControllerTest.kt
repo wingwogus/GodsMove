@@ -60,7 +60,7 @@ class VoiceSessionControllerTest(
                     farms = listOf(FarmOption(farmId, "약초농장")),
                     cropsByFarm = mapOf(farmId.toString() to emptyList()),
                     maxRounds = 20,
-                    maxDurationSeconds = 480,
+                    maxDurationSeconds = 330,
                 )
             )
 
@@ -69,7 +69,7 @@ class VoiceSessionControllerTest(
             .andExpect(jsonPath("$.data.sessionId", equalTo(sessionId.toString())))
             .andExpect(jsonPath("$.data.clientSecret", equalTo("secret")))
             .andExpect(jsonPath("$.data.maxRounds", equalTo(20)))
-            .andExpect(jsonPath("$.data.maxDurationSeconds", equalTo(480)))
+            .andExpect(jsonPath("$.data.maxDurationSeconds", equalTo(330)))
     }
 
     @Test
