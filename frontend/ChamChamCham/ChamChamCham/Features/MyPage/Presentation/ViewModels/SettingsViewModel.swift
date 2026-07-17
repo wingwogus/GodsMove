@@ -8,7 +8,7 @@
 import Observation
 
 /// Settings screen actions migrated from the former MyPage placeholder: logout and account
-/// withdrawal. Withdrawal has no deployed API yet, so it surfaces an explanatory message.
+/// withdrawal.
 @Observable
 @MainActor
 final class SettingsViewModel {
@@ -36,7 +36,18 @@ final class SettingsViewModel {
         }
     }
 
-    func withdraw() {
-        message = "회원탈퇴 API가 아직 준비되지 않았어요."
+    func withdraw(appState: AppState) async {
+        guard !isSubmitting else { return }
+        isSubmitting = true
+        message = nil
+        defer { isSubmitting = false }
+
+        do {
+            try await authRepository.withdraw()
+            appState.isAuthenticated = false
+            appState.isOnboarded = false
+        } catch {
+            message = "회원탈퇴에 실패했어요. 다시 시도해주세요."
+        }
     }
 }

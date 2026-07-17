@@ -48,6 +48,15 @@ struct FarmDataSourceDTO: Codable, Sendable, Equatable {
         parcel: "V_WORLD_CADASTRAL",
         landCharacteristic: "V_WORLD_LAND_CHARACTERISTIC"
     )
+
+    /// 지적도에 없는 밭(하천둑 옆 등)을 사용자가 지도에 직접 그려 경계·면적을 잡은 경우.
+    /// 좌표 앵커는 여전히 JUSO 주소 지오코딩에서 오지만, 경계/위치는 사용자 작도다.
+    static let onboardingUserDrawnPolygon = FarmDataSourceDTO(
+        address: "JUSO",
+        coordinate: "USER_DRAWN",
+        parcel: "USER_DRAWN_POLYGON",
+        landCharacteristic: nil
+    )
 }
 
 struct FarmBoundaryCoordinateDTO: Codable, Sendable, Equatable {

@@ -29,6 +29,8 @@
 	     App Store 심사(ITMS-90683)가 purpose string을 요구한다. -->
 	<key>NSCameraUsageDescription</key>
 	<string>이 앱은 카메라를 직접 사용하지 않습니다. 음성 기록에 쓰이는 통신 라이브러리(WebRTC)가 카메라 기능을 포함하고 있어 시스템 요구사항으로 안내 문구가 필요합니다.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>내 위치 주변 농지를 지도에서 찾고 재배지를 정확히 등록하기 위해 위치 정보를 사용합니다.</string>
 	<key>LSApplicationQueriesSchemes</key>
 	<array>
 		<string>kakaokompassauth</string>

@@ -59,7 +59,9 @@ struct SettingsView: View {
                 Button("취소", role: .cancel) {}
             }
             .confirmationDialog("회원탈퇴할까요?", isPresented: $isConfirmingWithdraw, titleVisibility: .visible) {
-                Button("회원탈퇴", role: .destructive) { viewModel.withdraw() }
+                Button("회원탈퇴", role: .destructive) {
+                    Task { await viewModel.withdraw(appState: appState) }
+                }
                 Button("취소", role: .cancel) {}
             }
         }

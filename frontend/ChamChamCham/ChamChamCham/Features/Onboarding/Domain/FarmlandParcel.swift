@@ -49,14 +49,30 @@ struct FarmlandParcel: Hashable, Sendable {
         return abs(sum) / 2
     }
 
+    /// 폴리곤 꼭짓점 평균 좌표. 사용자가 직접 그린 밭의 대표 위치(farmLatitude/Longitude)로 쓴다.
+    /// 작은 밭 규모에서는 면적가중 무게중심과 실질적 차이가 없어 단순 평균으로 충분하다.
+    static func centroid(of coordinates: [GeoPoint]) -> GeoPoint? {
+        guard !coordinates.isEmpty else { return nil }
+        let count = Double(coordinates.count)
+        let latitude = coordinates.reduce(0) { $0 + $1.latitude } / count
+        let longitude = coordinates.reduce(0) { $0 + $1.longitude } / count
+        return GeoPoint(latitude: latitude, longitude: longitude)
+    }
+
     var pyeong: Double {
         areaSqm / 3.3058
     }
 
     var formattedArea: String {
+        FarmlandParcel.formattedArea(sqm: areaSqm)
+    }
+
+    /// "1,234㎡ (약 373평)" 형태. 작도 중 실시간 면적 표시에도 재사용한다.
+    static func formattedArea(sqm areaSqm: Double) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.maximumFractionDigits = 0
+        let pyeong = areaSqm / 3.3058
         let sqmText = formatter.string(from: NSNumber(value: areaSqm)) ?? "\(Int(areaSqm))"
         let pyeongText = formatter.string(from: NSNumber(value: pyeong)) ?? "\(Int(pyeong))"
         return "\(sqmText)㎡ (약 \(pyeongText)평)"

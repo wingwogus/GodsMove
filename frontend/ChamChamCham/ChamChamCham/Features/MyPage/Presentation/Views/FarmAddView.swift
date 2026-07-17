@@ -55,6 +55,8 @@ struct FarmAddView: View {
                         isShowingAddressSearch = true
                     }
 
+                    mapSection
+
                     cropSection
 
                     if let message = viewModel.errorMessage {
@@ -95,6 +97,26 @@ struct FarmAddView: View {
                 initialSelection: viewModel.selectedCrops,
                 onComplete: { crops in viewModel.selectedCrops = crops }
             )
+        }
+    }
+
+    @ViewBuilder private var mapSection: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            Text("재배지 위치")
+                .appTypography(.bodyMedium)
+                .foregroundStyle(Color.Text.default)
+
+            Text("지도를 눌러 필지를 확인하거나, 지적도에 없는 밭은 직접 그려주세요.")
+                .appTypography(.labelMedium)
+                .foregroundStyle(Color.Text.muted)
+
+            FarmLocationMapSection(viewModel: viewModel.location)
+                .frame(height: 360)
+                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .stroke(Color.Border.default, lineWidth: 1)
+                }
         }
     }
 

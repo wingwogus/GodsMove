@@ -105,8 +105,11 @@ extension FarmDraftRequestDTO {
         self.landCategory = farm.farmLandCategory
         self.areaSqm = farm.farmAreaSqm
         self.areaIsManualEntry = farm.farmAreaIsManualEntry
-        self.boundaryCoordinates = []
-        self.dataSource = .onboardingJusoVWorld
+        self.boundaryCoordinates = farm.farmBoundaryCoordinates
+        // 필지(PNU) 없이 경계만 있으면 사용자가 지도에 직접 그린 밭이다.
+        self.dataSource = (farm.farmPNU == nil && !farm.farmBoundaryCoordinates.isEmpty)
+            ? .onboardingUserDrawnPolygon
+            : .onboardingJusoVWorld
     }
 }
 
