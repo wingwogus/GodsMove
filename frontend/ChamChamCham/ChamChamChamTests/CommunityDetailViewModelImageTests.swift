@@ -93,8 +93,29 @@ struct CommunityDetailViewModelImageTests {
         repository: any CommunityRepository = RecordingCommunityRepository(),
         media: any MediaUploadRepository = FakeMediaUploadRepository()
     ) -> CommunityDetailViewModel {
-        CommunityDetailViewModel(postId: UUID(), repository: repository, mediaRepository: media)
+        CommunityDetailViewModel(
+            postId: UUID(),
+            repository: repository,
+            mediaRepository: media,
+            recordRepository: StubRecordRepository()
+        )
     }
+}
+
+/// Every fixture post in this file has `farmingRecordId == nil`, so `load()` never calls this repository —
+/// every method is unused.
+private struct StubRecordRepository: RecordRepository {
+    private struct Unused: Error {}
+
+    func fetchRecords(_ query: RecordQuery) async throws -> RecordPage { throw Unused() }
+    func fetchDetail(id: UUID) async throws -> RecordDetail { throw Unused() }
+    func fetchCoaching(id: UUID) async throws -> RecordCoaching { throw Unused() }
+    func deleteRecord(id: UUID) async throws { throw Unused() }
+    func fetchActiveCrops() async throws -> [ActiveCrop] { throw Unused() }
+    func fetchFarmCrops() async throws -> [FarmWithCrops] { throw Unused() }
+    func searchPesticides(keyword: String?) async throws -> [Pesticide] { throw Unused() }
+    func fetchPests(pesticideId: UUID) async throws -> [Pest] { throw Unused() }
+    func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { throw Unused() }
 }
 
 /// Records comment creation so tests can assert the `mediaId` the view model forwards. `fetchPostDetail`

@@ -38,18 +38,25 @@ final class CommunityComposeViewModel {
     private(set) var isSubmitting = false
     private(set) var errorMessage: String?
 
+    /// Recently-created 영농일지, offered as quick picks in the compose form without opening the full picker.
+    private(set) var recentRecords: [FarmingRecordSummary] = []
+    private(set) var selectedFarmingRecord: FarmingRecordSummary?
+
     private let repository: any CommunityRepository
     private let cropCatalog: any CropCatalogService
     private let mediaRepository: any MediaUploadRepository
+    private let recordRepository: any RecordRepository
 
     init(
         repository: any CommunityRepository,
         cropCatalog: any CropCatalogService,
-        mediaRepository: any MediaUploadRepository
+        mediaRepository: any MediaUploadRepository,
+        recordRepository: any RecordRepository
     ) {
         self.repository = repository
         self.cropCatalog = cropCatalog
         self.mediaRepository = mediaRepository
+        self.recordRepository = recordRepository
     }
 
     /// True while any attachment is still uploading — submit waits for these so no `mediaId` is missed.
@@ -93,6 +100,18 @@ final class CommunityComposeViewModel {
 
     func selectCrop(_ cropId: UUID) {
         selectedCropId = cropId
+    }
+
+    // MARK: - Farming record
+
+    func loadRecentRecords() async {
+        guard recentRecords.isEmpty else { return }
+        guard let page = try? await recordRepository.fetchRecords(RecordQuery()) else { return }
+        recentRecords = page.items
+    }
+
+    func selectFarmingRecord(_ record: FarmingRecordSummary?) {
+        selectedFarmingRecord = record
     }
 
     // MARK: - Board picker (작물 추가)
@@ -150,7 +169,7 @@ final class CommunityComposeViewModel {
                 postType: isQuestion ? .question : .general,
                 title: title.trimmingCharacters(in: .whitespacesAndNewlines),
                 body: body.trimmingCharacters(in: .whitespacesAndNewlines),
-                farmingRecordId: nil,
+                farmingRecordId: selectedFarmingRecord?.id,
                 mediaIds: attachments.compactMap(\.mediaId)
             )
         } catch {

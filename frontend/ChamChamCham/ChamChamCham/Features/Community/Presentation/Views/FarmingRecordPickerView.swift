@@ -7,49 +7,74 @@
 
 import SwiftUI
 
+/// Backs the "영농 기록 첨부하기" full-screen picker with the real 영농일지 data source. Crop filtering
+/// re-queries the server (mirrors `RecordListViewModel`); keyword filtering is applied client-side over the
+/// currently loaded page since it's just narrowing what's already on screen.
 @MainActor
 @Observable
 final class FarmingRecordPickerState {
     var searchText = "" {
         didSet { clearSelectionIfNeeded() }
     }
-    private(set) var selectedCropName: String?
+    private(set) var selectedCropId: UUID?
     private(set) var selectedRecordID: UUID?
-    let records: [FarmingRecordPreview]
+    private(set) var activeCrops: [ActiveCrop] = []
+    private(set) var records: [FarmingRecordSummary] = []
+    private(set) var isLoading = false
+    private(set) var errorMessage: String?
 
-    init(records: [FarmingRecordPreview], selectedRecord: FarmingRecordPreview? = nil) {
-        self.records = records
-        selectedCropName = selectedRecord?.cropName
+    private let repository: any RecordRepository
+
+    init(repository: any RecordRepository, selectedRecord: FarmingRecordSummary? = nil) {
+        self.repository = repository
+        selectedCropId = selectedRecord?.cropId
         selectedRecordID = selectedRecord?.id
     }
 
-    var cropNames: [String] {
-        Array(Set(records.map(\.cropName))).sorted()
-    }
-
-    var filteredRecords: [FarmingRecordPreview] {
+    var filteredRecords: [FarmingRecordSummary] {
         let keyword = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !keyword.isEmpty else { return records }
         return records.filter { record in
-            let cropMatches = selectedCropName == nil || record.cropName == selectedCropName
-            let keywordMatches = keyword.isEmpty
-                || record.title.localizedCaseInsensitiveContains(keyword)
-                || record.caption.localizedCaseInsensitiveContains(keyword)
+            record.workType.label.localizedCaseInsensitiveContains(keyword)
+                || record.memoPreview.localizedCaseInsensitiveContains(keyword)
                 || record.cropName.localizedCaseInsensitiveContains(keyword)
-            return cropMatches && keywordMatches
         }
     }
 
-    var selectedRecord: FarmingRecordPreview? {
+    var selectedRecord: FarmingRecordSummary? {
         records.first { $0.id == selectedRecordID }
     }
 
-    func selectCrop(_ cropName: String?) {
-        selectedCropName = cropName
-        clearSelectionIfNeeded()
+    func load() async {
+        guard records.isEmpty, activeCrops.isEmpty, !isLoading else { return }
+        await reload()
+    }
+
+    func selectCrop(_ cropId: UUID?) async {
+        guard selectedCropId != cropId else { return }
+        selectedCropId = cropId
+        await reload()
     }
 
     func selectRecord(_ id: UUID) {
         selectedRecordID = id
+    }
+
+    private func reload() async {
+        isLoading = true
+        errorMessage = nil
+        defer { isLoading = false }
+        do {
+            async let cropsTask = repository.fetchActiveCrops()
+            let filter = RecordFilter(cropIds: selectedCropId.map { [$0] } ?? [])
+            let page = try await repository.fetchRecords(RecordQuery(filter: filter))
+            records = page.items
+            activeCrops = (try? await cropsTask) ?? activeCrops
+            clearSelectionIfNeeded()
+        } catch {
+            records = []
+            errorMessage = "영농 기록을 불러오지 못했어요."
+        }
     }
 
     private func clearSelectionIfNeeded() {
@@ -69,15 +94,15 @@ struct FarmingRecordPickerView: View {
         static let listTopInset: CGFloat = 8
     }
 
-    @Binding private var selectedRecord: FarmingRecordPreview?
+    @Binding private var selectedRecord: FarmingRecordSummary?
     @State private var state: FarmingRecordPickerState
     @Environment(\.dismiss) private var dismiss
 
-    init(selectedRecord: Binding<FarmingRecordPreview?>) {
+    init(repository: any RecordRepository, selectedRecord: Binding<FarmingRecordSummary?>) {
         _selectedRecord = selectedRecord
         _state = State(
             initialValue: FarmingRecordPickerState(
-                records: FarmingRecordPreview.samples,
+                repository: repository,
                 selectedRecord: selectedRecord.wrappedValue
             )
         )
@@ -98,7 +123,14 @@ struct FarmingRecordPickerView: View {
 
             ScrollView {
                 LazyVStack(spacing: Layout.cardSpacing) {
-                    if state.filteredRecords.isEmpty {
+                    if state.isLoading && state.records.isEmpty {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, Spacing.xl)
+                    } else if let errorMessage = state.errorMessage {
+                        EmptyStateView(message: errorMessage)
+                            .padding(.top, Spacing.xl)
+                    } else if state.filteredRecords.isEmpty {
                         EmptyStateView(message: "조건에 맞는 기록이 없어요.")
                             .padding(.top, Spacing.xl)
                     } else {
@@ -108,13 +140,13 @@ struct FarmingRecordPickerView: View {
                             } label: {
                                 AppCard(
                                     size: .small,
-                                    title: record.title,
-                                    captions: [record.caption],
-                                    badges: [record.cropName, record.category],
-                                    dateText: record.dateText,
+                                    title: record.workType.label,
+                                    captions: [record.memoPreview],
+                                    badges: [record.cropName],
+                                    dateText: Self.dateText(for: record),
                                     isSelected: state.selectedRecordID == record.id
                                 ) {
-                                    FarmingRecordImage(record: record, height: 96)
+                                    RecordRemoteImage(url: record.thumbnailUrl)
                                 }
                             }
                             .buttonStyle(.plain)
@@ -132,6 +164,13 @@ struct FarmingRecordPickerView: View {
         .safeAreaInset(edge: .bottom) {
             selectBar
         }
+        .task { await state.load() }
+    }
+
+    static func dateText(for record: FarmingRecordSummary) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM/dd"
+        return formatter.string(from: record.workedAt)
     }
 
     private func filterArea(state: FarmingRecordPickerState) -> some View {
@@ -145,19 +184,19 @@ struct FarmingRecordPickerView: View {
                 HStack(spacing: Spacing.sm) {
                     AppChip(
                         label: "전체",
-                        isSelected: state.selectedCropName == nil,
+                        isSelected: state.selectedCropId == nil,
                         style: .solid
                     ) {
-                        state.selectCrop(nil)
+                        Task { await state.selectCrop(nil) }
                     }
 
-                    ForEach(state.cropNames, id: \.self) { cropName in
+                    ForEach(state.activeCrops) { crop in
                         AppChip(
-                            label: cropName,
-                            isSelected: state.selectedCropName == cropName,
+                            label: crop.name,
+                            isSelected: state.selectedCropId == crop.id,
                             style: .solid
                         ) {
-                            state.selectCrop(cropName)
+                            Task { await state.selectCrop(crop.id) }
                         }
                     }
                 }
@@ -189,110 +228,4 @@ struct FarmingRecordPickerView: View {
         }
         .background(Color.Background.default)
     }
-}
-
-struct FarmingRecordImage: View {
-    let record: FarmingRecordPreview
-    let height: CGFloat
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(
-                LinearGradient(
-                    colors: [Color(hex: record.imageStartHex), Color(hex: record.imageEndHex)],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            )
-            .overlay {
-                Image(systemName: "leaf.fill")
-                    .font(.system(size: height > 90 ? 34 : 28))
-                    .foregroundStyle(Color.Text.inverse.opacity(0.8))
-            }
-            .overlay(alignment: .top) {
-                LinearGradient(
-                    colors: [.black.opacity(0.28), .clear],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: height * 0.42)
-            }
-            .frame(maxWidth: .infinity)
-            .frame(height: height)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-}
-
-struct FarmingRecordPreview: Identifiable, Hashable, Sendable {
-    let id: UUID
-    let dateText: String
-    let cropName: String
-    let category: String
-    let title: String
-    let caption: String
-    let imageStartHex: UInt32
-    let imageEndHex: UInt32
-
-    static let samples: [FarmingRecordPreview] = [
-        .init(
-            id: UUID(uuidString: "0FC55A80-93F2-4C74-939B-B424842AD35C")!,
-            dateText: "07/08",
-            cropName: "딸기",
-            category: "필수 데이터",
-            title: "영농 활동",
-            caption: "관수량과 생육 상태 기록",
-            imageStartHex: 0x7FE19E,
-            imageEndHex: 0x27865C
-        ),
-        .init(
-            id: UUID(uuidString: "5C2877A9-0EA3-4851-860B-E33942D6D97E")!,
-            dateText: "07/07",
-            cropName: "토마토",
-            category: "필수 데이터",
-            title: "타이틀",
-            caption: "병해충 확인 및 방제 메모",
-            imageStartHex: 0xBAED4F,
-            imageEndHex: 0x699018
-        ),
-        .init(
-            id: UUID(uuidString: "2F41D692-A887-422E-9DDF-0EEAD2C63C8D")!,
-            dateText: "07/06",
-            cropName: "오이",
-            category: "필수 데이터",
-            title: "영농 활동 카테고리",
-            caption: "작성 내용은 최대 2줄입니다.",
-            imageStartHex: 0xC6F1CB,
-            imageEndHex: 0x38C284
-        ),
-        .init(
-            id: UUID(uuidString: "A0833192-76DF-48C4-AFCB-38EF4F36E3FE")!,
-            dateText: "07/05",
-            cropName: "상추",
-            category: "필수 데이터",
-            title: "토양 관리",
-            caption: "멀칭 상태와 수분 보유량 확인",
-            imageStartHex: 0xE6F7BF,
-            imageEndHex: 0x8CC610
-        ),
-        .init(
-            id: UUID(uuidString: "7C533075-A8DC-44B8-B4BE-E1EEC1BB30BF")!,
-            dateText: "07/04",
-            cropName: "딸기",
-            category: "필수 데이터",
-            title: "영농 활동 카테고리",
-            caption: "작성 내용은 최대 2줄입니다. 작성 내용은 최대 2줄입니다.",
-            imageStartHex: 0x95DFA5,
-            imageEndHex: 0x33966A
-        ),
-        .init(
-            id: UUID(uuidString: "D0A84045-3563-4D90-9DC7-51B5FDB25586")!,
-            dateText: "07/03",
-            cropName: "딸기",
-            category: "필수 데이터",
-            title: "영농 활동 카테고리",
-            caption: "작성 내용은 최대 2줄입니다. 작성 내용은 최대 2줄입니다.",
-            imageStartHex: 0xC2EBC9,
-            imageEndHex: 0x55A977
-        ),
-    ]
 }

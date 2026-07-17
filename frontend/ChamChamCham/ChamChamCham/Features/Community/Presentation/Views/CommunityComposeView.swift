@@ -35,8 +35,6 @@ struct CommunityComposeView: View {
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showCropPicker = false
     @State private var showRecordPicker = false
-    /// Presentation-only selection until the farming-record data source is wired; submit still sends nil.
-    @State private var selectedFarmingRecord: FarmingRecordPreview?
     @FocusState private var focusedField: FocusedField?
     @Environment(\.dismiss) private var dismiss
 
@@ -47,7 +45,8 @@ struct CommunityComposeView: View {
             initialValue: CommunityComposeViewModel(
                 repository: container.makeCommunityRepository(),
                 cropCatalog: container.makeCropCatalogService(),
-                mediaRepository: container.makeMediaUploadRepository()
+                mediaRepository: container.makeMediaUploadRepository(),
+                recordRepository: container.makeRecordRepository()
             )
         )
     }
@@ -81,6 +80,7 @@ struct CommunityComposeView: View {
             submitBar
         }
         .task { await viewModel.loadBoards() }
+        .task { await viewModel.loadRecentRecords() }
         .fullScreenCover(isPresented: $showCropPicker) {
             CropPickerView(
                 loadCrops: viewModel.catalogCrops,
@@ -90,7 +90,13 @@ struct CommunityComposeView: View {
             }
         }
         .fullScreenCover(isPresented: $showRecordPicker) {
-            FarmingRecordPickerView(selectedRecord: $selectedFarmingRecord)
+            FarmingRecordPickerView(
+                repository: container.makeRecordRepository(),
+                selectedRecord: Binding(
+                    get: { viewModel.selectedFarmingRecord },
+                    set: { viewModel.selectFarmingRecord($0) }
+                )
+            )
         }
         .onChange(of: pickerItems) { _, items in
             guard !items.isEmpty else { return }
@@ -240,18 +246,18 @@ struct CommunityComposeView: View {
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.sm) {
-                    ForEach(FarmingRecordPreview.samples.prefix(3)) { record in
+                    ForEach(viewModel.recentRecords.prefix(3)) { record in
                         Button {
-                            selectedFarmingRecord = record
+                            viewModel.selectFarmingRecord(record)
                         } label: {
                             AppCard(
                                 size: .xsmall,
-                                title: record.title,
-                                captions: [record.cropName, record.caption],
-                                dateText: record.dateText,
-                                isSelected: selectedFarmingRecord?.id == record.id
+                                title: record.workType.label,
+                                captions: [record.cropName, record.memoPreview],
+                                dateText: FarmingRecordPickerView.dateText(for: record),
+                                isSelected: viewModel.selectedFarmingRecord?.id == record.id
                             ) {
-                                FarmingRecordImage(record: record, height: 84)
+                                RecordRemoteImage(url: record.thumbnailUrl)
                             }
                         }
                         .buttonStyle(.plain)

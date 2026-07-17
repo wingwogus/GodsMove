@@ -11,6 +11,7 @@ layer. Capture first, implement after the full community screen set is collected
 
 ## Captures
 
+- [커뮤니티 상세 / 게시물 내 영농일지 포함 시 (2026-07-17)](2026-07-17-community-detail-with-farming-record.md)
 - [게시물 작성 / default (2026-07-12 재캡처)](2026-07-12-community-compose-default-recapture.md)
 - [게시물 작성 / 필수값 입력 완료 (2026-07-12 재캡처)](2026-07-12-community-compose-required-complete-recapture.md)
 - [게시물 작성 / 전체값 입력 완료 (2026-07-12 재캡처)](2026-07-12-community-compose-all-complete-recapture.md)
