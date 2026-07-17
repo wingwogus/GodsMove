@@ -32,6 +32,9 @@ struct VoiceSessionInfo: Sendable, Equatable {
     /// OpenAI Realtime WebRTC 연결용 단기 토큰(ek_...). 백엔드 API 토큰과 무관.
     let clientSecret: String
     let model: String
+    /// 대화 시간 한도(초). 서버는 대화 중 개입할 수 없어 이 값을 클라이언트가 강제한다.
+    /// OpenAI 토큰은 이보다 30초 뒤(하드 만료)에 끊기므로, 클라이언트가 먼저 우아하게 종료한다.
+    let maxDurationSeconds: Int
 }
 
 enum VoiceTurnRole: String, Sendable, Equatable {
@@ -107,10 +110,21 @@ struct VoiceRecordPrefill: Sendable, Hashable {
     var missingFields: [String] = []
 }
 
+/// 검토 화면으로 넘어간 이유. 사유에 따라 검토 화면 상단 안내 배너가 달라진다.
+enum VoiceReviewReason: Sendable, Hashable {
+    /// AI가 필요한 내용을 모두 확인해 스스로 마무리(tool 호출 완료 → 자동 종료).
+    case autoCompleted
+    /// 사용자가 '완료'를 눌러 종료(본인이 끝냈으므로 배너 없음).
+    case userFinished
+    /// 대화 시간 한도 도달로 지금까지의 내용을 살려서 넘김.
+    case durationLimit
+}
+
 /// 대화 화면 → 검토 화면 핸드오프. `navigationDestination(item:)` 바인딩용.
 struct VoiceReviewHandoff: Identifiable, Hashable, Sendable {
     let sessionId: UUID
     let prefill: VoiceRecordPrefill
+    let reason: VoiceReviewReason
 
     var id: UUID { sessionId }
 }

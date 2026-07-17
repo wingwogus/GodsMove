@@ -17,9 +17,12 @@ struct RecordComposeView: View {
     @Environment(\.dismiss) private var dismiss
     private let onComplete: (UUID) -> Void
     private let onSessionInvalid: (() -> Void)?
+    private let entryNotice: String?
+    private let isVoiceReview: Bool
 
-    /// `saver`/`prefill`/`onSessionInvalid`는 음성 검토 재사용 전용 — 텍스트 작성 호출부는
-    /// 기본값 그대로 두면 기존 동작과 동일하다.
+    /// `saver`/`prefill`/`onSessionInvalid`/`entryNotice`/`isVoiceReview`는 음성 검토 재사용
+    /// 전용 — 텍스트 작성 호출부는 기본값 그대로 두면 기존 동작과 동일하다. `entryNotice`는
+    /// 종료 사유별 상단 안내 배너 문구(없으면 미표시), `isVoiceReview`는 타이틀 구분용이다.
     init(
         repository: any RecordRepository,
         weatherRepository: any WeatherRepository,
@@ -27,6 +30,8 @@ struct RecordComposeView: View {
         saver: (any RecordSaver)? = nil,
         prefill: VoiceRecordPrefill? = nil,
         onSessionInvalid: (() -> Void)? = nil,
+        entryNotice: String? = nil,
+        isVoiceReview: Bool = false,
         onComplete: @escaping (UUID) -> Void
     ) {
         _viewModel = State(initialValue: RecordComposeViewModel(
@@ -37,6 +42,8 @@ struct RecordComposeView: View {
             prefill: prefill
         ))
         self.onSessionInvalid = onSessionInvalid
+        self.entryNotice = entryNotice
+        self.isVoiceReview = isVoiceReview
         self.onComplete = onComplete
     }
 
@@ -45,10 +52,13 @@ struct RecordComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             AppTopAppBar(
-                title: "기록하기",
+                title: isVoiceReview ? "음성 기록 확인" : "기록하기",
                 isDetail: true,
                 leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
             )
+            if let entryNotice {
+                noticeBanner(entryNotice)
+            }
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     basicSection
@@ -371,6 +381,17 @@ struct RecordComposeView: View {
     }
 
     // MARK: - Helpers
+
+    /// 음성 검토 진입 안내 배너(예: 시간 초과로 대화를 살려서 넘어온 경우).
+    private func noticeBanner(_ text: String) -> some View {
+        Text(text)
+            .appTypography(.bodyMedium)
+            .foregroundStyle(Color.Text.subtle)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color.Object.secondarySubtle)
+    }
 
     private func fieldLabel(_ text: String, required: Bool) -> some View {
         HStack(spacing: 2) {

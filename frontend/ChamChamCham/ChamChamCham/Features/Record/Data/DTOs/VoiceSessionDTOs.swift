@@ -11,14 +11,22 @@ import Foundation
 
 /// `expiresAt`/`farms`/`cropsByFarm`은 현재 클라이언트에서 쓰지 않아 디코딩하지 않는다.
 /// tool 스키마가 farmId/cropId를 회원 실소유 값으로 enum 제한하고, 검토 폼이 자체적으로
-/// farm-crops를 다시 로드하기 때문이다.
+/// farm-crops를 다시 로드하기 때문이다. `maxDurationSeconds`는 클라이언트가 대화 시간을
+/// 강제해야 하므로(서버는 대화 중 개입 불가) 디코딩한다. `maxRounds`는 하드 강제가 아니라
+/// 프롬프트 self-pacing 값이라 UI에 노출하지 않으므로 디코딩하지 않는다.
 struct VoiceSessionCreatedResponseDTO: Decodable, Sendable {
     let sessionId: UUID
     let clientSecret: String
     let model: String
+    let maxDurationSeconds: Int
 
     func toDomain() -> VoiceSessionInfo {
-        VoiceSessionInfo(sessionId: sessionId, clientSecret: clientSecret, model: model)
+        VoiceSessionInfo(
+            sessionId: sessionId,
+            clientSecret: clientSecret,
+            model: model,
+            maxDurationSeconds: maxDurationSeconds
+        )
     }
 }
 
