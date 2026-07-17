@@ -32,6 +32,9 @@ struct VoiceSessionInfo: Sendable, Equatable {
     /// OpenAI Realtime WebRTC 연결용 단기 토큰(ek_...). 백엔드 API 토큰과 무관.
     let clientSecret: String
     let model: String
+    /// 대화 시간 한도(초). 서버는 대화 중 개입할 수 없어 이 값을 클라이언트가 강제한다.
+    /// OpenAI 토큰은 이보다 30초 뒤(하드 만료)에 끊기므로, 클라이언트가 먼저 우아하게 종료한다.
+    let maxDurationSeconds: Int
 }
 
 enum VoiceTurnRole: String, Sendable, Equatable {

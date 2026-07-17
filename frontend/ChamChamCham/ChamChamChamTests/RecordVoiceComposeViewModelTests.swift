@@ -61,7 +61,7 @@ struct RecordVoiceComposeViewModelTests {
 
         init(
             sessionInfo: VoiceSessionInfo = VoiceSessionInfo(
-                sessionId: UUID(), clientSecret: "ek_test", model: "gpt-realtime"
+                sessionId: UUID(), clientSecret: "ek_test", model: "gpt-realtime", maxDurationSeconds: 330
             ),
             missingFields: [String] = [],
             createError: (any Error)? = nil,
