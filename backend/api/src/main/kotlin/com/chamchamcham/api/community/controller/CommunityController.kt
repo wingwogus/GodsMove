@@ -44,7 +44,7 @@ class CommunityController(
     fun listPosts(
         @AuthenticationPrincipal memberId: String?,
         @RequestParam(required = false) authorMemberId: UUID?,
-        @RequestParam(required = false) cropId: UUID?,
+        @RequestParam(name = "cropId", required = false) cropIds: List<UUID>?,
         @RequestParam(required = false) postType: CommunityPostType?,
         @RequestParam(required = false) keyword: String?,
         @RequestParam(defaultValue = "false") likedOnly: Boolean,
@@ -57,7 +57,7 @@ class CommunityController(
             CommunityPostSearchCondition(
                 memberId = parseOptionalMemberId(memberId),
                 authorMemberId = authorMemberId,
-                cropId = cropId,
+                cropIds = cropIds ?: emptyList(),
                 postType = postType,
                 keyword = keyword,
                 likedOnly = likedOnly,

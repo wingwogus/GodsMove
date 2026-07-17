@@ -14,7 +14,7 @@ class CommunityPostSearcher(
     override fun search(query: SearchQuery): SearchResult.Page {
         val condition = CommunityPostSearchCondition(
             memberId = query.memberId,
-            cropId = null,
+            cropIds = emptyList(),
             postType = null,
             keyword = query.keyword,
             likedOnly = false,

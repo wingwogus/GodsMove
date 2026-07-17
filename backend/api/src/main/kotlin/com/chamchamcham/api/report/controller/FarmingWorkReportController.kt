@@ -30,7 +30,7 @@ class FarmingWorkReportController(
         @AuthenticationPrincipal memberId: String?,
         @RequestParam(required = false) farmId: UUID?,
         @RequestParam(required = false) cropId: UUID?,
-        @RequestParam(required = false) workType: WorkType?,
+        @RequestParam(name = "workType", required = false) workTypes: List<WorkType>?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) size: Int,
     ): ResponseEntity<ApiResponse<FarmingWorkReportResponses.PageResponse>> {
@@ -40,7 +40,7 @@ class FarmingWorkReportController(
                     memberId = parseMemberId(memberId),
                     farmId = farmId,
                     cropId = cropId,
-                    workType = workType,
+                    workTypes = workTypes ?: emptyList(),
                     cursor = cursor,
                     size = size,
                 ),

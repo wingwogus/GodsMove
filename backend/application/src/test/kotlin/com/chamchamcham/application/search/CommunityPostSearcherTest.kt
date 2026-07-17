@@ -42,7 +42,7 @@ class CommunityPostSearcherTest {
             communityPostService.search(
                 CommunityPostSearchCondition(
                     memberId = memberId,
-                    cropId = null,
+                    cropIds = emptyList(),
                     postType = null,
                     keyword = "발아",
                     likedOnly = false,
@@ -77,7 +77,7 @@ class CommunityPostSearcherTest {
             communityPostService.count(
                 CommunityPostSearchCondition(
                     memberId = memberId,
-                    cropId = null,
+                    cropIds = emptyList(),
                     postType = null,
                     keyword = "발아",
                     likedOnly = false,

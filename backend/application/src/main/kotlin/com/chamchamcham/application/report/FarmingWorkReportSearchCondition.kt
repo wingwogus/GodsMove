@@ -7,7 +7,7 @@ data class FarmingWorkReportSearchCondition(
     val memberId: UUID,
     val farmId: UUID?,
     val cropId: UUID?,
-    val workType: WorkType?,
+    val workTypes: List<WorkType> = emptyList(),
     val cursor: String?,
     val size: Int,
 )

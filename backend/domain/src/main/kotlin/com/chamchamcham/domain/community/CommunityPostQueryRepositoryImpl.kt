@@ -58,9 +58,9 @@ class CommunityPostQueryRepositoryImpl(
             where += "p.author.id = :authorMemberId"
             params["authorMemberId"] = it
         }
-        condition.cropId?.let {
-            where += "p.crop.id = :cropId"
-            params["cropId"] = it
+        if (condition.cropIds.isNotEmpty()) {
+            where += "p.crop.id in :cropIds"
+            params["cropIds"] = condition.cropIds
         }
         condition.postType?.let {
             where += "p.postType = :postType"

@@ -251,9 +251,17 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
             .containsOnly(latest.id, active.id)
         assertThat(
             repository.searchWorkItems(
-                workCondition(farmId = null, cropId = null, workType = WorkType.PLANTING),
-            ).rows.map { it.reportId },
-        ).containsExactly(sameEndOtherScope.id)
+                workCondition(
+                    farmId = null,
+                    cropId = null,
+                    workTypes = listOf(WorkType.PLANTING, WorkType.WATERING),
+                ),
+            ).rows.map { it.reportId to it.workType },
+        ).containsExactly(
+            requireNotNull(latest.id) to WorkType.WATERING,
+            requireNotNull(active.id) to WorkType.WATERING,
+            requireNotNull(sameEndOtherScope.id) to WorkType.PLANTING,
+        )
     }
 
     @Test
@@ -463,6 +471,7 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
         farmId: UUID? = this.farmId,
         cropId: UUID? = this.cropId,
         workType: WorkType? = null,
+        workTypes: List<WorkType> = listOfNotNull(workType),
         cursor: FarmingCycleReportQueryRepository.WorkItemCursor? = null,
         size: Int = 20,
     ): FarmingCycleReportQueryRepository.WorkItemSearchCondition =
@@ -470,7 +479,7 @@ class FarmingCycleReportQueryRepositoryTest @Autowired constructor(
             memberId = memberId,
             farmId = farmId,
             cropId = cropId,
-            workType = workType,
+            workTypes = workTypes,
             cursor = cursor,
             size = size,
         )
