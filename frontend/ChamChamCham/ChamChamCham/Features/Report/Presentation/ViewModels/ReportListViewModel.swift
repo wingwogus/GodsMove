@@ -133,9 +133,9 @@ final class ReportListViewModel {
         await load(kind: .initial)
     }
 
-    func applyWorkTypeFilter(_ workType: WorkType?) async {
-        guard filter.workType != workType else { return }
-        filter.workType = workType
+    func applyWorkTypeFilter(_ workTypes: Set<WorkType>) async {
+        guard filter.workTypes != workTypes else { return }
+        filter.workTypes = workTypes
         await load(kind: .initial)
     }
 

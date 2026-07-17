@@ -31,8 +31,8 @@ struct ReportListView: View {
                     Task { await viewModel.applyCropFilter(cropId) }
                 }
             case .workType:
-                ReportWorkTypeFilterSheet(selected: viewModel.filter.workType) { workType in
-                    Task { await viewModel.applyWorkTypeFilter(workType) }
+                ReportWorkTypeFilterSheet(selected: viewModel.filter.workTypes) { workTypes in
+                    Task { await viewModel.applyWorkTypeFilter(workTypes) }
                 }
             case .farm:
                 ReportFarmFilterSheet(

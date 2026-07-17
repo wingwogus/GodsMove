@@ -33,8 +33,8 @@ struct ReportFilterChipPresentation: Equatable {
             ),
             ReportFilterChipPresentation(
                 kind: .workType,
-                title: filter.workType?.label ?? "영농 활동",
-                isSelected: filter.workType != nil
+                title: workTypeChipTitle(for: filter.workTypes),
+                isSelected: !filter.workTypes.isEmpty
             ),
             ReportFilterChipPresentation(
                 kind: .farm,
@@ -42,6 +42,12 @@ struct ReportFilterChipPresentation: Equatable {
                 isSelected: filter.farmId != nil
             ),
         ]
+    }
+
+    private static func workTypeChipTitle(for workTypes: Set<WorkType>) -> String {
+        guard !workTypes.isEmpty else { return "영농 활동" }
+        let labels = WorkType.allCases.filter(workTypes.contains).map(\.label)
+        return labels.count == 1 ? labels[0] : "\(labels[0]) 외 \(labels.count - 1)"
     }
 }
 

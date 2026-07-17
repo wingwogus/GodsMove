@@ -19,7 +19,7 @@ struct ReportCacheTests {
         let farmId = UUID()
         let cropId = UUID()
         let all = ReportFilter()
-        let filtered = ReportFilter(farmId: farmId, cropId: cropId, workType: .harvest)
+        let filtered = ReportFilter(farmId: farmId, cropId: cropId, workTypes: [.harvest])
         let first = json("{\"items\":[1]}")
         let accumulated = json("{\"items\":[1,2]}")
         let other = json("{\"items\":[9]}")
@@ -33,6 +33,19 @@ struct ReportCacheTests {
         #expect(cache.list(for: all)?.data == accumulated)
         #expect(cache.list(for: all)?.updatedAt == accumulatedDate)
         #expect(cache.list(for: filtered)?.data == other)
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("multi-selected work types produce a stable cache key regardless of Set iteration order")
+    func multiWorkTypeCacheKeyIsOrderStable() throws {
+        let (cache, container) = try makeCache()
+        let filterA = ReportFilter(workTypes: [.watering, .harvest])
+        let filterB = ReportFilter(workTypes: [.harvest, .watering])
+        let payload = json("{\"items\":[1]}")
+
+        cache.saveList(payload, for: filterA)
+
+        #expect(cache.list(for: filterB)?.data == payload)
         withExtendedLifetime(container) {}
     }
 
@@ -72,7 +85,7 @@ struct ReportCacheTests {
     @Test("invalid JSON is a cache miss and its row is deleted")
     func corruptPayloadCleanup() throws {
         let (cache, container) = try makeCache()
-        let filter = ReportFilter(workType: .watering)
+        let filter = ReportFilter(workTypes: [.watering])
         cache.saveList(Data([0xFF, 0x00, 0x01]), for: filter)
 
         #expect(cache.list(for: filter) == nil)
