@@ -40,16 +40,9 @@ struct LandingView: View {
                         .foregroundStyle(Color.Text.red)
                 }
 
-                // Kakao/Naver ship official pre-rendered brand buttons (logo + label baked in), so we
-                // render the asset directly instead of composing our own. Height is pinned to match
-                // the Apple button below; corners clipped to the same radius for a uniform stack.
-                BrandLoginButton(asset: "kakao_login_large_wide", isDisabled: isLoggingIn) {
-                    Task { await login(with: authViewModel.loginWithKakao) }
-                }
-                BrandLoginButton(asset: "NAVER_login_Light_KR_green_wide_H56", isDisabled: isLoggingIn) {
-                    Task { await login(with: authViewModel.loginWithNaver) }
-                }
-                // Apple requires its own rendered mark or the official `SignInWithAppleButton`.
+                // Apple requires its own rendered mark or the official `SignInWithAppleButton`. Placed
+                // first: it needs no account we can hand a reviewer, unlike Kakao/Naver below, which
+                // require a Korea-phone-verified account.
                 SignInWithAppleButton(.signIn) { request in
                     let rawNonce = NonceGenerator.generate()
                     appleNonce = rawNonce
@@ -63,6 +56,16 @@ struct LandingView: View {
                 .clipShape(RoundedRectangle(cornerRadius: Self.buttonCornerRadius))
                 .disabled(isLoggingIn)
                 .opacity(isLoggingIn ? 0.6 : 1)
+
+                // Kakao/Naver ship official pre-rendered brand buttons (logo + label baked in), so we
+                // render the asset directly instead of composing our own. Height is pinned to match
+                // the Apple button above; corners clipped to the same radius for a uniform stack.
+                BrandLoginButton(asset: "kakao_login_large_wide", isDisabled: isLoggingIn) {
+                    Task { await login(with: authViewModel.loginWithKakao) }
+                }
+                BrandLoginButton(asset: "NAVER_login_Light_KR_green_wide_H56", isDisabled: isLoggingIn) {
+                    Task { await login(with: authViewModel.loginWithNaver) }
+                }
 
                 Button("로그인 없이 둘러보기") {
                     appState.isGuest = true
