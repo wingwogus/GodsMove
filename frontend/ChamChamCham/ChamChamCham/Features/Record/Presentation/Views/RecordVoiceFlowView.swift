@@ -59,7 +59,8 @@ struct RecordVoiceFlowView: View {
                             onSessionInvalid()
                             dismiss()
                         },
-                        entryNotice: entryNotice(for: handoff.reason)
+                        entryNotice: entryNotice(for: handoff.reason),
+                        isVoiceReview: true
                     ) { recordId in
                         onComplete(recordId)
                         dismiss()
@@ -75,11 +76,14 @@ struct RecordVoiceFlowView: View {
         }
     }
 
-    /// 검토 화면 상단 안내 배너 문구. 시간 초과로 대화를 살려서 넘어온 경우에만 표시한다.
+    /// 검토 화면 상단 안내 배너 문구. 종료 사유에 따라 달라지며, 사용자가 직접 완료한 경우는
+    /// 본인이 끝냈으므로 배너를 띄우지 않는다.
     private func entryNotice(for reason: VoiceReviewReason) -> String? {
         switch reason {
-        case .normal:
+        case .userFinished:
             nil
+        case .autoCompleted:
+            "AI가 필요한 내용을 모두 확인했어요. 정리한 기록을 확인하고 저장해 주세요."
         case .durationLimit:
             "대화 시간이 다 되어 지금까지 말씀하신 내용으로 정리했어요. 부족한 항목은 아래에서 채워주세요."
         }

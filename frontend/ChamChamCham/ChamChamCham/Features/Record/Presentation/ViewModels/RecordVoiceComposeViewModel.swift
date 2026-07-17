@@ -98,7 +98,7 @@ final class RecordVoiceComposeViewModel {
 
     func finishTapped() {
         guard canFinish else { return }
-        Task { await endConversation() }
+        Task { await endConversation(reason: .userFinished) }
     }
 
     /// failed에서만 유효. BR-VOICE-008: 기존 세션은 버리고 새 세션으로 시작한다.
@@ -197,7 +197,7 @@ final class RecordVoiceComposeViewModel {
             isAssistantSpeaking = false
             // 초안이 나온 응답 사이클이 닫히면 자동 종료 — 마무리 안내 음성/전사가 끝난 뒤다.
             if toolArgumentsJSON != nil, case .conversing = phase {
-                Task { await endConversation() }
+                Task { await endConversation(reason: .autoCompleted) }
             }
 
         case let .failed(reason):
@@ -277,7 +277,7 @@ final class RecordVoiceComposeViewModel {
 
     // MARK: - 대화 종료 → turns 제출 (BR: PROCESSING)
 
-    private func endConversation(reason: VoiceReviewReason = .normal) async {
+    private func endConversation(reason: VoiceReviewReason) async {
         guard case .conversing = phase else { return }
         phase = .processing
         cancelDeadline()

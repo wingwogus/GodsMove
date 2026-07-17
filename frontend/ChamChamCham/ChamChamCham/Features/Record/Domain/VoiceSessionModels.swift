@@ -110,11 +110,12 @@ struct VoiceRecordPrefill: Sendable, Hashable {
     var missingFields: [String] = []
 }
 
-/// 검토 화면으로 넘어간 이유. 시간 초과로 대화를 중간에 살려서 넘긴 경우 검토 화면이
-/// 안내 배너를 띄운다(사용자가 직접 완료했거나 AI가 정상 마무리한 경우는 배너 없음).
+/// 검토 화면으로 넘어간 이유. 사유에 따라 검토 화면 상단 안내 배너가 달라진다.
 enum VoiceReviewReason: Sendable, Hashable {
-    /// 사용자 완료 또는 AI 정상 마무리(tool 호출 완료).
-    case normal
+    /// AI가 필요한 내용을 모두 확인해 스스로 마무리(tool 호출 완료 → 자동 종료).
+    case autoCompleted
+    /// 사용자가 '완료'를 눌러 종료(본인이 끝냈으므로 배너 없음).
+    case userFinished
     /// 대화 시간 한도 도달로 지금까지의 내용을 살려서 넘김.
     case durationLimit
 }

@@ -18,10 +18,11 @@ struct RecordComposeView: View {
     private let onComplete: (UUID) -> Void
     private let onSessionInvalid: (() -> Void)?
     private let entryNotice: String?
+    private let isVoiceReview: Bool
 
-    /// `saver`/`prefill`/`onSessionInvalid`/`entryNotice`는 음성 검토 재사용 전용 — 텍스트 작성
-    /// 호출부는 기본값 그대로 두면 기존 동작과 동일하다. `entryNotice`는 시간 초과로 대화를
-    /// 살려서 넘어온 경우 상단에 띄우는 안내 배너 문구다(없으면 배너 미표시).
+    /// `saver`/`prefill`/`onSessionInvalid`/`entryNotice`/`isVoiceReview`는 음성 검토 재사용
+    /// 전용 — 텍스트 작성 호출부는 기본값 그대로 두면 기존 동작과 동일하다. `entryNotice`는
+    /// 종료 사유별 상단 안내 배너 문구(없으면 미표시), `isVoiceReview`는 타이틀 구분용이다.
     init(
         repository: any RecordRepository,
         weatherRepository: any WeatherRepository,
@@ -30,6 +31,7 @@ struct RecordComposeView: View {
         prefill: VoiceRecordPrefill? = nil,
         onSessionInvalid: (() -> Void)? = nil,
         entryNotice: String? = nil,
+        isVoiceReview: Bool = false,
         onComplete: @escaping (UUID) -> Void
     ) {
         _viewModel = State(initialValue: RecordComposeViewModel(
@@ -41,6 +43,7 @@ struct RecordComposeView: View {
         ))
         self.onSessionInvalid = onSessionInvalid
         self.entryNotice = entryNotice
+        self.isVoiceReview = isVoiceReview
         self.onComplete = onComplete
     }
 
@@ -49,7 +52,7 @@ struct RecordComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             AppTopAppBar(
-                title: "기록하기",
+                title: isVoiceReview ? "음성 기록 확인" : "기록하기",
                 isDetail: true,
                 leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
             )
