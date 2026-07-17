@@ -25,7 +25,7 @@ struct ReportDetailView: View {
                 title: "",
                 isDetail: true,
                 showBorder: false,
-                leading: .init(.asset("chevron_backward")) { dismiss() },
+                leading: .init(.asset("arrow_back_ios_new")) { dismiss() },
                 trailing: [.init(.asset("more_vert"))]
             )
             content
@@ -109,7 +109,7 @@ struct ReportDetailView: View {
             }
 
             Text(detail.workTypeLabel)
-                .appTypography(.titleLargeEmphasized)
+                .appTypography(.headlineMedium)
                 .foregroundStyle(Color.Text.default)
 
             LazyVGrid(
@@ -144,7 +144,7 @@ struct ReportDetailView: View {
                     .appTypography(.titleLargeEmphasized)
                     .foregroundStyle(Color.Text.subtle)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                AppIconView(source: .asset("chevron_forward"), size: 24)
+                AppIconView(source: .asset("arrow_forward_ios"), size: 24)
                     .foregroundStyle(Color.Icon.subtle)
             }
             .padding(.vertical, 20)
