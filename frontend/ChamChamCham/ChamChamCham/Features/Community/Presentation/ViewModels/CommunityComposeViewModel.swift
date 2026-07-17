@@ -100,6 +100,11 @@ final class CommunityComposeViewModel {
 
     func selectCrop(_ cropId: UUID) {
         selectedCropId = cropId
+        // Switching boards away from the attached record's crop would violate the backend's
+        // crop-match check on submit, so drop the now-mismatched record.
+        if selectedFarmingRecord?.cropId != cropId {
+            selectedFarmingRecord = nil
+        }
     }
 
     // MARK: - Farming record
@@ -110,8 +115,16 @@ final class CommunityComposeViewModel {
         recentRecords = page.items
     }
 
+    /// Backend requires the post's crop to match the attached record's crop (`resolveFarmingRecord` in
+    /// `CommunityPostService`), so picking a record forces the board selection to that record's crop —
+    /// adding it as a chip first if it isn't offered yet.
     func selectFarmingRecord(_ record: FarmingRecordSummary?) {
         selectedFarmingRecord = record
+        guard let record else { return }
+        if !boards.contains(where: { $0.cropId == record.cropId }) {
+            boards.append(CommunityBoard(cropId: record.cropId, cropName: record.cropName))
+        }
+        selectedCropId = record.cropId
     }
 
     // MARK: - Board picker (작물 추가)
