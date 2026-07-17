@@ -2,10 +2,10 @@
 
 - Source title: `ChamChamCham API`
 - Version: `v1`
-- SHA-256: `13302632337a655298ef29852b3ef613a597bbcab2719e10c8b164d106c6c200`
-- Paths: `56`
-- Operations: `65`
-- Schemas: `159`
+- SHA-256: `8f5cfd9ae73d6eb91d7e4e06d0a42334397e3e4ce16e8c5c56bfd1923222bc25`
+- Paths: `59`
+- Operations: `69`
+- Schemas: `172`
 
 ## Operations
 
@@ -56,6 +56,7 @@
 | DELETE | `/api/v1/farms/{farmId}` | `delete` |
 | PUT | `/api/v1/farms/{farmId}` | `replace` |
 | POST | `/api/v1/media/images` | `uploadImage` |
+| DELETE | `/api/v1/members/me` | `withdraw` |
 | GET | `/api/v1/members/me` | `getMyProfile` |
 | GET | `/api/v1/members/me/farm-crops` | `getMyFarmCrops` |
 | PUT | `/api/v1/members/me/profile` | `updateMyProfile` |
@@ -64,7 +65,10 @@
 | GET | `/api/v1/pesticides/{pesticideId}/pests` | `listPests` |
 | GET | `/api/v1/policies/recommendations` | `listRecommendations` |
 | GET | `/api/v1/policies/{policyProgramId}` | `getProgramDetail` |
-| GET | `/api/v1/search` | `search` |
+| GET | `/api/v1/search` | `searchAll` |
+| GET | `/api/v1/search/policies` | `searchPolicies` |
+| GET | `/api/v1/search/posts` | `searchPosts` |
+| GET | `/api/v1/search/records` | `searchRecords` |
 | GET | `/api/v1/search/suggestions` | `suggestions` |
 | GET | `/api/v1/test/me` | `getMyInfo` |
 | GET | `/api/v1/test/ping` | `ping` |
@@ -100,7 +104,6 @@
 - `ApiResponseListWorkTypeResponse`
 - `ApiResponseLoginResponse`
 - `ApiResponseMyProfileResponse`
-- `ApiResponseObject`
 - `ApiResponseOnboardingCompleteResponse`
 - `ApiResponsePageResponse`
 - `ApiResponsePesticidePageResponse`
@@ -118,7 +121,12 @@
 - `ApiResponseRecordDetailResponse`
 - `ApiResponseRecordIdResponse`
 - `ApiResponseRecordPageResponse`
+- `ApiResponseSearchAllResponse`
+- `ApiResponseSearchPolicyPageResponse`
+- `ApiResponseSearchPostPageResponse`
+- `ApiResponseSearchRecordPageResponse`
 - `ApiResponseStatusResponse`
+- `ApiResponseSuggestionsResponse`
 - `ApiResponseTokenResponse`
 - `ApiResponseUnit`
 - `ApiResponseUploadedImageResponse`
@@ -220,11 +228,20 @@
 - `SaveFarmRequest`
 - `SavePostRequest`
 - `SaveRecordRequest`
+- `SearchAllResponse`
+- `SearchPolicyItemResponse`
+- `SearchPolicyPageResponse`
+- `SearchPolicySectionResponse`
+- `SearchPostPageResponse`
+- `SearchPostSectionResponse`
+- `SearchRecordPageResponse`
+- `SearchRecordSectionResponse`
 - `SendVerificationCodeRequest`
 - `SignUpRequest`
 - `StatusResponse`
 - `StructuredResultResponse`
 - `SubmitTurnsRequest`
+- `SuggestionsResponse`
 - `TokenResponse`
 - `TurnRequest`
 - `UpdateMyProfileRequest`
