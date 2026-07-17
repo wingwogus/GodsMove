@@ -18,7 +18,20 @@ don't re-derive it.
   branches now each have one committed change from this session — check both
   `git log` on `dev` and on this worktree branch when picking up context.
 
-## ⚠️ Do not touch these files without checking with the user first
+## ✅ RESOLVED (2026-07-18, later same day) — filter multi-select work merged
+
+The warning below was accurate when first written but is now **stale**. The
+separate session's filter/multi-select work merged into `dev` via
+`05f3a87e fix(report): 영농 활동 필터 복수선택 지원 및 바텀시트 디자인 통일`
+(plus `8189be74 refactor(design-system): 필터 바텀시트 스캐폴드를
+AppFilterSheetScaffold로 승격` and `9835f6fa fix(record): 기록 탭 상단 필터 칩
+selected 상태 미반영 수정`). The files listed originally are no longer
+uncommitted WIP — check `git log` on `dev` before assuming otherwise, but as
+of this update there's nothing blocking there. Original warning kept below for
+history.
+
+<details>
+<summary>Original warning (now resolved)</summary>
 
 As of 2026-07-18, the `dev` working tree (main checkout, not this worktree)
 has substantial **uncommitted, in-progress work from a separate session**
@@ -54,6 +67,8 @@ multi-select-count vs single-select) — "필터 칩은 현재 수정 중"
 or resolve conflicts with this in-progress work without asking the user
 first** — re-check `git status`/`git diff` on `dev` before assuming it's still
 there or still in the same state.
+
+</details>
 
 ## What's done (2026-07-18)
 
@@ -127,24 +142,41 @@ a follow-up session should start deciding fix vs. defer):
 
 ## What's committed where
 
-- **This worktree** (`worktree-fix+report-list-design-front`): the
-  `Color.Chart.turquoise` fix + all three files under `docs/figma/report/`
-  (this HANDOFF + the two capture docs).
+- **This worktree** (`worktree-fix+report-list-design-front`):
+  - `Color.Chart.turquoise` fix (`dfd3d344`)
+  - all three original files under `docs/figma/report/` (`cf99480a`)
+  - `3aa1457b fix(report): 심기 리포트 상세 화면 아이콘/타이포/컬러 피그마 스펙
+    정합` — fixes findings 1–5 from
+    [2026-07-18-report-detail-planting.md](2026-07-18-report-detail-planting.md):
+    `ReportDetailView.swift` (back icon → `arrow_back_ios_new`, history-row
+    icon → `arrow_forward_ios`, WorkType title → `.headlineMedium`) and
+    `ReportMetricCard.swift` (label → `.labelMediumEmphasized`, value color →
+    `Color.Text.subtle`). Build verified with
+    `xcodebuild -scheme ChamChamCham -destination 'platform=iOS Simulator,name=iPhone 17' build`
+    → `BUILD SUCCEEDED` (note: this worktree didn't have a local
+    `Core/Config/Secrets.swift` — gitignored — copied from the main checkout
+    to unblock the build; not committed).
 - **`dev`** (main checkout): the `ReportChartCard.swift` `#Preview` block
-  addition only — a small, independent dev-tooling change the user asked to
-  land directly on `dev` rather than in this feature worktree.
+  addition (`a2019a69`), plus (unrelated to this handoff, landed later the
+  same day) the filter/multi-select work — see the resolved-warning section
+  above.
 
 ## Remaining work / suggested next steps
 
-1. Decide fix vs. defer for the 7 open findings in
-   [2026-07-18-report-detail-planting.md](2026-07-18-report-detail-planting.md)
-   and the 2 open findings in
-   [2026-07-18-report-detail-chart-spec.md](2026-07-18-report-detail-chart-spec.md).
-   Items 1–5 in the planting doc look like straightforward, low-risk fixes
-   (wrong icon asset name / wrong typography token / wrong color token) —
-   confirm with the user, then fix directly (not a Foundation change, so no
-   extra sign-off needed per `frontend/AGENTS.md`, unlike the turquoise hex
-   which *is* a Foundation value).
+1. ~~Decide fix vs. defer for the 7 open findings in the planting doc~~ —
+   **items 1–5 fixed** (see commit `3aa1457b` above). Still open:
+   - **Finding 6** (date-range separator: Detail screen's Figma shows `-`,
+     code uses `~`) — open question, needs designer confirmation on whether
+     List (`~`) and Detail (`-`) are intentionally different before touching.
+   - **Finding 7** (inline record-row preview in "기록 내역 리스트") — real
+     product-scope gap, not a style fix; `ReportRecordHistoryView` is a
+     placeholder. Needs a real decision/API, not a quick patch.
+   - The 2 open findings in
+     [2026-07-18-report-detail-chart-spec.md](2026-07-18-report-detail-chart-spec.md)
+     (legend label/value styling swapped; donut center label should stay
+     visible when expanded) are still unfixed — confirm with the user before
+     touching `ReportChartCard.swift`/`ReportChartModel`, since both chart
+     styles share one `highlightedEntry(isExpanded:)` codepath.
 2. Capture the remaining Report Detail workType variants one at a time
    (물주기/비료 주기/병해충 관리/잡초 관리/가지·순 정리/수확/기타) — user's
    explicit plan: "화면 하나씩 캡처하고 바로 구현" (capture one screen, then
@@ -153,12 +185,13 @@ a follow-up session should start deciding fix vs. defer):
    doc). Header/badges/metrics/coaching/history layout is shared across
    workTypes per this capture — likely only the metric fields and chart data
    shape differ per type; confirm against each capture rather than assuming.
+   Since findings 1–5 were structural (icons/typography/color on the shared
+   detail-screen chrome), they should already apply to every workType capture
+   going forward — no need to re-flag them per workType.
 3. `ReportCoachingSection.swift` (AI coaching cards) has not been compared
    against Figma yet — the 심기 capture shows 4 example coaching cards
    (잘한 점/이전 리포트과의 비교/개선 필요점/추천 행동) worth checking once a
    real coaching-populated capture is available.
-4. Do not touch the filter/multi-select files listed above without checking
-   with the user — that work is being done in a separate, concurrent session.
 
 ## Resume prompt for a new session
 
@@ -172,18 +205,17 @@ a follow-up session should start deciding fix vs. defer):
 2026-07-18-report-detail-chart-spec.md / 2026-07-18-report-detail-planting.md
 문서도 읽어줘. TalkToFigma 연결 절차는 docs/figma/record/HANDOFF.md Part 1과 동일해.
 
-지금까지: Report List View는 검토 완료(대부분 일치, 필터 칩 다중선택 건은 다른
-세션에서 처리 중이라 스킵). 그래프 포맷 스펙 캡처 완료(turquoise 색상 버그는
-수정함, 범례 스타일 버그·도넛 펼침 시 중앙 라벨 숨김 버그는 문서화만 하고
-미수정). 심기(Planting) 리포트 상세 화면 전체 캡처 완료, 7개 불일치 발견,
-전부 미수정 상태.
+지금까지: Report List View는 검토 완료(대부분 일치, 필터 칩 다중선택 건은 이미
+dev에 병합돼 해결됨). 그래프 포맷 스펙 캡처 완료(turquoise 색상 버그는 수정함,
+범례 스타일 버그·도넛 펼침 시 중앙 라벨 숨김 버그는 아직 미수정). 심기
+(Planting) 리포트 상세 화면 전체 캡처 완료, 7개 불일치 중 1~5번(아이콘 애셋명/
+WorkType 타이틀 폰트/메트릭 카드 라벨·값 스타일)은 커밋 3aa1457b로 수정 완료.
+6번(날짜 구분자 `-` vs `~`)은 디자이너 확인 필요한 열린 질문, 7번(기록 내역
+인라인 프리뷰)은 별도 기능 구현이 필요한 제품 스코프 갭으로 둘 다 미수정.
 
-⚠️ dev 브랜치(메인 체크아웃)에는 필터/다중선택 관련 다른 세션의 진행 중인
-변경사항이 있어 — HANDOFF.md의 "Do not touch these files" 목록을 반드시 먼저
-확인하고, 그 파일들은 사용자 확인 없이 건드리지 마.
-
-먼저 HANDOFF.md의 "Remaining work" 섹션에 있는 7+2개 미해결 항목 중 무엇을
-지금 고칠지 사용자에게 확인한 뒤, 승인된 것만 고쳐줘. 그 다음 나머지
-workType(물주기/비료 주기/병해충 관리/잡초 관리/가지·순 정리/수확/기타) 캡처를
-하나씩 이어가면 돼.
+다음 단계: 차트 스펙의 2개 미해결 항목(범례 스타일, 도넛 라벨) 수정 여부를
+사용자에게 확인하거나, 바로 나머지 workType(물주기/비료 주기/병해충 관리/잡초
+관리/가지·순 정리/수확/기타) 캡처를 하나씩 이어가면 돼. 이 워크트리엔
+Core/Config/Secrets.swift가 없으니(gitignore) 빌드 확인이 필요하면 메인
+체크아웃에서 복사해와.
 ```
