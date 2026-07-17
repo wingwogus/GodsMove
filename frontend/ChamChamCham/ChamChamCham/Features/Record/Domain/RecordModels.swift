@@ -37,6 +37,21 @@ enum WorkType: String, Sendable, Hashable, CaseIterable {
         case .etc: "기타"
         }
     }
+
+    /// Base name of this work type's illustration in `Assets.xcassets/Illust` (see `AppIllustration`).
+    /// Differs from `label`'s wording/punctuation in two cases (`비료주기`, `가지 순 정리`).
+    var illustAssetName: String {
+        switch self {
+        case .planting: "심기"
+        case .watering: "물주기"
+        case .fertilizing: "비료주기"
+        case .pestControl: "병해충 관리"
+        case .weeding: "잡초 관리"
+        case .pruning: "가지 순 정리"
+        case .harvest: "수확"
+        case .etc: "기타"
+        }
+    }
 }
 
 /// A crop the member is actively growing, sourced from `GET /members/me/farm-crops`. Used as the "진행중인 작물"

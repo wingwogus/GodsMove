@@ -221,7 +221,11 @@ struct HomeView: View {
                                     badges: [record.cropName],
                                     dateText: dateText(record.workedAt)
                                 ) {
-                                    RecordRemoteImage(url: record.thumbnailUrl)
+                                    RecordRemoteImage(
+                                        url: record.thumbnailUrl,
+                                        workType: record.workType,
+                                        illustVariant: .wide
+                                    )
                                 }
                             }
                             .buttonStyle(.plain)

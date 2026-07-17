@@ -362,7 +362,7 @@ struct RecordRow: View {
             dateText: dateText,
             showsDivider: showsDivider
         ) {
-            RecordRemoteImage(url: record.thumbnailUrl)
+            RecordRemoteImage(url: record.thumbnailUrl, workType: record.workType)
         }
     }
 
@@ -381,10 +381,13 @@ struct RecordRow: View {
     }
 }
 
-/// Fixed-size remote thumbnail with a muted placeholder while loading / when absent. Mirrors the community
-/// list's remote-image slot; kept feature-local.
+/// Fixed-size remote thumbnail with a muted placeholder while loading and a work-type illustration
+/// when the URL is absent or fails to load. Mirrors the community list's remote-image slot; kept
+/// feature-local.
 struct RecordRemoteImage: View {
     let url: String?
+    let workType: WorkType
+    var illustVariant: AppIllustration.Variant = .square
     var cornerRadius: CGFloat = 8
 
     var body: some View {
@@ -392,16 +395,26 @@ struct RecordRemoteImage: View {
             .fill(Color.Object.muted)
             .overlay {
                 if let url, let parsed = URL(string: url) {
-                    AsyncImage(url: parsed) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
-                        ProgressView()
+                    AsyncImage(url: parsed) { phase in
+                        switch phase {
+                        case let .success(image):
+                            image.resizable().scaledToFill()
+                        case .empty:
+                            ProgressView()
+                        case .failure:
+                            illustration
+                        @unknown default:
+                            illustration
+                        }
                     }
                 } else {
-                    AppIconView(source: .asset("photo"), size: 24)
-                        .foregroundStyle(Color.Icon.disabled)
+                    illustration
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+    }
+
+    private var illustration: some View {
+        AppIllustration(assetName: workType.illustAssetName, variant: illustVariant)
     }
 }

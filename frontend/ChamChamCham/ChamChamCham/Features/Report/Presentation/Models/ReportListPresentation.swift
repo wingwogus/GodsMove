@@ -50,9 +50,11 @@ struct ReportListCardPresentation: Equatable {
     let badges: [String]
     let periodParts: [String]
     let thumbnailURL: URL?
+    let workType: WorkType
 
     init(summary: FarmingWorkReportSummary) {
         title = summary.workTypeLabel
+        workType = summary.key.workType
         badges = [summary.cropName, summary.farmName]
         periodParts = [
             ReportDateParser.displayDate(summary.startsAt),

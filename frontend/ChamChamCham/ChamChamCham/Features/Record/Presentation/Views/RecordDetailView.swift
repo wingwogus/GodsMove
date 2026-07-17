@@ -122,7 +122,7 @@ struct RecordDetailView: View {
                 divider
                 infoSection(detail)
                 if !detail.imageUrls.isEmpty {
-                    imageSection(detail.imageUrls)
+                    imageSection(detail.imageUrls, workType: detail.workType)
                 }
                 divider
                 coachingSection
@@ -222,14 +222,14 @@ struct RecordDetailView: View {
 
     // MARK: 작업 사진
 
-    private func imageSection(_ urls: [String]) -> some View {
+    private func imageSection(_ urls: [String], workType: WorkType) -> some View {
         VStack(alignment: .leading, spacing: Spacing.md) {
             sectionHeading("작업 사진")
                 .padding(.horizontal, horizontalInset)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: Spacing.md) {
                     ForEach(urls, id: \.self) { url in
-                        RecordRemoteImage(url: url)
+                        RecordRemoteImage(url: url, workType: workType)
                             .frame(width: 144, height: 144)
                     }
                 }

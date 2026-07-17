@@ -257,7 +257,7 @@ struct CommunityComposeView: View {
                                 dateText: FarmingRecordPickerView.dateText(for: record),
                                 isSelected: viewModel.selectedFarmingRecord?.id == record.id
                             ) {
-                                RecordRemoteImage(url: record.thumbnailUrl)
+                                RecordRemoteImage(url: record.thumbnailUrl, workType: record.workType)
                             }
                         }
                         .buttonStyle(.plain)

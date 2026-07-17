@@ -146,7 +146,7 @@ struct FarmingRecordPickerView: View {
                                     dateText: Self.dateText(for: record),
                                     isSelected: state.selectedRecordID == record.id
                                 ) {
-                                    RecordRemoteImage(url: record.thumbnailUrl)
+                                    RecordRemoteImage(url: record.thumbnailUrl, workType: record.workType)
                                 }
                             }
                             .buttonStyle(.plain)
