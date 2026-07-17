@@ -25,15 +25,30 @@ final class RecordVoiceComposeViewModel {
     /// VOICE_002(이미 처리된 세션) — 재시도 금지. 플로우 컨테이너가 토스트와 함께 닫는다.
     private(set) var sessionInvalidated = false
 
+    /// 대화 종료 예정 시각(= 연결 시점 + maxDurationSeconds). 남은 시간 표시에 쓰이며,
+    /// 대화 중이 아닐 땐 nil이다.
+    private(set) var conversationDeadline: Date?
+
     private let voiceRepository: any VoiceSessionRepository
     private let recordRepository: any RecordRepository
     private let transport: any VoiceRealtimeTransport
     private let requestMicPermission: @Sendable () async -> Bool
+    /// 대화 시간 한도까지 대기하는 seam. 기본은 실시간 sleep, 테스트는 즉시/게이트로 대체한다.
+    private let waitForDeadline: @Sendable (_ seconds: Int) async -> Void
 
     private var sessionId: UUID?
     private var eventTask: Task<Void, Never>?
     /// save_farming_record tool 호출의 arguments 원문. turns의 extractedFields로도 실린다.
     private var toolArgumentsJSON: String?
+
+    private var maxDurationSeconds = 0
+    private var conversationStartedAt: Date?
+    /// 시간 한도 도달 시 대화를 살려 종료하는 타이머. 종료/취소/실패 시 반드시 취소한다.
+    private var deadlineTask: Task<Void, Never>?
+
+    /// `.closed`가 시간 초과(하드 만료)로 추정되는 마감 여유(초). 경과가 한도 −이 값 이상이면
+    /// 네트워크 오류가 아니라 시간 초과로 보고 지금까지의 내용을 살린다.
+    private static let closeSalvageGraceSeconds: TimeInterval = 30
 
     init(
         voiceRepository: any VoiceSessionRepository,
@@ -41,12 +56,16 @@ final class RecordVoiceComposeViewModel {
         transport: any VoiceRealtimeTransport,
         requestMicPermission: @escaping @Sendable () async -> Bool = {
             await AVAudioApplication.requestRecordPermission()
+        },
+        waitForDeadline: @escaping @Sendable (_ seconds: Int) async -> Void = { seconds in
+            try? await Task.sleep(for: .seconds(seconds))
         }
     ) {
         self.voiceRepository = voiceRepository
         self.recordRepository = recordRepository
         self.transport = transport
         self.requestMicPermission = requestMicPermission
+        self.waitForDeadline = waitForDeadline
     }
 
     /// 완료 버튼 활성화: 대화 중이고, 사용자 발화가 잡혔거나(전사) 초안(tool 호출)이 이미 있을 때.
@@ -89,6 +108,7 @@ final class RecordVoiceComposeViewModel {
     func abandon() {
         switch phase {
         case .idle, .preparing, .conversing, .failed, .reviewing:
+            cancelDeadline()
             eventTask?.cancel()
             eventTask = nil
             phase = .cancelled
@@ -110,6 +130,7 @@ final class RecordVoiceComposeViewModel {
         toolArgumentsJSON = nil
         sessionId = nil
         reviewHandoff = nil
+        cancelDeadline()
         phase = .preparing
 
         guard await requestMicPermission() else {
@@ -120,6 +141,7 @@ final class RecordVoiceComposeViewModel {
         do {
             let session = try await voiceRepository.createSession()
             sessionId = session.sessionId
+            maxDurationSeconds = session.maxDurationSeconds
             let stream = try await transport.connect(clientSecret: session.clientSecret)
             eventTask = Task { [weak self] in
                 for await event in stream {
@@ -143,7 +165,10 @@ final class RecordVoiceComposeViewModel {
 
         switch event {
         case .connected:
-            if phase == .preparing { phase = .conversing(muted: false) }
+            if phase == .preparing {
+                phase = .conversing(muted: false)
+                startDeadline()
+            }
 
         case let .itemStarted(itemId, role):
             guard index(of: itemId) == nil else { return }
@@ -174,10 +199,54 @@ final class RecordVoiceComposeViewModel {
             }
 
         case .closed:
-            if isConversing {
+            // 의도적 close(종료/취소 후)는 phase가 이미 conversing이 아니라 무시된다.
+            // 대화 중 close는 시간 초과(하드 만료)면 살리고, 그 외(초반 네트워크 끊김)는 실패로 접는다.
+            guard isConversing else { break }
+            if shouldSalvageOnClose {
+                Task { await endConversation(reason: .durationLimit) }
+            } else {
                 Task { await failAndCleanUp(message: "연결이 끊어졌어요. 다시 시도해주세요.") }
             }
         }
+    }
+
+    /// `.closed`를 시간 초과로 보고 살릴지 판정. 경과가 한도에 근접했고 살릴 내용이 있어야 한다.
+    private var shouldSalvageOnClose: Bool {
+        guard let startedAt = conversationStartedAt else { return false }
+        let elapsed = Date().timeIntervalSince(startedAt)
+        let nearLimit = elapsed >= Double(maxDurationSeconds) - Self.closeSalvageGraceSeconds
+        let salvageable = hasUserSpeech || toolArgumentsJSON != nil
+        return nearLimit && salvageable
+    }
+
+    // MARK: - 대화 시간 한도
+
+    /// 연결 성립 시점부터 한도까지 카운트다운. 도달하면 실패가 아니라 지금까지의 내용을 살려
+    /// 검토 화면으로 넘긴다(서버가 대화 중 개입 불가라 클라이언트가 강제하는 설계).
+    private func startDeadline() {
+        let startedAt = Date()
+        conversationStartedAt = startedAt
+        conversationDeadline = startedAt.addingTimeInterval(TimeInterval(maxDurationSeconds))
+        let seconds = maxDurationSeconds
+        let wait = waitForDeadline
+        deadlineTask?.cancel()
+        deadlineTask = Task { [weak self] in
+            await wait(seconds)
+            guard !Task.isCancelled else { return }
+            await self?.handleDurationLimitReached()
+        }
+    }
+
+    private func handleDurationLimitReached() async {
+        guard case .conversing = phase else { return }
+        await endConversation(reason: .durationLimit)
+    }
+
+    private func cancelDeadline() {
+        deadlineTask?.cancel()
+        deadlineTask = nil
+        conversationStartedAt = nil
+        conversationDeadline = nil
     }
 
     private var isConversing: Bool {
@@ -201,9 +270,10 @@ final class RecordVoiceComposeViewModel {
 
     // MARK: - 대화 종료 → turns 제출 (BR: PROCESSING)
 
-    private func endConversation() async {
+    private func endConversation(reason: VoiceReviewReason = .normal) async {
         guard case .conversing = phase else { return }
         phase = .processing
+        cancelDeadline()
         eventTask?.cancel()
         eventTask = nil
         await transport.close()
@@ -228,7 +298,8 @@ final class RecordVoiceComposeViewModel {
                 prefill: VoiceCandidateMapper.makePrefill(
                     from: candidate, resolvedPesticide: pesticide, resolvedPest: pest,
                     missingFields: missingFields
-                )
+                ),
+                reason: reason
             )
             phase = .reviewing
         } catch VoiceSessionError.alreadyProcessed {
@@ -290,6 +361,7 @@ final class RecordVoiceComposeViewModel {
     // MARK: - 실패 처리 (BR-VOICE-008)
 
     private func failAndCleanUp(message: String) async {
+        cancelDeadline()
         eventTask?.cancel()
         eventTask = nil
         await transport.close()

@@ -58,7 +58,8 @@ struct RecordVoiceFlowView: View {
                         onSessionInvalid: {
                             onSessionInvalid()
                             dismiss()
-                        }
+                        },
+                        entryNotice: entryNotice(for: handoff.reason)
                     ) { recordId in
                         onComplete(recordId)
                         dismiss()
@@ -71,6 +72,16 @@ struct RecordVoiceFlowView: View {
                 onSessionInvalid()
                 dismiss()
             }
+        }
+    }
+
+    /// 검토 화면 상단 안내 배너 문구. 시간 초과로 대화를 살려서 넘어온 경우에만 표시한다.
+    private func entryNotice(for reason: VoiceReviewReason) -> String? {
+        switch reason {
+        case .normal:
+            nil
+        case .durationLimit:
+            "대화 시간이 다 되어 지금까지 말씀하신 내용으로 정리했어요. 부족한 항목은 아래에서 채워주세요."
         }
     }
 }

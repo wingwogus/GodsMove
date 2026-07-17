@@ -110,10 +110,20 @@ struct VoiceRecordPrefill: Sendable, Hashable {
     var missingFields: [String] = []
 }
 
+/// 검토 화면으로 넘어간 이유. 시간 초과로 대화를 중간에 살려서 넘긴 경우 검토 화면이
+/// 안내 배너를 띄운다(사용자가 직접 완료했거나 AI가 정상 마무리한 경우는 배너 없음).
+enum VoiceReviewReason: Sendable, Hashable {
+    /// 사용자 완료 또는 AI 정상 마무리(tool 호출 완료).
+    case normal
+    /// 대화 시간 한도 도달로 지금까지의 내용을 살려서 넘김.
+    case durationLimit
+}
+
 /// 대화 화면 → 검토 화면 핸드오프. `navigationDestination(item:)` 바인딩용.
 struct VoiceReviewHandoff: Identifiable, Hashable, Sendable {
     let sessionId: UUID
     let prefill: VoiceRecordPrefill
+    let reason: VoiceReviewReason
 
     var id: UUID { sessionId }
 }
