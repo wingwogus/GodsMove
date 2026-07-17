@@ -26,6 +26,8 @@ struct CommunityDetailView: View {
     @FocusState private var commentFieldFocused: Bool
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showPhotoPicker = false
+    /// The image opened full-screen (post body or comment), if any. `nil` dismisses the viewer.
+    @State private var fullscreenImage: FullscreenImage?
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
@@ -74,6 +76,9 @@ struct CommunityDetailView: View {
             if deleted { dismiss() }
         }
         .loginRequiredAlert(isPresented: $showLoginRequiredAlert, appState: appState)
+        .fullScreenCover(item: $fullscreenImage) { item in
+            FullScreenImageViewer(url: item.url)
+        }
     }
 
     private var isPostAuthor: Bool {
@@ -266,6 +271,8 @@ struct CommunityDetailView: View {
                 ForEach(imageUrls, id: \.self) { url in
                     CommunityRemoteImage(url: url, cornerRadius: 12)
                         .frame(width: 280, height: 210)
+                        .contentShape(Rectangle())
+                        .onTapGesture { fullscreenImage = FullscreenImage(url: url) }
                 }
             }
         }
@@ -315,7 +322,8 @@ struct CommunityDetailView: View {
                         },
                         onDelete: { target in
                             Task { await viewModel.deleteComment(target) }
-                        }
+                        },
+                        onImageTap: { url in fullscreenImage = FullscreenImage(url: url) }
                     )
                     .task { await viewModel.loadMoreCommentsIfNeeded(currentItem: comment) }
                 }
@@ -460,6 +468,8 @@ private struct CommentRow: View {
     let currentMemberId: UUID?
     let onReply: (CommunityComment) -> Void
     let onDelete: (CommunityComment) -> Void
+    /// Opens the tapped comment image full-screen.
+    let onImageTap: (String) -> Void
     @State private var isReadMoreActive = false
 
     private var isMine: Bool {
@@ -476,7 +486,8 @@ private struct CommentRow: View {
                     replyTarget: replyTarget,
                     currentMemberId: currentMemberId,
                     onReply: onReply,
-                    onDelete: onDelete
+                    onDelete: onDelete,
+                    onImageTap: onImageTap
                 )
                 .padding(.leading, Spacing.xl)
             }
@@ -499,6 +510,8 @@ private struct CommentRow: View {
                 },
                 attachment: {
                     CommunityRemoteImage(url: imageUrl, cornerRadius: 8)
+                        .contentShape(Rectangle())
+                        .onTapGesture { onImageTap(imageUrl) }
                 }
             )
         } else {
@@ -520,4 +533,11 @@ private struct CommentRow: View {
             )
         }
     }
+}
+
+/// Wraps an image URL so it can drive `.fullScreenCover(item:)`. The URL string is a stable identity for
+/// the presented image.
+private struct FullscreenImage: Identifiable {
+    let url: String
+    var id: String { url }
 }
