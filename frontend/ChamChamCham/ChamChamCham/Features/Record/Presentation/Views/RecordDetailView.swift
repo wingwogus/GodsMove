@@ -277,57 +277,35 @@ struct RecordDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
+    /// Figma (`docs/figma/record/2026-07-14-record-detail-planting-seed.md`, node `1516:22760`): a 칭찬 badge
+    /// followed by a plain bulleted 코칭 body — no icon, no divider, no per-action due chip. `content`'s own
+    /// left/right padding and the badge↔body gap are both a literal `20`/`12` — neither matches a `Spacing` token.
     private func coachingReadyCard(_ feedback: CoachingFeedback) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            // 잘한 점
-            HStack(alignment: .top, spacing: Spacing.sm) {
-                Image(systemName: "sparkles")
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.Icon.primary)
-                Text(feedback.goodPoint)
-                    .appTypography(.bodyMedium)
-                    .foregroundStyle(Color.Text.subtle)
-                    .fixedSize(horizontal: false, vertical: true)
-                Spacer(minLength: 0)
-            }
+        VStack(alignment: .leading, spacing: 12) {
+            Text(feedback.goodPoint)
+                .appTypography(.bodyMediumEmphasized)
+                .foregroundStyle(Color.Text.primary)
+                .fixedSize(horizontal: false, vertical: true)
+                .padding(.horizontal, 12)
+                .padding(.vertical, Spacing.sm)
+                .background(Color.Object.secondary)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
             if !feedback.nextActions.isEmpty {
-                Rectangle()
-                    .fill(Color.Border.default)
-                    .frame(height: 1)
-                VStack(alignment: .leading, spacing: Spacing.sm) {
-                    Text("다음 할 일")
-                        .appTypography(.labelMediumEmphasized)
-                        .foregroundStyle(Color.Text.muted)
+                VStack(alignment: .leading, spacing: 0) {
                     // nextActions have no server id (2~3 items, order-stable) — index key is fine.
                     ForEach(Array(feedback.nextActions.enumerated()), id: \.offset) { _, action in
-                        HStack(alignment: .top, spacing: Spacing.sm) {
-                            if let due = action.due.label {
-                                dueChip(due)
-                            }
-                            Text(action.text)
-                                .appTypography(.bodyMedium)
-                                .foregroundStyle(Color.Text.subtle)
-                                .fixedSize(horizontal: false, vertical: true)
-                            Spacer(minLength: 0)
-                        }
+                        Text("- \(action.text)")
+                            .appTypography(.bodyMedium)
+                            .foregroundStyle(Color.Text.subtle)
+                            .fixedSize(horizontal: false, vertical: true)
                     }
                 }
             }
         }
-        .padding(Spacing.lg)
+        .padding(20)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(Color.Object.secondarySubtle)
         .clipShape(RoundedRectangle(cornerRadius: 12))
-    }
-
-    private func dueChip(_ label: String) -> some View {
-        Text(label)
-            .appTypography(.labelMedium)
-            .foregroundStyle(Color.Text.muted)
-            .padding(.horizontal, 10)
-            .padding(.vertical, 4)
-            .background(Color.Object.subtle)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
     /// Generation failed. Quiet copy, no retry affordance (regenerate is out of scope for now).
