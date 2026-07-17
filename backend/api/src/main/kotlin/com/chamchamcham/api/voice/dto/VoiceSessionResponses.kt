@@ -16,6 +16,8 @@ object VoiceSessionResponses {
         val model: String,
         val farms: List<FarmOptionResponse>,
         val cropsByFarm: Map<String, List<CropOptionResponse>>,
+        val maxRounds: Int,
+        val maxDurationSeconds: Int,
     ) {
         companion object {
             fun from(result: VoiceSessionResult.Created): CreatedResponse = CreatedResponse(
@@ -25,6 +27,8 @@ object VoiceSessionResponses {
                 model = result.model,
                 farms = result.farms.map { FarmOptionResponse(it.farmId, it.name) },
                 cropsByFarm = result.cropsByFarm.mapValues { (_, crops) -> crops.map { CropOptionResponse(it.cropId, it.name) } },
+                maxRounds = result.maxRounds,
+                maxDurationSeconds = result.maxDurationSeconds,
             )
         }
     }

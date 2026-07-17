@@ -45,7 +45,11 @@ object FarmingRecordVoiceToolSchema {
                         "format" to "date-time",
                         "description" to "작업 일시(ISO-8601). 사용자가 상대 시간을 언급하지 않으면 생략한다.",
                     ),
-                    "memo" to mapOf("type" to "string", "description" to "작업 내용 메모"),
+                    "memo" to mapOf(
+                        "type" to "string",
+                        "description" to "작업 내용 요약(한국어 30자 이상 500자 이내). 사용자에게 메모를 불러 달라고 " +
+                            "요청하지 말고, 대화 내용을 바탕으로 직접 작성한다.",
+                    ),
                     "planting" to plantingSchema(),
                     "watering" to wateringSchema(),
                     "fertilizing" to fertilizingSchema(),
@@ -96,7 +100,11 @@ object FarmingRecordVoiceToolSchema {
     private fun pestControlSchema() = objectProperty(
         "병해충 방제 상세 (workType=PEST_CONTROL일 때 필수)",
         mapOf(
-            "pesticideName" to mapOf("type" to "string", "description" to "농약명(필수)"),
+            "pesticideName" to mapOf(
+                "type" to "string",
+                "description" to "농약명(필수). 사용자 발음이 부정확할 수 있으니 지침의 농약 목록에 비슷한 이름이 " +
+                    "있으면 확인 후 그 정확한 명칭을 사용하고, 목록에 없으면 들리는 대로 기록한다.",
+            ),
             "pesticideAmount" to mapOf("type" to "number", "description" to "농약량(필수)"),
             "pesticideAmountUnit" to enumProperty("농약량 단위(필수)", PesticideAmountUnit.entries.map { it.name }),
             "totalSprayAmount" to mapOf("type" to "number", "description" to "총 살포량(필수)"),
@@ -113,7 +121,8 @@ object FarmingRecordVoiceToolSchema {
     private fun harvestSchema() = objectProperty(
         "수확 상세 (workType=HARVEST일 때 필수). 수확량은 항상 kg 기준이다. 사용자가 수확량을 모른다고 " +
             "말하면 harvestAmountUnknown=true로 설정하고 harvestAmount는 비운다. 수확 부위(medicinalPart)는 " +
-            "선택 입력이다. 재배기간(growthPeriod)은 항상 개월 단위이며 필수 입력이다.",
+            "선택 입력이다. 재배기간(growthPeriod)은 항상 개월 단위이며 필수 입력이다. " +
+            "마지막 수확 여부(isLastHarvest)도 필수 입력이다.",
         mapOf(
             "harvestAmount" to mapOf("type" to "number", "description" to "수확량(kg). 모르면 비운다."),
             "harvestAmountUnknown" to mapOf(
@@ -123,6 +132,10 @@ object FarmingRecordVoiceToolSchema {
             "medicinalPart" to enumProperty("수확 부위(선택)", CropUsePartCategory.entries.map { it.name }),
             "harvestSource" to enumProperty("수확 출처", HarvestSource.entries.map { it.name }),
             "growthPeriod" to mapOf("type" to "integer", "description" to "재배기간(개월, 필수)"),
+            "isLastHarvest" to mapOf(
+                "type" to "boolean",
+                "description" to "이 작물의 마지막 수확 여부(필수). 사용자가 말하지 않으면 예/아니오로 한 번만 묻는다.",
+            ),
         ),
     )
 

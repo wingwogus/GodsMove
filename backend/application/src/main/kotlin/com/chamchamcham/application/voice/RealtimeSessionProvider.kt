@@ -9,6 +9,7 @@ interface RealtimeSessionProvider {
 data class RealtimeSessionRequest(
     val instructions: String,
     val tools: List<Map<String, Any?>>,
+    val expiresAfterSeconds: Int,
 )
 
 data class RealtimeSessionResult(
