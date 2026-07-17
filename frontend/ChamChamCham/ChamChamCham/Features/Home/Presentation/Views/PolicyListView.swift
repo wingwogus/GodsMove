@@ -56,7 +56,7 @@ struct PolicyListView: View {
                 ForEach(PolicyCategory.allCases) { category in
                     let isSelected = viewModel.selectedCategory == category
                     AppChip(
-                        label: category.rawValue,
+                        label: category.displayName,
                         isSelected: isSelected,
                         style: isSelected ? .solid : .solidPastel
                     ) {
