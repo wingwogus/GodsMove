@@ -58,6 +58,7 @@ struct MainTabView: View {
             HomeView(container: container, tabSelection: $selection, tabItems: tabItems)
         case 1:
             RecordListView(
+                container: container,
                 repository: container.makeRecordRepository(),
                 reportRepository: container.makeReportRepository(),
                 weatherRepository: container.makeWeatherRepository(),
