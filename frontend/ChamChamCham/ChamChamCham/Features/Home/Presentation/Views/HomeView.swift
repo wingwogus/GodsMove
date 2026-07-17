@@ -26,6 +26,7 @@ struct HomeView: View {
     @State private var viewModel: HomeViewModel
     @State private var path = NavigationPath()
     @State private var showCompose = false
+    @State private var showSearch = false
     @Binding private var tabSelection: Int
     private let tabItems: [AppNavBar.Item]
 
@@ -48,7 +49,7 @@ struct HomeView: View {
                     title: "홈",
                     background: .subtle,
                     showBorder: false,
-                    trailing: [.init(.asset("search"))]
+                    trailing: [.init(.asset("search")) { showSearch = true }]
                 )
                 ScrollView {
                     VStack(alignment: .leading, spacing: Spacing.xl) {
@@ -101,6 +102,9 @@ struct HomeView: View {
                 showCompose = false
                 Task { await viewModel.reload() }
             }
+        }
+        .fullScreenCover(isPresented: $showSearch) {
+            SearchView(container: container)
         }
         .task { await viewModel.onAppear() }
     }

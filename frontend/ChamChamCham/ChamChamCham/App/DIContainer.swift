@@ -15,6 +15,7 @@ final class DIContainer {
     let apiClient: APIClient
     let memberProfileCache: MemberProfileCache
     let reportCache: ReportCache
+    let recentSearchStore: RecentSearchStore
     let pendingFarmStore: PendingFarmStore
     let pendingFarmSyncService: PendingFarmSyncService
 
@@ -31,6 +32,7 @@ final class DIContainer {
         self.apiClient = apiClient
         self.memberProfileCache = SwiftDataMemberProfileCache(modelContext: modelContainer.mainContext)
         self.reportCache = ReportCache(modelContext: modelContainer.mainContext)
+        self.recentSearchStore = SwiftDataRecentSearchStore(modelContext: modelContainer.mainContext)
         let pendingFarmStore = PendingFarmStore()
         self.pendingFarmStore = pendingFarmStore
         self.pendingFarmSyncService = PendingFarmSyncService(
@@ -90,5 +92,9 @@ extension DIContainer {
             remote: LiveReportRemoteDataSource(apiClient: apiClient),
             cache: reportCache
         )
+    }
+
+    func makeSearchRepository() -> some SearchRepository {
+        RemoteSearchRepository(apiClient: apiClient)
     }
 }

@@ -13,6 +13,7 @@ import SwiftUI
 ///
 /// The record and report tabs share this navigation shell while keeping their repositories and state separate.
 struct RecordListView: View {
+    private let container: DIContainer
     private let repository: any RecordRepository
     private let reportRepository: any ReportRepository
     private let weatherRepository: any WeatherRepository
@@ -27,6 +28,7 @@ struct RecordListView: View {
     @State private var isSpeedDialOpen = false
     @State private var showCompose = false
     @State private var showVoiceCompose = false
+    @State private var showSearch = false
     @State private var path = NavigationPath()
     @State private var toastMessage: String?
     @Binding private var selection: Int
@@ -34,6 +36,7 @@ struct RecordListView: View {
     private let horizontalInset: CGFloat = 20
 
     init(
+        container: DIContainer,
         repository: any RecordRepository,
         reportRepository: any ReportRepository,
         weatherRepository: any WeatherRepository,
@@ -42,6 +45,7 @@ struct RecordListView: View {
         selection: Binding<Int>,
         tabItems: [AppNavBar.Item]
     ) {
+        self.container = container
         self.repository = repository
         self.reportRepository = reportRepository
         self.weatherRepository = weatherRepository
@@ -89,7 +93,7 @@ struct RecordListView: View {
                 AppTopAppBar(
                     title: "영농 기록",
                     showBorder: false,
-                    trailing: [.init(.asset("search"))]
+                    trailing: [.init(.asset("search")) { showSearch = true }]
                 )
                 AppTabBar(titles: ["기록", "리포트"], selection: $selectedTab)
                     .frame(height: 56)
@@ -133,6 +137,9 @@ struct RecordListView: View {
                 toastMessage = "영농 기록 작성이 완료되었습니다."
                 Task { await viewModel.reload() }
             }
+        }
+        .fullScreenCover(isPresented: $showSearch) {
+            SearchView(container: container)
         }
         .sheet(item: $activeSheet) { kind in
             switch kind {
@@ -341,6 +348,7 @@ struct RecordListView: View {
 /// caption = 날씨, date = 작업일(MM/dd), thumbnail = 첨부 사진.
 struct RecordRow: View {
     let record: FarmingRecordSummary
+    var showsDivider: Bool = true
 
     var body: some View {
         AppListItem(
@@ -351,7 +359,8 @@ struct RecordRow: View {
                 AppListItemBadge(record.cropName, style: .solidPastel, variant: .primary),
                 AppListItemBadge(record.workType.label),
             ],
-            dateText: dateText
+            dateText: dateText,
+            showsDivider: showsDivider
         ) {
             RecordRemoteImage(url: record.thumbnailUrl)
         }
