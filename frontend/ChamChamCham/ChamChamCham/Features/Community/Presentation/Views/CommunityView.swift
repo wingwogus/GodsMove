@@ -14,6 +14,7 @@ struct CommunityView: View {
     @State private var viewModel: CommunityFeedViewModel
     @State private var showCompose = false
     @State private var showCropPicker = false
+    @State private var showSearch = false
     @Binding private var selection: Int
     private let tabItems: [AppNavBar.Item]
     private let horizontalInset: CGFloat = 20
@@ -37,7 +38,7 @@ struct CommunityView: View {
                     AppTopAppBar(
                         title: "정보 공유",
                         showBorder: false,
-                        trailing: [.init(.asset("search"))]
+                        trailing: [.init(.asset("search")) { showSearch = true }]
                     )
                     postTypeTabs
                     cropChipRow
@@ -64,6 +65,9 @@ struct CommunityView: View {
             ) { crops in
                 Task { await viewModel.addBoards(from: crops) }
             }
+        }
+        .fullScreenCover(isPresented: $showSearch) {
+            SearchView(container: container)
         }
     }
 
@@ -230,6 +234,7 @@ struct CommunityPostRow: View {
 
     let post: CommunityPostSummary
     var onTapLike: () -> Void
+    var showsDivider: Bool = true
 
     var body: some View {
         AppListItem(
@@ -239,7 +244,8 @@ struct CommunityPostRow: View {
             badges: badges,
             dateText: rowDateText(post.createdAt),
             likeText: "\(post.likeCount)",
-            commentText: "\(post.commentCount)"
+            commentText: "\(post.commentCount)",
+            showsDivider: showsDivider
         ) {
             CommunityRemoteImage(url: post.thumbnailUrl)
         }

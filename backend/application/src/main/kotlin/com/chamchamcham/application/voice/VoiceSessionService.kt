@@ -9,6 +9,7 @@ import com.chamchamcham.domain.farming.FarmingRecordRepository
 import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
+import com.chamchamcham.domain.pesticide.PesticideQueryRepository
 import com.chamchamcham.domain.voice.VoiceRecordSession
 import com.chamchamcham.domain.voice.VoiceRecordTurn
 import com.chamchamcham.domain.voice.VoiceRecordSessionRepository
@@ -30,6 +31,8 @@ class VoiceSessionService(
     private val voiceRecordSessionRepository: VoiceRecordSessionRepository,
     private val voiceRecordTurnRepository: VoiceRecordTurnRepository,
     private val realtimeSessionProvider: RealtimeSessionProvider,
+    private val voiceSessionProperties: VoiceSessionProperties,
+    private val pesticideQueryRepository: PesticideQueryRepository,
 ) {
     fun create(command: VoiceSessionCommand.Create): VoiceSessionResult.Created {
         val member = findMember(command.memberId)
@@ -45,10 +48,21 @@ class VoiceSessionService(
             }
 
         val tool = FarmingRecordVoiceToolSchema.build(farmOptions, cropsByFarm)
-        val instructions = VoiceSessionInstructions.build(farmOptions, cropsByFarm, LocalDateTime.now())
+        val instructions = VoiceSessionInstructions.build(
+            farms = farmOptions,
+            cropsByFarm = cropsByFarm,
+            pesticides = loadPesticideOptions(cropsByFarm),
+            now = LocalDateTime.now(),
+            maxRounds = voiceSessionProperties.maxRounds,
+            maxDurationSeconds = voiceSessionProperties.maxDurationSeconds,
+        )
 
         val providerResult = realtimeSessionProvider.createEphemeralSession(
-            RealtimeSessionRequest(instructions = instructions, tools = listOf(tool))
+            RealtimeSessionRequest(
+                instructions = instructions,
+                tools = listOf(tool),
+                expiresAfterSeconds = voiceSessionProperties.maxDurationSeconds + EXPIRY_BUFFER_SECONDS,
+            )
         )
 
         val session = voiceRecordSessionRepository.save(
@@ -62,6 +76,8 @@ class VoiceSessionService(
             model = providerResult.model,
             farms = farmOptions,
             cropsByFarm = cropsByFarm,
+            maxRounds = voiceSessionProperties.maxRounds,
+            maxDurationSeconds = voiceSessionProperties.maxDurationSeconds,
         )
     }
 
@@ -123,10 +139,49 @@ class VoiceSessionService(
         return VoiceSessionResult.Cancelled(sessionId = requireNotNull(session.id), status = session.status)
     }
 
+    /**
+     * 대화 지침에 넣을 농약 목록. 회원 작물에 등록된 농약(작물 필터)을 우선하고, 매칭이 없으면
+     * 전체 카탈로그가 충분히 작을 때만(로컬 시드 등) 이름만 주입한다. 둘 다 아니면 생략한다.
+     */
+    private fun loadPesticideOptions(cropsByFarm: Map<String, List<CropOption>>): List<VoicePesticideOption> {
+        val cropNames = cropsByFarm.values.flatten().map { it.name }.distinct()
+        val rows = if (cropNames.isEmpty()) emptyList() else {
+            pesticideQueryRepository.findByCropNames(cropNames, MAX_PESTICIDE_CATALOG_ROWS)
+        }
+        if (rows.isNotEmpty()) {
+            return rows.groupBy { it.itemName to it.brandName }
+                .entries.take(MAX_PESTICIDE_OPTIONS)
+                .map { (key, grouped) ->
+                    VoicePesticideOption(
+                        name = "${key.first}(${key.second})",
+                        pests = grouped.map { it.pestName }.distinct().take(MAX_PESTS_PER_PESTICIDE),
+                    )
+                }
+        }
+
+        val smallCatalog = pesticideQueryRepository.search(
+            PesticideQueryRepository.SearchCondition(keyword = null, cursor = null, size = MAX_PESTICIDE_OPTIONS + 1)
+        )
+        if (smallCatalog.isEmpty() || smallCatalog.size > MAX_PESTICIDE_OPTIONS) return emptyList()
+        return smallCatalog.map { VoicePesticideOption(name = "${it.itemName}(${it.brandName})", pests = emptyList()) }
+    }
+
     private fun findMember(memberId: UUID): Member =
         memberRepository.findById(memberId).orElseThrow { BusinessException(ErrorCode.MEMBER_NOT_FOUND) }
 
     private fun findSession(sessionId: UUID, memberId: UUID): VoiceRecordSession =
         voiceRecordSessionRepository.findByIdAndMemberId(sessionId, memberId)
             ?: throw BusinessException(ErrorCode.VOICE_SESSION_NOT_FOUND)
+
+    companion object {
+        private const val MAX_PESTICIDE_CATALOG_ROWS = 200
+        private const val MAX_PESTICIDE_OPTIONS = 50
+        private const val MAX_PESTS_PER_PESTICIDE = 5
+
+        /**
+         * OpenAI client_secret 만료를 대화 시간 한도보다 살짝 길게(30초) 파생시켜, 두 값이
+         * 서로 다른 설정으로 따로 관리되며 어긋나는 것(예: 대화시간>토큰수명)을 막는다.
+         */
+        private const val EXPIRY_BUFFER_SECONDS = 30
+    }
 }

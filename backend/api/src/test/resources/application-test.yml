@@ -60,6 +60,9 @@ app:
     allowed-origins: http://localhost:3000,http://localhost:5173
   auth:
     refresh-cookie-secure: false
+  voice-session:
+    max-rounds: 20
+    max-duration-seconds: 330
   mail:
     from-name: ChamChamCham
   media:

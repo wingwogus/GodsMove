@@ -35,4 +35,26 @@ class PesticideQueryRepositoryImpl(
         query.maxResults = condition.size
         return query.resultList
     }
+
+    override fun findByCropNames(cropNames: List<String>, maxRows: Int): List<PesticideQueryRepository.VoiceCatalogRow> {
+        if (cropNames.isEmpty()) return emptyList()
+        val query = entityManager.createQuery(
+            """
+            select distinct pa.pesticide.itemName, pa.pesticide.brandName, pa.pest.name
+            from PesticideApplication pa
+            where pa.cropName in :cropNames
+            order by pa.pesticide.itemName asc, pa.pest.name asc
+            """.trimIndent(),
+            Array<Any>::class.java
+        )
+        query.setParameter("cropNames", cropNames)
+        query.maxResults = maxRows
+        return query.resultList.map { row ->
+            PesticideQueryRepository.VoiceCatalogRow(
+                itemName = row[0] as String,
+                brandName = row[1] as String,
+                pestName = row[2] as String,
+            )
+        }
+    }
 }

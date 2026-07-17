@@ -13,6 +13,8 @@ object VoiceSessionResult {
         val model: String,
         val farms: List<FarmOption>,
         val cropsByFarm: Map<String, List<CropOption>>,
+        val maxRounds: Int,
+        val maxDurationSeconds: Int,
     )
 
     data class Processed(

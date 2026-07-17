@@ -18,9 +18,9 @@
 
 | 우선순위 | 항목 | 상태 | 메모 |
 | --- | --- | --- | --- |
-| P0 | 커뮤니티 상세 Figma 캡처 | 남음 | 현재 상세 화면은 기존 코드 기반 보정만 가능하며, 최신 Figma parity는 주장할 수 없음 |
+| P0 | 커뮤니티 상세 Figma 캡처 | 완료 (2026-07-17) | `커뮤니티 / 게시물 내 영농일지 포함 시` 캡처로 상세 레이아웃 확정. 상세 문서: [2026-07-17-community-detail-with-farming-record.md](2026-07-17-community-detail-with-farming-record.md) |
 | P0 | 커뮤니티 수정 Figma 캡처 | 남음 | 수정 화면 default/validation/submitting 상태가 필요함 |
-| P0 | 영농 기록 첨부 실제 데이터 연결 | 남음 | 현재 picker는 presentation shell이며 `createPost` 요청에는 `farmingRecordId`가 아직 연결되지 않음 |
+| P0 | 영농 기록 첨부 실제 데이터 연결 | 완료 (2026-07-17) | picker가 `RecordRepository` 실데이터로 연결됨, `createPost`/`updatePost`에 `farmingRecordId` 전송, 상세 화면에 영농일지 카드 렌더링 |
 | P1 | 메인 feed runtime state | 남음 | loading, empty, error, retry, pagination, pull-to-refresh 상태의 디자인 확정 필요 |
 | P1 | 작성 화면 runtime state | 남음 | keyboard focus, submitting, image upload failure, record no-result 상태 필요 |
 | P1 | SE 2/3 실기기 또는 simulator QA | 남음 | 하단 탭, 플로팅 버튼, keyboard, bottom action 가림 여부 확인 필요 |
@@ -29,20 +29,25 @@
 
 ## 구현상 주의할 점
 
-### 영농 기록 첨부
+### 영농 기록 첨부 (2026-07-17 완료)
 
-현재 작성 화면의 영농 기록 picker는 Figma 시각 구조를 확인하기 위한 shell이다.
+작성 화면의 영농 기록 picker가 실제 데이터에 연결되었다.
 
-- 샘플 record row로 선택 UI를 보여준다.
-- 선택한 record는 작성 화면에 표시된다.
-- 아직 `CommunityComposeViewModel.createPost()`의 `farmingRecordId`에는 연결하지 않는다.
+- `FarmingRecordPickerView`/`FarmingRecordPickerState`가 `RecordRepository`
+  (`fetchRecords`/`fetchActiveCrops`)로 실제 영농일지를 불러온다.
+- crop 필터는 서버 재조회(`RecordFilter.cropIds`), 검색어는 이미 로드된
+  페이지 위 클라이언트 필터.
+- 영농일지에는 `title` 필드가 없어 카드 제목은 `workType.label`(활동 유형)을
+  사용, 캡션은 `memoPreview`/`memo`.
+- `CommunityComposeViewModel.submit()`이 선택된 record의 `id`를
+  `farmingRecordId`로 전송한다.
+- `CommunityDetailViewModel.load()`가 `detail.farmingRecordId`가 있을 때
+  `RecordRepository.fetchDetail(id:)`를 추가 호출해 상세 화면에 영농일지
+  카드(`CommunityFarmingRecordCard`)를 렌더링한다 — `PostDetailResponse`는
+  id만 주고 요약을 embed하지 않기 때문.
 
-다음 단계에서 먼저 결정해야 한다.
-
-- 영농 기록 목록을 어떤 repository/local store에서 가져올지
-- crop filter와 search를 클라이언트에서 처리할지 API에 위임할지
-- 오프라인 상태에서 최근 record를 어떻게 보여줄지
-- record 선택을 게시글 작성 API의 `farmingRecordId`로 보낼 수 있는지
+남은 것: 영농일지 카드 탭 시 해당 기록 상세로 이동하는 동작(현재 Figma
+캡처에 없어 비인터랙티브로 유지), SE 2/3 실기기 QA.
 
 ### 커뮤니티 상세/수정
 

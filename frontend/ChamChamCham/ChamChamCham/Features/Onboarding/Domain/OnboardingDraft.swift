@@ -132,6 +132,16 @@ struct OnboardingDraft: Codable {
         }
     }
 
+    /// 필지 경계(지적도 또는 사용자 작도). 온보딩 완료 시 그대로 `boundaryCoordinates`로 전송된다.
+    var farmBoundaryCoordinates: [FarmBoundaryCoordinateDTO] {
+        get { activeFarm.farmBoundaryCoordinates }
+        set {
+            var farm = activeFarm
+            farm.farmBoundaryCoordinates = newValue
+            activeFarm = farm
+        }
+    }
+
     mutating func addEmptyFarmAndSelect() {
         farms.append(OnboardingFarmDraft())
         activeFarmIndex = farms.count - 1
@@ -235,6 +245,7 @@ struct OnboardingFarmDraft: Codable, Equatable, Sendable {
     var farmLandCategory: String?
     var farmAreaSqm: Double?
     var farmAreaIsManualEntry: Bool = false
+    var farmBoundaryCoordinates: [FarmBoundaryCoordinateDTO] = []
 }
 
 /// Raw values match the backend's `ManagementType` enum names exactly (`AuthRequests.CompleteOnboardingRequest.managementType`) —

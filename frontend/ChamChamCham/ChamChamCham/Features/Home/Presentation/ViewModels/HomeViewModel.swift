@@ -110,11 +110,16 @@ final class HomeViewModel {
         }
     }
 
+    /// "나의 게시판 인기글" must scope to boards the member registered under 나의 작물 — the backend has no
+    /// multi-cropId filter (`CommunityFeedViewModel.filteredForAllCrops`), so fetch the member's boards and
+    /// restrict client-side, same as the community feed's "전체" chip.
     private func loadPopularPosts() async {
         popularPostsState = .loading
         do {
-            let page = try await communityRepository.fetchPosts(CommunityPostQuery(sort: .popular, size: 3))
-            popularPostsState = .loaded(page.items)
+            let myCropIds = Set(try await communityRepository.fetchBoards().map(\.cropId))
+            let page = try await communityRepository.fetchPosts(CommunityPostQuery(sort: .popular))
+            let myPosts = page.items.filter { myCropIds.contains($0.cropId) }
+            popularPostsState = .loaded(Array(myPosts.prefix(3)))
         } catch {
             popularPostsState = .failed(HomeErrorMessage.text(for: error))
         }

@@ -29,6 +29,10 @@ final class CommunityDetailViewModel {
     private(set) var isLoadingMoreComments = false
     private(set) var errorMessage: String?
 
+    /// Fetched separately when `detail.farmingRecordId` is present — `PostDetailResponse` only carries the id,
+    /// not an embedded summary (BR-COMMUNITY-002). A failed fetch just omits the card, it doesn't fail the screen.
+    private(set) var farmingRecord: RecordDetail?
+
     /// Draft of the composer at the bottom. `replyTarget` non-nil means the next submit is a reply to it.
     var draftComment: String = ""
     private(set) var replyTarget: CommunityComment?
@@ -44,15 +48,18 @@ final class CommunityDetailViewModel {
 
     private let repository: any CommunityRepository
     private let mediaRepository: any MediaUploadRepository
+    private let recordRepository: any RecordRepository
 
     init(
         postId: UUID,
         repository: any CommunityRepository,
-        mediaRepository: any MediaUploadRepository
+        mediaRepository: any MediaUploadRepository,
+        recordRepository: any RecordRepository
     ) {
         self.postId = postId
         self.repository = repository
         self.mediaRepository = mediaRepository
+        self.recordRepository = recordRepository
     }
 
     /// True while the attached image is still uploading — submit waits for this so no `mediaId` is missed.
@@ -71,6 +78,9 @@ final class CommunityDetailViewModel {
             let page = try await commentsTask
             comments = page.items
             commentCursor = page.nextCursor
+            if let farmingRecordId = detail?.farmingRecordId {
+                farmingRecord = try? await recordRepository.fetchDetail(id: farmingRecordId)
+            }
         } catch {
             errorMessage = CommunityErrorMessage.text(for: error)
         }

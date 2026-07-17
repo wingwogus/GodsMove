@@ -61,6 +61,7 @@ class OpenAiRealtimeSessionProvider internal constructor(
 
     override fun createEphemeralSession(request: RealtimeSessionRequest): RealtimeSessionResult {
         val body = mapOf(
+            "expires_after" to mapOf("anchor" to "created_at", "seconds" to request.expiresAfterSeconds),
             "session" to mapOf(
                 "type" to "realtime",
                 "model" to model,

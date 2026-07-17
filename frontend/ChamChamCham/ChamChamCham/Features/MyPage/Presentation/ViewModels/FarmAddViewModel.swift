@@ -57,8 +57,7 @@ final class FarmAddViewModel {
 
     var canSave: Bool {
         !farmName.trimmingCharacters(in: .whitespaces).isEmpty
-            && location.selectedAddress != nil
-            && location.resolvedCoordinate != nil
+            && location.canProceed
             && !isSubmitting
     }
 
@@ -66,26 +65,23 @@ final class FarmAddViewModel {
         hasAttemptedSave = true
         guard canSave,
               let address = location.selectedAddress,
-              let coordinate = location.resolvedCoordinate else { return false }
+              let coordinate = location.submissionCoordinate else { return false }
         isSubmitting = true
         errorMessage = nil
         defer { isSubmitting = false }
 
-        let parcel = location.selectedParcel
         let request = SaveFarmRequestDTO(
             name: farmName,
             roadAddress: address.roadAddrPart1,
-            jibunAddress: address.jibunAddr,
+            jibunAddress: address.jibunAddr.isEmpty ? nil : address.jibunAddr,
             latitude: coordinate.latitude,
             longitude: coordinate.longitude,
-            pnu: parcel?.pnu,
-            landCategory: parcel?.jimokName,
-            areaSqm: parcel?.areaSqm ?? location.manualAreaSqm,
-            areaIsManualEntry: parcel == nil,
-            boundaryCoordinates: (parcel?.coordinates ?? []).map {
-                FarmBoundaryCoordinateDTO(latitude: $0.latitude, longitude: $0.longitude)
-            },
-            dataSource: .onboardingJusoVWorld,
+            pnu: location.submissionPNU,
+            landCategory: location.submissionLandCategory,
+            areaSqm: location.submissionAreaSqm,
+            areaIsManualEntry: location.submissionAreaIsManualEntry,
+            boundaryCoordinates: location.submissionBoundaryCoordinates,
+            dataSource: location.submissionDataSource,
             cropIds: selectedCrops.map(\.id)
         )
         do {

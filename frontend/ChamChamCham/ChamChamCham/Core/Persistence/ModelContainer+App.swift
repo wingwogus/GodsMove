@@ -9,7 +9,7 @@ import SwiftData
 
 extension ModelContainer {
     static func makeApp() -> ModelContainer {
-        let schema = Schema(versionedSchema: SchemaV2.self)
+        let schema = Schema(versionedSchema: SchemaV3.self)
         let configuration = ModelConfiguration(schema: schema)
         return try! ModelContainer(
             for: schema,

@@ -180,9 +180,12 @@ actor StubFarmRepository: FarmRepository {
 actor StubAuthRepository: AuthRepository {
     private var logoutCalls = 0
     private let logoutError: Error?
+    private var withdrawCalls = 0
+    private let withdrawError: Error?
 
-    init(logoutError: Error? = nil) {
+    init(logoutError: Error? = nil, withdrawError: Error? = nil) {
         self.logoutError = logoutError
+        self.withdrawError = withdrawError
     }
 
     func loginWithKakao(idToken: String, nonce: String, kakaoAccessToken: String?) async throws -> LoginResponseDTO { throw MyPageTestError.unused }
@@ -194,5 +197,11 @@ actor StubAuthRepository: AuthRepository {
         if let logoutError { throw logoutError }
     }
 
+    func withdraw() async throws {
+        withdrawCalls += 1
+        if let withdrawError { throw withdrawError }
+    }
+
     func logoutCallCount() -> Int { logoutCalls }
+    func withdrawCallCount() -> Int { withdrawCalls }
 }

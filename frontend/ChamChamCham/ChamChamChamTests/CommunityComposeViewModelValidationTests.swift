@@ -74,9 +74,25 @@ struct CommunityComposeViewModelValidationTests {
         CommunityComposeViewModel(
             repository: FakeCommunityRepository(),
             cropCatalog: StubCropCatalogService(),
-            mediaRepository: FakeMediaUploadRepository()
+            mediaRepository: FakeMediaUploadRepository(),
+            recordRepository: StubRecordRepository()
         )
     }
+}
+
+/// None of these tests exercise 영농일지 loading, so every method is unused.
+private struct StubRecordRepository: RecordRepository {
+    private struct Unused: Error {}
+
+    func fetchRecords(_ query: RecordQuery) async throws -> RecordPage { throw Unused() }
+    func fetchDetail(id: UUID) async throws -> RecordDetail { throw Unused() }
+    func fetchCoaching(id: UUID) async throws -> RecordCoaching { throw Unused() }
+    func deleteRecord(id: UUID) async throws { throw Unused() }
+    func fetchActiveCrops() async throws -> [ActiveCrop] { throw Unused() }
+    func fetchFarmCrops() async throws -> [FarmWithCrops] { throw Unused() }
+    func searchPesticides(keyword: String?) async throws -> [Pesticide] { throw Unused() }
+    func fetchPests(pesticideId: UUID) async throws -> [Pest] { throw Unused() }
+    func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { throw Unused() }
 }
 
 private actor FakeCommunityRepository: CommunityRepository {

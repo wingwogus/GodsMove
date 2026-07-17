@@ -30,7 +30,8 @@ struct CommunityDetailView: View {
         _viewModel = State(initialValue: CommunityDetailViewModel(
             postId: postId,
             repository: container.makeCommunityRepository(),
-            mediaRepository: container.makeMediaUploadRepository()
+            mediaRepository: container.makeMediaUploadRepository(),
+            recordRepository: container.makeRecordRepository()
         ))
     }
 
@@ -135,18 +136,21 @@ struct CommunityDetailView: View {
 
     private func postBody(_ detail: CommunityPostDetail) -> some View {
         VStack(alignment: .leading, spacing: 0) {
+            detailTagRow(detail)
+
             HStack(alignment: .center, spacing: Spacing.sm) {
                 authorLine(detail)
                 Spacer(minLength: Spacing.md)
             }
-            .frame(height: 32)
+            .frame(height: 48)
+            .padding(.top, Spacing.md)
 
             VStack(alignment: .leading, spacing: 0) {
                 Text(detail.title)
                     .appTypography(.titleLarge)
                     .foregroundStyle(Color.Text.default)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, horizontalInset)
+                    .padding(.top, Spacing.md)
 
                 if !detail.imageUrls.isEmpty {
                     imageCarousel(detail.imageUrls)
@@ -157,10 +161,12 @@ struct CommunityDetailView: View {
                     .appTypography(.bodyLarge)
                     .foregroundStyle(Color.Text.subtle)
                     .fixedSize(horizontal: false, vertical: true)
-                    .padding(.top, Spacing.md)
+                    .padding(.top, Spacing.sm)
 
-                detailTagRow(detail)
-                    .padding(.top, horizontalInset)
+                if let farmingRecord = viewModel.farmingRecord {
+                    CommunityFarmingRecordCard(record: farmingRecord)
+                        .padding(.top, Spacing.md)
+                }
 
                 reactionRow(detail)
                     .padding(.top, Spacing.md)
@@ -202,18 +208,17 @@ struct CommunityDetailView: View {
 
     private func postAuthorLine(_ detail: CommunityPostDetail) -> some View {
         HStack(spacing: Spacing.sm) {
-            CommunityAvatar(profileImageUrl: detail.author.profileImageUrl, size: .small)
-            Text(detail.author.nickname ?? "익명")
-                .appTypography(.bodyLarge)
-                .foregroundStyle(Color.Text.default)
-                .lineLimit(1)
-            Text("·")
-                .appTypography(.bodyLarge)
-                .foregroundStyle(Color.Text.muted)
-            Text(detailDateText(detail.createdAt))
-                .appTypography(.bodyLarge)
-                .foregroundStyle(Color.Text.muted)
-                .lineLimit(1)
+            CommunityAvatar(profileImageUrl: detail.author.profileImageUrl, size: .medium)
+            VStack(alignment: .leading, spacing: 0) {
+                Text(detail.author.nickname ?? "익명")
+                    .appTypography(.bodyMediumEmphasized)
+                    .foregroundStyle(Color.Text.default)
+                    .lineLimit(1)
+                Text(detailDateText(detail.createdAt))
+                    .appTypography(.bodyMedium)
+                    .foregroundStyle(Color.Text.muted)
+                    .lineLimit(1)
+            }
         }
     }
 
@@ -247,9 +252,9 @@ struct CommunityDetailView: View {
     private func detailTagRow(_ detail: CommunityPostDetail) -> some View {
         HStack(spacing: Spacing.sm) {
             if detail.postType == .question {
-                AppBadge(label: "Q&A", size: .medium, style: .solidPastel, variant: .secondary)
+                AppBadge(label: "Q&A", size: .medium, style: .solid, variant: .primary)
             }
-            AppBadge(label: detail.cropName, size: .medium, style: .solidPastel, variant: .secondary)
+            AppBadge(label: detail.cropName, size: .medium, style: .solidPastel, variant: .primary)
         }
     }
 
@@ -345,6 +350,7 @@ struct CommunityDetailView: View {
             }
         }
         .background(Color.Background.default)
+        .ignoresSafeArea(edges: .bottom)
     }
 
     /// The picked image is shown immediately; while its upload is in flight a dimmed spinner overlays it.
@@ -369,6 +375,51 @@ struct CommunityDetailView: View {
         guard let item = items.first,
               let data = try? await item.loadTransferable(type: Data.self) else { return }
         await viewModel.addImage(data)
+    }
+}
+
+/// The 영농일지 card shown in post detail when the post shares a record (BR-COMMUNITY-002, Figma `커뮤니티 /
+/// 게시물 내 영농일지 포함 시`). Unlike `AppCard`, this composition has no thumbnail — a farming record's detail
+/// response carries no title, so 활동 유형 (`workType.label`) stands in for it.
+private struct CommunityFarmingRecordCard: View {
+    private static let padding: CGFloat = 20
+
+    let record: RecordDetail
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: Spacing.md) {
+            HStack {
+                AppBadge(label: record.cropName, size: .medium, style: .solidPastel, variant: .secondary)
+                Spacer()
+                Text(dateText)
+                    .appTypography(.labelMedium)
+                    .foregroundStyle(Color.Text.muted)
+            }
+
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(record.workType.label)
+                    .appTypography(.titleMediumEmphasized)
+                    .foregroundStyle(Color.Text.subtle)
+                Text(record.memo)
+                    .appTypography(.bodyLarge)
+                    .foregroundStyle(Color.Text.muted)
+                    .lineLimit(2)
+            }
+        }
+        .padding(Self.padding)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Object.default)
+        .overlay {
+            RoundedRectangle(cornerRadius: 16)
+                .stroke(Color.Border.default, lineWidth: 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+    }
+
+    private var dateText: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "MM/dd"
+        return formatter.string(from: record.workedAt)
     }
 }
 

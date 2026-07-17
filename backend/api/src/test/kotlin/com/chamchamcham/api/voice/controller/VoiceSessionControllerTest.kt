@@ -59,6 +59,8 @@ class VoiceSessionControllerTest(
                     model = "gpt-realtime",
                     farms = listOf(FarmOption(farmId, "약초농장")),
                     cropsByFarm = mapOf(farmId.toString() to emptyList()),
+                    maxRounds = 20,
+                    maxDurationSeconds = 330,
                 )
             )
 
@@ -66,6 +68,8 @@ class VoiceSessionControllerTest(
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.sessionId", equalTo(sessionId.toString())))
             .andExpect(jsonPath("$.data.clientSecret", equalTo("secret")))
+            .andExpect(jsonPath("$.data.maxRounds", equalTo(20)))
+            .andExpect(jsonPath("$.data.maxDurationSeconds", equalTo(330)))
     }
 
     @Test
@@ -111,6 +115,19 @@ class VoiceSessionControllerTest(
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.status", equalTo("WAITING_CONFIRMATION")))
             .andExpect(jsonPath("$.data.missingFields[0]", equalTo("farmId")))
+    }
+
+    @Test
+    fun `submit turns rejects more than 50 turns`() {
+        val turns = (1..51).joinToString(",") { """{"role":"USER","content":"발화 $it"}""" }
+
+        mockMvc.perform(
+            patch("/api/v1/voice-sessions/$sessionId/turns")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""{"turns":[$turns],"candidate":{"workType":"WATERING"}}""")
+        )
+            .andExpect(status().isBadRequest)
     }
 
     @Test

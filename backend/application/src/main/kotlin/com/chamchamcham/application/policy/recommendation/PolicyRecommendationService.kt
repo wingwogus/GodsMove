@@ -99,48 +99,6 @@ class PolicyRecommendationService(
         return PolicyRecommendationResult.Page(visible.map(::toCard), nextCursor)
     }
 
-    @Transactional(readOnly = true)
-    fun searchRecommendations(
-        memberId: UUID,
-        keyword: String?,
-        cursor: String?,
-        size: Int,
-    ): PolicyRecommendationResult.Page {
-        validateSize(size)
-        val payload = decodeSearchCursor(cursor)
-        val rows = policyRecommendationQueryRepository.searchByMember(
-            PolicyRecommendationQueryRepository.MemberSearchCondition(
-                memberId = memberId,
-                keyword = keyword,
-                cursorCreatedAt = payload?.createdAt,
-                cursorId = payload?.id,
-                size = size + 1
-            )
-        )
-        val visible = rows.take(size)
-        val nextCursor = if (rows.size > size) {
-            visible.lastOrNull()?.let { row ->
-                cursorCodec.encode(PolicyRecommendationSearchCursorPayload(row.createdAt, requireNotNull(row.id)))
-            }
-        } else {
-            null
-        }
-        return PolicyRecommendationResult.Page(visible.map(::toCard), nextCursor)
-    }
-
-    @Transactional(readOnly = true)
-    fun countSearchRecommendations(memberId: UUID, keyword: String?): Long {
-        return policyRecommendationQueryRepository.countByMember(
-            PolicyRecommendationQueryRepository.MemberSearchCondition(
-                memberId = memberId,
-                keyword = keyword,
-                cursorCreatedAt = null,
-                cursorId = null,
-                size = COUNT_QUERY_SIZE
-            )
-        )
-    }
-
     fun getProgramDetail(memberId: UUID, policyProgramId: UUID): PolicyRecommendationResult.Detail {
         if (!memberRepository.existsById(memberId)) {
             throw BusinessException(ErrorCode.MEMBER_NOT_FOUND)
@@ -297,20 +255,6 @@ class PolicyRecommendationService(
                 applyEndsOn = null,
                 id = payload.id
             )
-        }
-    }
-
-    private fun decodeSearchCursor(cursor: String?): PolicyRecommendationSearchCursorPayload? {
-        if (cursor.isNullOrBlank()) {
-            return null
-        }
-        return try {
-            cursorCodec.decode(cursor, PolicyRecommendationSearchCursorPayload::class.java)
-        } catch (exception: BusinessException) {
-            if (exception.errorCode == ErrorCode.INVALID_CURSOR) {
-                throw BusinessException(ErrorCode.INVALID_INPUT)
-            }
-            throw exception
         }
     }
 

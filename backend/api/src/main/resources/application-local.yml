@@ -14,7 +14,7 @@ spring:
 
   jpa:
     hibernate:
-      ddl-auto: create
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:create}
     properties:
       hibernate:
         format_sql: true
@@ -67,6 +67,9 @@ app:
     allowed-origins: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:3000,http://localhost:5173,http://127.0.0.1:3000,http://127.0.0.1:5173}
   auth:
     refresh-cookie-secure: ${REFRESH_COOKIE_SECURE:false}
+  voice-session:
+    max-rounds: ${VOICE_SESSION_MAX_ROUNDS:20}
+    max-duration-seconds: ${VOICE_SESSION_MAX_DURATION_SECONDS:330}
   mail:
     from-name: ${MAIL_FROM_NAME:Example}
   media:

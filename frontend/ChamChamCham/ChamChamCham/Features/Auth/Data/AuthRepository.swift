@@ -17,6 +17,7 @@ protocol AuthRepository: Sendable {
     ) async throws -> LoginResponseDTO
     func loginWithNaver(accessToken: String) async throws -> LoginResponseDTO
     func logout() async throws
+    func withdraw() async throws
 }
 
 struct RemoteAuthRepository: AuthRepository {
@@ -53,6 +54,13 @@ struct RemoteAuthRepository: AuthRepository {
 
     func logout() async throws {
         let _: EmptyDTO = try await apiClient.send(AuthEndpoint.logout)
+        await authTokenStore.clear()
+    }
+
+    /// Hard-deletes the member on the backend (DB cascade removes owned data, existing access
+    /// tokens stop authenticating), then clears the local session the same way `logout()` does.
+    func withdraw() async throws {
+        let _: EmptyDTO = try await apiClient.send(MemberEndpoint.withdraw)
         await authTokenStore.clear()
     }
 

@@ -9,12 +9,15 @@ import com.chamchamcham.domain.voice.VoiceTurnRole
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotEmpty
+import jakarta.validation.constraints.Size
 import java.time.LocalDateTime
 import java.util.UUID
 
 object VoiceSessionRequests {
     data class SubmitTurnsRequest(
+        // 50 = 라운드당 2턴 × app.voice-session.max-rounds(20) + 인사·마무리 여유 10
         @field:NotEmpty(message = "대화 턴이 비어있습니다")
+        @field:Size(max = 50, message = "대화 턴은 최대 50개까지 제출할 수 있습니다")
         val turns: List<TurnRequest>,
 
         @field:Valid
@@ -25,6 +28,7 @@ object VoiceSessionRequests {
         val role: VoiceTurnRole,
 
         @field:NotBlank(message = "발화 내용을 입력해주세요")
+        @field:Size(max = 4000, message = "발화 내용은 4000자 이내여야 합니다")
         val content: String,
 
         val extractedFields: String? = null,

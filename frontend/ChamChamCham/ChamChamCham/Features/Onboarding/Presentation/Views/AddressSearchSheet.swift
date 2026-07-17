@@ -16,40 +16,15 @@ struct AddressSearchSheet: View {
 
     var body: some View {
         NavigationStack {
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                AppTextField(placeholder: "도로명 주소를 입력하세요 (예: 판교역로 235)", text: $searchQuery, autoFocus: true)
+            VStack(spacing: 0) {
+                AppSearchBar(text: $searchQuery, placeholder: "도로명 주소를 입력하세요 (예: 판교역로 235)")
                     .padding(.horizontal, Spacing.lg)
                     .padding(.top, Spacing.md)
+                    .padding(.bottom, Spacing.sm)
 
-                if viewModel.isSearching {
-                    LoadingView()
-                        .frame(maxWidth: .infinity)
-                        .padding(.top, Spacing.xl)
-                } else if viewModel.searchResults.isEmpty {
-                    EmptyStateView(message: "검색 결과가 없어요")
-                        .padding(.top, Spacing.xl)
-                } else {
-                    List(viewModel.searchResults) { address in
-                        Button {
-                            onSelect(address)
-                            dismiss()
-                        } label: {
-                            VStack(alignment: .leading, spacing: Spacing.xs) {
-                                Text(address.roadAddrPart1)
-                                    .font(.appBody)
-                                    .foregroundStyle(Color.appTextPrimary)
-                                Text(address.jibunAddr)
-                                    .font(.appCaption)
-                                    .foregroundStyle(Color.appTextSecondary)
-                            }
-                        }
-                    }
-                    .listStyle(.plain)
-                    .scrollDismissesKeyboard(.interactively)
-                }
-
-                Spacer()
+                results
             }
+            .background(Color.Background.default)
             .navigationTitle("농지 주소 검색")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -63,6 +38,57 @@ struct AddressSearchSheet: View {
                 await viewModel.search(keyword: searchQuery)
             }
         }
+    }
+
+    @ViewBuilder
+    private var results: some View {
+        if viewModel.isSearching {
+            LoadingView()
+                .frame(maxWidth: .infinity)
+                .padding(.top, Spacing.xl)
+            Spacer()
+        } else if viewModel.searchResults.isEmpty {
+            EmptyStateView(
+                message: searchQuery.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    ? "도로명 주소로 검색해보세요."
+                    : "검색 결과가 없어요."
+            )
+            .padding(.top, Spacing.xl)
+            Spacer()
+        } else {
+            ScrollView {
+                LazyVStack(spacing: 0) {
+                    ForEach(viewModel.searchResults) { address in
+                        addressRow(address)
+                        AppDivider(size: .small)
+                    }
+                }
+            }
+            .scrollDismissesKeyboard(.interactively)
+        }
+    }
+
+    private func addressRow(_ address: JusoAddress) -> some View {
+        Button {
+            onSelect(address)
+            dismiss()
+        } label: {
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                Text(address.roadAddrPart1)
+                    .appTypography(.bodyLarge)
+                    .foregroundStyle(Color.Text.default)
+                    .multilineTextAlignment(.leading)
+                Text(address.jibunAddr)
+                    .appTypography(.labelMedium)
+                    .foregroundStyle(Color.Text.muted)
+                    .multilineTextAlignment(.leading)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.vertical, Spacing.md)
+            .padding(.horizontal, Spacing.lg)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 }
 
