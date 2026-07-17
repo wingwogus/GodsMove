@@ -73,7 +73,11 @@ enum MyPageFixtures {
         )
     }
 
-    static func standaloneFarm(id: UUID = UUID(), name: String = "행복농장") -> StandaloneFarmResponseDTO {
+    static func standaloneFarm(
+        id: UUID = UUID(),
+        name: String = "행복농장",
+        crops: [CropResponseDTO] = []
+    ) -> StandaloneFarmResponseDTO {
         StandaloneFarmResponseDTO(
             farmId: id,
             name: name,
@@ -87,8 +91,12 @@ enum MyPageFixtures {
             areaIsManualEntry: true,
             boundaryCoordinates: [],
             dataSource: .onboardingJusoVWorld,
-            crops: []
+            crops: crops
         )
+    }
+
+    static func cropResponse(id: UUID = UUID(), name: String = "인삼") -> CropResponseDTO {
+        CropResponseDTO(id: id, externalNo: 1, name: name, usePartCategory: "ROOT", usePartCategoryLabel: "뿌리")
     }
 }
 

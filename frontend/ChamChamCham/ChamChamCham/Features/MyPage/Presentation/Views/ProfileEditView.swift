@@ -26,7 +26,8 @@ struct ProfileEditView: View {
             if selectedTab == 0 {
                 ProfileBasicInfoView(
                     repository: container.makeMemberProfileRepository(),
-                    mediaRepository: container.makeMediaUploadRepository()
+                    mediaRepository: container.makeMediaUploadRepository(),
+                    farmRepository: container.makeFarmRepository()
                 ) {
                     dismiss()
                 }

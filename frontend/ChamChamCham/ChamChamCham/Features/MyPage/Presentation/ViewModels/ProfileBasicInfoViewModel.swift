@@ -39,10 +39,16 @@ final class ProfileBasicInfoViewModel {
 
     @ObservationIgnored private let repository: any MemberProfileRepository
     @ObservationIgnored private let mediaRepository: any MediaUploadRepository
+    @ObservationIgnored private let farmRepository: any FarmRepository
 
-    init(repository: any MemberProfileRepository, mediaRepository: any MediaUploadRepository) {
+    init(
+        repository: any MemberProfileRepository,
+        mediaRepository: any MediaUploadRepository,
+        farmRepository: any FarmRepository
+    ) {
         self.repository = repository
         self.mediaRepository = mediaRepository
+        self.farmRepository = farmRepository
     }
 
     func load() async {
@@ -117,16 +123,20 @@ final class ProfileBasicInfoViewModel {
         saveErrorMessage = nil
         defer { isSubmitting = false }
 
-        let request = UpdateMyProfileRequestDTO(
-            name: name,
-            phone: phone,
-            birthDate: Self.wireDateFormatter.string(from: birthDate),
-            nickname: nickname,
-            experienceLevel: experienceYears,
-            managementType: managementType.rawValue,
-            profileMediaId: profileMediaId
-        )
         do {
+            // The backend models the whole profile (including farms) as one atomic PUT with no partial-update
+            // support, so a basic-info-only save still has to resend the member's current farms unchanged.
+            let farms = try await farmRepository.listFarms().compactMap { $0.toUpdateMyProfileFarmRequest() }
+            let request = UpdateMyProfileRequestDTO(
+                name: name,
+                phone: phone,
+                birthDate: Self.wireDateFormatter.string(from: birthDate),
+                nickname: nickname,
+                experienceLevel: experienceYears,
+                managementType: managementType.rawValue,
+                profileMediaId: profileMediaId,
+                farms: farms
+            )
             _ = try await repository.updateMyProfile(request)
             return true
         } catch {

@@ -64,4 +64,42 @@ struct FarmDTOTests {
         #expect(response.farmId == farmId)
         #expect(response.crops.map(\.id) == [cropId])
     }
+
+    @Test("maps a standalone farm into the profile update's required farm shape")
+    func mapsToProfileUpdateFarmRequest() throws {
+        let farmId = UUID()
+        let cropId = UUID()
+        let farm = MyPageFixtures.standaloneFarm(
+            id: farmId,
+            name: "두번째농장",
+            crops: [MyPageFixtures.cropResponse(id: cropId)]
+        )
+
+        let request = try #require(farm.toUpdateMyProfileFarmRequest())
+
+        #expect(request.farmId == farmId)
+        #expect(request.name == "두번째농장")
+        #expect(request.cropIds == [cropId])
+    }
+
+    @Test("drops a farm missing coordinates rather than sending an invalid profile update")
+    func dropsFarmWithoutCoordinates() {
+        let farm = StandaloneFarmResponseDTO(
+            farmId: UUID(),
+            name: "좌표없는농장",
+            roadAddress: "전북 전주시 둘길 2",
+            jibunAddress: nil,
+            latitude: nil,
+            longitude: nil,
+            pnu: nil,
+            landCategory: nil,
+            areaSqm: nil,
+            areaIsManualEntry: false,
+            boundaryCoordinates: [],
+            dataSource: .onboardingJusoVWorld,
+            crops: []
+        )
+
+        #expect(farm.toUpdateMyProfileFarmRequest() == nil)
+    }
 }
