@@ -76,7 +76,7 @@ struct CommunityEndpointTests {
         let cropId = UUID()
         let endpoint = CommunityEndpoint.listPosts(
             CommunityPostQuery(
-                cropId: cropId,
+                cropIds: [cropId],
                 postType: .question,
                 keyword: "발아율",
                 likedOnly: true,
@@ -96,6 +96,16 @@ struct CommunityEndpointTests {
         #expect(query["sort"] == "POPULAR")
         #expect(query["cursor"] == "abc123")
         #expect(query["size"] == "30")
+    }
+
+    @Test("post query repeats the cropId param for multiple crop filters")
+    func multiCropPostQuery() {
+        let firstId = UUID()
+        let secondId = UUID()
+        let endpoint = CommunityEndpoint.listPosts(CommunityPostQuery(cropIds: [firstId, secondId]))
+
+        let cropIdValues = endpoint.queryItems.filter { $0.name == "cropId" }.compactMap(\.value)
+        #expect(Set(cropIdValues) == [firstId.uuidString, secondId.uuidString])
     }
 
     @Test("false flags and blank keyword are omitted from the query")

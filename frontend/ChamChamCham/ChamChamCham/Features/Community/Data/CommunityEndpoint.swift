@@ -11,7 +11,9 @@ import Foundation
 /// Defaults match the server (`sort = .latest`, `size = 20`) so the common "first page, latest" call is just
 /// `CommunityPostQuery()`.
 struct CommunityPostQuery: Sendable, Equatable {
-    var cropId: UUID?
+    /// Repeated `cropId` query params — the backend accepts zero, one, or many crop filters
+    /// (see `CommunityPostSearchCondition.cropIds`).
+    var cropIds: [UUID]
     var postType: CommunityPostType?
     var keyword: String?
     var likedOnly: Bool
@@ -24,7 +26,7 @@ struct CommunityPostQuery: Sendable, Equatable {
     var size: Int
 
     init(
-        cropId: UUID? = nil,
+        cropIds: [UUID] = [],
         postType: CommunityPostType? = nil,
         keyword: String? = nil,
         likedOnly: Bool = false,
@@ -34,7 +36,7 @@ struct CommunityPostQuery: Sendable, Equatable {
         cursor: String? = nil,
         size: Int = 20
     ) {
-        self.cropId = cropId
+        self.cropIds = cropIds
         self.postType = postType
         self.keyword = keyword
         self.likedOnly = likedOnly
@@ -118,7 +120,7 @@ enum CommunityEndpoint: Endpoint {
                 URLQueryItem(name: "sort", value: query.sort.rawValue),
                 URLQueryItem(name: "size", value: String(query.size))
             ]
-            if let cropId = query.cropId {
+            for cropId in query.cropIds {
                 items.append(URLQueryItem(name: "cropId", value: cropId.uuidString))
             }
             if let postType = query.postType {

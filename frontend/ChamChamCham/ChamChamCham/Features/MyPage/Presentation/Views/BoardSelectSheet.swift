@@ -7,25 +7,25 @@
 
 import SwiftUI
 
-/// Figma `bottom-sheet / 게시판 선택 시`. Single-select crop board filter for the profile post list,
-/// grouped into 진행중인 작물 / 기타 작물. Confirms with `완료`, returning the chosen board id (or nil
-/// to clear). Tapping the selected chip again clears the selection.
+/// Figma `bottom-sheet / 게시판 선택 시`. Multi-select crop board filter for the profile post list,
+/// grouped into 진행중인 작물 / 기타 작물. Confirms with `완료`, returning the chosen board ids (empty
+/// set to clear). Tapping a selected chip again removes it from the selection.
 struct BoardSelectSheet: View {
     let activeBoards: [CommunityBoard]
     let otherBoards: [CommunityBoard]
     var isLoading: Bool = false
-    let initialSelection: UUID?
-    let onComplete: (UUID?) -> Void
+    let initialSelection: Set<UUID>
+    let onComplete: (Set<UUID>) -> Void
 
     @Environment(\.dismiss) private var dismiss
-    @State private var selection: UUID?
+    @State private var selection: Set<UUID>
 
     init(
         activeBoards: [CommunityBoard],
         otherBoards: [CommunityBoard],
         isLoading: Bool = false,
-        initialSelection: UUID?,
-        onComplete: @escaping (UUID?) -> Void
+        initialSelection: Set<UUID>,
+        onComplete: @escaping (Set<UUID>) -> Void
     ) {
         self.activeBoards = activeBoards
         self.otherBoards = otherBoards
@@ -95,10 +95,12 @@ struct BoardSelectSheet: View {
                     ForEach(boards) { board in
                         AppChip(
                             label: board.cropName,
-                            isSelected: selection == board.cropId,
+                            isSelected: selection.contains(board.cropId),
                             style: .solidPastel
                         ) {
-                            selection = (selection == board.cropId) ? nil : board.cropId
+                            if !selection.insert(board.cropId).inserted {
+                                selection.remove(board.cropId)
+                            }
                         }
                     }
                 }

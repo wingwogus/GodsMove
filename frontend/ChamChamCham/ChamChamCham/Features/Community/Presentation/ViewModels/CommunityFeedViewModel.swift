@@ -148,7 +148,7 @@ final class CommunityFeedViewModel {
     // MARK: - Helpers
 
     private func query(cursor: String?) -> CommunityPostQuery {
-        CommunityPostQuery(cropId: selectedCropId, postType: postType, sort: sort, cursor: cursor)
+        CommunityPostQuery(cropIds: selectedCropId.map { [$0] } ?? [], postType: postType, sort: sort, cursor: cursor)
     }
 
     /// "전체" (`selectedCropId == nil`) means every crop registered under 나의 작물, not the whole community —

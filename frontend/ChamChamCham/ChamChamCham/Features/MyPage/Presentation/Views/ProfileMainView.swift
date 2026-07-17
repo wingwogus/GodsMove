@@ -78,9 +78,9 @@ struct ProfileMainView: View {
                 activeBoards: viewModel.activeBoards,
                 otherBoards: viewModel.otherBoards,
                 isLoading: viewModel.isLoadingBoards,
-                initialSelection: viewModel.selectedBoardCropId
-            ) { cropId in
-                Task { await viewModel.applyBoardFilter(cropId: cropId) }
+                initialSelection: viewModel.selectedBoardCropIds
+            ) { cropIds in
+                Task { await viewModel.applyBoardFilter(cropIds: cropIds) }
             }
         }
         .fullScreenCover(isPresented: $isShowingProfileEdit, onDismiss: {
@@ -198,7 +198,7 @@ struct ProfileMainView: View {
         HStack {
             AppChip(
                 label: viewModel.selectedBoardName ?? "게시판 선택",
-                isSelected: viewModel.selectedBoardCropId != nil,
+                isSelected: !viewModel.selectedBoardCropIds.isEmpty,
                 trailingSystemImage: "chevron.down"
             ) {
                 isShowingBoardSheet = true
