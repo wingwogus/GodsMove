@@ -15,9 +15,9 @@ import java.util.UUID
 
 object VoiceSessionRequests {
     data class SubmitTurnsRequest(
-        // 40 = 라운드당 2턴 × app.voice-session.max-rounds(10) × 여유 2배(인사·마무리 포함)
+        // 50 = 라운드당 2턴 × app.voice-session.max-rounds(20) + 인사·마무리 여유 10
         @field:NotEmpty(message = "대화 턴이 비어있습니다")
-        @field:Size(max = 40, message = "대화 턴은 최대 40개까지 제출할 수 있습니다")
+        @field:Size(max = 50, message = "대화 턴은 최대 50개까지 제출할 수 있습니다")
         val turns: List<TurnRequest>,
 
         @field:Valid

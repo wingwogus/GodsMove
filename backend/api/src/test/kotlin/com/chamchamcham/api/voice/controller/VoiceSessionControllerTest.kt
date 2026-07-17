@@ -118,8 +118,8 @@ class VoiceSessionControllerTest(
     }
 
     @Test
-    fun `submit turns rejects more than 40 turns`() {
-        val turns = (1..41).joinToString(",") { """{"role":"USER","content":"발화 $it"}""" }
+    fun `submit turns rejects more than 50 turns`() {
+        val turns = (1..51).joinToString(",") { """{"role":"USER","content":"발화 $it"}""" }
 
         mockMvc.perform(
             patch("/api/v1/voice-sessions/$sessionId/turns")
