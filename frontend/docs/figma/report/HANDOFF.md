@@ -238,15 +238,33 @@ a follow-up session should start deciding fix vs. defer):
      upstream, not just a display bug).
    - Reconfirmed (not new): date-separator `-` vs `~`, inline record-row
      preview — 4th recurrence of both.
-5. Capture the remaining Report Detail workType variants one at a time
-   (잡초 관리/가지·순 정리/수확/기타) — user's explicit plan: capture each
-   screen first (no fixing yet), then once all workTypes are captured, plan
-   a full remediation pass together. Header/badges/metrics/coaching/history
-   layout is shared across workTypes; only the metric fields and chart
-   data/titles differ per type — confirm against each capture rather than
-   assuming, **especially chart order**, which turned out to be
-   workType-specific rather than a blanket bug.
-6. `ReportCoachingSection.swift` (AI coaching cards) has not been compared
+5. **잡초 관리 (Weeding) capture done** —
+   [2026-07-18-report-detail-weeding.md](2026-07-18-report-detail-weeding.md).
+   Findings 1–5 reconfirmed. Simplest workType (1 metric, 1 chart) — both
+   match code exactly except the chart title itself.
+   - **Chart title mismatch — 4th workType in a row** ("잡초 관리 방법" in
+     code vs Figma's "진행한 잡초 관리 방식"). Reinforces the cross-cutting
+     copy-drift hypothesis: 4 of 4 workTypes captured so far have at least
+     one mismatched chart title.
+   - Also the first capture where a chart built via
+     `appendDistributionChart` renders as a **4-slice donut** instead of the
+     usual 3-segment stacked bar (because `methodDistribution` has 4
+     categories here) — confirms the count-driven style rule from the
+     pest-control capture applies to distribution charts too, not just
+     `appendChart` ones. Not a bug.
+   - Reconfirmed (not new): date-separator `-` vs `~`, inline record-row
+     preview — 5th recurrence of both.
+6. Capture the remaining Report Detail workType variants one at a time
+   (가지·순 정리/수확/기타) — user's explicit plan: capture each screen
+   first (no fixing yet), then once all workTypes are captured, plan a full
+   remediation pass together. Header/badges/metrics/coaching/history layout
+   is shared across workTypes; only the metric fields and chart data/titles
+   differ per type — confirm against each capture rather than assuming,
+   **especially chart order**, which turned out to be workType-specific
+   rather than a blanket bug. Chart-title mismatches, on the other hand,
+   have now held for every workType captured (4/4) — treat that one as
+   very likely universal by the time all 7 are done.
+7. `ReportCoachingSection.swift` (AI coaching cards) has not been compared
    against Figma yet — the 심기 capture shows 4 example coaching cards
    (잘한 점/이전 리포트과의 비교/개선 필요점/추천 행동) worth checking once a
    real coaching-populated capture is available.
@@ -262,7 +280,7 @@ a follow-up session should start deciding fix vs. defer):
 먼저 docs/figma/report/HANDOFF.md 를 읽고, 이미 캡처된
 2026-07-18-report-detail-chart-spec.md / 2026-07-18-report-detail-planting.md /
 2026-07-18-report-detail-watering.md / 2026-07-18-report-detail-fertilizing.md /
-2026-07-18-report-detail-pest-control.md
+2026-07-18-report-detail-pest-control.md / 2026-07-18-report-detail-weeding.md
 문서도 읽어줘. TalkToFigma 연결 절차는 docs/figma/record/HANDOFF.md Part 1과 동일해.
 
 지금까지: Report List View는 검토 완료(대부분 일치, 필터 칩 다중선택 건은 이미
@@ -272,21 +290,28 @@ dev에 병합돼 해결됨). 그래프 포맷 스펙 캡처 완료(turquoise 색
 WorkType 타이틀 폰트/메트릭 카드 라벨·값 스타일)은 커밋 3aa1457b로 수정 완료.
 6번(날짜 구분자 `-` vs `~`)은 디자이너 확인 필요한 열린 질문, 7번(기록 내역
 인라인 프리뷰)은 별도 기능 구현이 필요한 제품 스코프 갭으로 둘 다 미수정.
-물주기(Watering), 비료 주기(Fertilizing), 병해충 관리(Pest Control) 화면도
-캡처 완료 — 1~5번 수정이 세 화면 모두 그대로 맞음을 재확인했음.
+물주기(Watering), 비료 주기(Fertilizing), 병해충 관리(Pest Control), 잡초 관리
+(Weeding) 화면도 캡처 완료 — 1~5번 수정이 네 화면 모두 그대로 맞음을
+재확인했음. 남은 workType: 가지·순 정리, 수확, 기타.
 
-3개 workType에서 공통으로 나온 패턴: **차트 타이틀이 코드와 Figma에서 전부
-다름** (3/3 workType 100% 불일치) — 이건 개별 workType 버그가 아니라
-ReportPresentationModels.swift 전반의 카피 동기화 문제로 보임.
+4개 workType에서 공통으로 나온 패턴: **차트 타이틀이 코드와 Figma에서 전부
+다름** (4/4 workType 모두 최소 1개 이상 불일치) — 이건 개별 workType 버그가
+아니라 ReportPresentationModels.swift 전반의 카피 동기화 문제로 보임. 남은
+workType에서도 계속 재현되면 사실상 보편적인 문제로 확정해도 됨.
 
 **차트 순서는 워크타입마다 다름 (주의)**: 물주기·비료 주기는 순서가 코드와
-Figma가 반대였지만, 병해충 관리는 코드 순서가 이미 Figma와 일치함 — "항상
-방식 분포 차트가 맨 앞" 가설은 Figma 쪽 규칙일 뿐, 코드가 항상 틀린 건
-아니므로 workType별로 개별 확인 필요.
+Figma가 반대였지만, 병해충 관리는 코드 순서가 이미 Figma와 일치하고 잡초
+관리는 차트가 1개뿐이라 순서 문제 자체가 없음 — "항상 방식 분포 차트가 맨
+앞" 가설은 Figma 쪽 규칙일 뿐, 코드가 항상 틀린 건 아니므로 workType별로
+개별 확인 필요.
 
 병해충 관리에서 추가로: 농약 사용량 메트릭 타이틀 포맷 불일치, "총 살포량"
 값이 코드는 항상 L 단위인데 Figma는 ml로 표시(백엔드 DTO 단위 자체를 확인
 해야 할 수도 있는 이슈, 프레젠테이션만 고쳐서 될 문제인지 불확실).
+
+잡초 관리에서 추가로: distribution 차트(appendDistributionChart)도 카테고리
+개수가 4개 이상이면 스택바가 아니라 도넛으로 렌더링됨을 확인(count<=3 규칙,
+버그 아님 — 그냥 처음 확인된 케이스).
 
 **사용자 방침(중요)**: 지금은 캡처만 한다 — workType 하나씩 다 캡처한 뒤에야
 "리포트 전체 보완 수정 계획"을 별도로 세울 예정. 발견한 이슈를 캡처 중간에
