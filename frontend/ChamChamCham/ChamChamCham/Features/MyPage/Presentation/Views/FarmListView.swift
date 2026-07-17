@@ -13,6 +13,7 @@ struct FarmListView: View {
     @State private var viewModel: FarmListViewModel
     @State private var isShowingAdd = false
     @State private var isConfirmingDelete = false
+    @State private var isShowingMinimumFarmAlert = false
 
     init(container: DIContainer) {
         self.container = container
@@ -113,7 +114,11 @@ struct FarmListView: View {
     @ViewBuilder private var deleteBar: some View {
         if viewModel.isDeleting && !viewModel.selectedForDeletion.isEmpty {
             AppButton("선택 삭제 (\(viewModel.selectedForDeletion.count))", variant: .secondary, size: .medium, fullWidth: true) {
-                isConfirmingDelete = true
+                if viewModel.selectedForDeletion.count >= viewModel.farms.count {
+                    isShowingMinimumFarmAlert = true
+                } else {
+                    isConfirmingDelete = true
+                }
             }
             .disabled(viewModel.isProcessingDelete)
             .padding(.horizontal, Spacing.lg - Spacing.xs)
@@ -122,6 +127,11 @@ struct FarmListView: View {
             .confirmationDialog("선택한 밭을 삭제할까요?", isPresented: $isConfirmingDelete, titleVisibility: .visible) {
                 Button("삭제", role: .destructive) { Task { await viewModel.deleteSelected() } }
                 Button("취소", role: .cancel) {}
+            }
+            .alert("삭제할 수 없어요", isPresented: $isShowingMinimumFarmAlert) {
+                Button("확인", role: .cancel) {}
+            } message: {
+                Text("최소 1개의 농지는 등록되어 있어야 해요.")
             }
         }
     }
