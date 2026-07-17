@@ -14,8 +14,9 @@ import SwiftUI
 struct CropPickerView: View {
     let loadCrops: @MainActor () async -> [Crop]
     let loadCategories: @MainActor () async -> [CropCategory]
-    /// Crops that should start selected (e.g. re-opening the picker on an existing farm).
-    var initialSelection: [Crop] = []
+    /// Crop ids that should start selected (e.g. re-opening the picker on an existing farm or on
+    /// already-added community boards).
+    var initialSelectedCropIDs: [UUID] = []
     /// Maximum selectable crops, or `nil` for unlimited.
     var selectionLimit: Int? = nil
     let onComplete: ([Crop]) -> Void
@@ -65,7 +66,7 @@ struct CropPickerView: View {
         .background(Color.Background.default)
         .task {
             if !didSeedSelection {
-                selectedCropIDs = initialSelection.map(\.id)
+                selectedCropIDs = initialSelectedCropIDs
                 didSeedSelection = true
             }
             await load()

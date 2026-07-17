@@ -138,18 +138,22 @@ final class CommunityFeedViewModel {
         (try? await cropCatalog.fetchCategories()) ?? []
     }
 
-    /// Adds crops chosen in the picker as board chips (persisted per member — see `ExtraCropBoardStore`)
-    /// and selects the first one.
+    /// Reconciles the picker's full current selection into `extraBoards` (persisted per member — see
+    /// `ExtraCropBoardStore`), then selects the first newly added crop if there is one. Crops already
+    /// backed by `serverBoards` (온보딩 작물) are left out of `extraBoards` — this ad hoc picker can't
+    /// remove the member's registered crops, so unchecking one here has no effect on it.
     func addBoards(from crops: [Crop]) async {
-        guard !crops.isEmpty else { return }
-        let added = crops.map { CommunityBoard(cropId: $0.id, cropName: $0.name) }
-        extraBoards.append(contentsOf: added)
+        let serverCropIDs = Set(serverBoards.map(\.cropId))
+        let previousExtraCropIDs = Set(extraBoards.map(\.cropId))
+        extraBoards = crops
+            .filter { !serverCropIDs.contains($0.id) }
+            .map { CommunityBoard(cropId: $0.id, cropName: $0.name) }
         mergeBoards()
         if let memberId {
             await extraBoardStore.replace(with: extraBoards, memberId: memberId)
         }
-        if let first = crops.first {
-            await selectCrop(first.id)
+        if let firstNew = crops.first(where: { !serverCropIDs.contains($0.id) && !previousExtraCropIDs.contains($0.id) }) {
+            await selectCrop(firstNew.id)
         }
     }
 

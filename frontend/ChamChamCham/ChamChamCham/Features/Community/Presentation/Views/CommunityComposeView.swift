@@ -84,7 +84,8 @@ struct CommunityComposeView: View {
         .fullScreenCover(isPresented: $showCropPicker) {
             CropPickerView(
                 loadCrops: viewModel.catalogCrops,
-                loadCategories: viewModel.catalogCategories
+                loadCategories: viewModel.catalogCategories,
+                initialSelectedCropIDs: viewModel.boards.map(\.cropId)
             ) { crops in
                 viewModel.addBoards(from: crops)
             }

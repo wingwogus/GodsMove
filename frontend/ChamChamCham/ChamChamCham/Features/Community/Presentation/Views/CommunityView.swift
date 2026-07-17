@@ -84,7 +84,8 @@ struct CommunityView: View {
         .fullScreenCover(isPresented: $showCropPicker) {
             CropPickerView(
                 loadCrops: viewModel.catalogCrops,
-                loadCategories: viewModel.catalogCategories
+                loadCategories: viewModel.catalogCategories,
+                initialSelectedCropIDs: viewModel.boards.map(\.cropId)
             ) { crops in
                 Task { await viewModel.addBoards(from: crops) }
             }

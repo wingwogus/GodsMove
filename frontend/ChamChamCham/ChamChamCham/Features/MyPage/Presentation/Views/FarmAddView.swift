@@ -8,7 +8,7 @@
 import SwiftUI
 
 /// 밭 추가. 농지명 + 도로명 주소 검색(`AddressSearchSheet`, JUSO/V-World 엔진 재사용) + 작물 선택
-/// (`CropPickerSheet` 재사용) → `POST /farms`. 온보딩 화면을 건드리지 않고 엔진/시트를 재사용한다.
+/// (`CropPickerView` 재사용) → `POST /farms`. 온보딩 화면을 건드리지 않고 엔진/시트를 재사용한다.
 struct FarmAddView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: FarmAddViewModel
@@ -94,7 +94,7 @@ struct FarmAddView: View {
             CropPickerView(
                 loadCrops: { await viewModel.loadCrops() },
                 loadCategories: { await viewModel.loadCategories() },
-                initialSelection: viewModel.selectedCrops,
+                initialSelectedCropIDs: viewModel.selectedCrops.map(\.id),
                 onComplete: { crops in viewModel.selectedCrops = crops }
             )
         }
