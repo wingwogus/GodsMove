@@ -35,6 +35,8 @@ struct PreviewAuthRepository: AuthRepository {
     }
 
     func logout() async throws {}
+
+    func withdraw() async throws {}
 }
 
 struct PreviewMediaUploadRepository: MediaUploadRepository {

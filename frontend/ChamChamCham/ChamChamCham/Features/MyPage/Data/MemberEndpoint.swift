@@ -11,10 +11,11 @@ enum MemberEndpoint: Endpoint {
     case myProfile
     case publicProfile(UUID)
     case updateMyProfile(UpdateMyProfileRequestDTO)
+    case withdraw
 
     var path: String {
         switch self {
-        case .myProfile:
+        case .myProfile, .withdraw:
             "api/v1/members/me"
         case let .publicProfile(memberId):
             "api/v1/members/\(memberId.uuidString)/profile"
@@ -29,6 +30,8 @@ enum MemberEndpoint: Endpoint {
             .get
         case .updateMyProfile:
             .put
+        case .withdraw:
+            .delete
         }
     }
 
@@ -36,7 +39,7 @@ enum MemberEndpoint: Endpoint {
         switch self {
         case let .updateMyProfile(request):
             request
-        case .myProfile, .publicProfile:
+        case .myProfile, .publicProfile, .withdraw:
             nil
         }
     }
