@@ -11,6 +11,7 @@ import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
 import org.springframework.test.web.client.MockRestServiceServer
 import org.springframework.test.web.client.match.MockRestRequestMatchers.header
+import org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath
 import org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo
 import org.springframework.test.web.client.response.MockRestResponseCreators.withException
 import org.springframework.test.web.client.response.MockRestResponseCreators.withStatus
@@ -32,13 +33,15 @@ class OpenAiRealtimeSessionProviderTest {
     fun `정상 응답이면 ephemeral secret과 model을 반환한다`() {
         server.expect(requestTo("$BASE_URL/v1/realtime/client_secrets"))
             .andExpect(header("Authorization", "Bearer $API_KEY"))
+            .andExpect(jsonPath("$.expires_after.anchor").value("created_at"))
+            .andExpect(jsonPath("$.expires_after.seconds").value(EXPIRES_AFTER_SECONDS))
             .andRespond(
                 withStatus(HttpStatus.OK).contentType(MediaType.APPLICATION_JSON)
                     .body("""{"value":"ek_test_123","expires_at":1735689600}""")
             )
 
         val result = provider.createEphemeralSession(
-            RealtimeSessionRequest(instructions = "안내", tools = listOf(mapOf("type" to "function")))
+            RealtimeSessionRequest(instructions = "안내", tools = listOf(mapOf("type" to "function")), expiresAfterSeconds = EXPIRES_AFTER_SECONDS)
         )
 
         assertThat(result.clientSecret).isEqualTo("ek_test_123")
@@ -52,7 +55,7 @@ class OpenAiRealtimeSessionProviderTest {
             .andRespond(withException(IOException("connection reset")))
 
         val exception = assertThrows(BusinessException::class.java) {
-            provider.createEphemeralSession(RealtimeSessionRequest(instructions = "안내", tools = emptyList()))
+            provider.createEphemeralSession(RealtimeSessionRequest(instructions = "안내", tools = emptyList(), expiresAfterSeconds = EXPIRES_AFTER_SECONDS))
         }
 
         assertThat(exception.errorCode).isEqualTo(ErrorCode.VOICE_SESSION_PROVIDER_UNAVAILABLE)
@@ -64,7 +67,7 @@ class OpenAiRealtimeSessionProviderTest {
             .andRespond(withStatus(HttpStatus.OK).contentType(MediaType.APPLICATION_JSON).body("{}"))
 
         val exception = assertThrows(BusinessException::class.java) {
-            provider.createEphemeralSession(RealtimeSessionRequest(instructions = "안내", tools = emptyList()))
+            provider.createEphemeralSession(RealtimeSessionRequest(instructions = "안내", tools = emptyList(), expiresAfterSeconds = EXPIRES_AFTER_SECONDS))
         }
 
         assertThat(exception.errorCode).isEqualTo(ErrorCode.VOICE_SESSION_PROVIDER_UNAVAILABLE)
@@ -75,5 +78,6 @@ class OpenAiRealtimeSessionProviderTest {
         private const val API_KEY = "test-api-key"
         private const val MODEL = "gpt-realtime"
         private const val VOICE = "marin"
+        private const val EXPIRES_AFTER_SECONDS = 360
     }
 }

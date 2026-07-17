@@ -17,6 +17,8 @@ import com.chamchamcham.domain.farming.FarmingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
+import com.chamchamcham.domain.pesticide.Pesticide
+import com.chamchamcham.domain.pesticide.PesticideQueryRepository
 import com.chamchamcham.domain.voice.VoiceRecordSession
 import com.chamchamcham.domain.voice.VoiceRecordSessionRepository
 import com.chamchamcham.domain.voice.VoiceRecordTurnRepository
@@ -50,11 +52,13 @@ class VoiceSessionServiceTest {
     @Mock private lateinit var farmingRecordService: FarmingRecordService
     @Mock private lateinit var voiceRecordSessionRepository: VoiceRecordSessionRepository
     @Mock private lateinit var voiceRecordTurnRepository: VoiceRecordTurnRepository
+    @Mock private lateinit var pesticideQueryRepository: PesticideQueryRepository
 
     // Mockito's any()/any(Class)는 non-null 파라미터를 가진 Kotlin 인터페이스 메서드 호출 시
     // 컴파일러가 삽입하는 null 체크에 걸려 NPE가 나므로, 검증이 필요 없는 이 협력자는 목 대신
     // 간단한 fake로 대체한다.
     private lateinit var realtimeSessionProvider: RealtimeSessionProvider
+    private var capturedRequest: RealtimeSessionRequest? = null
 
     private lateinit var service: VoiceSessionService
     private lateinit var member: Member
@@ -64,8 +68,10 @@ class VoiceSessionServiceTest {
     @BeforeEach
     fun setUp() {
         realtimeSessionProvider = object : RealtimeSessionProvider {
-            override fun createEphemeralSession(request: RealtimeSessionRequest): RealtimeSessionResult =
-                RealtimeSessionResult(clientSecret = "secret", expiresAt = LocalDateTime.now(), model = "gpt-realtime")
+            override fun createEphemeralSession(request: RealtimeSessionRequest): RealtimeSessionResult {
+                capturedRequest = request
+                return RealtimeSessionResult(clientSecret = "secret", expiresAt = LocalDateTime.now(), model = "gpt-realtime")
+            }
         }
         service = VoiceSessionService(
             memberRepository = memberRepository,
@@ -76,6 +82,8 @@ class VoiceSessionServiceTest {
             voiceRecordSessionRepository = voiceRecordSessionRepository,
             voiceRecordTurnRepository = voiceRecordTurnRepository,
             realtimeSessionProvider = realtimeSessionProvider,
+            voiceSessionProperties = VoiceSessionProperties(maxRounds = 20, maxDurationSeconds = 330),
+            pesticideQueryRepository = pesticideQueryRepository,
         )
         member = Member(id = memberId, email = "$memberId@example.com", passwordHash = null)
         farm = Farm(id = farmId, owner = member, name = "약초농장", roadAddress = "서울시 강남구")
@@ -98,6 +106,71 @@ class VoiceSessionServiceTest {
         assertThat(result.clientSecret).isEqualTo("secret")
         assertThat(result.farms).extracting("farmId").containsExactly(farmId)
         assertThat(result.cropsByFarm[farmId.toString()]).extracting("cropId").containsExactly(cropId)
+        assertThat(result.maxRounds).isEqualTo(20)
+        assertThat(result.maxDurationSeconds).isEqualTo(330)
+    }
+
+    @Test
+    fun `OpenAI 토큰 만료는 대화 시간 한도보다 30초 길게 파생된다`() {
+        stubCreateCollaborators()
+
+        service.create(VoiceSessionCommand.Create(memberId = memberId))
+
+        assertThat(capturedRequest!!.expiresAfterSeconds).isEqualTo(360)
+    }
+
+    @Test
+    fun `세션 생성 시 회원 작물에 등록된 농약 목록을 지침에 주입한다`() {
+        stubCreateCollaborators()
+        `when`(pesticideQueryRepository.findByCropNames(listOf("황기"), 200)).thenReturn(
+            listOf(
+                PesticideQueryRepository.VoiceCatalogRow(itemName = "코니도", brandName = "바이엘", pestName = "진딧물"),
+                PesticideQueryRepository.VoiceCatalogRow(itemName = "코니도", brandName = "바이엘", pestName = "총채벌레"),
+            )
+        )
+
+        service.create(VoiceSessionCommand.Create(memberId = memberId))
+
+        assertThat(capturedRequest!!.instructions).contains("코니도(바이엘)")
+        assertThat(capturedRequest!!.instructions).contains("진딧물, 총채벌레")
+    }
+
+    @Test
+    fun `작물 매칭 농약이 없고 전체 카탈로그가 작으면 전체 농약명을 주입한다`() {
+        stubCreateCollaborators()
+        `when`(
+            pesticideQueryRepository.search(
+                PesticideQueryRepository.SearchCondition(keyword = null, cursor = null, size = 51)
+            )
+        ).thenReturn(listOf(Pesticide(itemName = "다이센엠-45", brandName = "농협케미컬")))
+
+        service.create(VoiceSessionCommand.Create(memberId = memberId))
+
+        assertThat(capturedRequest!!.instructions).contains("다이센엠-45(농협케미컬)")
+    }
+
+    @Test
+    fun `작물 매칭 농약이 없고 전체 카탈로그가 크면 농약 목록을 생략한다`() {
+        stubCreateCollaborators()
+        `when`(
+            pesticideQueryRepository.search(
+                PesticideQueryRepository.SearchCondition(keyword = null, cursor = null, size = 51)
+            )
+        ).thenReturn((1..51).map { Pesticide(itemName = "농약$it", brandName = "제조사") })
+
+        service.create(VoiceSessionCommand.Create(memberId = memberId))
+
+        assertThat(capturedRequest!!.instructions).doesNotContain("등록 농약 목록")
+    }
+
+    private fun stubCreateCollaborators() {
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(listOf(MemberCrop(member = member, farm = farm, crop = crop)))
+        `when`(voiceRecordSessionRepository.save(any(VoiceRecordSession::class.java))).thenAnswer { invocation ->
+            val toSave = invocation.arguments[0] as VoiceRecordSession
+            VoiceRecordSession(id = sessionId, member = toSave.member, status = toSave.status)
+        }
     }
 
     @Test
