@@ -18,24 +18,28 @@ struct SearchSuggestionListView: View {
     let onTapSuggestion: (String) -> Void
 
     var body: some View {
-        LazyVStack(spacing: 0) {
-            ForEach(Array(suggestions.enumerated()), id: \.offset) { index, term in
-                Button {
-                    onTapSuggestion(term)
-                } label: {
-                    HStack {
-                        highlightedText(term)
-                            .foregroundStyle(Color.Text.subtle)
-                        Spacer()
+        // Scrollable so a long suggestion list can extend past the keyboard and still be reached;
+        // the parent applies `.scrollDismissesKeyboard(.immediately)`.
+        ScrollView {
+            LazyVStack(spacing: 0) {
+                ForEach(Array(suggestions.enumerated()), id: \.offset) { index, term in
+                    Button {
+                        onTapSuggestion(term)
+                    } label: {
+                        HStack {
+                            highlightedText(term)
+                                .foregroundStyle(Color.Text.subtle)
+                            Spacer()
+                        }
+                        .padding(.horizontal, 20)
+                        .frame(height: 58)
+                        .contentShape(Rectangle())
                     }
-                    .padding(.horizontal, 20)
-                    .frame(height: 58)
-                    .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-                .overlay(alignment: .bottom) {
-                    if index != suggestions.count - 1 {
-                        Rectangle().fill(Color.Border.default).frame(height: 1)
+                    .buttonStyle(.plain)
+                    .overlay(alignment: .bottom) {
+                        if index != suggestions.count - 1 {
+                            Rectangle().fill(Color.Border.default).frame(height: 1)
+                        }
                     }
                 }
             }

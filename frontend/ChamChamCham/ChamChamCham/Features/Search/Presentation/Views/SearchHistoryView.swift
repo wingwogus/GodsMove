@@ -16,22 +16,26 @@ struct SearchHistoryView: View {
     let onClearAll: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            header
-            if recentTerms.isEmpty {
-                Text("최근 검색어가 없어요.")
-                    .appTypography(.bodyMedium)
-                    .foregroundStyle(Color.Text.muted)
-            } else {
-                AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm) {
-                    ForEach(recentTerms) { term in
-                        chip(for: term)
+        // Scrollable so a full chip grid stays reachable when the keyboard is up (and can scroll on
+        // small devices); the parent applies `.scrollDismissesKeyboard(.immediately)`.
+        ScrollView {
+            VStack(alignment: .leading, spacing: Spacing.md) {
+                header
+                if recentTerms.isEmpty {
+                    Text("최근 검색어가 없어요.")
+                        .appTypography(.bodyMedium)
+                        .foregroundStyle(Color.Text.muted)
+                } else {
+                    AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm) {
+                        ForEach(recentTerms) { term in
+                            chip(for: term)
+                        }
                     }
                 }
             }
-            Spacer(minLength: 0)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(20)
         }
-        .padding(20)
     }
 
     private var header: some View {

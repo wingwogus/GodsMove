@@ -6,6 +6,7 @@
 //
 
 import SwiftUI
+import UIKit
 
 /// Root search screen, presented as a `fullScreenCover` from Home/영농 기록/정보 공유's search
 /// icons. Owns its own `NavigationStack` (for pushing 기록/게시글 detail) and switches between the
@@ -40,6 +41,12 @@ struct SearchView: View {
                 content
             }
             .navigationBarHidden(true)
+            // Pin the search bar (and tab bar) at the top: without this the whole VStack — search
+            // bar included — is shoved up off-screen when the keyboard opens. The keyboard now just
+            // overlays the bottom, and the scrollable content underneath can scroll past it.
+            .ignoresSafeArea(.keyboard, edges: .bottom)
+            // Any drag through the results/suggestions/history lists drops the keyboard.
+            .scrollDismissesKeyboard(.immediately)
             .navigationDestination(for: FarmingRecordSummary.self) { record in
                 RecordDetailView(recordId: record.id, repository: container.makeRecordRepository()) {
                     Task { await recordViewModel.reload(keyword: viewModel.submittedKeyword) }
@@ -64,7 +71,7 @@ struct SearchView: View {
             .buttonStyle(.plain)
 
             AppSearchBar(text: queryBinding)
-                .onSubmit { viewModel.onSubmit(viewModel.query) }
+                .onSubmit { submit(viewModel.query) }
         }
         .padding(.horizontal, 12)
         .padding(.vertical, Spacing.sm)
@@ -73,15 +80,24 @@ struct SearchView: View {
     private var queryBinding: Binding<String> {
         Binding(
             get: { viewModel.query },
-            set: { newValue in
-                viewModel.query = newValue
-                if newValue.isEmpty {
-                    viewModel.clearSubmission()
-                } else {
-                    // Real-time search-as-you-type: `loadSuggestions` debounces/cancels internally.
-                    viewModel.loadSuggestions(for: newValue)
-                }
-            }
+            // Only user-driven edits flow through here (programmatic `onSubmit` sets `query`
+            // directly and never re-triggers this setter). `onQueryChanged` exits the results phase
+            // and debounces/cancels the suggestions fetch internally.
+            set: { viewModel.onQueryChanged($0) }
+        )
+    }
+
+    /// Single funnel for a committed search (search-bar return, suggestion tap, recent-term tap):
+    /// runs the view model's submit and drops the keyboard, since none of these resign the field's
+    /// focus on their own.
+    private func submit(_ keyword: String) {
+        viewModel.onSubmit(keyword)
+        dismissKeyboard()
+    }
+
+    private func dismissKeyboard() {
+        UIApplication.shared.sendAction(
+            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
         )
     }
 
@@ -97,7 +113,7 @@ struct SearchView: View {
         } else if viewModel.query.isEmpty {
             SearchHistoryView(
                 recentTerms: viewModel.recentTerms,
-                onTapTerm: { viewModel.onSubmit($0.keyword) },
+                onTapTerm: { submit($0.keyword) },
                 onDeleteTerm: { viewModel.deleteRecentTerm($0.id) },
                 onClearAll: { viewModel.clearAllRecent() }
             )
@@ -105,7 +121,7 @@ struct SearchView: View {
             SearchSuggestionListView(
                 suggestions: viewModel.suggestions,
                 query: viewModel.query,
-                onTapSuggestion: { viewModel.onSubmit($0) }
+                onTapSuggestion: { submit($0) }
             )
         }
     }

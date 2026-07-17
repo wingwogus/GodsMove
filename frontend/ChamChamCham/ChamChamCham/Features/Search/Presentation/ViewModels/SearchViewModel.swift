@@ -43,6 +43,22 @@ final class SearchViewModel {
         recentTerms = recentSearchStore.fetchRecent(limit: 20)
     }
 
+    /// Called for every user-driven edit of the search-bar text (distinct from a programmatic
+    /// `onSubmit`). Any manual edit drops us out of the results phase back to the typing/idle phase,
+    /// so editing a keyword that was just searched shows suggestions (or 최근 검색어, when cleared to
+    /// empty) again instead of leaving stale results on screen.
+    func onQueryChanged(_ newValue: String) {
+        query = newValue
+        submittedKeyword = nil
+        let trimmed = newValue.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.isEmpty else {
+            suggestionsTask?.cancel()
+            suggestions = []
+            return
+        }
+        loadSuggestions(for: newValue)
+    }
+
     /// Real-time search-as-you-type: called on every keystroke. Debounces 250ms so a fast typist
     /// doesn't fire one request per character, and cancels the previous fetch so its response can
     /// never land after (and overwrite) a newer one.
@@ -74,13 +90,6 @@ final class SearchViewModel {
         selectedCategory = .all
         recentSearchStore.recordSearch(keyword: trimmed)
         loadRecent()
-    }
-
-    /// Backs out of the results phase to idle (e.g. tapping back or clearing the search bar).
-    func clearSubmission() {
-        suggestionsTask?.cancel()
-        submittedKeyword = nil
-        suggestions = []
     }
 
     func deleteRecentTerm(_ id: UUID) {
