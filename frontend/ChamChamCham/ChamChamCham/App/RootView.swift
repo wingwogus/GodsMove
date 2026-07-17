@@ -17,6 +17,8 @@ struct RootView: View {
         Group {
             if appState.isAuthenticated && appState.isOnboarded {
                 MainTabView(container: container)
+            } else if appState.isGuest {
+                MainTabView(container: container, isGuest: true)
             } else {
                 AuthFlowView(container: container)
             }

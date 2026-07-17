@@ -248,7 +248,11 @@ struct CommunityComposeView: View {
                 HStack(spacing: Spacing.sm) {
                     ForEach(viewModel.recentRecords.prefix(3)) { record in
                         Button {
-                            viewModel.selectFarmingRecord(record)
+                            if viewModel.selectedFarmingRecord?.id == record.id {
+                                viewModel.selectFarmingRecord(nil)
+                            } else {
+                                viewModel.selectFarmingRecord(record)
+                            }
                         } label: {
                             AppCard(
                                 size: .xsmall,

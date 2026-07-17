@@ -33,17 +33,23 @@ final class CommunityFeedViewModel {
 
     private let repository: any CommunityRepository
     private let cropCatalog: any CropCatalogService
+    /// Browsing without an account — `/boards` still requires auth, and there's no "나의 작물" concept to
+    /// restrict "전체" to, so both are skipped entirely for a guest (see `filteredForAllCrops`).
+    private let isGuest: Bool
 
-    init(repository: any CommunityRepository, cropCatalog: any CropCatalogService) {
+    init(repository: any CommunityRepository, cropCatalog: any CropCatalogService, isGuest: Bool = false) {
         self.repository = repository
         self.cropCatalog = cropCatalog
+        self.isGuest = isGuest
     }
 
     var hasMore: Bool { nextCursor != nil }
 
     func onAppear() async {
         guard posts.isEmpty, !isLoading else { return }
-        await loadBoards()
+        if !isGuest {
+            await loadBoards()
+        }
         await reload()
     }
 
@@ -146,9 +152,10 @@ final class CommunityFeedViewModel {
     }
 
     /// "전체" (`selectedCropId == nil`) means every crop registered under 나의 작물, not the whole community —
-    /// the backend has no multi-cropId filter, so restrict to `serverBoards` client-side.
+    /// the backend has no multi-cropId filter, so restrict to `serverBoards` client-side. A guest has no
+    /// 나의 작물 at all, so "전체" falls back to literally everything the server returned.
     private func filteredForAllCrops(_ items: [CommunityPostSummary]) -> [CommunityPostSummary] {
-        guard selectedCropId == nil else { return items }
+        guard selectedCropId == nil, !isGuest else { return items }
         let myCropIds = Set(serverBoards.map(\.cropId))
         return items.filter { myCropIds.contains($0.cropId) }
     }

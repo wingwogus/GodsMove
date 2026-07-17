@@ -21,10 +21,23 @@ import SwiftUI
 /// `TabView` — and built lazily on first selection (`loadedTabs`) so a cold launch only runs the
 /// initial tab's `.task`.
 struct MainTabView: View {
-    let container: DIContainer
+    private static let communityTabIndex = 2
 
-    @State private var selection = 0
-    @State private var loadedTabs: Set<Int> = [0]
+    let container: DIContainer
+    var isGuest: Bool = false
+
+    @Environment(AppState.self) private var appState
+    @State private var selection: Int
+    @State private var loadedTabs: Set<Int>
+    @State private var showLoginRequiredAlert = false
+
+    init(container: DIContainer, isGuest: Bool = false) {
+        self.container = container
+        self.isGuest = isGuest
+        let initialTab = isGuest ? Self.communityTabIndex : 0
+        _selection = State(initialValue: initialTab)
+        _loadedTabs = State(initialValue: [initialTab])
+    }
 
     private var tabItems: [AppNavBar.Item] {
         [
@@ -33,6 +46,22 @@ struct MainTabView: View {
             .init(title: "정보 공유", icon: .asset("chat_bubble_line"), selectedIcon: .asset("chat_bubble")),
             .init(title: "프로필", icon: .asset("person_line"), selectedIcon: .asset("person")),
         ]
+    }
+
+    /// Passed to every tab instead of the raw `$selection` — a guest tapping any tab but 정보 공유 gets a
+    /// login prompt instead of actually switching, so the other tabs (which all assume a signed-in member)
+    /// never load.
+    private var guardedSelection: Binding<Int> {
+        Binding(
+            get: { selection },
+            set: { newValue in
+                guard isGuest, newValue != Self.communityTabIndex else {
+                    selection = newValue
+                    return
+                }
+                showLoginRequiredAlert = true
+            }
+        )
     }
 
     var body: some View {
@@ -49,13 +78,14 @@ struct MainTabView: View {
         .onChange(of: selection) { _, newValue in
             loadedTabs.insert(newValue)
         }
+        .loginRequiredAlert(isPresented: $showLoginRequiredAlert, appState: appState)
     }
 
     @ViewBuilder
     private func tabContent(_ index: Int) -> some View {
         switch index {
         case 0:
-            HomeView(container: container, tabSelection: $selection, tabItems: tabItems)
+            HomeView(container: container, tabSelection: guardedSelection, tabItems: tabItems)
         case 1:
             RecordListView(
                 container: container,
@@ -64,13 +94,13 @@ struct MainTabView: View {
                 weatherRepository: container.makeWeatherRepository(),
                 mediaUpload: container.makeMediaUploadRepository(),
                 voiceRepository: container.makeVoiceSessionRepository(),
-                selection: $selection,
+                selection: guardedSelection,
                 tabItems: tabItems
             )
         case 2:
-            CommunityView(container: container, selection: $selection, tabItems: tabItems)
+            CommunityView(container: container, selection: guardedSelection, tabItems: tabItems, isGuest: isGuest)
         default:
-            ProfileMainView(container: container, selection: $selection, tabItems: tabItems)
+            ProfileMainView(container: container, selection: guardedSelection, tabItems: tabItems)
         }
     }
 }

@@ -46,7 +46,9 @@ struct CommunityPostQuery: Sendable, Equatable {
     }
 }
 
-/// Requires auth — the whole `/api/v1/community/**` tree sits behind authentication.
+/// Reads are mostly public — the backend opened `GET posts`, `GET posts/{id}`, and
+/// `GET posts/{id}/comments` to anonymous callers (see `SecurityConfig.kt`). `listBoards` and every
+/// write stay behind authentication.
 enum CommunityEndpoint: Endpoint {
     case listBoards
     case listPosts(CommunityPostQuery)
@@ -102,7 +104,12 @@ enum CommunityEndpoint: Endpoint {
         }
     }
 
-    var requiresAuth: Bool { true }
+    var requiresAuth: Bool {
+        switch self {
+        case .listPosts, .getPost, .listComments: false
+        case .listBoards, .createPost, .updatePost, .deletePost, .createComment, .deleteComment, .toggleLike: true
+        }
+    }
 
     var queryItems: [URLQueryItem] {
         switch self {

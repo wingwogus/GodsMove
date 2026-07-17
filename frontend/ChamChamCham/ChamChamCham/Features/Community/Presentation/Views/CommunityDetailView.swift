@@ -13,26 +13,42 @@ import SwiftUI
 struct CommunityDetailView: View {
     let postId: UUID
     private let container: DIContainer
+    /// Browsing without an account. Passed down from the caller, not read from `AppState` in `init` —
+    /// `@Environment` isn't populated yet at init time.
+    private let isGuest: Bool
     private let horizontalInset: CGFloat = 20
 
+    @Environment(AppState.self) private var appState
     @State private var viewModel: CommunityDetailViewModel
     /// The logged-in member, read from the local cache — used to show delete only on the user's own content.
     @State private var currentMemberId: UUID?
+    @State private var showLoginRequiredAlert = false
     @FocusState private var commentFieldFocused: Bool
     @State private var pickerItems: [PhotosPickerItem] = []
     @State private var showPhotoPicker = false
     @Environment(\.modelContext) private var modelContext
     @Environment(\.dismiss) private var dismiss
 
-    init(postId: UUID, container: DIContainer) {
+    init(postId: UUID, container: DIContainer, isGuest: Bool = false) {
         self.postId = postId
         self.container = container
+        self.isGuest = isGuest
         _viewModel = State(initialValue: CommunityDetailViewModel(
             postId: postId,
             repository: container.makeCommunityRepository(),
             mediaRepository: container.makeMediaUploadRepository(),
             recordRepository: container.makeRecordRepository()
         ))
+    }
+
+    /// Runs `action` if signed in; a guest gets a login prompt instead. Guards every write/personalized
+    /// action (좋아요, 댓글 작성/사진 첨부, 다른 회원 프로필 이동) so a token-less request never even fires.
+    private func requireAuth(_ action: () -> Void) {
+        guard !isGuest else {
+            showLoginRequiredAlert = true
+            return
+        }
+        action()
     }
 
     var body: some View {
@@ -57,6 +73,7 @@ struct CommunityDetailView: View {
         .onChange(of: viewModel.didDeletePost) { _, deleted in
             if deleted { dismiss() }
         }
+        .loginRequiredAlert(isPresented: $showLoginRequiredAlert, appState: appState)
     }
 
     private var isPostAuthor: Bool {
@@ -179,7 +196,7 @@ struct CommunityDetailView: View {
         HStack(spacing: Spacing.md) {
             likeButton(detail)
             Button {
-                commentFieldFocused = true
+                requireAuth { commentFieldFocused = true }
             } label: {
                 HStack(spacing: Spacing.xs) {
                     AppIconView(source: .asset("chat_bubble_line"), size: 24)
@@ -198,6 +215,11 @@ struct CommunityDetailView: View {
     private func authorLine(_ detail: CommunityPostDetail) -> some View {
         if isPostAuthor {
             postAuthorLine(detail)
+        } else if isGuest {
+            Button { showLoginRequiredAlert = true } label: {
+                postAuthorLine(detail)
+            }
+            .buttonStyle(.plain)
         } else {
             NavigationLink(value: MemberProfileRoute(memberId: detail.author.memberId)) {
                 postAuthorLine(detail)
@@ -224,7 +246,7 @@ struct CommunityDetailView: View {
 
     private func likeButton(_ detail: CommunityPostDetail) -> some View {
         Button {
-            Task { await viewModel.toggleLike() }
+            requireAuth { Task { await viewModel.toggleLike() } }
         } label: {
             HStack(spacing: Spacing.xs) {
                 AppIconView(source: .asset(detail.likedByMe ? "favorite" : "favorite_line"), size: 24)
@@ -286,8 +308,10 @@ struct CommunityDetailView: View {
                         replyTarget: comment,
                         currentMemberId: currentMemberId,
                         onReply: { target in
-                            viewModel.startReply(to: target)
-                            commentFieldFocused = true
+                            requireAuth {
+                                viewModel.startReply(to: target)
+                                commentFieldFocused = true
+                            }
                         },
                         onDelete: { target in
                             Task { await viewModel.deleteComment(target) }
@@ -327,11 +351,13 @@ struct CommunityDetailView: View {
                     isFocused: $commentFieldFocused,
                     isSubmitting: viewModel.isSubmittingComment,
                     isPhotoEnabled: true,
-                    onPhotoTap: { showPhotoPicker = true },
+                    onPhotoTap: { requireAuth { showPhotoPicker = true } },
                     onRemoveAttachment: { viewModel.removeImage() },
                     onSubmit: {
-                        commentFieldFocused = false
-                        Task { await viewModel.submitComment() }
+                        requireAuth {
+                            commentFieldFocused = false
+                            Task { await viewModel.submitComment() }
+                        }
                     },
                     attachment: { attachmentThumbnail(attachment) }
                 )
@@ -341,10 +367,12 @@ struct CommunityDetailView: View {
                     isFocused: $commentFieldFocused,
                     isSubmitting: viewModel.isSubmittingComment,
                     isPhotoEnabled: true,
-                    onPhotoTap: { showPhotoPicker = true },
+                    onPhotoTap: { requireAuth { showPhotoPicker = true } },
                     onSubmit: {
-                        commentFieldFocused = false
-                        Task { await viewModel.submitComment() }
+                        requireAuth {
+                            commentFieldFocused = false
+                            Task { await viewModel.submitComment() }
+                        }
                     }
                 )
             }

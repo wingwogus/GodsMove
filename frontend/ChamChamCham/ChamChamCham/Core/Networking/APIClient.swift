@@ -28,7 +28,10 @@ actor APIClient {
 
     private func send<T: Decodable & Sendable>(_ endpoint: Endpoint, isRetry: Bool) async throws -> T {
         var request = try makeRequest(for: endpoint)
-        if endpoint.requiresAuth, let token = await authTokenStore.accessToken() {
+        // Attach whenever we have a token, regardless of `requiresAuth` — some endpoints (e.g. community
+        // reads) are public but still personalize their response (likedByMe, etc.) for an authenticated
+        // caller. `requiresAuth` only gates the 401 refresh-and-retry below.
+        if let token = await authTokenStore.accessToken() {
             request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
         }
 

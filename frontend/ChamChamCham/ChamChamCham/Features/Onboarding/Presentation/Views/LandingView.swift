@@ -44,6 +44,14 @@ struct LandingView: View {
                 SocialLoginButton(provider: .apple, isDisabled: isLoggingIn) {
                     Task { await login(with: authViewModel.loginWithApple) }
                 }
+
+                Button("로그인 없이 둘러보기") {
+                    appState.isGuest = true
+                }
+                .appTypography(.labelMedium)
+                .foregroundStyle(Color.Text.muted)
+                .padding(.top, Spacing.xs)
+                .disabled(isLoggingIn)
             }
         }
         .padding(.horizontal, Spacing.lg)
