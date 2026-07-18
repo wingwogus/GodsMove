@@ -19,7 +19,7 @@ struct ReportCacheTests {
         let farmId = UUID()
         let cropId = UUID()
         let all = ReportFilter()
-        let filtered = ReportFilter(farmId: farmId, cropId: cropId, workTypes: [.harvest])
+        let filtered = ReportFilter(farmIds: [farmId], cropIds: [cropId], workTypes: [.harvest])
         let first = json("{\"items\":[1]}")
         let accumulated = json("{\"items\":[1,2]}")
         let other = json("{\"items\":[9]}")
@@ -41,6 +41,23 @@ struct ReportCacheTests {
         let (cache, container) = try makeCache()
         let filterA = ReportFilter(workTypes: [.watering, .harvest])
         let filterB = ReportFilter(workTypes: [.harvest, .watering])
+        let payload = json("{\"items\":[1]}")
+
+        cache.saveList(payload, for: filterA)
+
+        #expect(cache.list(for: filterB)?.data == payload)
+        withExtendedLifetime(container) {}
+    }
+
+    @Test("multi-selected farms and crops produce a stable cache key regardless of Set iteration order")
+    func multiFarmCropCacheKeyIsOrderStable() throws {
+        let (cache, container) = try makeCache()
+        let farmA = UUID()
+        let farmB = UUID()
+        let cropA = UUID()
+        let cropB = UUID()
+        let filterA = ReportFilter(farmIds: [farmA, farmB], cropIds: [cropA, cropB])
+        let filterB = ReportFilter(farmIds: [farmB, farmA], cropIds: [cropB, cropA])
         let payload = json("{\"items\":[1]}")
 
         cache.saveList(payload, for: filterA)

@@ -16,7 +16,7 @@ struct ReportRepositoryTests {
     @Test("successful first page, detail, and feedback responses replace their caches")
     func successfulResponsesUpdateCache() async throws {
         let (cache, container) = try makeCache()
-        let filter = ReportFilter(farmId: ReportFixtures.farmId)
+        let filter = ReportFilter(farmIds: [ReportFixtures.farmId])
         let key = WorkReportKey(reportId: ReportFixtures.reportId, workType: .planting)
         let remote = StubReportRemoteDataSource(
             pageResults: [.success(ReportFixtures.page(nextCursor: "next"))],

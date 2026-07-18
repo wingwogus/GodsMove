@@ -28,8 +28,11 @@ struct ReportFilterChipPresentation: Equatable {
         return [
             ReportFilterChipPresentation(
                 kind: .crop,
-                title: filter.cropId.flatMap { id in crops.first { $0.id == id }?.name } ?? "작물",
-                isSelected: filter.cropId != nil
+                title: namesChipTitle(
+                    names: crops.filter { filter.cropIds.contains($0.id) }.map(\.name),
+                    placeholder: "작물"
+                ),
+                isSelected: !filter.cropIds.isEmpty
             ),
             ReportFilterChipPresentation(
                 kind: .workType,
@@ -38,10 +41,18 @@ struct ReportFilterChipPresentation: Equatable {
             ),
             ReportFilterChipPresentation(
                 kind: .farm,
-                title: filter.farmId.flatMap { id in farms.first { $0.id == id }?.name } ?? "농장",
-                isSelected: filter.farmId != nil
+                title: namesChipTitle(
+                    names: farms.filter { filter.farmIds.contains($0.id) }.map(\.name),
+                    placeholder: "농장"
+                ),
+                isSelected: !filter.farmIds.isEmpty
             ),
         ]
+    }
+
+    private static func namesChipTitle(names: [String], placeholder: String) -> String {
+        guard !names.isEmpty else { return placeholder }
+        return names.count == 1 ? names[0] : "\(names[0]) 외 \(names.count - 1)"
     }
 
     private static func workTypeChipTitle(for workTypes: Set<WorkType>) -> String {

@@ -289,12 +289,12 @@ struct PestControlReportStatisticsResponseDTO: Codable, Sendable {
     let categoryDistribution: [ReportCountDistributionResponseDTO]
     let pesticideAmounts: [ReportAmountByUnitResponseDTO]
     let categoryAmounts: [ReportCategoryAmountByUnitResponseDTO]
-    let totalSprayAmountLiters: Decimal?
+    let totalSprayAmountMl: Decimal?
     let sprayAmountCoverage: ReportCoverageResponseDTO
     let targets: [ReportTargetCountResponseDTO]
 
     private enum CodingKeys: String, CodingKey {
-        case categoryDistribution, pesticideAmounts, categoryAmounts, totalSprayAmountLiters, sprayAmountCoverage, targets
+        case categoryDistribution, pesticideAmounts, categoryAmounts, totalSprayAmountMl, sprayAmountCoverage, targets
     }
 
     init(from decoder: Decoder) throws {
@@ -303,7 +303,7 @@ struct PestControlReportStatisticsResponseDTO: Codable, Sendable {
         categoryDistribution = try container.decode([ReportCountDistributionResponseDTO].self, forKey: .categoryDistribution)
         pesticideAmounts = try container.decode([ReportAmountByUnitResponseDTO].self, forKey: .pesticideAmounts)
         categoryAmounts = try container.decode([ReportCategoryAmountByUnitResponseDTO].self, forKey: .categoryAmounts)
-        totalSprayAmountLiters = try container.decodeIfPresent(Decimal.self, forKey: .totalSprayAmountLiters)
+        totalSprayAmountMl = try container.decodeIfPresent(Decimal.self, forKey: .totalSprayAmountMl)
         sprayAmountCoverage = try container.decode(ReportCoverageResponseDTO.self, forKey: .sprayAmountCoverage)
         targets = try container.decode([ReportTargetCountResponseDTO].self, forKey: .targets)
     }
@@ -314,7 +314,7 @@ struct PestControlReportStatisticsResponseDTO: Codable, Sendable {
         try container.encode(categoryDistribution, forKey: .categoryDistribution)
         try container.encode(pesticideAmounts, forKey: .pesticideAmounts)
         try container.encode(categoryAmounts, forKey: .categoryAmounts)
-        try container.encodeIfPresent(totalSprayAmountLiters, forKey: .totalSprayAmountLiters)
+        try container.encodeIfPresent(totalSprayAmountMl, forKey: .totalSprayAmountMl)
         try container.encode(sprayAmountCoverage, forKey: .sprayAmountCoverage)
         try container.encode(targets, forKey: .targets)
     }
@@ -324,7 +324,7 @@ struct PestControlReportStatisticsResponseDTO: Codable, Sendable {
             categoryDistribution: categoryDistribution.map { $0.toDomain() },
             pesticideAmounts: pesticideAmounts.map { $0.toDomain() },
             categoryAmounts: categoryAmounts.map { $0.toDomain() },
-            totalSprayAmountLiters: totalSprayAmountLiters,
+            totalSprayAmountMl: totalSprayAmountMl,
             sprayAmountCoverage: sprayAmountCoverage.toDomain(),
             targets: targets.map { $0.toDomain() }
         )

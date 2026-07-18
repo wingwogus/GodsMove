@@ -116,7 +116,7 @@ struct PestControlReportStatistics: Hashable, Sendable {
     let categoryDistribution: [ReportCountDistribution]
     let pesticideAmounts: [ReportAmountByUnitStatistics]
     let categoryAmounts: [ReportCategoryAmountByUnitStatistics]
-    let totalSprayAmountLiters: Decimal?
+    let totalSprayAmountMl: Decimal?
     let sprayAmountCoverage: ReportCoverage
     let targets: [ReportTargetCount]
 }

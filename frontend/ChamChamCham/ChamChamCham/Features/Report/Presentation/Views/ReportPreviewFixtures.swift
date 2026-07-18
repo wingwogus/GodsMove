@@ -160,7 +160,7 @@ enum ReportPreviewFixtures {
                         coverage: coverage
                     ),
                 ],
-                totalSprayAmountLiters: 20,
+                totalSprayAmountMl: 20,
                 sprayAmountCoverage: coverage,
                 targets: [
                     ReportTargetCount(target: "진딧물", count: 3),

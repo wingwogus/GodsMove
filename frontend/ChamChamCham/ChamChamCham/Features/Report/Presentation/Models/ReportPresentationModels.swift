@@ -110,10 +110,10 @@ struct ReportDetailPresentation: Hashable, Sendable {
                         value: ReportValueFormatter.value(amount.amount, unit: amount.unit)
                     ))
                 }
-                if let total = statistics.totalSprayAmountLiters, total > 0 {
+                if let total = statistics.totalSprayAmountMl, total > 0 {
                     metrics.append(ReportMetricPresentation(
                         title: "총 살포량",
-                        value: ReportValueFormatter.value(total, unit: "L")
+                        value: ReportValueFormatter.value(total, unit: "mL")
                     ))
                 }
                 Self.appendDistributionChart(title: "사용한 약제 종류", values: statistics.categoryDistribution, to: &charts)

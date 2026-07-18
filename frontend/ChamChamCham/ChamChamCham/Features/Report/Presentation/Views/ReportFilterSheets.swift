@@ -9,16 +9,16 @@ import SwiftUI
 
 struct ReportFarmFilterSheet: View {
     let farms: [ReportFarmFilterOption]
-    let selected: UUID?
-    let onApply: (UUID?) -> Void
+    let selected: Set<UUID>
+    let onApply: (Set<UUID>) -> Void
 
-    @State private var draft: UUID?
+    @State private var draft: Set<UUID>
     @Environment(\.dismiss) private var dismiss
 
     init(
         farms: [ReportFarmFilterOption],
-        selected: UUID?,
-        onApply: @escaping (UUID?) -> Void
+        selected: Set<UUID>,
+        onApply: @escaping (Set<UUID>) -> Void
     ) {
         self.farms = farms
         self.selected = selected
@@ -29,13 +29,14 @@ struct ReportFarmFilterSheet: View {
     var body: some View {
         AppFilterSheetScaffold(title: "농장") {
             AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm) {
-                AppChip(label: "전체", isSelected: draft == nil, style: draft == nil ? .solidPastel : .solid) {
-                    draft = nil
-                }
                 ForEach(farms) { farm in
-                    let selected = draft == farm.id
+                    let selected = draft.contains(farm.id)
                     AppChip(label: farm.name, isSelected: selected, style: selected ? .solidPastel : .solid) {
-                        draft = farm.id
+                        if draft.contains(farm.id) {
+                            draft.remove(farm.id)
+                        } else {
+                            draft.insert(farm.id)
+                        }
                     }
                 }
             }
@@ -48,16 +49,16 @@ struct ReportFarmFilterSheet: View {
 
 struct ReportCropFilterSheet: View {
     let crops: [ReportCropFilterOption]
-    let selected: UUID?
-    let onApply: (UUID?) -> Void
+    let selected: Set<UUID>
+    let onApply: (Set<UUID>) -> Void
 
-    @State private var draft: UUID?
+    @State private var draft: Set<UUID>
     @Environment(\.dismiss) private var dismiss
 
     init(
         crops: [ReportCropFilterOption],
-        selected: UUID?,
-        onApply: @escaping (UUID?) -> Void
+        selected: Set<UUID>,
+        onApply: @escaping (Set<UUID>) -> Void
     ) {
         self.crops = crops
         self.selected = selected
@@ -68,13 +69,14 @@ struct ReportCropFilterSheet: View {
     var body: some View {
         AppFilterSheetScaffold(title: "작물") {
             AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm) {
-                AppChip(label: "전체", isSelected: draft == nil, style: draft == nil ? .solidPastel : .solid) {
-                    draft = nil
-                }
                 ForEach(crops) { crop in
-                    let selected = draft == crop.id
+                    let selected = draft.contains(crop.id)
                     AppChip(label: crop.name, isSelected: selected, style: selected ? .solidPastel : .solid) {
-                        draft = crop.id
+                        if draft.contains(crop.id) {
+                            draft.remove(crop.id)
+                        } else {
+                            draft.insert(crop.id)
+                        }
                     }
                 }
             }

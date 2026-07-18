@@ -101,7 +101,7 @@ struct ReportPresentationModelTests {
                     coverage: coverage
                 ),
             ],
-            totalSprayAmountLiters: 20,
+            totalSprayAmountMl: 20,
             sprayAmountCoverage: coverage,
             targets: [ReportTargetCount(target: "진딧물", count: 2)]
         ))
@@ -110,7 +110,7 @@ struct ReportPresentationModelTests {
 
         #expect(presentation.metrics.map(\.value).contains("10g"))
         #expect(presentation.metrics.map(\.value).contains("250ml"))
-        #expect(presentation.metrics.map(\.value).contains("20L"))
+        #expect(presentation.metrics.map(\.value).contains("20mL"))
         #expect(presentation.charts.map(\.title) == [
             "관리 유형", "유형별 사용량 (g)", "유형별 사용량 (ml)", "관리 대상",
         ])
