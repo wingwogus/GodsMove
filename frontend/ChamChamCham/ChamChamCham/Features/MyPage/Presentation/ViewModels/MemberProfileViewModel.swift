@@ -31,7 +31,7 @@ final class MemberProfileViewModel {
     private var hasMorePosts = true
 
     // Board filter
-    private(set) var boards: [CommunityBoard] = []
+    private(set) var otherBoards: [CommunityBoard] = []
     private(set) var isLoadingBoards = false
     private(set) var boardsErrorMessage: String?
 
@@ -71,13 +71,18 @@ final class MemberProfileViewModel {
         }
     }
 
-    func loadBoardsIfNeeded() async {
-        guard boards.isEmpty, !isLoadingBoards else { return }
+    /// Fetches the 기타 작물 options for the 게시판 선택 sheet: crops referenced in `memberId`'s own
+    /// posts that aren't already in `activeBoards` (진행중인 작물). Uses `memberId` (the profile being
+    /// viewed), not the authenticated caller — mirrors `ProfileMainViewModel.loadCropFilterOptionsIfNeeded`.
+    func loadCropFilterOptionsIfNeeded() async {
+        guard otherBoards.isEmpty, !isLoadingBoards else { return }
         isLoadingBoards = true
         boardsErrorMessage = nil
         defer { isLoadingBoards = false }
         do {
-            boards = try await communityRepository.fetchBoards()
+            let postCrops = try await communityRepository.fetchPostCrops(memberId: memberId)
+            let activeCropIds = Set(activeBoards.map(\.cropId))
+            otherBoards = postCrops.filter { !activeCropIds.contains($0.cropId) }
         } catch {
             boardsErrorMessage = "게시판을 불러오지 못했어요."
         }
@@ -88,22 +93,18 @@ final class MemberProfileViewModel {
         await reloadPosts()
     }
 
-    /// Boards split for the 게시판 선택 sheet, mirroring `ProfileMainViewModel`: `진행중인 작물` =
-    /// boards matching this member's own crops (`profile.crops`); `기타 작물` = the rest.
+    /// 진행중인 작물 for the 게시판 선택 sheet — this member's current farm crops, straight from the
+    /// profile (no separate fetch needed). `기타 작물` is `otherBoards`, above.
     var activeBoards: [CommunityBoard] {
-        let memberCropIds = Set(profile?.crops.map(\.cropId) ?? [])
-        return boards.filter { memberCropIds.contains($0.cropId) }
-    }
-
-    var otherBoards: [CommunityBoard] {
-        let memberCropIds = Set(profile?.crops.map(\.cropId) ?? [])
-        return boards.filter { !memberCropIds.contains($0.cropId) }
+        (profile?.crops ?? []).map { CommunityBoard(cropId: $0.cropId, cropName: $0.cropName) }
     }
 
     /// Filter chip label: the sole selected board's name, `"{name} 외 {n}개"` for multiple, or nil
     /// when nothing is selected (falls back to the "게시판 선택" placeholder).
     var selectedBoardName: String? {
-        let names = boards.filter { selectedBoardCropIds.contains($0.cropId) }.map(\.cropName)
+        let names = (activeBoards + otherBoards)
+            .filter { selectedBoardCropIds.contains($0.cropId) }
+            .map(\.cropName)
         guard let first = names.first else { return nil }
         return names.count == 1 ? first : "\(first) 외 \(names.count - 1)개"
     }

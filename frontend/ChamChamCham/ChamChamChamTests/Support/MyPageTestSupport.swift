@@ -134,15 +134,29 @@ actor StubMemberProfileRepository: MemberProfileRepository {
 
 actor StubCommunityRepository: CommunityRepository {
     private let boards: [CommunityBoard]
+    private let postCrops: [CommunityBoard]
     private let page: CommunityPostPage
     private var recordedQuery: CommunityPostQuery?
+    private var recordedPostCropsMemberId: UUID?
 
-    init(boards: [CommunityBoard] = [], page: CommunityPostPage = CommunityPostPage(items: [], nextCursor: nil)) {
+    init(
+        boards: [CommunityBoard] = [],
+        postCrops: [CommunityBoard] = [],
+        page: CommunityPostPage = CommunityPostPage(items: [], nextCursor: nil)
+    ) {
         self.boards = boards
+        self.postCrops = postCrops
         self.page = page
     }
 
     func fetchBoards() async throws -> [CommunityBoard] { boards }
+
+    func fetchPostCrops(memberId: UUID) async throws -> [CommunityBoard] {
+        recordedPostCropsMemberId = memberId
+        return postCrops
+    }
+
+    func lastPostCropsMemberId() -> UUID? { recordedPostCropsMemberId }
 
     func fetchPosts(_ query: CommunityPostQuery) async throws -> CommunityPostPage {
         recordedQuery = query

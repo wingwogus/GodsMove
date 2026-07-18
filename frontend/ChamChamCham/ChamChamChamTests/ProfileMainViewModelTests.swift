@@ -16,9 +16,10 @@ struct ProfileMainViewModelTests {
     private func makeViewModel(
         profile: MyMemberProfile,
         boards: [CommunityBoard] = [],
+        postCrops: [CommunityBoard] = [],
         page: CommunityPostPage = CommunityPostPage(items: [], nextCursor: nil)
     ) -> (ProfileMainViewModel, StubCommunityRepository) {
-        let community = StubCommunityRepository(boards: boards, page: page)
+        let community = StubCommunityRepository(boards: boards, postCrops: postCrops, page: page)
         let viewModel = ProfileMainViewModel(
             profileRepository: StubMemberProfileRepository(profile: profile),
             communityRepository: community
@@ -125,21 +126,33 @@ struct ProfileMainViewModelTests {
         #expect(Set(query?.cropIds ?? []) == [firstId, secondId])
     }
 
-    @Test("board split classifies member crops as active, others as 기타")
-    func boardSplitByMemberCrops() async {
+    @Test("active boards come straight from the profile's own crops")
+    func activeBoardsDeriveFromProfileCrops() async {
+        let activeId = UUID()
+        let profile = MyPageFixtures.profile(crops: [MyPageFixtures.crop("인삼", id: activeId)])
+        let (viewModel, _) = makeViewModel(profile: profile)
+
+        await viewModel.loadProfile()
+
+        #expect(viewModel.activeBoards.map(\.cropId) == [activeId])
+    }
+
+    @Test("other boards are post-crops not already in the active set, fetched for this member's own id")
+    func otherBoardsExcludeActiveCropsAndUseOwnMemberId() async {
         let activeId = UUID()
         let otherId = UUID()
         let profile = MyPageFixtures.profile(crops: [MyPageFixtures.crop("인삼", id: activeId)])
-        let boards = [
+        let postCrops = [
             CommunityBoard(cropId: activeId, cropName: "인삼"),
             CommunityBoard(cropId: otherId, cropName: "고추")
         ]
-        let (viewModel, _) = makeViewModel(profile: profile, boards: boards)
+        let (viewModel, community) = makeViewModel(profile: profile, postCrops: postCrops)
 
         await viewModel.loadProfile()
-        await viewModel.loadBoardsIfNeeded()
+        await viewModel.loadCropFilterOptionsIfNeeded()
 
-        #expect(viewModel.activeBoards.map(\.cropId) == [activeId])
         #expect(viewModel.otherBoards.map(\.cropId) == [otherId])
+        let lastMemberId = await community.lastPostCropsMemberId()
+        #expect(lastMemberId == profile.memberId)
     }
 }

@@ -11,6 +11,9 @@ import Foundation
 /// mirroring `CropCatalogService`. Write calls return the new resource id; the caller re-fetches for fresh state.
 protocol CommunityRepository: Sendable {
     func fetchBoards() async throws -> [CommunityBoard]
+    /// Distinct crops referenced in `memberId`'s posts, including crops they no longer currently
+    /// farm — backs the profile "기타 작물" filter section.
+    func fetchPostCrops(memberId: UUID) async throws -> [CommunityBoard]
     func fetchPosts(_ query: CommunityPostQuery) async throws -> CommunityPostPage
     func fetchPostDetail(id: UUID) async throws -> CommunityPostDetail
 
@@ -58,6 +61,11 @@ struct RemoteCommunityRepository: CommunityRepository {
 
     func fetchBoards() async throws -> [CommunityBoard] {
         let dtos: [BoardResponseDTO] = try await apiClient.send(CommunityEndpoint.listBoards)
+        return dtos.map { $0.toDomain() }
+    }
+
+    func fetchPostCrops(memberId: UUID) async throws -> [CommunityBoard] {
+        let dtos: [BoardResponseDTO] = try await apiClient.send(CommunityEndpoint.postCrops(memberId: memberId))
         return dtos.map { $0.toDomain() }
     }
 

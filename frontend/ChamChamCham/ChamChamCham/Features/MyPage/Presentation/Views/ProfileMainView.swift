@@ -206,7 +206,7 @@ struct ProfileMainView: View {
                 trailingSystemImage: "chevron.down"
             ) {
                 isShowingBoardSheet = true
-                Task { await viewModel.loadBoardsIfNeeded() }
+                Task { await viewModel.loadCropFilterOptionsIfNeeded() }
             }
             Spacer()
         }
