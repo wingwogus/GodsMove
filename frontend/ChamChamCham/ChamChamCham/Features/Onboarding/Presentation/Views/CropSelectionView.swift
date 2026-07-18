@@ -23,14 +23,14 @@ struct CropSelectionView: View {
 
             CropSelectionBody(
                 title: "재배 중인 작물 설정하기",
-                subtitle: "대표 재배지의 작물을 입력해주세요.\n작물은 최대 \(Crop.maxSelectionCount)개까지 선택 가능합니다.",
+                subtitle: "대표 재배지의 작물을 입력해주세요.\n작물은 최대 5개까지 선택 가능합니다.",
                 crops: viewModel.availableCrops,
                 categories: viewModel.cropCategories,
                 isLoading: viewModel.isLoadingCrops,
                 loadError: viewModel.cropLoadError,
                 onRetry: { Task { await viewModel.loadCropsIfNeeded() } },
                 selectedCropIDs: viewModel.draft.cropIDs,
-                selectionLimit: Crop.maxSelectionCount,
+                selectionLimit: 5,
                 onToggle: { cropID in
                     switch viewModel.toggleCropSelection(cropID) {
                     case .selected, .deselected:
