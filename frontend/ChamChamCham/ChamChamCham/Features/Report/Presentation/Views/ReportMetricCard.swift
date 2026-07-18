@@ -13,13 +13,13 @@ struct ReportMetricCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: Spacing.sm) {
             Text(metric.title)
-                .appTypography(.labelMedium)
+                .appTypography(.labelMediumEmphasized)
                 .foregroundStyle(Color.Text.muted)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             Text(metric.value)
                 .appTypography(.titleMediumEmphasized)
-                .foregroundStyle(Color.Text.default)
+                .foregroundStyle(Color.Text.subtle)
                 .fixedSize(horizontal: false, vertical: true)
         }
         .padding(12)

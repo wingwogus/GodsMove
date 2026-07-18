@@ -43,7 +43,12 @@ final class FarmAddViewModel {
         await location.selectAddress(address)
     }
 
-    var selectedAddressText: String? { location.selectedAddress?.roadAddrPart1 }
+    /// 도로명이 없는 농지는 지번 주소로 표시한다. 둘 다 없으면 nil(미입력).
+    var selectedAddressText: String? {
+        guard let address = location.selectedAddress else { return nil }
+        if !address.roadAddrPart1.isEmpty { return address.roadAddrPart1 }
+        return address.jibunAddr.isEmpty ? nil : address.jibunAddr
+    }
 
     var parcelSummary: String? {
         guard let parcel = location.selectedParcel else { return nil }
@@ -70,9 +75,10 @@ final class FarmAddViewModel {
         errorMessage = nil
         defer { isSubmitting = false }
 
+        // 도로명이 없는 농지는 지번을 roadAddress 자리에 채워 보낸다(백엔드 roadAddress non-null).
         let request = SaveFarmRequestDTO(
             name: farmName,
-            roadAddress: address.roadAddrPart1,
+            roadAddress: address.roadAddrPart1.isEmpty ? address.jibunAddr : address.roadAddrPart1,
             jibunAddress: address.jibunAddr.isEmpty ? nil : address.jibunAddr,
             latitude: coordinate.latitude,
             longitude: coordinate.longitude,

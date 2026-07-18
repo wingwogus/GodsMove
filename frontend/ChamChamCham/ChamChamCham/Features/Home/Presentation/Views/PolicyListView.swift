@@ -12,9 +12,12 @@ import SwiftUI
 /// the program's application/source URL and opens it in the system browser (`openURL`). This is the
 /// first use of external-link navigation in the app (no existing wrapper to reuse).
 struct PolicyListView: View {
+    private static let externalLinkNoticeShownKey = "policyList.external-link-notice-shown"
+
     private let container: DIContainer
     @State private var viewModel: PolicyListViewModel
     @State private var linkErrorMessage: String?
+    @State private var pendingExternalURL: URL?
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
 
@@ -44,6 +47,18 @@ struct PolicyListView: View {
         } message: {
             Text(linkErrorMessage ?? "")
         }
+        .alert("외부 페이지로 이동합니다", isPresented: .init(
+            get: { pendingExternalURL != nil },
+            set: { if !$0 { pendingExternalURL = nil } }
+        )) {
+            Button("취소", role: .cancel) { pendingExternalURL = nil }
+            Button("이동") {
+                if let url = pendingExternalURL { openURL(url) }
+                pendingExternalURL = nil
+            }
+        } message: {
+            Text("앱을 벗어나 웹에서 정책 상세 페이지를 확인할 수 있어요.")
+        }
     }
 
     private var categoryChipRow: some View {
@@ -56,7 +71,7 @@ struct PolicyListView: View {
                 ForEach(PolicyCategory.allCases) { category in
                     let isSelected = viewModel.selectedCategory == category
                     AppChip(
-                        label: category.rawValue,
+                        label: category.displayName,
                         isSelected: isSelected,
                         style: isSelected ? .solid : .solidPastel
                     ) {
@@ -139,7 +154,12 @@ struct PolicyListView: View {
                     linkErrorMessage = "이 정책은 연결된 링크가 없어요."
                     return
                 }
-                openURL(url)
+                if UserDefaults.standard.bool(forKey: Self.externalLinkNoticeShownKey) {
+                    openURL(url)
+                } else {
+                    UserDefaults.standard.set(true, forKey: Self.externalLinkNoticeShownKey)
+                    pendingExternalURL = url
+                }
             } catch {
                 linkErrorMessage = HomeErrorMessage.text(for: error)
             }

@@ -206,7 +206,7 @@ struct HomeView: View {
             case .loading:
                 sectionLoading(height: 232)
             case let .loaded(records) where records.isEmpty:
-                emptyStateText("아직 작성한 기록이 없어요")
+                emptyStateText("아직 작성한 영농 기록이 없어요.\n아래 버튼으로 첫 기록을 남겨보세요.")
             case let .loaded(records):
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: Spacing.md) {
@@ -221,7 +221,11 @@ struct HomeView: View {
                                     badges: [record.cropName],
                                     dateText: dateText(record.workedAt)
                                 ) {
-                                    RecordRemoteImage(url: record.thumbnailUrl)
+                                    RecordRemoteImage(
+                                        url: record.thumbnailUrl,
+                                        workType: record.workType,
+                                        illustVariant: .wide
+                                    )
                                 }
                             }
                             .buttonStyle(.plain)
@@ -291,7 +295,7 @@ struct HomeView: View {
                 }
                 .buttonStyle(.plain)
             case .loaded(.none):
-                emptyStateText("아직 추천 정책이 없어요")
+                emptyStateText("조건에 맞는 추천 정책이 아직 없어요.\n위 화살표를 눌러 전체 정책을 확인해보세요.")
             case let .failed(message):
                 emptyStateText(message)
             }
@@ -308,7 +312,7 @@ struct HomeView: View {
             case .loading:
                 sectionLoading(height: 200)
             case let .loaded(posts) where posts.isEmpty:
-                emptyStateText("아직 인기글이 없어요")
+                emptyStateText("등록한 작물 게시판에 인기글이 아직 없어요.\n위 화살표를 눌러 커뮤니티의 다른 이야기도 둘러보세요.")
             case let .loaded(posts):
                 VStack(spacing: 0) {
                     ForEach(posts) { post in
@@ -375,6 +379,7 @@ struct HomeView: View {
         Text(text)
             .appTypography(.bodyMedium)
             .foregroundStyle(Color.Text.muted)
+            .multilineTextAlignment(.center)
             .frame(maxWidth: .infinity, minHeight: 80, alignment: .center)
     }
 }

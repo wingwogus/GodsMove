@@ -15,16 +15,26 @@ struct StubAddressSearch: AddressSearching {
     func search(keyword: String) async throws -> [JusoAddress] { results }
 }
 
-struct StubVWorld: FarmlandGeocoding, ParcelLookup {
+struct StubVWorld: FarmlandGeocoding, ParcelLookup, ReverseGeocoding {
     var coordinate = CLLocationCoordinate2D(latitude: 37.5, longitude: 127.0)
     /// nil이면 `fetchParcel`이 `noParcelFound`를 던져 지적도 없는 상황을 재현한다.
     var parcel: FarmlandParcel?
+    /// 역지오코딩 기본값은 non-nil이라 기존 테스트가 그대로 통과한다. NOT_FOUND(도로명/지번 없음)
+    /// 케이스는 `roadAddress`/`jibunAddress`를 nil로 override해 검증한다.
+    var reverseAddress = ReverseGeocodedAddress(
+        roadAddress: "전북 전주시 완산구 역지오코딩로 1",
+        jibunAddress: "전북 전주시 완산구 역지오코딩동 1"
+    )
 
     func geocode(roadAddress: String) async throws -> CLLocationCoordinate2D { coordinate }
 
     func fetchParcel(at coordinate: CLLocationCoordinate2D) async throws -> FarmlandParcel {
         guard let parcel else { throw FarmLocationAPIError.noParcelFound }
         return parcel
+    }
+
+    func reverseGeocode(at coordinate: CLLocationCoordinate2D) async throws -> ReverseGeocodedAddress {
+        reverseAddress
     }
 }
 

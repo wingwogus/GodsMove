@@ -67,7 +67,7 @@ class CommunityPostService(
             CommunityPostQueryRepository.SearchCondition(
                 memberId = condition.memberId,
                 authorMemberId = condition.authorMemberId,
-                cropId = condition.cropId,
+                cropIds = condition.cropIds,
                 postType = condition.postType,
                 keyword = condition.keyword,
                 likedOnly = condition.likedOnly,
@@ -95,7 +95,7 @@ class CommunityPostService(
             CommunityPostQueryRepository.SearchCondition(
                 memberId = condition.memberId,
                 authorMemberId = condition.authorMemberId,
-                cropId = condition.cropId,
+                cropIds = condition.cropIds,
                 postType = condition.postType,
                 keyword = condition.keyword,
                 likedOnly = condition.likedOnly,

@@ -38,7 +38,7 @@ struct ReportEndpointTests {
         let query = queryDictionary(.workItems(ReportQuery(
             farmId: farmId,
             cropId: cropId,
-            workType: .pestControl,
+            workTypes: [.pestControl],
             cursor: cursor,
             size: 37
         )))
@@ -50,6 +50,15 @@ struct ReportEndpointTests {
             "cursor": cursor,
             "size": "37",
         ])
+    }
+
+    @Test("work items serialize multiple selected work types as repeated query items")
+    func workItemsSerializeMultipleWorkTypes() {
+        let values = ReportEndpoint.workItems(ReportQuery(workTypes: [.watering, .harvest])).queryItems
+            .filter { $0.name == "workType" }
+            .compactMap(\.value)
+
+        #expect(Set(values) == [WorkType.watering.rawValue, WorkType.harvest.rawValue])
     }
 
     @Test("detail and feedback endpoints match deployed paths")

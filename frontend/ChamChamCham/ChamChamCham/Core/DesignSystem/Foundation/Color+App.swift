@@ -134,7 +134,7 @@ extension Color {
         static let green300 = Color(hex: 0xA5E9B1)
         static let yellow = Color(hex: 0xF7DC11)
         static let lime = Color(hex: 0xC8F468)
-        static let turquoise = Color(hex: 0x81DAD8)
+        static let turquoise = Color(hex: 0x81DACB)
         static let blue = Color(hex: 0xB1CBDF)
 
         static let palette = [primary, green300, yellow, lime, turquoise, blue]

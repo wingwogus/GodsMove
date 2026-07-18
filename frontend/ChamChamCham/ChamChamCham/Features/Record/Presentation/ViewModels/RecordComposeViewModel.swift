@@ -29,8 +29,18 @@ final class RecordComposeViewModel {
     private var weatherLoadToken = 0
 
     // MARK: 사진 (0~5)
-    private(set) var mediaIds: [UUID] = []
-    private(set) var isUploadingImage = false
+    /// 첨부 사진 한 장. `id`는 업로드 중에도 안정적인 로컬 임시 id이며, 업로드가 끝나면
+    /// `mediaId`가 채워져 제출 시 사용된다. `isUploading`이 슬롯별 스피너를 구동한다.
+    struct Attachment: Identifiable, Sendable {
+        let id: UUID
+        let previewData: Data
+        var mediaId: UUID?
+        var isUploading: Bool
+    }
+
+    private(set) var attachments: [Attachment] = []
+    var isUploadingImage: Bool { attachments.contains(where: \.isUploading) }
+    var mediaIds: [UUID] { attachments.compactMap(\.mediaId) }
 
     // MARK: 심기
     var plantingMethod: PlantingMethod?
@@ -100,7 +110,7 @@ final class RecordComposeViewModel {
         farms.first { $0.farmId == selectedFarmId }?.crops ?? []
     }
 
-    var canAddMorePhotos: Bool { mediaIds.count < 5 }
+    var canAddMorePhotos: Bool { attachments.count < 5 }
 
     // MARK: - Load
 
@@ -228,16 +238,22 @@ final class RecordComposeViewModel {
 
     func addImage(_ data: Data) async {
         guard canAddMorePhotos else { return }
-        isUploadingImage = true
-        defer { isUploadingImage = false }
-        if let uploaded = try? await mediaUpload.uploadFarmingRecordImage(data, originalFilename: nil) {
-            mediaIds.append(uploaded.mediaId)
+        // 고른 사진을 스피너와 함께 즉시 보여주고, 업로드가 끝나면 mediaId를 채운다.
+        let tempId = UUID()
+        attachments.append(Attachment(id: tempId, previewData: data, mediaId: nil, isUploading: true))
+        do {
+            let uploaded = try await mediaUpload.uploadFarmingRecordImage(data, originalFilename: nil)
+            guard let index = attachments.firstIndex(where: { $0.id == tempId }) else { return }
+            attachments[index].mediaId = uploaded.mediaId
+            attachments[index].isUploading = false
+        } catch {
+            attachments.removeAll { $0.id == tempId }
+            errorMessage = "사진을 올리지 못했어요. 다시 시도해주세요."
         }
     }
 
-    func removeImage(at index: Int) {
-        guard mediaIds.indices.contains(index) else { return }
-        mediaIds.remove(at: index)
+    func removeImage(id: UUID) {
+        attachments.removeAll { $0.id == id }
     }
 
     // MARK: - 검증
@@ -375,7 +391,7 @@ final class RecordComposeViewModel {
             pesticideAmount: amount,
             pesticideAmountUnit: pesticideAmountUnit.rawValue,
             totalSprayAmount: spray,
-            totalSprayAmountUnit: SprayAmountUnit.l.rawValue,
+            totalSprayAmountUnit: SprayAmountUnit.ml.rawValue,
             pestId: selectedPest?.id
         )
     }

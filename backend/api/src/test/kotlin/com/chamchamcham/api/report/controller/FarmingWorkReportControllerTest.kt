@@ -62,7 +62,7 @@ class FarmingWorkReportControllerTest(
             memberId = memberId,
             farmIds = setOf(farmId),
             cropIds = setOf(cropId),
-            workType = WorkType.WATERING,
+            workTypes = listOf(WorkType.WATERING),
             cursor = "cursor-1",
             size = 2,
         )
@@ -98,12 +98,36 @@ class FarmingWorkReportControllerTest(
     }
 
     @Test
+    fun `list binds multiple work type filters`() {
+        val condition = FarmingWorkReportSearchCondition(
+            memberId = memberId,
+            farmIds = setOf(farmId),
+            cropIds = setOf(cropId),
+            workTypes = listOf(WorkType.WATERING, WorkType.HARVEST),
+            cursor = null,
+            size = 20,
+        )
+        `when`(service.list(condition)).thenReturn(FarmingWorkReportResult.Page(emptyList(), null))
+
+        mockMvc.perform(
+            get("/api/v1/farming-reports/work-items")
+                .with(authenticatedMember(memberId.toString()))
+                .param("farmId", farmId.toString())
+                .param("cropId", cropId.toString())
+                .param("workType", "WATERING", "HARVEST"),
+        )
+            .andExpect(status().isOk)
+
+        verify(service).list(condition)
+    }
+
+    @Test
     fun `list returns active work card with nullable end date`() {
         val condition = FarmingWorkReportSearchCondition(
             memberId = memberId,
             farmIds = emptySet(),
             cropIds = emptySet(),
-            workType = null,
+            workTypes = emptyList(),
             cursor = null,
             size = 20,
         )
@@ -136,7 +160,7 @@ class FarmingWorkReportControllerTest(
             memberId = memberId,
             farmIds = emptySet(),
             cropIds = emptySet(),
-            workType = null,
+            workTypes = emptyList(),
             cursor = null,
             size = 20,
         )
@@ -156,7 +180,7 @@ class FarmingWorkReportControllerTest(
             memberId = memberId,
             farmIds = setOf(farmId, secondFarmId),
             cropIds = setOf(cropId, secondCropId),
-            workType = null,
+            workTypes = emptyList(),
             cursor = null,
             size = 20,
         )
@@ -206,7 +230,7 @@ class FarmingWorkReportControllerTest(
             memberId = memberId,
             farmIds = emptySet(),
             cropIds = emptySet(),
-            workType = null,
+            workTypes = emptyList(),
             cursor = "not-base64",
             size = 20,
         )

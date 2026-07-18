@@ -198,7 +198,7 @@ struct AppListItem<Thumbnail: View>: View {
                         .appTypography(.bodyLarge)
                         .foregroundStyle(Color.Text.muted)
                         .padding(.top, 2)
-                        .lineLimit(1)
+                        .lineLimit(3)
 
                     if reactions {
                         Spacer(minLength: 0)

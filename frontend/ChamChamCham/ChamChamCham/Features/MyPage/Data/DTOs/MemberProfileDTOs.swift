@@ -57,6 +57,26 @@ struct UpdateMyProfileRequestDTO: Encodable, Sendable {
     let experienceLevel: Int
     let managementType: String
     let profileMediaId: UUID?
+    let farms: [UpdateMyProfileFarmRequestDTO]
+}
+
+/// Backend's `PUT /members/me/profile` treats the whole profile as one atomic payload and requires at least one
+/// farm (`farms: NotEmpty`). Each entry is matched to an existing farm by `farmId` and upserted with the same
+/// values it already has — see `StandaloneFarmResponseDTO.toUpdateMyProfileFarmRequest()`.
+struct UpdateMyProfileFarmRequestDTO: Encodable, Sendable {
+    let farmId: UUID?
+    let name: String
+    let roadAddress: String
+    let jibunAddress: String?
+    let latitude: Double
+    let longitude: Double
+    let pnu: String?
+    let landCategory: String?
+    let areaSqm: Double?
+    let areaIsManualEntry: Bool
+    let boundaryCoordinates: [FarmBoundaryCoordinateDTO]
+    let dataSource: FarmDataSourceDTO
+    let cropIds: [UUID]
 }
 
 extension MyProfileResponseDTO {
@@ -112,5 +132,30 @@ extension PublicFarmResponseDTO {
 extension CropProfileResponseDTO {
     func toDomain() -> MemberCropProfile {
         MemberCropProfile(cropId: cropId, cropName: cropName)
+    }
+}
+
+extension StandaloneFarmResponseDTO {
+    /// Maps this farm back into the shape `PUT /members/me/profile` requires for its `farms` entries.
+    /// Farms are always created with coordinates and at least one crop (onboarding/farm-add both require both),
+    /// so `nil` here would mean corrupt upstream data rather than a normal state — returning `nil` lets the
+    /// caller drop it rather than send a request the backend is guaranteed to reject.
+    func toUpdateMyProfileFarmRequest() -> UpdateMyProfileFarmRequestDTO? {
+        guard let latitude, let longitude else { return nil }
+        return UpdateMyProfileFarmRequestDTO(
+            farmId: farmId,
+            name: name,
+            roadAddress: roadAddress,
+            jibunAddress: jibunAddress,
+            latitude: latitude,
+            longitude: longitude,
+            pnu: pnu,
+            landCategory: landCategory,
+            areaSqm: areaSqm,
+            areaIsManualEntry: areaIsManualEntry,
+            boundaryCoordinates: boundaryCoordinates,
+            dataSource: dataSource,
+            cropIds: crops.map(\.id)
+        )
     }
 }

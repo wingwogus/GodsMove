@@ -73,7 +73,11 @@ enum MyPageFixtures {
         )
     }
 
-    static func standaloneFarm(id: UUID = UUID(), name: String = "행복농장") -> StandaloneFarmResponseDTO {
+    static func standaloneFarm(
+        id: UUID = UUID(),
+        name: String = "행복농장",
+        crops: [CropResponseDTO] = []
+    ) -> StandaloneFarmResponseDTO {
         StandaloneFarmResponseDTO(
             farmId: id,
             name: name,
@@ -87,8 +91,12 @@ enum MyPageFixtures {
             areaIsManualEntry: true,
             boundaryCoordinates: [],
             dataSource: .onboardingJusoVWorld,
-            crops: []
+            crops: crops
         )
+    }
+
+    static func cropResponse(id: UUID = UUID(), name: String = "인삼") -> CropResponseDTO {
+        CropResponseDTO(id: id, externalNo: 1, name: name, usePartCategory: "ROOT", usePartCategoryLabel: "뿌리")
     }
 }
 
@@ -156,10 +164,13 @@ actor StubCommunityRepository: CommunityRepository {
 actor StubFarmRepository: FarmRepository {
     private let farms: [StandaloneFarmResponseDTO]
     private var recordedCreates: [SaveFarmRequestDTO] = []
+    private var recordedUpdates: [(id: UUID, request: SaveFarmRequestDTO)] = []
     private var recordedDeletes: [UUID] = []
+    private let updateError: Error?
 
-    init(farms: [StandaloneFarmResponseDTO] = []) {
+    init(farms: [StandaloneFarmResponseDTO] = [], updateError: Error? = nil) {
         self.farms = farms
+        self.updateError = updateError
     }
 
     func listFarms() async throws -> [StandaloneFarmResponseDTO] { farms }
@@ -169,11 +180,18 @@ actor StubFarmRepository: FarmRepository {
         return MyPageFixtures.standaloneFarm(name: request.name)
     }
 
+    func updateFarm(id: UUID, _ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO {
+        if let updateError { throw updateError }
+        recordedUpdates.append((id: id, request: request))
+        return MyPageFixtures.standaloneFarm(id: id, name: request.name)
+    }
+
     func deleteFarm(id: UUID) async throws {
         recordedDeletes.append(id)
     }
 
     func creates() -> [SaveFarmRequestDTO] { recordedCreates }
+    func updates() -> [(id: UUID, request: SaveFarmRequestDTO)] { recordedUpdates }
     func deletes() -> [UUID] { recordedDeletes }
 }
 
@@ -189,7 +207,7 @@ actor StubAuthRepository: AuthRepository {
     }
 
     func loginWithKakao(idToken: String, nonce: String, kakaoAccessToken: String?) async throws -> LoginResponseDTO { throw MyPageTestError.unused }
-    func loginWithApple(identityToken: String, nonce: String, authorizationCode: String?, userIdentifier: String?) async throws -> LoginResponseDTO { throw MyPageTestError.unused }
+    func loginWithApple(identityToken: String, nonce: String, authorizationCode: String?, userIdentifier: String?, name: String?) async throws -> LoginResponseDTO { throw MyPageTestError.unused }
     func loginWithNaver(accessToken: String) async throws -> LoginResponseDTO { throw MyPageTestError.unused }
 
     func logout() async throws {

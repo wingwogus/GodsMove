@@ -10,7 +10,7 @@ import Foundation
 struct ReportQuery: Equatable, Sendable {
     var farmId: UUID?
     var cropId: UUID?
-    var workType: WorkType?
+    var workTypes: Set<WorkType> = []
     var cursor: String?
     var size = 20
 }
@@ -57,7 +57,7 @@ enum ReportEndpoint: Endpoint {
         if let cropId = query.cropId {
             items.append(URLQueryItem(name: "cropId", value: cropId.uuidString))
         }
-        if let workType = query.workType {
+        for workType in query.workTypes {
             items.append(URLQueryItem(name: "workType", value: workType.rawValue))
         }
         if let cursor = query.cursor, !cursor.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {

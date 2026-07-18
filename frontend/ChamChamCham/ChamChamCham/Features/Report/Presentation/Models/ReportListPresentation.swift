@@ -33,8 +33,8 @@ struct ReportFilterChipPresentation: Equatable {
             ),
             ReportFilterChipPresentation(
                 kind: .workType,
-                title: filter.workType?.label ?? "영농 활동",
-                isSelected: filter.workType != nil
+                title: workTypeChipTitle(for: filter.workTypes),
+                isSelected: !filter.workTypes.isEmpty
             ),
             ReportFilterChipPresentation(
                 kind: .farm,
@@ -43,6 +43,12 @@ struct ReportFilterChipPresentation: Equatable {
             ),
         ]
     }
+
+    private static func workTypeChipTitle(for workTypes: Set<WorkType>) -> String {
+        guard !workTypes.isEmpty else { return "영농 활동" }
+        let labels = WorkType.allCases.filter(workTypes.contains).map(\.label)
+        return labels.count == 1 ? labels[0] : "\(labels[0]) 외 \(labels.count - 1)"
+    }
 }
 
 struct ReportListCardPresentation: Equatable {
@@ -50,9 +56,11 @@ struct ReportListCardPresentation: Equatable {
     let badges: [String]
     let periodParts: [String]
     let thumbnailURL: URL?
+    let workType: WorkType
 
     init(summary: FarmingWorkReportSummary) {
         title = summary.workTypeLabel
+        workType = summary.key.workType
         badges = [summary.cropName, summary.farmName]
         periodParts = [
             ReportDateParser.displayDate(summary.startsAt),

@@ -37,7 +37,7 @@ struct WeatherDetailView: View {
         case let .loaded(detail):
             VStack(alignment: .leading, spacing: Spacing.lg) {
                 todaySection(detail)
-                tipBanner
+//                tipBanner // 나중에 추가
                 detailGrid(detail)
                 Divider().foregroundStyle(Color.Border.subtle)
                 weeklyForecast(detail.forecast)

@@ -51,7 +51,7 @@ class SearchService(
     fun searchPosts(query: SearchQuery): SearchResult.PostPage {
         val condition = CommunityPostSearchCondition(
             memberId = query.memberId,
-            cropId = null,
+            cropIds = emptyList(),
             postType = null,
             keyword = query.keyword,
             likedOnly = false,

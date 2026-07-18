@@ -369,7 +369,7 @@ class CommunityPostServiceTest {
                 CommunityPostQueryRepository.SearchCondition(
                     memberId = memberId,
                     authorMemberId = otherMemberId,
-                    cropId = cropId,
+                    cropIds = listOf(cropId),
                     postType = CommunityPostType.QUESTION,
                     keyword = "발아",
                     likedOnly = false,
@@ -392,7 +392,7 @@ class CommunityPostServiceTest {
             CommunityPostSearchCondition(
                 memberId = memberId,
                 authorMemberId = otherMemberId,
-                cropId = cropId,
+                cropIds = listOf(cropId),
                 postType = CommunityPostType.QUESTION,
                 keyword = "발아",
                 likedOnly = false,
@@ -420,7 +420,7 @@ class CommunityPostServiceTest {
                 CommunityPostQueryRepository.SearchCondition(
                     memberId = null,
                     authorMemberId = otherMemberId,
-                    cropId = cropId,
+                    cropIds = listOf(cropId),
                     postType = CommunityPostType.QUESTION,
                     keyword = "발아",
                     likedOnly = false,
@@ -468,7 +468,7 @@ class CommunityPostServiceTest {
             communityPostQueryRepository.search(
                 CommunityPostQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = cropId,
+                    cropIds = listOf(cropId),
                     postType = CommunityPostType.QUESTION,
                     keyword = "발아",
                     likedOnly = false,
@@ -508,7 +508,7 @@ class CommunityPostServiceTest {
             communityPostQueryRepository.search(
                 CommunityPostQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = cropId,
+                    cropIds = listOf(cropId),
                     postType = CommunityPostType.QUESTION,
                     keyword = "발아",
                     likedOnly = false,
@@ -552,7 +552,7 @@ class CommunityPostServiceTest {
             communityPostQueryRepository.search(
                 CommunityPostQueryRepository.SearchCondition(
                     memberId = memberId,
-                    cropId = cropId,
+                    cropIds = listOf(cropId),
                     postType = CommunityPostType.QUESTION,
                     keyword = "발아",
                     likedOnly = false,
@@ -655,7 +655,7 @@ class CommunityPostServiceTest {
                 CommunityPostQueryRepository.SearchCondition(
                     memberId = memberId,
                     authorMemberId = otherMemberId,
-                    cropId = cropId,
+                    cropIds = listOf(cropId),
                     postType = CommunityPostType.QUESTION,
                     keyword = "발아",
                     likedOnly = false,
@@ -737,7 +737,7 @@ class CommunityPostServiceTest {
         CommunityPostSearchCondition(
             memberId = memberId,
             authorMemberId = authorMemberId,
-            cropId = cropId,
+            cropIds = listOf(cropId),
             postType = CommunityPostType.QUESTION,
             keyword = "발아",
             likedOnly = likedOnly,

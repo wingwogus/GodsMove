@@ -48,7 +48,7 @@ class FarmingCycleReportQueryRepositoryImpl(
         val rows = query.resultList
             .map(::toWorkProjection)
             .flatMap { projection ->
-                val workTypes = condition.workType?.let(::listOf) ?: WorkType.entries
+                val workTypes = condition.workTypes.distinct().ifEmpty { WorkType.entries }
                 workTypes.mapNotNull { workType -> projection.toWorkItem(workType) }
             }
             .sortedWith(workItemComparator)

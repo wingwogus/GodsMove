@@ -86,7 +86,11 @@ extension FarmDraftRequestDTO {
         guard !farm.farmName.trimmingCharacters(in: .whitespaces).isEmpty else {
             throw OnboardingSubmissionError.missingRequiredField("farmName")
         }
-        guard !farm.farmRoadAddress.trimmingCharacters(in: .whitespaces).isEmpty else {
+        let trimmedRoad = farm.farmRoadAddress.trimmingCharacters(in: .whitespaces)
+        let trimmedJibun = farm.farmJibunAddress.trimmingCharacters(in: .whitespaces)
+        // 도로명이 없는 농지(지적도에 도로명 미부여)는 지번 주소를 대신 쓴다. 백엔드 `roadAddress`는
+        // non-null이라 프론트에서 지번을 roadAddress 자리에 채워 보낸다. 둘 다 없을 때만 실패.
+        guard !trimmedRoad.isEmpty || !trimmedJibun.isEmpty else {
             throw OnboardingSubmissionError.missingRequiredField("farmRoadAddress")
         }
         guard let latitude = farm.farmLatitude, let longitude = farm.farmLongitude else {
@@ -97,8 +101,8 @@ extension FarmDraftRequestDTO {
         }
 
         self.name = farm.farmName
-        self.roadAddress = farm.farmRoadAddress
-        self.jibunAddress = farm.farmJibunAddress.isEmpty ? nil : farm.farmJibunAddress
+        self.roadAddress = trimmedRoad.isEmpty ? trimmedJibun : farm.farmRoadAddress
+        self.jibunAddress = trimmedJibun.isEmpty ? nil : farm.farmJibunAddress
         self.latitude = latitude
         self.longitude = longitude
         self.pnu = farm.farmPNU

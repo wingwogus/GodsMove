@@ -116,10 +116,10 @@ struct ReportFeedbackList: Hashable, Sendable {
 struct ReportFilter: Equatable, Sendable {
     var farmId: UUID?
     var cropId: UUID?
-    var workType: WorkType?
+    var workTypes: Set<WorkType> = []
 
     var isEmpty: Bool {
-        farmId == nil && cropId == nil && workType == nil
+        farmId == nil && cropId == nil && workTypes.isEmpty
     }
 }
 

@@ -86,7 +86,7 @@ class SecurityConfigCommunityTest(
     private fun guestSearchCondition(): CommunityPostSearchCondition =
         CommunityPostSearchCondition(
             memberId = null,
-            cropId = null,
+            cropIds = emptyList(),
             postType = null,
             keyword = null,
             likedOnly = false,

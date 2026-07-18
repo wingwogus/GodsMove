@@ -25,7 +25,8 @@ struct PreviewAuthRepository: AuthRepository {
         identityToken: String,
         nonce: String,
         authorizationCode: String?,
-        userIdentifier: String?
+        userIdentifier: String?,
+        name: String?
     ) async throws -> LoginResponseDTO {
         throw OnboardingSubmissionError.missingRequiredField("preview")
     }
@@ -108,6 +109,10 @@ struct PreviewFarmRepository: FarmRepository {
     func listFarms() async throws -> [StandaloneFarmResponseDTO] { [] }
 
     func createFarm(_ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO {
+        throw OnboardingSubmissionError.missingRequiredField("preview")
+    }
+
+    func updateFarm(id: UUID, _ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO {
         throw OnboardingSubmissionError.missingRequiredField("preview")
     }
 

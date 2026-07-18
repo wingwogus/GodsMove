@@ -43,7 +43,7 @@ class FarmingWorkReportQueryService(
                 memberId = condition.memberId,
                 farmIds = condition.farmIds,
                 cropIds = condition.cropIds,
-                workType = condition.workType,
+                workTypes = condition.workTypes,
                 cursor = decodeCursor(condition.cursor),
                 size = condition.size + 1,
             ),

@@ -182,7 +182,7 @@ enum VoiceCandidateMapper {
                 pesticideAmount: amount,
                 pesticideAmountUnit: (detail.pesticideAmountUnit ?? .ml).rawValue,
                 totalSprayAmount: spray,
-                totalSprayAmountUnit: SprayAmountUnit.l.rawValue,
+                totalSprayAmountUnit: SprayAmountUnit.ml.rawValue,
                 pestId: resolvedPest?.id
             )
         }

@@ -84,7 +84,8 @@ struct CommunityComposeView: View {
         .fullScreenCover(isPresented: $showCropPicker) {
             CropPickerView(
                 loadCrops: viewModel.catalogCrops,
-                loadCategories: viewModel.catalogCategories
+                loadCategories: viewModel.catalogCategories,
+                initialSelectedCropIDs: viewModel.boards.map(\.cropId)
             ) { crops in
                 viewModel.addBoards(from: crops)
             }
@@ -248,7 +249,11 @@ struct CommunityComposeView: View {
                 HStack(spacing: Spacing.sm) {
                     ForEach(viewModel.recentRecords.prefix(3)) { record in
                         Button {
-                            viewModel.selectFarmingRecord(record)
+                            if viewModel.selectedFarmingRecord?.id == record.id {
+                                viewModel.selectFarmingRecord(nil)
+                            } else {
+                                viewModel.selectFarmingRecord(record)
+                            }
                         } label: {
                             AppCard(
                                 size: .xsmall,
@@ -257,7 +262,7 @@ struct CommunityComposeView: View {
                                 dateText: FarmingRecordPickerView.dateText(for: record),
                                 isSelected: viewModel.selectedFarmingRecord?.id == record.id
                             ) {
-                                RecordRemoteImage(url: record.thumbnailUrl)
+                                RecordRemoteImage(url: record.thumbnailUrl, workType: record.workType)
                             }
                         }
                         .buttonStyle(.plain)

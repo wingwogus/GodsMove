@@ -119,12 +119,12 @@ final class FarmLocationViewModel {
     }
 
     private let addressSearch: any AddressSearching
-    private let vworld: any FarmlandGeocoding & ParcelLookup
+    private let vworld: any FarmlandGeocoding & ParcelLookup & ReverseGeocoding
     private let landCharacteristics: any LandCharacteristicsLookup
 
     init(
         addressSearch: any AddressSearching = JusoAPIService(),
-        vworld: any FarmlandGeocoding & ParcelLookup = VWorldAPIService(),
+        vworld: any FarmlandGeocoding & ParcelLookup & ReverseGeocoding = VWorldAPIService(),
         landCharacteristics: any LandCharacteristicsLookup = LandCharacterAPIService()
     ) {
         self.addressSearch = addressSearch
@@ -164,7 +164,8 @@ final class FarmLocationViewModel {
             addDrawnVertex(coordinate)
             return
         }
-        await fetchParcel(at: coordinate)
+        // 새 탭은 활성 좌표를 바꾸므로 주소를 탭 위치 기준으로 다시 채운다.
+        await fetchParcel(at: coordinate, refreshAddress: true)
     }
 
     // MARK: - Polygon drawing
@@ -196,11 +197,28 @@ final class FarmLocationViewModel {
     }
 
     /// 3점 이상이면 작도를 확정한다. 반환값은 성공 여부.
+    ///
+    /// 지적도에 없는 밭이므로 폴리곤 중심 좌표를 역지오코딩해 주소를 채운다. 이전 검색 주소가
+    /// 그대로 남아 엉뚱한 위치와 짝지어지는 것을 막기 위해, 확정 즉시 주소를 무효화한 뒤 다시 채운다.
     @discardableResult
-    func finishDrawing() -> Bool {
+    func finishDrawing() async -> Bool {
         guard isDrawnPolygonValid else { return false }
         isDrawingMode = false
+        selectedAddress = nil
+        guard let centroid = FarmlandParcel.centroid(of: drawnCoordinates) else { return true }
+        if let reverse = try? await vworld.reverseGeocode(at: centroid.clLocationCoordinate) {
+            selectedAddress = makeAddress(road: reverse.roadAddress, jibun: reverse.jibunAddress)
+        }
         return true
+    }
+
+    /// 도로명/지번 중 존재하는 값으로 주소를 만든다. 둘 다 비면 nil(주소 미확정).
+    /// 도로명이 없는 농지는 지번만 채워진 주소로 표시·저장된다.
+    private func makeAddress(road: String?, jibun: String?) -> JusoAddress? {
+        let roadText = road?.trimmingCharacters(in: .whitespaces) ?? ""
+        let jibunText = jibun?.trimmingCharacters(in: .whitespaces) ?? ""
+        guard !roadText.isEmpty || !jibunText.isEmpty else { return nil }
+        return JusoAddress(roadAddrPart1: roadText, jibunAddr: jibunText, bdNm: "")
     }
 
     private func resolveCoordinate(for address: JusoAddress) async {
@@ -208,24 +226,51 @@ final class FarmLocationViewModel {
         do {
             let coordinate = try await vworld.geocode(roadAddress: address.roadAddrPart1)
             resolvedCoordinate = GeoPoint(coordinate)
-            await fetchParcel(at: coordinate)
+            // 검색으로 선택한 주소를 유지해야 하므로 주소는 다시 채우지 않는다.
+            await fetchParcel(at: coordinate, refreshAddress: false)
         } catch {
             lookupState = .failed("주소의 좌표를 확인하지 못했어요")
         }
     }
 
-    private func fetchParcel(at coordinate: CLLocationCoordinate2D) async {
+    /// - Parameter refreshAddress: 지도 탭처럼 활성 좌표가 바뀌는 경우 true. 이전 선택 상태를
+    ///   무효화하고 역지오코딩으로 주소를 다시 채운다. JUSO 검색 흐름은 false(주소 유지).
+    private func fetchParcel(at coordinate: CLLocationCoordinate2D, refreshAddress: Bool) async {
         lookupState = .loadingParcel
+
+        if refreshAddress {
+            // 활성 좌표가 바뀌는 즉시 이전 선택을 무효화한다. 주소·수동면적·작도 폴리곤이
+            // 이전 위치 값으로 남아 새 위치와 섞이는 것을 방지(주소/좌표 불일치 근본 수정).
+            selectedAddress = nil
+            manualAreaText = ""
+            drawnCoordinates = []
+            isDrawingMode = false
+            resolvedCoordinate = GeoPoint(coordinate)
+        }
+
+        // refreshAddress일 때만 역지오코딩을 병행(실패는 nil로 관용, 도로명 채우기 용도).
+        async let reverseTask: ReverseGeocodedAddress? = refreshAddress
+            ? (try? await vworld.reverseGeocode(at: coordinate))
+            : nil
+
         do {
             let parcel = try await vworld.fetchParcel(at: coordinate)
             selectedParcel = parcel
             drawnCoordinates = []
             isDrawingMode = false
             lookupState = .loaded
+            if refreshAddress {
+                // 지번은 GetFeature 값이 정확하므로 우선 사용하고, 도로명만 역지오코딩으로 채운다.
+                selectedAddress = makeAddress(road: (await reverseTask)?.roadAddress, jibun: parcel.jibunAddr)
+            }
             await fetchOfficialArea(pnu: parcel.pnu)
         } catch FarmLocationAPIError.noParcelFound {
             selectedParcel = nil
             lookupState = .parcelNotFound
+            if refreshAddress {
+                let reverse = await reverseTask
+                selectedAddress = makeAddress(road: reverse?.roadAddress, jibun: reverse?.jibunAddress)
+            }
         } catch {
             selectedParcel = nil
             lookupState = .failed("지적도 정보를 불러오지 못했어요")

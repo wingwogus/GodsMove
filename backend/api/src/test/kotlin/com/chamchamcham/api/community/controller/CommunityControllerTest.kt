@@ -45,6 +45,7 @@ class CommunityControllerTest(
     private val authorMemberId = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val postId = UUID.fromString("00000000-0000-0000-0000-000000000101")
     private val cropId = UUID.fromString("00000000-0000-0000-0000-000000000201")
+    private val secondCropId = UUID.fromString("00000000-0000-0000-0000-000000000202")
     private val recordId = UUID.fromString("00000000-0000-0000-0000-000000000301")
     private val mediaId = UUID.fromString("00000000-0000-0000-0000-000000000401")
     private val commentId = UUID.fromString("00000000-0000-0000-0000-000000000501")
@@ -113,7 +114,7 @@ class CommunityControllerTest(
             communityPostService.search(
                 CommunityPostSearchCondition(
                     memberId = memberId,
-                    cropId = cropId,
+                    cropIds = listOf(cropId),
                     postType = CommunityPostType.QUESTION,
                     keyword = "황기",
                     likedOnly = true,
@@ -141,13 +142,41 @@ class CommunityControllerTest(
     }
 
     @Test
+    fun `list posts maps multiple crop ids`() {
+        val cropIds = listOf(cropId, secondCropId)
+        `when`(
+            communityPostService.search(
+                CommunityPostSearchCondition(
+                    memberId = memberId,
+                    cropIds = cropIds,
+                    postType = null,
+                    keyword = null,
+                    likedOnly = false,
+                    mineOnly = false,
+                    sort = CommunityPostSort.LATEST,
+                    cursor = null,
+                    size = 20,
+                ),
+            ),
+        ).thenReturn(postPageResult())
+
+        mockMvc.perform(
+            get("/api/v1/community/posts")
+                .with(authenticatedMember(memberId.toString()))
+                .param("cropId", cropId.toString(), secondCropId.toString()),
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data.items[0].id", equalTo(postId.toString())))
+    }
+
+    @Test
     fun `list posts maps author member id separately from authenticated member id`() {
         `when`(
             communityPostService.search(
                 CommunityPostSearchCondition(
                     memberId = memberId,
                     authorMemberId = authorMemberId,
-                    cropId = null,
+                    cropIds = emptyList(),
                     postType = null,
                     keyword = null,
                     likedOnly = false,
@@ -405,7 +434,7 @@ class CommunityControllerTest(
     private fun anySearchCondition(memberId: UUID? = this.memberId): CommunityPostSearchCondition =
         CommunityPostSearchCondition(
             memberId = memberId,
-            cropId = null,
+            cropIds = emptyList(),
             postType = null,
             keyword = null,
             likedOnly = false,

@@ -101,8 +101,8 @@ enum PesticideAmountUnit: String, Sendable, Hashable, CaseIterable {
 
 /// 총 살포량 단위.
 enum SprayAmountUnit: String, Sendable, Hashable, CaseIterable {
-    case l = "L"
-    var label: String { "L" }
+    case ml = "ML"
+    var label: String { "mL" }
 }
 
 /// 잡초 관리 진행 방식.

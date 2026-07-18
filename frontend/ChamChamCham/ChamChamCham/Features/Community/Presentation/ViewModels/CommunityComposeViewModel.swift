@@ -100,6 +100,11 @@ final class CommunityComposeViewModel {
 
     func selectCrop(_ cropId: UUID) {
         selectedCropId = cropId
+        // Switching boards away from the attached record's crop would violate the backend's
+        // crop-match check on submit, so drop the now-mismatched record.
+        if selectedFarmingRecord?.cropId != cropId {
+            selectedFarmingRecord = nil
+        }
     }
 
     // MARK: - Farming record
@@ -110,8 +115,16 @@ final class CommunityComposeViewModel {
         recentRecords = page.items
     }
 
+    /// Backend requires the post's crop to match the attached record's crop (`resolveFarmingRecord` in
+    /// `CommunityPostService`), so picking a record forces the board selection to that record's crop —
+    /// adding it as a chip first if it isn't offered yet.
     func selectFarmingRecord(_ record: FarmingRecordSummary?) {
         selectedFarmingRecord = record
+        guard let record else { return }
+        if !boards.contains(where: { $0.cropId == record.cropId }) {
+            boards.append(CommunityBoard(cropId: record.cropId, cropName: record.cropName))
+        }
+        selectedCropId = record.cropId
     }
 
     // MARK: - Board picker (작물 추가)
@@ -124,14 +137,14 @@ final class CommunityComposeViewModel {
         (try? await cropCatalog.fetchCategories()) ?? []
     }
 
-    /// Adds picker-selected crops as chips (de-duped) and selects the first newly added one.
+    /// Reconciles the picker's full current selection into `boards` (add/remove), then selects the
+    /// first newly added crop if there is one; an unchanged selection leaves `selectedCropId` as-is.
     func addBoards(from crops: [Crop]) {
-        guard !crops.isEmpty else { return }
-        var existing = Set(boards.map(\.cropId))
-        for crop in crops where existing.insert(crop.id).inserted {
-            boards.append(CommunityBoard(cropId: crop.id, cropName: crop.name))
+        let previousCropIDs = Set(boards.map(\.cropId))
+        boards = crops.map { CommunityBoard(cropId: $0.id, cropName: $0.name) }
+        if let firstNew = crops.first(where: { !previousCropIDs.contains($0.id) }) {
+            selectedCropId = firstNew.id
         }
-        selectedCropId = crops.first?.id
     }
 
     // MARK: - Images

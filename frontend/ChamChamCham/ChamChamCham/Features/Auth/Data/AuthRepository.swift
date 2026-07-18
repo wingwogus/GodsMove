@@ -13,7 +13,8 @@ protocol AuthRepository: Sendable {
         identityToken: String,
         nonce: String,
         authorizationCode: String?,
-        userIdentifier: String?
+        userIdentifier: String?,
+        name: String?
     ) async throws -> LoginResponseDTO
     func loginWithNaver(accessToken: String) async throws -> LoginResponseDTO
     func logout() async throws
@@ -34,14 +35,16 @@ struct RemoteAuthRepository: AuthRepository {
         identityToken: String,
         nonce: String,
         authorizationCode: String?,
-        userIdentifier: String?
+        userIdentifier: String?,
+        name: String?
     ) async throws -> LoginResponseDTO {
         try await persistingTokens {
             try await apiClient.send(AuthEndpoint.appleLogin(
                 identityToken: identityToken,
                 nonce: nonce,
                 authorizationCode: authorizationCode,
-                userIdentifier: userIdentifier
+                userIdentifier: userIdentifier,
+                name: name
             ))
         }
     }

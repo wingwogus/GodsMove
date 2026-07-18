@@ -25,7 +25,7 @@ struct RecordDetailResponseDTO: Decodable, Sendable {
     let memo: String?
     let weatherCondition: String
     let weatherTemperature: Int
-    let imageUrls: [String]?
+    let images: [MediaResponseDTO]?
 
     let planting: PlantingDetailDTO?
     let watering: WateringDetailDTO?
@@ -77,6 +77,11 @@ struct RecordDetailResponseDTO: Decodable, Sendable {
         let harvestSource: String?
         let medicinalPart: String?
     }
+
+    struct MediaResponseDTO: Decodable, Sendable {
+        let mediaId: UUID
+        let url: String
+    }
 }
 
 // MARK: - Domain mapping
@@ -92,7 +97,7 @@ extension RecordDetailResponseDTO {
             farmName: farmName,
             cropName: cropName,
             memo: memo ?? "",
-            imageUrls: imageUrls ?? [],
+            imageUrls: images?.map(\.url) ?? [],
             infoRows: RecordDetailLabels.infoRows(from: self)
         )
     }

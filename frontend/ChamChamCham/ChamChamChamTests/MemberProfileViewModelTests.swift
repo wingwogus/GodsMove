@@ -100,18 +100,18 @@ struct MemberProfileViewModelTests {
         #expect(viewModel.regionText == nil)
     }
 
-    @Test("board filter forwards the selected crop id, keeping the member id filter")
+    @Test("board filter forwards the selected crop ids, keeping the member id filter")
     func boardFilterAppliesCropId() async {
         let targetMemberId = UUID()
         let cropId = UUID()
         let boards = [CommunityBoard(cropId: cropId, cropName: "인삼")]
         let (viewModel, community) = makeViewModel(targetMemberId: targetMemberId, profile: MyPageFixtures.profile(), boards: boards)
 
-        await viewModel.applyBoardFilter(cropId: cropId)
+        await viewModel.applyBoardFilter(cropIds: [cropId])
 
-        #expect(viewModel.selectedBoardCropId == cropId)
+        #expect(viewModel.selectedBoardCropIds == [cropId])
         let query = await community.lastQuery()
-        #expect(query?.cropId == cropId)
+        #expect(query?.cropIds == [cropId])
         #expect(query?.memberId == targetMemberId)
     }
 

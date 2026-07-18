@@ -8,7 +8,7 @@
 import CoreLocation
 import Foundation
 
-struct VWorldAPIService: FarmlandGeocoding, ParcelLookup, Sendable {
+struct VWorldAPIService: FarmlandGeocoding, ParcelLookup, ReverseGeocoding, Sendable {
     private let addressBaseURL = "https://api.vworld.kr/req/address"
     private let dataBaseURL = "https://api.vworld.kr/req/data"
 
@@ -88,6 +88,61 @@ struct VWorldAPIService: FarmlandGeocoding, ParcelLookup, Sendable {
             throw FarmLocationAPIError.decoding(error.localizedDescription)
         }
     }
+
+    /// V-World 주소 API(req/address, getAddress)로 좌표를 도로명·지번 주소로 변환한다.
+    ///
+    /// 도로명(`type=road`)과 지번(`type=parcel`)을 병행 조회한다. 하천둑·산골 농지처럼
+    /// 도로명이 없는 좌표는 `type=road`가 NOT_FOUND를 반환하는데, 이는 실패가 아니라
+    /// "도로명 없음"이므로 해당 필드만 nil로 남기고 던지지 않는다. 둘 다 네트워크/디코딩으로
+    /// 실패한 경우에만 에러를 던진다.
+    func reverseGeocode(at coordinate: CLLocationCoordinate2D) async throws -> ReverseGeocodedAddress {
+        async let roadTask = requestAddress(at: coordinate, type: "road")
+        async let parcelTask = requestAddress(at: coordinate, type: "parcel")
+        let road = await roadTask
+        let parcel = await parcelTask
+
+        if road.hardFailure && parcel.hardFailure {
+            throw FarmLocationAPIError.noResult
+        }
+        return ReverseGeocodedAddress(roadAddress: road.text, jibunAddress: parcel.text)
+    }
+
+    /// 한 타입(road/parcel)에 대한 역지오코딩 요청. NOT_FOUND는 `text=nil, hardFailure=false`,
+    /// 네트워크/디코딩 실패는 `hardFailure=true`로 표현해 상위에서 타입별로 관용 처리하게 한다.
+    private func requestAddress(at coordinate: CLLocationCoordinate2D, type: String) async -> AddressLookupOutcome {
+        var components = URLComponents(string: addressBaseURL)
+        components?.queryItems = [
+            URLQueryItem(name: "service", value: "address"),
+            URLQueryItem(name: "request", value: "getAddress"),
+            URLQueryItem(name: "version", value: "2.0"),
+            URLQueryItem(name: "crs", value: "epsg:4326"),
+            URLQueryItem(name: "point", value: "\(coordinate.longitude),\(coordinate.latitude)"),
+            URLQueryItem(name: "format", value: "json"),
+            URLQueryItem(name: "type", value: type),
+            URLQueryItem(name: "key", value: Secrets.vWorldAPIKey)
+        ]
+        guard let url = components?.url else {
+            return AddressLookupOutcome(text: nil, hardFailure: true)
+        }
+
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            let decoded = try JSONDecoder().decode(VWorldGetAddressResponse.self, from: data)
+            guard decoded.response.status == "OK" else {
+                // NOT_FOUND / ERROR 등: 해당 타입 주소가 없을 뿐 요청 자체는 성공.
+                return AddressLookupOutcome(text: nil, hardFailure: false)
+            }
+            let text = decoded.response.result?.first?.text?.trimmingCharacters(in: .whitespaces)
+            return AddressLookupOutcome(text: (text?.isEmpty == false) ? text : nil, hardFailure: false)
+        } catch {
+            return AddressLookupOutcome(text: nil, hardFailure: true)
+        }
+    }
+}
+
+private struct AddressLookupOutcome: Sendable {
+    let text: String?
+    let hardFailure: Bool
 }
 
 // MARK: - Geocoding response
@@ -108,6 +163,24 @@ private struct VWorldAddressResult: Decodable {
 private struct VWorldAddressPoint: Decodable {
     let x: String
     let y: String
+}
+
+// MARK: - Reverse-geocoding (getAddress) response
+//
+// getcoord와 달리 response.result가 배열이고 각 원소에 text(주소 문자열)가 온다.
+// zipcode/type/structure 필드는 사용하지 않아 디코딩을 생략한다.
+
+private struct VWorldGetAddressResponse: Decodable {
+    let response: VWorldGetAddressBody
+}
+
+private struct VWorldGetAddressBody: Decodable {
+    let status: String
+    let result: [VWorldGetAddressResult]?
+}
+
+private struct VWorldGetAddressResult: Decodable {
+    let text: String?
 }
 
 // MARK: - Parcel (GetFeature) response

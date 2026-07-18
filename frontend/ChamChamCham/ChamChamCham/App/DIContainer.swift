@@ -18,6 +18,7 @@ final class DIContainer {
     let recentSearchStore: RecentSearchStore
     let pendingFarmStore: PendingFarmStore
     let pendingFarmSyncService: PendingFarmSyncService
+    let extraCropBoardStore: ExtraCropBoardStore
 
     init(modelContainer: ModelContainer) {
         self.modelContainer = modelContainer
@@ -39,6 +40,7 @@ final class DIContainer {
             store: pendingFarmStore,
             repository: RemoteFarmRepository(apiClient: apiClient)
         )
+        self.extraCropBoardStore = ExtraCropBoardStore()
     }
 }
 

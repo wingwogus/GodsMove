@@ -35,7 +35,7 @@ interface FarmingCycleReportQueryRepository {
         val memberId: UUID,
         val farmIds: Set<UUID> = emptySet(),
         val cropIds: Set<UUID> = emptySet(),
-        val workType: WorkType?,
+        val workTypes: List<WorkType> = emptyList(),
         val cursor: WorkItemCursor?,
         val size: Int,
     )

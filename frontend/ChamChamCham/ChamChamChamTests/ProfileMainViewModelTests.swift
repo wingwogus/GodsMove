@@ -95,17 +95,34 @@ struct ProfileMainViewModelTests {
         #expect(query?.likedOnly == true)
     }
 
-    @Test("board filter forwards the selected crop id into the query")
+    @Test("board filter forwards the selected crop ids into the query")
     func boardFilterAppliesCropId() async {
         let cropId = UUID()
         let boards = [CommunityBoard(cropId: cropId, cropName: "인삼")]
         let (viewModel, community) = makeViewModel(profile: MyPageFixtures.profile(), boards: boards)
 
-        await viewModel.applyBoardFilter(cropId: cropId)
+        await viewModel.applyBoardFilter(cropIds: [cropId])
 
-        #expect(viewModel.selectedBoardCropId == cropId)
+        #expect(viewModel.selectedBoardCropIds == [cropId])
         let query = await community.lastQuery()
-        #expect(query?.cropId == cropId)
+        #expect(query?.cropIds == [cropId])
+    }
+
+    @Test("board filter forwards multiple selected crop ids into the query")
+    func boardFilterAppliesMultipleCropIds() async {
+        let firstId = UUID()
+        let secondId = UUID()
+        let boards = [
+            CommunityBoard(cropId: firstId, cropName: "인삼"),
+            CommunityBoard(cropId: secondId, cropName: "고추")
+        ]
+        let (viewModel, community) = makeViewModel(profile: MyPageFixtures.profile(), boards: boards)
+
+        await viewModel.applyBoardFilter(cropIds: [firstId, secondId])
+
+        #expect(viewModel.selectedBoardCropIds == [firstId, secondId])
+        let query = await community.lastQuery()
+        #expect(Set(query?.cropIds ?? []) == [firstId, secondId])
     }
 
     @Test("board split classifies member crops as active, others as 기타")

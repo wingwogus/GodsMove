@@ -62,7 +62,7 @@ final class DefaultReportRepository: ReportRepository {
             let response = try await remote.fetchWorkItems(ReportQuery(
                 farmId: filter.farmId,
                 cropId: filter.cropId,
-                workType: filter.workType,
+                workTypes: filter.workTypes,
                 cursor: cursor,
                 size: size
             ))

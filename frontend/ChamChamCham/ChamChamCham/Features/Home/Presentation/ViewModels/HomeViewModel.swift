@@ -110,16 +110,19 @@ final class HomeViewModel {
         }
     }
 
-    /// "나의 게시판 인기글" must scope to boards the member registered under 나의 작물 — the backend has no
-    /// multi-cropId filter (`CommunityFeedViewModel.filteredForAllCrops`), so fetch the member's boards and
-    /// restrict client-side, same as the community feed's "전체" chip.
+    /// "나의 게시판 인기글" must scope to boards the member registered under 나의 작물. The `cropId` filter
+    /// is a repeated/array query param the backend accepts directly (see `CommunityEndpoint.queryItems`),
+    /// so the member's boards are sent server-side — filtering an unscoped page client-side instead would
+    /// silently truncate to whatever the top-3 unfiltered popular posts happened to include, with no
+    /// retry if none of them matched.
     private func loadPopularPosts() async {
         popularPostsState = .loading
         do {
-            let myCropIds = Set(try await communityRepository.fetchBoards().map(\.cropId))
-            let page = try await communityRepository.fetchPosts(CommunityPostQuery(sort: .popular))
-            let myPosts = page.items.filter { myCropIds.contains($0.cropId) }
-            popularPostsState = .loaded(Array(myPosts.prefix(3)))
+            let myCropIds = try await communityRepository.fetchBoards().map(\.cropId)
+            let page = try await communityRepository.fetchPosts(
+                CommunityPostQuery(cropIds: myCropIds, sort: .popular, size: 3)
+            )
+            popularPostsState = .loaded(page.items)
         } catch {
             popularPostsState = .failed(HomeErrorMessage.text(for: error))
         }

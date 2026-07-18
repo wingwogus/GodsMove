@@ -61,7 +61,7 @@ struct RecordVoiceComposeViewModelTests {
 
         init(
             sessionInfo: VoiceSessionInfo = VoiceSessionInfo(
-                sessionId: UUID(), clientSecret: "ek_test", model: "gpt-realtime"
+                sessionId: UUID(), clientSecret: "ek_test", model: "gpt-realtime", maxDurationSeconds: 330
             ),
             missingFields: [String] = [],
             createError: (any Error)? = nil,
@@ -112,17 +112,40 @@ struct RecordVoiceComposeViewModelTests {
         func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { throw Unused() }
     }
 
+    /// 대화 시간 한도 대기를 테스트에서 제어하는 게이트. `fire()`를 부를 때까지 `wait()`가
+    /// 매달린다 — 시간 한도 타이머를 원하는 시점에 발화시키거나 발화 없이 묶어두는 데 쓴다.
+    private actor DeadlineGate {
+        private var waiter: CheckedContinuation<Void, Never>?
+        private var fired = false
+
+        func wait() async {
+            if fired { return }
+            await withCheckedContinuation { waiter = $0 }
+        }
+
+        func fire() {
+            fired = true
+            waiter?.resume()
+            waiter = nil
+        }
+    }
+
+    /// 기본값은 '발화되지 않는' 대기 — 빠른 유닛 테스트에서 시간 한도 타이머가 실수로
+    /// 발화하거나 실시간 sleep을 남기지 않게 한다. 타이머를 검증하는 테스트만 제어 가능한
+    /// 게이트를 주입해 원하는 시점에 발화시킨다.
     private func makeViewModel(
         voiceRepository: StubVoiceSessionRepository = StubVoiceSessionRepository(),
         recordRepository: StubRecordRepository = StubRecordRepository(),
         transport: ManualVoiceTransport = ManualVoiceTransport(),
-        micPermission: Bool = true
+        micPermission: Bool = true,
+        waitForDeadline: @escaping @Sendable (Int) async -> Void = { _ in await DeadlineGate().wait() }
     ) -> (RecordVoiceComposeViewModel, StubVoiceSessionRepository, ManualVoiceTransport) {
         let viewModel = RecordVoiceComposeViewModel(
             voiceRepository: voiceRepository,
             recordRepository: recordRepository,
             transport: transport,
-            requestMicPermission: { micPermission }
+            requestMicPermission: { micPermission },
+            waitForDeadline: waitForDeadline
         )
         return (viewModel, voiceRepository, transport)
     }
@@ -218,6 +241,7 @@ struct RecordVoiceComposeViewModelTests {
 
         #expect(vm.reviewHandoff?.prefill.missingFields == ["farmId", "cropId"])
         #expect(vm.reviewHandoff?.prefill.workType == .watering)
+        #expect(vm.reviewHandoff?.reason == .autoCompleted) // AI 자동 종료
         #expect(await transport.closeCount >= 1)
     }
 
@@ -256,6 +280,7 @@ struct RecordVoiceComposeViewModelTests {
 
         vm.finishTapped()
         #expect(await waitUntil { vm.phase == .reviewing })
+        #expect(vm.reviewHandoff?.reason == .userFinished) // 사용자가 직접 완료
         // tool 호출 없이 수동 종료 → 후보는 비었고 workedAt만 기본값
         let candidate = await repo.submittedCandidates.first
         #expect(candidate?.workType == nil)
@@ -340,5 +365,92 @@ struct RecordVoiceComposeViewModelTests {
         try? await Task.sleep(for: .milliseconds(50)) // 이벤트 전파 시간
         #expect(vm.transcript.isEmpty)
         #expect(vm.phase == .cancelled)
+    }
+
+    // MARK: - 대화 시간 한도
+
+    @Test("시간 한도 도달: 실패가 아니라 지금까지의 내용을 살려 검토 화면으로 넘어간다")
+    func durationLimitReachedSalvagesToReview() async {
+        let gate = DeadlineGate()
+        let repo = StubVoiceSessionRepository()
+        let (vm, _, transport) = makeViewModel(
+            voiceRepository: repo,
+            waitForDeadline: { _ in await gate.wait() }
+        )
+        await startConversation(vm, transport)
+
+        // 대화 도중 사용자가 일부만 말한 상태 (tool 호출 없음)
+        await transport.emit(.itemStarted(itemId: "u1", role: .user))
+        await transport.emit(.userTranscript(itemId: "u1", text: "고추밭에 물 줬어요"))
+        #expect(await waitUntil { vm.canFinish })
+
+        // 시간 한도 도달
+        await gate.fire()
+
+        #expect(await waitUntil { vm.phase == .reviewing })
+        #expect(vm.reviewHandoff?.reason == .durationLimit)
+        // 그때까지의 대화가 turns로 보존된다
+        let turns = await repo.submittedTurns.first
+        #expect(turns?.contains { $0.role == .user && $0.content == "고추밭에 물 줬어요" } == true)
+        #expect(await transport.closeCount >= 1)
+    }
+
+    @Test("한도 근처 .closed(하드 만료): 살릴 내용이 있으면 검토 화면으로 살린다")
+    func closeNearLimitSalvagesToReview() async {
+        // 한도를 아주 짧게 둬 경과가 즉시 '한도 근처'로 판정되게 한다. 프록티브 타이머는
+        // 게이트로 묶어(발화 안 함) .closed 경로만 검증한다.
+        let repo = StubVoiceSessionRepository(
+            sessionInfo: VoiceSessionInfo(
+                sessionId: UUID(), clientSecret: "ek_test", model: "gpt-realtime", maxDurationSeconds: 1
+            )
+        )
+        let (vm, _, transport) = makeViewModel(voiceRepository: repo) // 기본 대기 = 발화 안 함
+        await startConversation(vm, transport)
+
+        await transport.emit(.itemStarted(itemId: "u1", role: .user))
+        await transport.emit(.userTranscript(itemId: "u1", text: "물 줬어요"))
+        #expect(await waitUntil { vm.canFinish })
+
+        await transport.emit(.closed)
+
+        #expect(await waitUntil { vm.phase == .reviewing })
+        #expect(vm.reviewHandoff?.reason == .durationLimit)
+        #expect(await repo.submittedTurns.count == 1)
+    }
+
+    @Test("초반 .closed(진짜 네트워크 끊김): 실패로 접고 재시도 경로를 유지한다")
+    func earlyCloseFailsForRetry() async {
+        // 기본 한도(330초)라 경과가 짧으면 '한도 근처'가 아니다 → 시간 초과가 아닌 오류로 본다.
+        let repo = StubVoiceSessionRepository()
+        let (vm, _, transport) = makeViewModel(voiceRepository: repo)
+        await startConversation(vm, transport)
+
+        await transport.emit(.itemStarted(itemId: "u1", role: .user))
+        await transport.emit(.userTranscript(itemId: "u1", text: "물 줬어요"))
+        #expect(await waitUntil { vm.canFinish })
+
+        await transport.emit(.closed)
+
+        #expect(await waitUntil { self.isFailed(vm.phase, containing: "연결이 끊어졌") })
+        #expect(await repo.submittedTurns.isEmpty)      // 살리지 않는다
+        #expect(await repo.cancelledSessionIds.count == 1) // best-effort 취소
+        #expect(vm.reviewHandoff == nil)
+    }
+
+    // MARK: - 마이크 상태
+
+    @Test("AI 발화 상태: assistant 아이템 시작 시 true, 응답 완료 시 false")
+    func assistantSpeakingToggles() async {
+        let (vm, _, transport) = makeViewModel()
+        await startConversation(vm, transport)
+        #expect(!vm.isAssistantSpeaking)
+
+        await transport.emit(.itemStarted(itemId: "a1", role: .assistant))
+        #expect(await waitUntil { vm.isAssistantSpeaking })
+
+        // tool 호출이 없으므로 responseCompleted는 자동 종료하지 않고 발화 상태만 내린다.
+        await transport.emit(.responseCompleted)
+        #expect(await waitUntil { !vm.isAssistantSpeaking })
+        #expect(vm.phase == .conversing(muted: false))
     }
 }

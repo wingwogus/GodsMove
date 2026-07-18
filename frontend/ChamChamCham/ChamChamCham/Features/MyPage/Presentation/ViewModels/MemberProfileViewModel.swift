@@ -37,7 +37,7 @@ final class MemberProfileViewModel {
 
     // UI state
     var cropsExpanded = false
-    private(set) var selectedBoardCropId: UUID?
+    private(set) var selectedBoardCropIds: Set<UUID> = []
 
     @ObservationIgnored private let profileRepository: any MemberProfileRepository
     @ObservationIgnored private let communityRepository: any CommunityRepository
@@ -83,8 +83,8 @@ final class MemberProfileViewModel {
         }
     }
 
-    func applyBoardFilter(cropId: UUID?) async {
-        selectedBoardCropId = cropId
+    func applyBoardFilter(cropIds: Set<UUID>) async {
+        selectedBoardCropIds = cropIds
         await reloadPosts()
     }
 
@@ -100,9 +100,12 @@ final class MemberProfileViewModel {
         return boards.filter { !memberCropIds.contains($0.cropId) }
     }
 
+    /// Filter chip label: the sole selected board's name, `"{name} 외 {n}개"` for multiple, or nil
+    /// when nothing is selected (falls back to the "게시판 선택" placeholder).
     var selectedBoardName: String? {
-        guard let selectedBoardCropId else { return nil }
-        return boards.first(where: { $0.cropId == selectedBoardCropId })?.cropName
+        let names = boards.filter { selectedBoardCropIds.contains($0.cropId) }.map(\.cropName)
+        guard let first = names.first else { return nil }
+        return names.count == 1 ? first : "\(first) 외 \(names.count - 1)개"
     }
 
     func reloadPosts() async {
@@ -176,7 +179,7 @@ final class MemberProfileViewModel {
 
     private func makeQuery(cursor: String?) -> CommunityPostQuery {
         CommunityPostQuery(
-            cropId: selectedBoardCropId,
+            cropIds: Array(selectedBoardCropIds),
             memberId: memberId,
             cursor: cursor
         )

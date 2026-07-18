@@ -5,45 +5,82 @@
 //  Created by iyungui on 7/3/26.
 //
 
+import AuthenticationServices
 import SwiftUI
 
 struct LandingView: View {
     @Environment(OnboardingViewModel.self) private var viewModel
     @Environment(AuthViewModel.self) private var authViewModel
     @Environment(AppState.self) private var appState
+    @State private var appleNonce = ""
 
     private var isLoggingIn: Bool { authViewModel.loginState == .loggingIn }
+
+    /// Shared sizing so Kakao / Naver / Apple buttons form a visually uniform stack.
+    fileprivate static let buttonHeight: CGFloat = 56
+    fileprivate static let buttonCornerRadius: CGFloat = 12
 
     var body: some View {
         VStack(spacing: 0) {
             Spacer()
 
-            AppIconView(source: .asset("app_logo"), size: 96, renderingMode: .original)
-
-            Spacer().frame(height: Spacing.lg)
-
-            Text("간편 로그인으로 시작하기")
-                .appTypography(.bodyLargeEmphasized)
-                .foregroundStyle(Color.Text.default)
+            AppIconView(source: .asset("app_logo"), size: 120, renderingMode: .original)
 
             Spacer()
 
             VStack(spacing: Spacing.sm) {
+                Text("간편 로그인으로 시작하기")
+                    .appTypography(.bodyLargeEmphasized)
+                    .foregroundStyle(Color.Text.default)
+                    .padding(.bottom, Spacing.sm)
+
                 if case let .failed(message) = authViewModel.loginState {
                     Text(message)
                         .appTypography(.labelMedium)
                         .foregroundStyle(Color.Text.red)
                 }
 
-                SocialLoginButton(provider: .kakao, isDisabled: isLoggingIn) {
+                // Apple requires its own rendered mark or the official `SignInWithAppleButton`. Placed
+                // first: it needs no account we can hand a reviewer, unlike Kakao/Naver below, which
+                // require a Korea-phone-verified account.
+                SignInWithAppleButton(.signIn) { request in
+                    let rawNonce = NonceGenerator.generate()
+                    appleNonce = rawNonce
+                    request.requestedScopes = [.fullName, .email]
+                    request.nonce = NonceGenerator.sha256Hex(rawNonce)
+                } onCompletion: { result in
+                    Task {
+                        await authViewModel.loginWithApple(result: result, rawNonce: appleNonce, appState: appState)
+                        // Apple's official button can't route through `login(with:)` (its completion has a
+                        // different signature), so advance onboarding here just like the Kakao/Naver path —
+                        // otherwise a new (not-yet-onboarded) account authenticates but stays stuck on Landing.
+                        advanceAfterAuthentication()
+                    }
+                }
+                .signInWithAppleButtonStyle(.black)
+                .frame(height: Self.buttonHeight)
+                .clipShape(RoundedRectangle(cornerRadius: Self.buttonCornerRadius))
+                .disabled(isLoggingIn)
+                .opacity(isLoggingIn ? 0.6 : 1)
+
+                // Kakao/Naver ship official pre-rendered brand buttons (logo + label baked in), so we
+                // render the asset directly instead of composing our own. Height is pinned to match
+                // the Apple button above; corners clipped to the same radius for a uniform stack.
+                BrandLoginButton(asset: "kakao_login_large_wide", isDisabled: isLoggingIn) {
                     Task { await login(with: authViewModel.loginWithKakao) }
                 }
-                SocialLoginButton(provider: .naver, isDisabled: isLoggingIn) {
+                BrandLoginButton(asset: "NAVER_login_Light_KR_green_wide_H56", isDisabled: isLoggingIn) {
                     Task { await login(with: authViewModel.loginWithNaver) }
                 }
-                SocialLoginButton(provider: .apple, isDisabled: isLoggingIn) {
-                    Task { await login(with: authViewModel.loginWithApple) }
+
+                Button("로그인 없이 둘러보기") {
+                    appState.isGuest = true
                 }
+                .appTypography(.labelMediumEmphasized)
+                .foregroundStyle(Color.Text.subtle)
+                .underline()
+                .padding(.top, Spacing.xs)
+                .disabled(isLoggingIn)
             }
         }
         .padding(.horizontal, Spacing.lg)
@@ -52,86 +89,37 @@ struct LandingView: View {
 
     private func login(with method: (AppState) async -> Void) async {
         await method(appState)
+        advanceAfterAuthentication()
+    }
+
+    /// Post-login navigation shared by every provider. A newly authenticated account that still needs
+    /// onboarding is pushed into the flow; an already-onboarded account satisfies RootView's
+    /// `isAuthenticated && isOnboarded` gate, which swaps to MainTabView on its own — nothing to do here.
+    private func advanceAfterAuthentication() {
         guard appState.isAuthenticated else { return }
         if !appState.isOnboarded {
             viewModel.continueAfterAuthentication()
         }
-        // else: appState now satisfies RootView's `isAuthenticated && isOnboarded` gate — it swaps to
-        // MainTabView on its own, no further action needed here.
     }
 }
 
-/// Social login providers, ordered as designed: Kakao, Naver, Apple.
-///
-/// Colors follow each provider's official brand button guideline (Kakao yellow / Naver green /
-/// Apple black) — these are one-off brand-mandated values, not Figma foundation tokens, so they're
-/// kept local to this screen rather than added to `Color+App.swift`.
-private enum SocialProvider {
-    case kakao, naver, apple
-
-    var title: String {
-        switch self {
-        case .kakao: return "카카오로 계속하기"
-        case .naver: return "네이버로 계속하기"
-        case .apple: return "Apple로 계속하기"
-        }
-    }
-
-    var backgroundColor: Color {
-        switch self {
-        case .kakao: return Color(hex: 0xFEE500)
-        case .naver: return Color(hex: 0x03C75A)
-        case .apple: return .black
-        }
-    }
-
-    var foregroundColor: Color {
-        switch self {
-        case .kakao: return Color(hex: 0x191919)
-        case .naver, .apple: return .white
-        }
-    }
-
-    // TODO: no official Kakao/Naver icon assets exist in Assets.xcassets yet — these SF Symbols
-    // are stand-ins until the real brand glyphs are added under Assets.xcassets/icon.
-    @ViewBuilder
-    var glyph: some View {
-        switch self {
-        case .kakao:
-            AppIconView(source: .system("message.fill"), size: 20)
-        case .naver:
-            Text("N")
-                .font(.system(size: 15, weight: .heavy))
-        case .apple:
-            AppIconView(source: .system("apple.logo"), size: 18)
-        }
-    }
-}
-
-private struct SocialLoginButton: View {
-    let provider: SocialProvider
+/// Renders an official Kakao/Naver brand-login asset as a full-width button. The asset already
+/// contains the logo and localized label, so it fills the same height/corner-radius as the Apple
+/// button to keep the three-button stack uniform. `.resizable()` without an aspect ratio pins the
+/// height exactly (a negligible horizontal scale on these ~6.6:1 assets) without cropping the logo.
+private struct BrandLoginButton: View {
+    let asset: String
     let isDisabled: Bool
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
-            ZStack {
-                Text(provider.title)
-                    .appTypography(.bodyLargeEmphasized)
-                    .frame(maxWidth: .infinity, alignment: .center)
-
-                HStack {
-                    provider.glyph
-                    Spacer()
-                }
-            }
-            .foregroundStyle(provider.foregroundColor)
-            .padding(.horizontal, Spacing.lg)
-            .frame(height: 56)
-            .frame(maxWidth: .infinity)
-            .background(provider.backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .opacity(isDisabled ? 0.6 : 1)
+            Image(asset)
+                .resizable()
+                .frame(maxWidth: .infinity)
+                .frame(height: LandingView.buttonHeight)
+                .clipShape(RoundedRectangle(cornerRadius: LandingView.buttonCornerRadius))
+                .opacity(isDisabled ? 0.6 : 1)
         }
         .buttonStyle(.plain)
         .disabled(isDisabled)

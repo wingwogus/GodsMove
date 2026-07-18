@@ -67,7 +67,7 @@ struct ReportRepositoryTests {
     @Test("network failures return valid cached values with their timestamp")
     func networkFallback() async throws {
         let (cache, container) = try makeCache()
-        let filter = ReportFilter(workType: .watering)
+        let filter = ReportFilter(workTypes: [.watering])
         let key = WorkReportKey(reportId: ReportFixtures.reportId, workType: .watering)
         let updatedAt = Date(timeIntervalSince1970: 123)
         cache.saveList(try JSONEncoder().encode(ReportFixtures.page(items: [ReportFixtures.item(workType: .watering)])), for: filter, updatedAt: updatedAt)

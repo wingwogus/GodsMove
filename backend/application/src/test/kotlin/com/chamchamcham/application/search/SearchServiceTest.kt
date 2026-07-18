@@ -219,7 +219,7 @@ class SearchServiceTest {
     private fun postCondition(keyword: String?, cursor: String?, size: Int): CommunityPostSearchCondition =
         CommunityPostSearchCondition(
             memberId = memberId,
-            cropId = null,
+            cropIds = emptyList(),
             postType = null,
             keyword = keyword,
             likedOnly = false,

@@ -11,7 +11,7 @@ import Foundation
 /// `URLSession`, independent of `APIClient`, so a 401 mid-reissue can never recurse into itself.
 enum AuthEndpoint: Endpoint {
     case kakaoLogin(idToken: String, nonce: String, kakaoAccessToken: String?)
-    case appleLogin(identityToken: String, nonce: String, authorizationCode: String?, userIdentifier: String?)
+    case appleLogin(identityToken: String, nonce: String, authorizationCode: String?, userIdentifier: String?, name: String?)
     case naverLogin(accessToken: String)
     case logout
 
@@ -37,12 +37,13 @@ enum AuthEndpoint: Endpoint {
         switch self {
         case let .kakaoLogin(idToken, nonce, kakaoAccessToken):
             KakaoLoginRequestBody(idToken: idToken, nonce: nonce, kakaoAccessToken: kakaoAccessToken)
-        case let .appleLogin(identityToken, nonce, authorizationCode, userIdentifier):
+        case let .appleLogin(identityToken, nonce, authorizationCode, userIdentifier, name):
             AppleLoginRequestBody(
                 identityToken: identityToken,
                 nonce: nonce,
                 authorizationCode: authorizationCode,
-                userIdentifier: userIdentifier
+                userIdentifier: userIdentifier,
+                name: name
             )
         case let .naverLogin(accessToken):
             NaverLoginRequestBody(accessToken: accessToken)
@@ -63,6 +64,7 @@ private struct AppleLoginRequestBody: Encodable, Sendable {
     let nonce: String
     let authorizationCode: String?
     let userIdentifier: String?
+    let name: String?
 }
 
 private struct NaverLoginRequestBody: Encodable, Sendable {

@@ -185,9 +185,12 @@ struct RecordListView: View {
 
     private var filterChipRow: some View {
         HStack(spacing: Spacing.sm) {
-            filterChip(title: cropChipTitle) { activeSheet = .crop }
-            filterChip(title: workTypeChipTitle) { activeSheet = .workType }
-            filterChip(title: dateChipTitle) { activeSheet = .dateRange }
+            filterChip(title: cropChipTitle, isSelected: !viewModel.filter.cropIds.isEmpty) { activeSheet = .crop }
+            filterChip(title: workTypeChipTitle, isSelected: !viewModel.filter.workTypes.isEmpty) { activeSheet = .workType }
+            filterChip(
+                title: dateChipTitle,
+                isSelected: viewModel.filter.startDate != nil || viewModel.filter.endDate != nil
+            ) { activeSheet = .dateRange }
             Spacer(minLength: 0)
         }
         .padding(.horizontal, horizontalInset)
@@ -196,10 +199,10 @@ struct RecordListView: View {
         .background(Color.Background.subtle)
     }
 
-    private func filterChip(title: String, action: @escaping () -> Void) -> some View {
+    private func filterChip(title: String, isSelected: Bool, action: @escaping () -> Void) -> some View {
         AppChip(
             label: title,
-            isSelected: false,
+            isSelected: isSelected,
             style: .solidPastel,
             trailingSystemImage: .asset("keyboard_arrow_down"),
             action: action
@@ -244,7 +247,12 @@ struct RecordListView: View {
             } else if let errorMessage = viewModel.errorMessage {
                 emptyState(text: errorMessage, systemImage: "exclamationmark.triangle")
             } else if viewModel.records.isEmpty {
-                emptyState(text: "아직 영농 기록이 없어요.", systemImage: "square.stack.3d.up.slash")
+                emptyState(
+                    text: viewModel.filter.isEmpty
+                        ? "아직 작성한 영농 기록이 없어요.\n오른쪽 아래 + 버튼으로 첫 기록을 남겨보세요."
+                        : "선택한 조건에 맞는 기록이 없어요.\n다른 작물이나 기간으로 다시 확인해보세요.",
+                    systemImage: "square.stack.3d.up.slash"
+                )
             } else {
                 LazyVStack(spacing: 20) {
                     ForEach(viewModel.records) { record in
@@ -262,7 +270,13 @@ struct RecordListView: View {
                 .padding(.bottom, 112)
             }
         }
-        .refreshable { await viewModel.reload() }
+        .refreshable {
+            // `reload()`이 fetch 전에 `isLoading = true`로 body 리빌드를 유발하면, `.refreshable`이
+            // 소유한 Task가 그 리빌드로 취소되면서 진행 중인 URLSession 호출이 `URLError(.cancelled)`를
+            // 던지고, 이것이 "네트워크 연결을 확인해주세요"로 오표시된다. 별도 unstructured Task에서
+            // 돌려 취소 경로 밖으로 빼낸다. (HomeView 커밋 7ee27851과 동일한 수정)
+            await Task { await viewModel.reload() }.value
+        }
     }
 
     private func emptyState(text: String, systemImage: String) -> some View {
@@ -273,6 +287,7 @@ struct RecordListView: View {
             Text(text)
                 .appTypography(.bodyMedium)
                 .foregroundStyle(Color.Text.muted)
+                .multilineTextAlignment(.center)
         }
         .frame(maxWidth: .infinity)
         .padding(.top, Spacing.xl * 2)
@@ -362,7 +377,7 @@ struct RecordRow: View {
             dateText: dateText,
             showsDivider: showsDivider
         ) {
-            RecordRemoteImage(url: record.thumbnailUrl)
+            RecordRemoteImage(url: record.thumbnailUrl, workType: record.workType)
         }
     }
 
@@ -381,10 +396,13 @@ struct RecordRow: View {
     }
 }
 
-/// Fixed-size remote thumbnail with a muted placeholder while loading / when absent. Mirrors the community
-/// list's remote-image slot; kept feature-local.
+/// Fixed-size remote thumbnail with a muted placeholder while loading and a work-type illustration
+/// when the URL is absent or fails to load. Mirrors the community list's remote-image slot; kept
+/// feature-local.
 struct RecordRemoteImage: View {
     let url: String?
+    let workType: WorkType
+    var illustVariant: AppIllustration.Variant = .square
     var cornerRadius: CGFloat = 8
 
     var body: some View {
@@ -392,16 +410,26 @@ struct RecordRemoteImage: View {
             .fill(Color.Object.muted)
             .overlay {
                 if let url, let parsed = URL(string: url) {
-                    AsyncImage(url: parsed) { image in
-                        image.resizable().scaledToFill()
-                    } placeholder: {
-                        ProgressView()
+                    AsyncImage(url: parsed) { phase in
+                        switch phase {
+                        case let .success(image):
+                            image.resizable().scaledToFill()
+                        case .empty:
+                            ProgressView()
+                        case .failure:
+                            illustration
+                        @unknown default:
+                            illustration
+                        }
                     }
                 } else {
-                    AppIconView(source: .asset("photo"), size: 24)
-                        .foregroundStyle(Color.Icon.disabled)
+                    illustration
                 }
             }
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
+    }
+
+    private var illustration: some View {
+        AppIllustration(assetName: workType.illustAssetName, variant: illustVariant)
     }
 }

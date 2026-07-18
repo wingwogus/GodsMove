@@ -1338,6 +1338,14 @@
             },
             "type": "array"
           },
+          "maxDurationSeconds": {
+            "format": "int32",
+            "type": "integer"
+          },
+          "maxRounds": {
+            "format": "int32",
+            "type": "integer"
+          },
           "model": {
             "type": "string"
           },
@@ -1351,6 +1359,8 @@
           "cropsByFarm",
           "expiresAt",
           "farms",
+          "maxDurationSeconds",
+          "maxRounds",
           "model",
           "sessionId"
         ],
@@ -4450,6 +4460,8 @@
             "items": {
               "$ref": "#/components/schemas/TurnRequest"
             },
+            "maxItems": 50,
+            "minItems": 0,
             "type": "array"
           }
         },
@@ -4498,6 +4510,8 @@
       "TurnRequest": {
         "properties": {
           "content": {
+            "maxLength": 4000,
+            "minLength": 0,
             "type": "string"
           },
           "extractedFields": {
@@ -5254,8 +5268,11 @@
             "name": "cropId",
             "required": false,
             "schema": {
-              "format": "uuid",
-              "type": "string"
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {
@@ -6049,17 +6066,20 @@
             "name": "workType",
             "required": false,
             "schema": {
-              "enum": [
-                "PLANTING",
-                "WATERING",
-                "FERTILIZING",
-                "PEST_CONTROL",
-                "WEEDING",
-                "PRUNING",
-                "HARVEST",
-                "ETC"
-              ],
-              "type": "string"
+              "items": {
+                "enum": [
+                  "PLANTING",
+                  "WATERING",
+                  "FERTILIZING",
+                  "PEST_CONTROL",
+                  "WEEDING",
+                  "PRUNING",
+                  "HARVEST",
+                  "ETC"
+                ],
+                "type": "string"
+              },
+              "type": "array"
             }
           },
           {

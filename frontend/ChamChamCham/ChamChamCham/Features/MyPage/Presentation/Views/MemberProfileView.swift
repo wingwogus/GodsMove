@@ -21,6 +21,7 @@ struct MemberProfileView: View {
     let container: DIContainer
     @State private var viewModel: MemberProfileViewModel
     @State private var isShowingBoardSheet = false
+    @State private var showBlockSubmittedAlert = false
     @Environment(\.dismiss) private var dismiss
 
     init(memberId: UUID, container: DIContainer) {
@@ -40,7 +41,8 @@ struct MemberProfileView: View {
             AppTopAppBar(
                 title: "프로필",
                 isDetail: true,
-                leading: .init(.asset("chevron_backward")) { dismiss() }
+                leading: .init(.asset("chevron_backward")) { dismiss() },
+                trailing: [.init(.asset("more_vert")) { showBlockSubmittedAlert = true }]
             )
 
             ScrollView {
@@ -59,14 +61,19 @@ struct MemberProfileView: View {
         .background(Color.Background.default)
         .navigationBarHidden(true)
         .task { await viewModel.onAppear() }
+        .alert("차단 접수 완료", isPresented: $showBlockSubmittedAlert) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text("차단이 잘 접수되었습니다. 감사합니다.")
+        }
         .sheet(isPresented: $isShowingBoardSheet) {
             BoardSelectSheet(
                 activeBoards: viewModel.activeBoards,
                 otherBoards: viewModel.otherBoards,
                 isLoading: viewModel.isLoadingBoards,
-                initialSelection: viewModel.selectedBoardCropId
-            ) { cropId in
-                Task { await viewModel.applyBoardFilter(cropId: cropId) }
+                initialSelection: viewModel.selectedBoardCropIds
+            ) { cropIds in
+                Task { await viewModel.applyBoardFilter(cropIds: cropIds) }
             }
         }
     }
@@ -165,7 +172,7 @@ struct MemberProfileView: View {
         HStack {
             AppChip(
                 label: viewModel.selectedBoardName ?? "게시판 선택",
-                isSelected: viewModel.selectedBoardCropId != nil,
+                isSelected: !viewModel.selectedBoardCropIds.isEmpty,
                 trailingSystemImage: "chevron.down"
             ) {
                 isShowingBoardSheet = true

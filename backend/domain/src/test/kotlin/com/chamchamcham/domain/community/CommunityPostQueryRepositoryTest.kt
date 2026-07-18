@@ -39,6 +39,8 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
         get() = requireNotNull(member.id) { "Persisted member id is required" }
     private val hwanggiCropId: UUID
         get() = requireNotNull(hwanggiCrop.id) { "Persisted crop id is required" }
+    private val ginsengCropId: UUID
+        get() = requireNotNull(ginsengCrop.id) { "Persisted crop id is required" }
 
     private val now = LocalDateTime.of(2026, 6, 12, 7, 0)
 
@@ -78,7 +80,7 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
     }
 
     @Test
-    fun `search filters by crop post type and keyword`() {
+    fun `search filters by multiple crops post type and keyword`() {
         persistPost(title = "황기 발아율 질문", body = "발아가 안 됩니다", crop = hwanggiCrop, postType = CommunityPostType.QUESTION)
         persistPost(title = "인삼 발아율 질문", body = "발아가 안 됩니다", crop = ginsengCrop, postType = CommunityPostType.QUESTION)
         persistPost(title = "황기 자유글", body = "발아 얘기", crop = hwanggiCrop, postType = CommunityPostType.GENERAL)
@@ -87,14 +89,15 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
 
         val result = queryRepository.search(
             condition(
-                cropId = hwanggiCropId,
+                cropIds = listOf(hwanggiCropId, ginsengCropId),
                 postType = CommunityPostType.QUESTION,
                 keyword = "발아"
             )
         )
 
-        assertThat(result.rows.map { it.post.title }).containsExactly("황기 발아율 질문")
-        assertThat(result.rows.all { it.post.crop.id == hwanggiCropId }).isTrue()
+        assertThat(result.rows.map { it.post.title })
+            .containsExactlyInAnyOrder("황기 발아율 질문", "인삼 발아율 질문")
+        assertThat(result.rows.all { it.post.crop.id in listOf(hwanggiCropId, ginsengCropId) }).isTrue()
         assertThat(result.rows.all { it.post.postType == CommunityPostType.QUESTION }).isTrue()
     }
 
@@ -400,6 +403,7 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
         memberId: UUID? = this.memberId,
         authorMemberId: UUID? = null,
         cropId: UUID? = null,
+        cropIds: List<UUID> = listOfNotNull(cropId),
         postType: CommunityPostType? = null,
         keyword: String? = null,
         likedOnly: Boolean = false,
@@ -411,7 +415,7 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
         CommunityPostQueryRepository.SearchCondition(
             memberId = memberId,
             authorMemberId = authorMemberId,
-            cropId = cropId,
+            cropIds = cropIds,
             postType = postType,
             keyword = keyword,
             likedOnly = likedOnly,

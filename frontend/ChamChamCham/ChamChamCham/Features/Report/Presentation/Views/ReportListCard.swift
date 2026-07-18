@@ -21,7 +21,7 @@ struct ReportListCard: View {
             captions: presentation.periodParts,
             badges: presentation.badges
         ) {
-            ReportThumbnail(url: presentation.thumbnailURL)
+            ReportThumbnail(url: presentation.thumbnailURL, workType: presentation.workType)
         }
         .accessibilityElement(children: .ignore)
         .accessibilityLabel(accessibilityLabel)
@@ -36,6 +36,7 @@ struct ReportListCard: View {
 
 private struct ReportThumbnail: View {
     let url: URL?
+    let workType: WorkType
 
     var body: some View {
         Rectangle()
@@ -49,20 +50,19 @@ private struct ReportThumbnail: View {
                         case .empty:
                             ProgressView()
                         case .failure:
-                            placeholder
+                            illustration
                         @unknown default:
-                            placeholder
+                            illustration
                         }
                     }
                 } else {
-                    placeholder
+                    illustration
                 }
             }
             .clipped()
     }
 
-    private var placeholder: some View {
-        AppIconView(source: .asset("photo"), size: 32)
-            .foregroundStyle(Color.Icon.disabled)
+    private var illustration: some View {
+        AppIllustration(assetName: workType.illustAssetName, variant: .wide)
     }
 }

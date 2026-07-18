@@ -155,5 +155,23 @@ private actor RecordingFarmRepository: FarmRepository {
         )
     }
 
+    func updateFarm(id: UUID, _ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO {
+        StandaloneFarmResponseDTO(
+            farmId: id,
+            name: request.name,
+            roadAddress: request.roadAddress,
+            jibunAddress: request.jibunAddress,
+            latitude: request.latitude,
+            longitude: request.longitude,
+            pnu: request.pnu,
+            landCategory: request.landCategory,
+            areaSqm: request.areaSqm,
+            areaIsManualEntry: request.areaIsManualEntry,
+            boundaryCoordinates: request.boundaryCoordinates,
+            dataSource: request.dataSource,
+            crops: []
+        )
+    }
+
     func deleteFarm(id: UUID) async throws {}
 }

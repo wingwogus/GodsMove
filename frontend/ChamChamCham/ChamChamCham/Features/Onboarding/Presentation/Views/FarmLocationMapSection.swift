@@ -290,7 +290,7 @@ struct FarmLocationMapSection: View {
                     }
                     AppButton("완료", icon: .asset("check"), variant: .secondary, size: .small, fullWidth: true,
                               appearsDisabled: !viewModel.isDrawnPolygonValid) {
-                        viewModel.finishDrawing()
+                        Task { await viewModel.finishDrawing() }
                     }
                 }
             }

@@ -24,7 +24,7 @@ enum CommunityPostSort: String, Sendable, Hashable, CaseIterable {
 
 /// A crop-scoped board. The `/boards` endpoint returns one entry per crop the member follows; the community
 /// list is then filtered by `cropId`.
-struct CommunityBoard: Identifiable, Hashable, Sendable {
+struct CommunityBoard: Identifiable, Hashable, Sendable, Codable {
     var id: UUID { cropId }
     let cropId: UUID
     let cropName: String

@@ -16,6 +16,13 @@ struct FarmCard: View {
     var crops: [String] = []
     var isSelected: Bool = false
 
+    /// Inline 농지명 edit state (owned by the caller, e.g. `FarmListView`'s `editingFarmId`). When
+    /// `true`, the name row swaps `rowLabel` for a `TextField` bound to `editingName` and the trailing
+    /// pencil icon becomes a commit (checkmark) action. Defaults keep existing call sites unchanged.
+    var isEditingName: Bool = false
+    var editingName: Binding<String>? = nil
+    var onCommitName: (() -> Void)? = nil
+
     var onEditName: (() -> Void)? = nil
     var onTapAddress: (() -> Void)? = nil
     var onTapCrops: (() -> Void)? = nil
@@ -26,11 +33,11 @@ struct FarmCard: View {
     private let rowSpacing: CGFloat = 12
     private let cropDisplayLimit = 3
 
+    @FocusState private var isNameFieldFocused: Bool
+
     var body: some View {
         VStack(spacing: rowSpacing) {
-            row(icon: "pencil", action: onEditName) {
-                rowLabel(farmName)
-            }
+            nameRow
             row(icon: "chevron.right", action: onTapAddress) {
                 rowLabel(roadAddress)
             }
@@ -50,23 +57,28 @@ struct FarmCard: View {
         )
     }
 
-    // MARK: - Rows
+    // MARK: - Name row (inline edit)
 
-    private func row<Content: View>(
-        icon: String,
-        action: (() -> Void)?,
-        @ViewBuilder content: () -> Content
-    ) -> some View {
-        Button {
-            action?()
-        } label: {
+    @ViewBuilder private var nameRow: some View {
+        if isEditingName, let editingName {
             HStack(spacing: Spacing.sm) {
-                content()
+                TextField("농지명을 입력해주세요.", text: editingName)
+                    .appTypography(.bodyLargeEmphasized)
+                    .foregroundStyle(Color.Text.default)
+                    .submitLabel(.done)
+                    .focused($isNameFieldFocused)
+                    .onAppear { isNameFieldFocused = true }
+                    .onSubmit { onCommitName?() }
                 Spacer(minLength: Spacing.sm)
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.Icon.subtle)
-                    .frame(width: 24, height: 24)
+                Button {
+                    onCommitName?()
+                } label: {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.Icon.subtle)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
             }
             .padding(.horizontal, Spacing.md)
             .frame(maxWidth: .infinity, minHeight: rowHeight, maxHeight: rowHeight, alignment: .leading)
@@ -74,10 +86,40 @@ struct FarmCard: View {
                 RoundedRectangle(cornerRadius: 8)
                     .fill(isSelected ? Color.Object.default : Color.Object.subtle)
             )
-            .contentShape(RoundedRectangle(cornerRadius: 8))
+        } else {
+            row(icon: "pencil", action: onEditName) {
+                rowLabel(farmName)
+            }
         }
-        .buttonStyle(.plain)
-        .disabled(action == nil)
+    }
+
+    // MARK: - Rows
+
+    private func row<Content: View>(
+        icon: String,
+        action: (() -> Void)?,
+        @ViewBuilder content: () -> Content
+    ) -> some View {
+        HStack(spacing: Spacing.sm) {
+            content()
+            Spacer(minLength: Spacing.sm)
+            Button {
+                action?()
+            } label: {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.Icon.subtle)
+                    .frame(width: 24, height: 24)
+            }
+            .buttonStyle(.plain)
+            .disabled(action == nil)
+        }
+        .padding(.horizontal, Spacing.md)
+        .frame(maxWidth: .infinity, minHeight: rowHeight, maxHeight: rowHeight, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? Color.Object.default : Color.Object.subtle)
+        )
     }
 
     private func rowLabel(_ text: String) -> some View {

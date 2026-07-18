@@ -84,8 +84,10 @@ struct MemberProfileDTOTests {
         #expect(profile.crops.first?.cropName == "황기")
     }
 
-    @Test("encodes profile update request without stale farm fields")
+    @Test("encodes profile update request with its required farms array")
     func updateRequest() throws {
+        let farmId = try #require(UUID(uuidString: "22222222-2222-2222-2222-222222222222"))
+        let cropId = try #require(UUID(uuidString: "33333333-3333-3333-3333-333333333333"))
         let request = UpdateMyProfileRequestDTO(
             name: "홍길동",
             phone: "010-1234-5678",
@@ -93,14 +95,33 @@ struct MemberProfileDTOTests {
             nickname: "길동",
             experienceLevel: 7,
             managementType: "AGRICULTURAL_INDIVIDUAL",
-            profileMediaId: nil
+            profileMediaId: nil,
+            farms: [
+                UpdateMyProfileFarmRequestDTO(
+                    farmId: farmId,
+                    name: "참참농장",
+                    roadAddress: "전북특별자치도 전주시 덕진구 예시로 12",
+                    jibunAddress: nil,
+                    latitude: 35.8,
+                    longitude: 127.1,
+                    pnu: nil,
+                    landCategory: nil,
+                    areaSqm: nil,
+                    areaIsManualEntry: true,
+                    boundaryCoordinates: [],
+                    dataSource: .onboardingJusoVWorld,
+                    cropIds: [cropId]
+                )
+            ]
         )
 
         let data = try JSONEncoder().encode(request)
         let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+        let farms = try #require(json["farms"] as? [[String: Any]])
 
         #expect(json["name"] as? String == "홍길동")
-        #expect(json["farms"] == nil)
+        #expect(farms.first?["farmId"] as? String == farmId.uuidString)
+        #expect(farms.first?["cropIds"] as? [String] == [cropId.uuidString])
     }
 
     @Test("member endpoints match Swagger paths")
@@ -113,7 +134,8 @@ struct MemberProfileDTOTests {
             nickname: "길동",
             experienceLevel: 7,
             managementType: "AGRICULTURAL_INDIVIDUAL",
-            profileMediaId: nil
+            profileMediaId: nil,
+            farms: []
         )
 
         #expect(MemberEndpoint.myProfile.path == "api/v1/members/me")

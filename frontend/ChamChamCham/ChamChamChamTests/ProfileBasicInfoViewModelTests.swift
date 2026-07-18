@@ -25,7 +25,8 @@ struct ProfileBasicInfoViewModelTests {
         )
         let viewModel = ProfileBasicInfoViewModel(
             repository: StubMemberProfileRepository(profile: profile),
-            mediaRepository: FakeMediaUploadRepository()
+            mediaRepository: FakeMediaUploadRepository(),
+            farmRepository: StubFarmRepository()
         )
 
         await viewModel.load()
@@ -45,7 +46,8 @@ struct ProfileBasicInfoViewModelTests {
         )
         let viewModel = ProfileBasicInfoViewModel(
             repository: StubMemberProfileRepository(profile: profile),
-            mediaRepository: FakeMediaUploadRepository()
+            mediaRepository: FakeMediaUploadRepository(),
+            farmRepository: StubFarmRepository()
         )
         await viewModel.load()
 
@@ -64,7 +66,8 @@ struct ProfileBasicInfoViewModelTests {
         let profile = MyPageFixtures.profile(phone: "", birthDate: nil, experienceLevel: nil)
         let viewModel = ProfileBasicInfoViewModel(
             repository: StubMemberProfileRepository(profile: profile),
-            mediaRepository: FakeMediaUploadRepository()
+            mediaRepository: FakeMediaUploadRepository(),
+            farmRepository: StubFarmRepository()
         )
         await viewModel.load()
 
@@ -90,7 +93,8 @@ struct ProfileBasicInfoViewModelTests {
         let repository = StubMemberProfileRepository(profile: profile)
         let viewModel = ProfileBasicInfoViewModel(
             repository: repository,
-            mediaRepository: FakeMediaUploadRepository()
+            mediaRepository: FakeMediaUploadRepository(),
+            farmRepository: StubFarmRepository()
         )
         await viewModel.load()
         viewModel.managementType = .nonRegisteredFarmer
@@ -107,6 +111,32 @@ struct ProfileBasicInfoViewModelTests {
         #expect(request?.profileMediaId == nil)          // 사진을 새로 고르지 않았다면 변경 없음
     }
 
+    @Test("save resends the member's current farms, since the backend requires them on every profile update")
+    func saveIncludesCurrentFarms() async {
+        let profile = MyPageFixtures.profile(
+            phone: "010-1234-5678", birthDate: "1990-01-02", experienceLevel: 2
+        )
+        let farmId = UUID()
+        let cropId = UUID()
+        let repository = StubMemberProfileRepository(profile: profile)
+        let viewModel = ProfileBasicInfoViewModel(
+            repository: repository,
+            mediaRepository: FakeMediaUploadRepository(),
+            farmRepository: StubFarmRepository(farms: [
+                MyPageFixtures.standaloneFarm(id: farmId, crops: [MyPageFixtures.cropResponse(id: cropId)])
+            ])
+        )
+        await viewModel.load()
+
+        let saved = await viewModel.save()
+        #expect(saved)
+
+        let request = await repository.lastUpdate()
+        #expect(request?.farms.count == 1)
+        #expect(request?.farms.first?.farmId == farmId)
+        #expect(request?.farms.first?.cropIds == [cropId])
+    }
+
     @Test("picking a photo uploads it and includes the mediaId on save")
     func pickImageUploadsAndSaves() async {
         let profile = MyPageFixtures.profile(
@@ -116,7 +146,8 @@ struct ProfileBasicInfoViewModelTests {
         let repository = StubMemberProfileRepository(profile: profile)
         let viewModel = ProfileBasicInfoViewModel(
             repository: repository,
-            mediaRepository: FakeMediaUploadRepository(successMediaId: mediaId)
+            mediaRepository: FakeMediaUploadRepository(successMediaId: mediaId),
+            farmRepository: StubFarmRepository()
         )
         await viewModel.load()
 
@@ -138,7 +169,8 @@ struct ProfileBasicInfoViewModelTests {
         let profile = MyPageFixtures.profile()
         let viewModel = ProfileBasicInfoViewModel(
             repository: StubMemberProfileRepository(profile: profile),
-            mediaRepository: FakeMediaUploadRepository(fails: true)
+            mediaRepository: FakeMediaUploadRepository(fails: true),
+            farmRepository: StubFarmRepository()
         )
         await viewModel.load()
 

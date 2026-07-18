@@ -46,7 +46,7 @@ struct ReportDetailPresentation: Hashable, Sendable {
                     }
                 }
                 Self.appendChart(
-                    title: "심기 방법",
+                    title: "진행한 모종 번식법",
                     data: statistics.propagationMethods.map {
                         ReportChartDatum(
                             code: $0.code,
@@ -68,8 +68,8 @@ struct ReportDetailPresentation: Hashable, Sendable {
                         value: mostFrequent.label
                     ))
                 }
-                Self.appendDistributionChart(title: "물의 양", values: statistics.amountDistribution, to: &charts)
-                Self.appendDistributionChart(title: "물 주는 방법", values: statistics.methodDistribution, to: &charts)
+                Self.appendDistributionChart(title: "진행한 물주기 방식", values: statistics.methodDistribution, to: &charts)
+                Self.appendDistributionChart(title: "물 준 양", values: statistics.amountDistribution, to: &charts)
             }
 
         case .fertilizing:
@@ -80,8 +80,9 @@ struct ReportDetailPresentation: Hashable, Sendable {
                         value: ReportValueFormatter.value(total, unit: "kg")
                     ))
                 }
+                Self.appendDistributionChart(title: "진행한 비료주기 방식", values: statistics.methodDistribution, to: &charts)
                 Self.appendChart(
-                    title: "비료 종류별 작업 횟수",
+                    title: "각 비료 사용 횟수",
                     data: statistics.materialCategories.map {
                         ReportChartDatum(
                             code: $0.code,
@@ -93,13 +94,12 @@ struct ReportDetailPresentation: Hashable, Sendable {
                     to: &charts
                 )
                 Self.appendChart(
-                    title: "비료 종류별 사용량",
+                    title: "각 비료 사용량",
                     data: statistics.materialCategories.map {
                         ReportChartDatum(code: $0.code, label: $0.label, value: $0.amountKg, unit: "kg")
                     },
                     to: &charts
                 )
-                Self.appendDistributionChart(title: "비료 주는 방법", values: statistics.methodDistribution, to: &charts)
             }
 
         case .pestControl:
@@ -116,11 +116,13 @@ struct ReportDetailPresentation: Hashable, Sendable {
                         value: ReportValueFormatter.value(total, unit: "L")
                     ))
                 }
-                Self.appendDistributionChart(title: "관리 유형", values: statistics.categoryDistribution, to: &charts)
+                Self.appendDistributionChart(title: "사용한 약제 종류", values: statistics.categoryDistribution, to: &charts)
                 let amountsByUnit = Dictionary(grouping: statistics.categoryAmounts, by: \.unit)
-                for unit in amountsByUnit.keys.sorted() {
+                let amountUnits = amountsByUnit.keys.sorted()
+                for unit in amountUnits {
+                    let title = amountUnits.count > 1 ? "각 약제 사용량 (\(unit))" : "각 약제 사용량"
                     Self.appendChart(
-                        title: "유형별 사용량 (\(unit))",
+                        title: title,
                         data: (amountsByUnit[unit] ?? []).map {
                             ReportChartDatum(
                                 code: $0.categoryCode,
@@ -133,7 +135,7 @@ struct ReportDetailPresentation: Hashable, Sendable {
                     )
                 }
                 Self.appendChart(
-                    title: "관리 대상",
+                    title: "대상 병해충",
                     data: statistics.targets.map {
                         ReportChartDatum(
                             code: $0.target,
@@ -148,7 +150,7 @@ struct ReportDetailPresentation: Hashable, Sendable {
 
         case .weeding:
             if let statistics = detail.statistics.weeding {
-                Self.appendDistributionChart(title: "잡초 관리 방법", values: statistics.methodDistribution, to: &charts)
+                Self.appendDistributionChart(title: "진행한 잡초 관리 방식", values: statistics.methodDistribution, to: &charts)
             }
 
         case .harvest:
@@ -163,7 +165,7 @@ struct ReportDetailPresentation: Hashable, Sendable {
                     metrics.append(ReportMetricPresentation(title: "재배 기간", value: "\(months)개월"))
                 }
                 Self.appendChart(
-                    title: "수확 부위",
+                    title: "수확 부위 종류",
                     data: statistics.medicinalParts.map {
                         ReportChartDatum(
                             code: $0.code,

@@ -38,7 +38,10 @@ struct ReportChartModel: Hashable, Sendable {
     var primary: ReportChartEntry? { entries.first }
 
     func highlightedEntry(isExpanded: Bool) -> ReportChartEntry? {
-        isExpanded ? nil : primary
+        switch style {
+        case .semiDonut: return primary
+        case .stackedBar: return isExpanded ? nil : primary
+        }
     }
 
     func legendEntries(isExpanded: Bool) -> [ReportChartEntry] {

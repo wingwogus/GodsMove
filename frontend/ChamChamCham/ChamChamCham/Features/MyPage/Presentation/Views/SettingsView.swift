@@ -10,8 +10,11 @@ import SwiftUI
 /// 설정 화면. Presented from the profile main settings icon. Houses logout and account withdrawal
 /// (migrated from the former MyPage placeholder). No Figma frame yet — built from the design system.
 struct SettingsView: View {
+    private let supportEmail = "wingwogus@gmail.com"
+
     @Environment(AppState.self) private var appState
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @State private var viewModel: SettingsViewModel
     @State private var isConfirmingLogout = false
     @State private var isConfirmingWithdraw = false
@@ -33,6 +36,7 @@ struct SettingsView: View {
                     linkRow(.privacyPolicy)
                     linkRow(.termsOfService)
                     linkRow(.locationTerms)
+                    settingsRow("문의/고객센터") { openSupportEmail() }
                     settingsRow("로그아웃") { isConfirmingLogout = true }
                     settingsRow("회원탈퇴", isDestructive: true) { isConfirmingWithdraw = true }
                 }
@@ -65,6 +69,15 @@ struct SettingsView: View {
                 Button("취소", role: .cancel) {}
             }
         }
+    }
+
+    private func openSupportEmail() {
+        var components = URLComponents()
+        components.scheme = "mailto"
+        components.path = supportEmail
+        components.queryItems = [URLQueryItem(name: "subject", value: "[참참참] 문의하기")]
+        guard let url = components.url else { return }
+        openURL(url)
     }
 
     private func rowLabel(_ title: String, isDestructive: Bool = false) -> some View {

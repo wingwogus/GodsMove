@@ -17,9 +17,12 @@ struct RecordComposeView: View {
     @Environment(\.dismiss) private var dismiss
     private let onComplete: (UUID) -> Void
     private let onSessionInvalid: (() -> Void)?
+    private let entryNotice: String?
+    private let isVoiceReview: Bool
 
-    /// `saver`/`prefill`/`onSessionInvalid`는 음성 검토 재사용 전용 — 텍스트 작성 호출부는
-    /// 기본값 그대로 두면 기존 동작과 동일하다.
+    /// `saver`/`prefill`/`onSessionInvalid`/`entryNotice`/`isVoiceReview`는 음성 검토 재사용
+    /// 전용 — 텍스트 작성 호출부는 기본값 그대로 두면 기존 동작과 동일하다. `entryNotice`는
+    /// 종료 사유별 상단 안내 배너 문구(없으면 미표시), `isVoiceReview`는 타이틀 구분용이다.
     init(
         repository: any RecordRepository,
         weatherRepository: any WeatherRepository,
@@ -27,6 +30,8 @@ struct RecordComposeView: View {
         saver: (any RecordSaver)? = nil,
         prefill: VoiceRecordPrefill? = nil,
         onSessionInvalid: (() -> Void)? = nil,
+        entryNotice: String? = nil,
+        isVoiceReview: Bool = false,
         onComplete: @escaping (UUID) -> Void
     ) {
         _viewModel = State(initialValue: RecordComposeViewModel(
@@ -37,6 +42,8 @@ struct RecordComposeView: View {
             prefill: prefill
         ))
         self.onSessionInvalid = onSessionInvalid
+        self.entryNotice = entryNotice
+        self.isVoiceReview = isVoiceReview
         self.onComplete = onComplete
     }
 
@@ -45,10 +52,13 @@ struct RecordComposeView: View {
     var body: some View {
         VStack(spacing: 0) {
             AppTopAppBar(
-                title: "기록하기",
+                title: isVoiceReview ? "음성 기록 확인" : "기록하기",
                 isDetail: true,
                 leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
             )
+            if let entryNotice {
+                noticeBanner(entryNotice)
+            }
             ScrollView {
                 VStack(alignment: .leading, spacing: 24) {
                     basicSection
@@ -229,10 +239,10 @@ struct RecordComposeView: View {
         VStack(alignment: .leading, spacing: 16) {
             AppDropdown("진행 방식", placeholder: "물주기 진행 방식을 선택해주세요.",
                         options: IrrigationMethod.allCases, selection: $viewModel.irrigationMethod,
-                        isRequired: true, optionTitle: { $0.label })
+                        optionTitle: { $0.label })
             AppDropdown("물의 양", placeholder: "진행한 물의 양 정도를 선택해주세요.",
                         options: IrrigationAmount.allCases, selection: $viewModel.irrigationAmount,
-                        isRequired: true, optionTitle: { $0.label })
+                        optionTitle: { $0.label })
         }
     }
 
@@ -283,7 +293,7 @@ struct RecordComposeView: View {
                             error: requiredError(Double(vm.pesticideAmount.trimmingCharacters(in: .whitespaces)) == nil))
                 unitDropdown(PesticideAmountUnit.allCases, selection: $viewModel.pesticideAmountUnit) { $0.label }
             }
-            numberField("총 살포량 (L)", placeholder: "총 농약 살포량을 작성해주세요.",
+            numberField("총 살포량 (mL)", placeholder: "총 농약 살포량을 작성해주세요.",
                         text: $viewModel.totalSprayAmount, required: true,
                         error: requiredError(Double(vm.totalSprayAmount.trimmingCharacters(in: .whitespaces)) == nil))
             AppDropdown("대상 병해충", placeholder: "대상 병해충을 선택해주세요.",
@@ -333,21 +343,33 @@ struct RecordComposeView: View {
             Text("사진 첨부하기").appTypography(.bodyMediumEmphasized).foregroundStyle(Color.Text.default)
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 8) {
-                    ForEach(Array(vm.mediaIds.enumerated()), id: \.offset) { index, _ in
-                        AppImageUploadSlot(label: "", onRemove: { vm.removeImage(at: index) }) {
-                            RoundedRectangle(cornerRadius: 8).fill(Color.Object.muted)
-                                .overlay(
-                                    AppIconView(source: .asset("photo"), size: 24)
-                                        .foregroundStyle(Color.Icon.disabled)
-                                )
-                        }
-                    }
                     if vm.canAddMorePhotos {
                         PhotosPicker(selection: $photoItem, matching: .images) {
-                            AppImagePlaceholderSlot(count: vm.mediaIds.count, isUploading: vm.isUploadingImage)
+                            AppImageUploadSlot(label: "\(vm.attachments.count)/5", isInteractive: false)
+                        }
+                    }
+                    ForEach(vm.attachments) { attachment in
+                        AppImageUploadSlot(onRemove: { vm.removeImage(id: attachment.id) }) {
+                            photoThumbnail(for: attachment)
                         }
                     }
                 }
+            }
+        }
+    }
+
+    /// 고른 사진은 즉시 미리보기로 보여주고, 업로드가 끝날 때까지 스피너를 덧씌운다.
+    @ViewBuilder
+    private func photoThumbnail(for attachment: RecordComposeViewModel.Attachment) -> some View {
+        ZStack {
+            if let uiImage = UIImage(data: attachment.previewData) {
+                Image(uiImage: uiImage).resizable().scaledToFill()
+            } else {
+                Color.Object.muted
+            }
+            if attachment.isUploading {
+                Color.black.opacity(0.3)
+                ProgressView().tint(Color.Icon.inverse)
             }
         }
     }
@@ -371,6 +393,17 @@ struct RecordComposeView: View {
     }
 
     // MARK: - Helpers
+
+    /// 음성 검토 진입 안내 배너(예: 시간 초과로 대화를 살려서 넘어온 경우).
+    private func noticeBanner(_ text: String) -> some View {
+        Text(text)
+            .appTypography(.bodyMedium)
+            .foregroundStyle(Color.Text.subtle)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal, 20)
+            .padding(.vertical, 12)
+            .background(Color.Object.secondarySubtle)
+    }
 
     private func fieldLabel(_ text: String, required: Bool) -> some View {
         HStack(spacing: 2) {
@@ -416,28 +449,6 @@ struct RecordComposeView: View {
             selection: Binding(get: { selection.wrappedValue }, set: { if let v = $0 { selection.wrappedValue = v } }),
             optionTitle: title
         )
-    }
-}
-
-/// 사진 추가 빈 슬롯 (0/5 카운터 + 카메라 아이콘).
-private struct AppImagePlaceholderSlot: View {
-    let count: Int
-    let isUploading: Bool
-
-    var body: some View {
-        RoundedRectangle(cornerRadius: 8).fill(Color.Object.muted)
-            .frame(width: 96, height: 96)
-            .overlay {
-                if isUploading {
-                    ProgressView()
-                } else {
-                    VStack(spacing: 2) {
-                        AppIconView(source: .asset("photo_camera"), size: 24)
-                            .foregroundStyle(Color.Icon.subtle)
-                        Text("\(count)/5").appTypography(.bodyMedium).foregroundStyle(Color.Text.subtle)
-                    }
-                }
-            }
     }
 }
 

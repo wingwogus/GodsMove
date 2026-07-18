@@ -82,7 +82,7 @@ struct FarmResponseDTO: Decodable, Sendable {
 /// The standalone farm controller and onboarding controller both publish a schema named `FarmResponse`, but their
 /// payloads differ. Keep this endpoint-specific DTO separate until the backend gives those OpenAPI schemas unique
 /// names: standalone CRUD uses `farmId` and embeds crops, while onboarding still uses `id` above.
-struct StandaloneFarmResponseDTO: Decodable, Sendable {
+struct StandaloneFarmResponseDTO: Decodable, Sendable, Identifiable {
     let farmId: UUID
     let name: String
     let roadAddress: String
@@ -96,4 +96,6 @@ struct StandaloneFarmResponseDTO: Decodable, Sendable {
     let boundaryCoordinates: [FarmBoundaryCoordinateDTO]
     let dataSource: FarmDataSourceDTO
     let crops: [CropResponseDTO]
+
+    var id: UUID { farmId }
 }

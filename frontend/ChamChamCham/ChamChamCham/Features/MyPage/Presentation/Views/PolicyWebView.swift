@@ -48,5 +48,7 @@ struct PolicyWebView: View {
             }
         }
         .background(Color.Background.default)
+        .navigationBarBackButtonHidden(true)
+        .toolbar(.hidden, for: .navigationBar)
     }
 }

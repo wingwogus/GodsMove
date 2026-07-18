@@ -27,11 +27,14 @@ struct ReportFarmFilterSheet: View {
     }
 
     var body: some View {
-        ReportFilterSheetScaffold(title: "농장") {
-            choiceGrid {
-                AppSelectItem(title: "전체", isSelected: draft == nil) { draft = nil }
+        AppFilterSheetScaffold(title: "농장") {
+            AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm) {
+                AppChip(label: "전체", isSelected: draft == nil, style: draft == nil ? .solidPastel : .solid) {
+                    draft = nil
+                }
                 ForEach(farms) { farm in
-                    AppSelectItem(title: farm.name, isSelected: draft == farm.id) {
+                    let selected = draft == farm.id
+                    AppChip(label: farm.name, isSelected: selected, style: selected ? .solidPastel : .solid) {
                         draft = farm.id
                     }
                 }
@@ -63,11 +66,14 @@ struct ReportCropFilterSheet: View {
     }
 
     var body: some View {
-        ReportFilterSheetScaffold(title: "작물") {
-            choiceGrid {
-                AppSelectItem(title: "전체", isSelected: draft == nil) { draft = nil }
+        AppFilterSheetScaffold(title: "작물") {
+            AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm) {
+                AppChip(label: "전체", isSelected: draft == nil, style: draft == nil ? .solidPastel : .solid) {
+                    draft = nil
+                }
                 ForEach(crops) { crop in
-                    AppSelectItem(title: crop.name, isSelected: draft == crop.id) {
+                    let selected = draft == crop.id
+                    AppChip(label: crop.name, isSelected: selected, style: selected ? .solidPastel : .solid) {
                         draft = crop.id
                     }
                 }
@@ -80,25 +86,29 @@ struct ReportCropFilterSheet: View {
 }
 
 struct ReportWorkTypeFilterSheet: View {
-    let selected: WorkType?
-    let onApply: (WorkType?) -> Void
+    let selected: Set<WorkType>
+    let onApply: (Set<WorkType>) -> Void
 
-    @State private var draft: WorkType?
+    @State private var draft: Set<WorkType>
     @Environment(\.dismiss) private var dismiss
 
-    init(selected: WorkType?, onApply: @escaping (WorkType?) -> Void) {
+    init(selected: Set<WorkType>, onApply: @escaping (Set<WorkType>) -> Void) {
         self.selected = selected
         self.onApply = onApply
         _draft = State(initialValue: selected)
     }
 
     var body: some View {
-        ReportFilterSheetScaffold(title: "영농 활동") {
-            choiceGrid {
-                AppSelectItem(title: "전체", isSelected: draft == nil) { draft = nil }
+        AppFilterSheetScaffold(title: "영농 활동", height: 274) {
+            AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm) {
                 ForEach(WorkType.allCases, id: \.self) { workType in
-                    AppSelectItem(title: workType.label, isSelected: draft == workType) {
-                        draft = workType
+                    let selected = draft.contains(workType)
+                    AppChip(label: workType.label, isSelected: selected, style: selected ? .solidPastel : .solid) {
+                        if draft.contains(workType) {
+                            draft.remove(workType)
+                        } else {
+                            draft.insert(workType)
+                        }
                     }
                 }
             }
@@ -107,50 +117,4 @@ struct ReportWorkTypeFilterSheet: View {
             dismiss()
         }
     }
-}
-
-private struct ReportFilterSheetScaffold<Content: View>: View {
-    let title: String
-    @ViewBuilder let content: Content
-    let onComplete: () -> Void
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: Spacing.md) {
-            Text(title)
-                .appTypography(.titleMediumEmphasized)
-                .foregroundStyle(Color.Text.default)
-
-            ScrollView {
-                content
-            }
-            .scrollIndicators(.hidden)
-
-            AppButton(
-                "완료",
-                variant: .secondary,
-                size: .medium,
-                fullWidth: true,
-                action: onComplete
-            )
-        }
-        .padding(.horizontal, 20)
-        .padding(.top, 20)
-        .padding(.bottom, Spacing.sm)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
-    }
-}
-
-private func choiceGrid<Content: View>(
-    @ViewBuilder content: () -> Content
-) -> some View {
-    LazyVGrid(
-        columns: [
-            GridItem(.flexible(), spacing: Spacing.sm),
-            GridItem(.flexible(), spacing: Spacing.sm),
-        ],
-        spacing: Spacing.sm,
-        content: content
-    )
 }

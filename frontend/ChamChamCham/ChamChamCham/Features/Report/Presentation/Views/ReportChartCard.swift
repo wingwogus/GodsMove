@@ -85,13 +85,13 @@ struct ReportChartCard: View {
                         .accessibilityHidden(true)
 
                     Text(entry.label)
-                        .appTypography(.bodyMedium)
-                        .foregroundStyle(Color.Text.subtle)
+                        .appTypography(.bodyMediumEmphasized)
+                        .foregroundStyle(Color.Text.default)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     Text(entry.formattedValue)
-                        .appTypography(.bodyMediumEmphasized)
-                        .foregroundStyle(Color.Text.default)
+                        .appTypography(.bodyMedium)
+                        .foregroundStyle(Color.Text.subtle)
                         .multilineTextAlignment(.trailing)
                 }
                 .accessibilityElement(children: .ignore)
@@ -200,5 +200,37 @@ private struct ReportSemiDonut: View {
 
     private var accessibilitySummary: String {
         entries.map { "\($0.label) \($0.formattedValue)" }.joined(separator: ", ")
+    }
+}
+
+#Preview {
+    ScrollView {
+        VStack(spacing: Spacing.md) {
+            if let stackedBar = ReportChartModel(
+                title: "진행한 심기 방법",
+                data: [
+                    ReportChartDatum(code: "SEED", label: "씨앗 심기", value: 12, unit: "번"),
+                    ReportChartDatum(code: "SEEDLING", label: "모종 심기", value: 12, unit: "번"),
+                ]
+            ) {
+                ReportChartCard(model: stackedBar)
+            }
+
+            if let semiDonut = ReportChartModel(
+                title: "진행한 모종 번식법",
+                data: [
+                    ReportChartDatum(code: "CUTTING", label: "꺾꽂이", value: 12, unit: "번"),
+                    ReportChartDatum(code: "GRAFTING", label: "접붙이기", value: 12, unit: "번"),
+                    ReportChartDatum(code: "LAYERING", label: "휘묻이", value: 12, unit: "번"),
+                    ReportChartDatum(code: "DIVISION", label: "포기나누기", value: 12, unit: "번"),
+                    ReportChartDatum(code: "TISSUE_CULTURE", label: "조직 배양", value: 12, unit: "번"),
+                    ReportChartDatum(code: "PURCHASED", label: "시판 구매", value: 12, unit: "번"),
+                ]
+            ) {
+                ReportChartCard(model: semiDonut)
+            }
+        }
+        .padding()
+        .background(Color.Background.subtle)
     }
 }
