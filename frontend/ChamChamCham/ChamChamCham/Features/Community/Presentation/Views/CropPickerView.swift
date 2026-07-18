@@ -17,8 +17,9 @@ struct CropPickerView: View {
     /// Crop ids that should start selected (e.g. re-opening the picker on an existing farm or on
     /// already-added community boards).
     var initialSelectedCropIDs: [UUID] = []
-    /// Maximum selectable crops, or `nil` for unlimited.
-    var selectionLimit: Int? = nil
+    /// Maximum selectable crops, or `nil` for unlimited. Defaults to the shared cap used everywhere
+    /// a crop picker exists.
+    var selectionLimit: Int? = Crop.maxSelectionCount
     let onComplete: ([Crop]) -> Void
 
     @Environment(\.dismiss) private var dismiss

@@ -178,7 +178,7 @@ final class OnboardingViewModel {
             return .deselected
         }
 
-        guard draft.cropIDs.count < 5 else {
+        guard draft.cropIDs.count < Crop.maxSelectionCount else {
             return .selectionLimitReached
         }
 

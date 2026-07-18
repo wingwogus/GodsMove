@@ -42,13 +42,23 @@ struct CropSelectionBody: View {
     @State private var selectedCategoryCode: String?
     @State private var selectionLimitMessage: String?
 
+    /// Synthetic leading tab meaning "no category filter" — never a real `usePartCategory` code.
+    private static let allCategoryCode = "ALL"
+    private static let allCategory = CropCategory(code: allCategoryCode, label: "전체")
+
     private var selectedCount: Int { selectedCropIDs.count }
+
+    /// `categories` with the synthetic "전체" tab prepended. Empty while categories are still
+    /// loading, so the loading placeholder in `categoryTabs` keeps showing.
+    private var displayCategories: [CropCategory] {
+        categories.isEmpty ? [] : [Self.allCategory] + categories
+    }
 
     private var filteredCrops: [Crop] {
         let selectedCode = selectedCategory?.code
-        let byCategory = selectedCode.map { code in
-            crops.filter { $0.categoryCode == code }
-        } ?? crops
+        let byCategory = (selectedCode == nil || selectedCode == Self.allCategoryCode)
+            ? crops
+            : crops.filter { $0.categoryCode == selectedCode }
 
         let keyword = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         let filtered = keyword.isEmpty
@@ -61,25 +71,27 @@ struct CropSelectionBody: View {
     }
 
     private var selectedCategory: CropCategory? {
-        guard !categories.isEmpty else { return nil }
+        let displayCategories = displayCategories
+        guard !displayCategories.isEmpty else { return nil }
         if let selectedCategoryCode,
-           let category = categories.first(where: { $0.code == selectedCategoryCode }) {
+           let category = displayCategories.first(where: { $0.code == selectedCategoryCode }) {
             return category
         }
-        return categories.first
+        return displayCategories.first
     }
 
     private var selectedCategoryIndex: Int {
         guard let selectedCategory else { return 0 }
-        return categories.firstIndex { $0.code == selectedCategory.code } ?? 0
+        return displayCategories.firstIndex { $0.code == selectedCategory.code } ?? 0
     }
 
     private var selectedCategoryBinding: Binding<Int> {
         Binding {
             selectedCategoryIndex
         } set: { index in
-            guard categories.indices.contains(index) else { return }
-            selectedCategoryCode = categories[index].code
+            let displayCategories = displayCategories
+            guard displayCategories.indices.contains(index) else { return }
+            selectedCategoryCode = displayCategories[index].code
             selectionLimitMessage = nil
         }
     }
@@ -124,11 +136,11 @@ struct CropSelectionBody: View {
             }
         }
         .task {
-            selectedCategoryCode = selectedCategoryCode ?? categories.first?.code
+            selectedCategoryCode = selectedCategoryCode ?? displayCategories.first?.code
         }
-        .onChange(of: categories) { _, categories in
+        .onChange(of: categories) { _, _ in
             guard selectedCategoryCode == nil else { return }
-            selectedCategoryCode = categories.first?.code
+            selectedCategoryCode = displayCategories.first?.code
         }
     }
 
@@ -221,7 +233,7 @@ struct CropSelectionBody: View {
                 .padding(.horizontal, 20)
         } else {
             AppTabBar(
-                titles: categories.map(\.label),
+                titles: displayCategories.map(\.label),
                 selection: selectedCategoryBinding,
                 scrollable: true
             )

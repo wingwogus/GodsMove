@@ -75,14 +75,14 @@ private struct FarmAddCropStepView: View {
 
             CropSelectionBody(
                 title: "재배 중인 작물 설정하기",
-                subtitle: "대표 재배지의 작물을 입력해주세요.",
+                subtitle: "대표 재배지의 작물을 입력해주세요.\n작물은 최대 \(Crop.maxSelectionCount)개까지 선택 가능합니다.",
                 crops: crops,
                 categories: categories,
                 isLoading: isLoading,
                 loadError: nil,
                 onRetry: { Task { await load() } },
                 selectedCropIDs: viewModel.selectedCrops.map(\.id),
-                selectionLimit: nil,
+                selectionLimit: Crop.maxSelectionCount,
                 onToggle: toggle,
                 ctaTitle: "완료",
                 onComplete: onComplete
@@ -131,6 +131,7 @@ private struct FarmAddCropStepView: View {
             viewModel.selectedCrops.remove(at: index)
             return .changed
         }
+        guard viewModel.selectedCrops.count < Crop.maxSelectionCount else { return .limitReached }
         guard let crop = crops.first(where: { $0.id == cropID }) else { return .changed }
         viewModel.selectedCrops.append(crop)
         return .changed

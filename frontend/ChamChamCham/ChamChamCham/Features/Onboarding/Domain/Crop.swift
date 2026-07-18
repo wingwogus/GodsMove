@@ -15,6 +15,10 @@ struct CropCategory: Identifiable, Hashable, Sendable {
 }
 
 struct Crop: Identifiable, Hashable, Sendable {
+    /// Crop selection is capped at 5 everywhere a picker exists (onboarding, farm add/edit,
+    /// community board add/compose) — a single shared limit, not a per-screen choice.
+    static let maxSelectionCount = 5
+
     let id: UUID
     let name: String
     let categoryCode: String
