@@ -7,13 +7,18 @@
 
 import SwiftUI
 
-/// 밭 추가. 농지명 + 도로명 주소 검색(`AddressSearchSheet`, JUSO/V-World 엔진 재사용) + 작물 선택
-/// (`CropPickerView` 재사용) → `POST /farms`. 온보딩 화면을 건드리지 않고 엔진/시트를 재사용한다.
+/// 밭 추가. 온보딩 재배지 설정과 같은 2-step 흐름: step 1 `FarmLocationPickerView`(재배지 위치 + 농지명),
+/// step 2 작물 설정(`CropSelectionBody` 재사용) → `POST /farms`. 온보딩 화면(`FarmLocationView`/
+/// `CropSelectionView`)을 건드리지 않고 그 안의 재사용 가능한 조각만 가져다 쓴다. Step 전환은
+/// `NavigationStack`의 view-local 상태로 관리하고, `FarmAddViewModel`은 데이터만 소유한다.
 struct FarmAddView: View {
+    private enum Step: Hashable {
+        case crops
+    }
+
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: FarmAddViewModel
-    @State private var isShowingAddressSearch = false
-    @State private var isShowingCropPicker = false
+    @State private var path: [Step] = []
     var onAdded: () -> Void
 
     init(
@@ -28,185 +33,106 @@ struct FarmAddView: View {
     }
 
     var body: some View {
+        NavigationStack(path: $path) {
+            FarmLocationPickerView(
+                location: viewModel.location,
+                showsFarmNameField: true,
+                farmName: $viewModel.farmName,
+                headline: "대표 재배지 설정하기",
+                subtitle: "재배지의 주소명과 농지명을 입력해주세요.",
+                ctaTitle: "다음",
+                onBack: { dismiss() },
+                onPrimary: { path.append(.crops) }
+            )
+            .navigationDestination(for: Step.self) { _ in
+                FarmAddCropStepView(viewModel: viewModel) {
+                    Task {
+                        if await viewModel.save() {
+                            onAdded()
+                            dismiss()
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+/// 밭 추가 step 2 (작물 설정). 온보딩 `CropSelectionView`가 `CropSelectionBody`를 감싸는 방식을 그대로
+/// 따르되, 뒤로가기는 `NavigationStack`의 pop이고 완료는 `FarmAddViewModel.save()`를 호출한다.
+private struct FarmAddCropStepView: View {
+    @Bindable var viewModel: FarmAddViewModel
+    var onComplete: () -> Void
+
+    @Environment(\.dismiss) private var dismiss
+    @State private var crops: [Crop] = []
+    @State private var categories: [CropCategory] = []
+    @State private var isLoading = true
+
+    var body: some View {
         VStack(spacing: 0) {
-            AppTopAppBar(
-                title: "밭 추가",
-                isDetail: true,
-                leading: .init(.asset("chevron_backward")) { dismiss() }
+            topAppBar
+
+            CropSelectionBody(
+                title: "재배 중인 작물 설정하기",
+                subtitle: "대표 재배지의 작물을 입력해주세요.",
+                crops: crops,
+                categories: categories,
+                isLoading: isLoading,
+                loadError: nil,
+                onRetry: { Task { await load() } },
+                selectedCropIDs: viewModel.selectedCrops.map(\.id),
+                selectionLimit: nil,
+                onToggle: toggle,
+                ctaTitle: "완료",
+                onComplete: onComplete
             )
 
-            ScrollView {
-                VStack(alignment: .leading, spacing: Spacing.lg) {
-                    AppTextField(
-                        label: "농지명",
-                        placeholder: "농지명을 입력해주세요.",
-                        text: $viewModel.farmName,
-                        isRequired: true,
-                        errorMessage: viewModel.nameError
-                    )
-
-                    fieldButton(
-                        label: "재배지 도로명 주소",
-                        isRequired: true,
-                        value: viewModel.selectedAddressText,
-                        placeholder: "도로명 주소를 검색해주세요.",
-                        detail: viewModel.parcelSummary
-                    ) {
-                        isShowingAddressSearch = true
-                    }
-
-                    mapSection
-
-                    cropSection
-
-                    if let message = viewModel.errorMessage {
-                        Text(message)
-                            .appTypography(.labelMedium)
-                            .foregroundStyle(Color.Text.red)
-                    }
-                }
-                .padding(.horizontal, Spacing.lg - Spacing.xs)
-                .padding(.top, Spacing.md)
-                .padding(.bottom, Spacing.xl)
-            }
-        }
-        .background(Color.Background.default)
-        .safeAreaInset(edge: .bottom, spacing: 0) {
-            AppButton("저장", variant: .secondary, size: .medium, fullWidth: true) {
-                Task {
-                    if await viewModel.save() {
-                        onAdded()
-                        dismiss()
-                    }
-                }
-            }
-            .disabled(!viewModel.canSave)
-            .padding(.horizontal, Spacing.lg - Spacing.xs)
-            .padding(.vertical, Spacing.md)
-            .background(Color.Background.default)
-        }
-        .sheet(isPresented: $isShowingAddressSearch) {
-            AddressSearchSheet(viewModel: viewModel.location) { address in
-                Task { await viewModel.selectAddress(address) }
-            }
-        }
-        .fullScreenCover(isPresented: $isShowingCropPicker) {
-            CropPickerView(
-                loadCrops: { await viewModel.loadCrops() },
-                loadCategories: { await viewModel.loadCategories() },
-                initialSelectedCropIDs: viewModel.selectedCrops.map(\.id),
-                onComplete: { crops in viewModel.selectedCrops = crops }
-            )
-        }
-    }
-
-    @ViewBuilder private var mapSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("재배지 위치")
-                .appTypography(.bodyMedium)
-                .foregroundStyle(Color.Text.default)
-
-            Text("지도를 눌러 필지를 확인하거나, 지적도에 없는 밭은 직접 그려주세요.")
-                .appTypography(.labelMedium)
-                .foregroundStyle(Color.Text.muted)
-
-            FarmLocationMapSection(viewModel: viewModel.location)
-                .frame(height: 360)
-                .clipShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
-                .overlay {
-                    RoundedRectangle(cornerRadius: 12, style: .continuous)
-                        .stroke(Color.Border.default, lineWidth: 1)
-                }
-        }
-    }
-
-    @ViewBuilder private var cropSection: some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            Text("작물")
-                .appTypography(.bodyMedium)
-                .foregroundStyle(Color.Text.default)
-
-            Button {
-                isShowingCropPicker = true
-            } label: {
-                Group {
-                    if viewModel.selectedCrops.isEmpty {
-                        HStack {
-                            Text("작물을 선택해주세요.")
-                                .appTypography(.bodyLarge)
-                                .foregroundStyle(Color.Text.muted)
-                            Spacer()
-                            AppIconView(source: .asset("chevron_forward"), size: 24)
-                                .foregroundStyle(Color.Icon.subtle)
-                        }
-                    } else {
-                        HStack {
-                            HStack(spacing: Spacing.sm) {
-                                ForEach(viewModel.selectedCrops.prefix(3)) { crop in
-                                    AppBadge(label: crop.name, style: .solidPastel, variant: .primary)
-                                }
-                                if viewModel.selectedCrops.count > 3 {
-                                    Text("외 \(viewModel.selectedCrops.count - 3)종")
-                                        .appTypography(.labelMedium)
-                                        .foregroundStyle(Color.Text.subtle)
-                                }
-                            }
-                            Spacer()
-                            AppIconView(source: .asset("chevron_forward"), size: 24)
-                                .foregroundStyle(Color.Icon.subtle)
-                        }
-                    }
-                }
-                .padding(.horizontal, Spacing.md)
-                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color.Object.subtle))
-                .contentShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .buttonStyle(.plain)
-        }
-    }
-
-    private func fieldButton(
-        label: String,
-        isRequired: Bool,
-        value: String?,
-        placeholder: String,
-        detail: String?,
-        action: @escaping () -> Void
-    ) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack(spacing: 2) {
-                Text(label)
-                    .appTypography(.bodyMedium)
-                    .foregroundStyle(Color.Text.default)
-                if isRequired {
-                    Text("*")
-                        .appTypography(.bodyMedium)
-                        .foregroundStyle(Color.Text.red)
-                }
-            }
-            Button(action: action) {
-                HStack {
-                    Text(value ?? placeholder)
-                        .appTypography(.bodyLarge)
-                        .foregroundStyle(value == nil ? Color.Text.muted : Color.Text.default)
-                        .lineLimit(1)
-                    Spacer()
-                    AppIconView(source: .asset("chevron_forward"), size: 24)
-                        .foregroundStyle(Color.Icon.subtle)
-                }
-                .padding(.horizontal, Spacing.md)
-                .frame(maxWidth: .infinity, minHeight: 56, alignment: .leading)
-                .background(RoundedRectangle(cornerRadius: 8).fill(Color.Object.subtle))
-                .contentShape(RoundedRectangle(cornerRadius: 8))
-            }
-            .buttonStyle(.plain)
-
-            if let detail {
-                Text(detail)
+            if let message = viewModel.errorMessage {
+                Text(message)
                     .appTypography(.labelMedium)
-                    .foregroundStyle(Color.Text.muted)
+                    .foregroundStyle(Color.Text.red)
+                    .padding(.horizontal, Spacing.lg - Spacing.xs)
+                    .padding(.top, Spacing.sm)
             }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .background(Color.Background.default)
+        .navigationBarBackButtonHidden(true)
+        .task { await load() }
+    }
+
+    private var topAppBar: some View {
+        HStack {
+            Button {
+                dismiss()
+            } label: {
+                AppIconView(source: .asset("chevron_backward"), size: 24)
+                    .foregroundStyle(Color.Icon.default)
+                    .frame(width: 48, height: 48)
+            }
+            .buttonStyle(.plain)
+            Spacer()
+        }
+        .frame(height: 60)
+        .padding(.horizontal, 4)
+        .background(Color.Background.default)
+    }
+
+    private func load() async {
+        isLoading = true
+        crops = await viewModel.loadCrops()
+        categories = await viewModel.loadCategories()
+        isLoading = false
+    }
+
+    private func toggle(_ cropID: UUID) -> CropSelectionBody.ToggleOutcome {
+        if let index = viewModel.selectedCrops.firstIndex(where: { $0.id == cropID }) {
+            viewModel.selectedCrops.remove(at: index)
+            return .changed
+        }
+        guard let crop = crops.first(where: { $0.id == cropID }) else { return .changed }
+        viewModel.selectedCrops.append(crop)
+        return .changed
     }
 }

@@ -17,6 +17,7 @@ struct ProfileMainView: View {
     @State private var isShowingSettings = false
     @State private var isShowingBoardSheet = false
     @State private var isShowingProfileEdit = false
+    @State private var profileToast: String?
     @Binding private var selection: Int
     private let tabItems: [AppNavBar.Item]
 
@@ -66,6 +67,7 @@ struct ProfileMainView: View {
                 CommunityDetailView(postId: post.id, container: container)
             }
         }
+        .appToast(message: $profileToast)
         .task { await viewModel.onAppear() }
         .onChange(of: viewModel.selectedTabIndex) { _, _ in
             Task { await viewModel.onTabChanged() }
@@ -86,7 +88,9 @@ struct ProfileMainView: View {
         .fullScreenCover(isPresented: $isShowingProfileEdit, onDismiss: {
             Task { await viewModel.loadProfile() }
         }) {
-            ProfileEditView(container: container)
+            ProfileEditView(container: container) {
+                profileToast = "기본 정보 수정 완료되었습니다."
+            }
         }
     }
 

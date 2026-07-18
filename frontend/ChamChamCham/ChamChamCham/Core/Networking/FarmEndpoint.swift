@@ -10,12 +10,15 @@ import Foundation
 enum FarmEndpoint: Endpoint {
     case list
     case create(SaveFarmRequestDTO)
+    case update(UUID, SaveFarmRequestDTO)
     case delete(UUID)
 
     var path: String {
         switch self {
         case .list, .create:
             "api/v1/farms"
+        case let .update(id, _):
+            "api/v1/farms/\(id.uuidString)"
         case let .delete(id):
             "api/v1/farms/\(id.uuidString)"
         }
@@ -27,6 +30,8 @@ enum FarmEndpoint: Endpoint {
             .get
         case .create:
             .post
+        case .update:
+            .put
         case .delete:
             .delete
         }
@@ -37,6 +42,8 @@ enum FarmEndpoint: Endpoint {
         case .list, .delete:
             nil
         case let .create(request):
+            request
+        case let .update(_, request):
             request
         }
     }
