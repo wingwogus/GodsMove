@@ -41,8 +41,8 @@ class FarmingWorkReportQueryService(
         val result = queryRepository.searchWorkItems(
             FarmingCycleReportQueryRepository.WorkItemSearchCondition(
                 memberId = condition.memberId,
-                farmId = condition.farmId,
-                cropId = condition.cropId,
+                farmIds = condition.farmIds,
+                cropIds = condition.cropIds,
                 workType = condition.workType,
                 cursor = decodeCursor(condition.cursor),
                 size = condition.size + 1,

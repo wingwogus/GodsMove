@@ -24,6 +24,7 @@ import com.chamchamcham.domain.farming.WateringRecordRepository
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
+import com.chamchamcham.domain.report.CountDistribution
 import com.chamchamcham.domain.report.FarmingCycleReportRepository
 import com.chamchamcham.domain.report.FarmingCycleReportStatus
 import com.chamchamcham.domain.report.GrowthPeriodRange
@@ -150,7 +151,7 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
 
         assertThat(completed.status).isEqualTo(FarmingCycleReportStatus.COMPLETED)
         assertThat(completed.finalHarvestRecordId).isEqualTo(finalHarvestId)
-        assertThat(completed.statisticsSchemaVersion).isEqualTo(2)
+        assertThat(completed.statisticsSchemaVersion).isEqualTo(3)
         assertThat(completed.statistics.harvest.recordCount).isEqualTo(1)
         assertThat(completed.statistics.harvest.totalAmountKg).isNull()
         assertThat(completed.statistics.harvest.amountCoverage.recordedCount).isZero()
@@ -158,13 +159,16 @@ class FarmingCycleReportIntegrationTest @Autowired constructor(
         assertThat(completed.statistics.harvest.medicinalParts).isEmpty()
         assertThat(completed.statistics.harvest.finalGrowthPeriodMonths).isEqualTo(4)
         assertThat(completed.statistics.harvest.growthPeriodRangeMonths).isEqualTo(GrowthPeriodRange(4, 4))
+        assertThat(completed.statistics.harvest.growthPeriodDistribution).containsExactly(
+            CountDistribution("4", "4개월", 1, BigDecimal("100.00")),
+        )
     }
 
     private fun loadOnlyCompletedReport() = queryService.listCompleted(
         FarmingCycleReportSearchCondition(
             memberId = memberId,
-            farmId = farmId,
-            cropId = cropId,
+            farmIds = setOf(farmId),
+            cropIds = setOf(cropId),
             cursor = null,
             size = 20,
         ),

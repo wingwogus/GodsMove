@@ -28,8 +28,8 @@ class FarmingWorkReportController(
     @GetMapping("/work-items")
     fun list(
         @AuthenticationPrincipal memberId: String?,
-        @RequestParam(required = false) farmId: UUID?,
-        @RequestParam(required = false) cropId: UUID?,
+        @RequestParam(required = false) farmId: Set<UUID>?,
+        @RequestParam(required = false) cropId: Set<UUID>?,
         @RequestParam(required = false) workType: WorkType?,
         @RequestParam(required = false) cursor: String?,
         @RequestParam(defaultValue = "20") @Min(1) @Max(100) size: Int,
@@ -38,8 +38,8 @@ class FarmingWorkReportController(
             queryService.list(
                 FarmingWorkReportSearchCondition(
                     memberId = parseMemberId(memberId),
-                    farmId = farmId,
-                    cropId = cropId,
+                    farmIds = farmId.orEmpty(),
+                    cropIds = cropId.orEmpty(),
                     workType = workType,
                     cursor = cursor,
                     size = size,

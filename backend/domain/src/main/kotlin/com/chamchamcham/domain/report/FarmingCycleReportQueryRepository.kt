@@ -13,8 +13,8 @@ interface FarmingCycleReportQueryRepository {
 
     data class SearchCondition(
         val memberId: UUID,
-        val farmId: UUID?,
-        val cropId: UUID?,
+        val farmIds: Set<UUID> = emptySet(),
+        val cropIds: Set<UUID> = emptySet(),
         val cursor: Cursor?,
         val size: Int,
     )
@@ -33,8 +33,8 @@ interface FarmingCycleReportQueryRepository {
 
     data class WorkItemSearchCondition(
         val memberId: UUID,
-        val farmId: UUID?,
-        val cropId: UUID?,
+        val farmIds: Set<UUID> = emptySet(),
+        val cropIds: Set<UUID> = emptySet(),
         val workType: WorkType?,
         val cursor: WorkItemCursor?,
         val size: Int,

@@ -25,13 +25,13 @@ class FarmingCycleReportQueryService(
     fun listCompleted(
         condition: FarmingCycleReportSearchCondition,
     ): FarmingCycleReportResult.Page {
-        validateListScope(condition.memberId, condition.farmId, condition.cropId)
+        validateListScope(condition.memberId, condition.farmIds, condition.cropIds)
         val cursor = decodeCursor(condition.cursor)
         val result = queryRepository.searchCompleted(
             FarmingCycleReportQueryRepository.SearchCondition(
                 memberId = condition.memberId,
-                farmId = condition.farmId,
-                cropId = condition.cropId,
+                farmIds = condition.farmIds,
+                cropIds = condition.cropIds,
                 cursor = cursor,
                 size = condition.size + 1,
             ),
@@ -62,14 +62,18 @@ class FarmingCycleReportQueryService(
         )
     }
 
-    private fun validateListScope(memberId: UUID, farmId: UUID?, cropId: UUID?) {
-        if (farmId == null) {
+    private fun validateListScope(memberId: UUID, farmIds: Set<UUID>, cropIds: Set<UUID>) {
+        if (farmIds.isEmpty()) {
             return
         }
-        farmRepository.findByIdAndOwnerId(farmId, memberId)
-            ?: throw BusinessException(ErrorCode.FARM_NOT_FOUND)
-        if (cropId != null && !memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId)) {
-            throw BusinessException(ErrorCode.CROP_NOT_FOUND)
+        farmIds.forEach { farmId ->
+            farmRepository.findByIdAndOwnerId(farmId, memberId)
+                ?: throw BusinessException(ErrorCode.FARM_NOT_FOUND)
+        }
+        cropIds.forEach { cropId ->
+            if (!memberCropRepository.existsByMemberIdAndFarmIdInAndCropId(memberId, farmIds, cropId)) {
+                throw BusinessException(ErrorCode.CROP_NOT_FOUND)
+            }
         }
     }
 

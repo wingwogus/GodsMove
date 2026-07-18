@@ -45,7 +45,9 @@ class FarmingWorkReportControllerTest(
 ) {
     private val memberId = id("001")
     private val farmId = id("101")
+    private val secondFarmId = id("102")
     private val cropId = id("201")
+    private val secondCropId = id("202")
     private val reportId = id("301")
     private val finalHarvestRecordId = id("401")
     private val startsAt = LocalDateTime.of(2026, 3, 1, 9, 0)
@@ -58,8 +60,8 @@ class FarmingWorkReportControllerTest(
     fun `list binds optional filters cursor and size and returns work card shape`() {
         val condition = FarmingWorkReportSearchCondition(
             memberId = memberId,
-            farmId = farmId,
-            cropId = cropId,
+            farmIds = setOf(farmId),
+            cropIds = setOf(cropId),
             workType = WorkType.WATERING,
             cursor = "cursor-1",
             size = 2,
@@ -99,8 +101,8 @@ class FarmingWorkReportControllerTest(
     fun `list returns active work card with nullable end date`() {
         val condition = FarmingWorkReportSearchCondition(
             memberId = memberId,
-            farmId = null,
-            cropId = null,
+            farmIds = emptySet(),
+            cropIds = emptySet(),
             workType = null,
             cursor = null,
             size = 20,
@@ -132,8 +134,8 @@ class FarmingWorkReportControllerTest(
     fun `list accepts omitted filters with default size`() {
         val condition = FarmingWorkReportSearchCondition(
             memberId = memberId,
-            farmId = null,
-            cropId = null,
+            farmIds = emptySet(),
+            cropIds = emptySet(),
             workType = null,
             cursor = null,
             size = 20,
@@ -143,6 +145,28 @@ class FarmingWorkReportControllerTest(
         mockMvc.perform(
             get("/api/v1/farming-reports/work-items")
                 .with(authenticatedMember(memberId.toString())),
+        ).andExpect(status().isOk)
+
+        verify(service).list(condition)
+    }
+
+    @Test
+    fun `list binds repeated farm and crop ids as multi filters`() {
+        val condition = FarmingWorkReportSearchCondition(
+            memberId = memberId,
+            farmIds = setOf(farmId, secondFarmId),
+            cropIds = setOf(cropId, secondCropId),
+            workType = null,
+            cursor = null,
+            size = 20,
+        )
+        `when`(service.list(condition)).thenReturn(FarmingWorkReportResult.Page(emptyList(), null))
+
+        mockMvc.perform(
+            get("/api/v1/farming-reports/work-items")
+                .with(authenticatedMember(memberId.toString()))
+                .param("farmId", farmId.toString(), secondFarmId.toString())
+                .param("cropId", cropId.toString(), secondCropId.toString()),
         ).andExpect(status().isOk)
 
         verify(service).list(condition)
@@ -180,8 +204,8 @@ class FarmingWorkReportControllerTest(
     fun `list translates an invalid cursor from the query service to invalid input`() {
         val condition = FarmingWorkReportSearchCondition(
             memberId = memberId,
-            farmId = null,
-            cropId = null,
+            farmIds = emptySet(),
+            cropIds = emptySet(),
             workType = null,
             cursor = "not-base64",
             size = 20,

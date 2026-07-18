@@ -118,6 +118,6 @@ class FarmingCycleReportProjectionService(
     }
 
     private companion object {
-        const val STATISTICS_SCHEMA_VERSION = 2
+        const val STATISTICS_SCHEMA_VERSION = 3
     }
 }

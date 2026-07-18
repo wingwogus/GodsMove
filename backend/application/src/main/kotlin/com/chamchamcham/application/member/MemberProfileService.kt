@@ -115,8 +115,7 @@ class MemberProfileService(
 
         member.updateProfileMedia(null)
         memberRepository.flush()
-        memberRepository.delete(member)
-        memberRepository.flush()
+        memberRepository.hardDeleteById(memberId)
 
         eventPublisher.publishEvent(
             MemberWithdrawalCommitted(

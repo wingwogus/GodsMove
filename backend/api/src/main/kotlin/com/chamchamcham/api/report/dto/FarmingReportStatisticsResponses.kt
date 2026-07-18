@@ -228,6 +228,7 @@ object FarmingReportStatisticsResponses {
         val photoAttachmentRatePct: BigDecimal?,
         val weatherDistribution: List<CountDistributionResponse>,
         val averageTemperatureC: BigDecimal?,
+        val plantingMethodDistribution: List<CountDistributionResponse>,
         val propagationMethods: List<PropagationStatisticsResponse>,
     ) {
         companion object {
@@ -241,6 +242,7 @@ object FarmingReportStatisticsResponses {
                 photoAttachmentRatePct = source.photoAttachmentRatePct,
                 weatherDistribution = source.weatherDistribution.map(CountDistributionResponse::from),
                 averageTemperatureC = source.averageTemperatureC,
+                plantingMethodDistribution = source.plantingMethodDistribution.map(CountDistributionResponse::from),
                 propagationMethods = source.propagationMethods.map(PropagationStatisticsResponse::from),
             )
         }
@@ -327,7 +329,7 @@ object FarmingReportStatisticsResponses {
         val categoryDistribution: List<CountDistributionResponse>,
         val pesticideAmounts: List<AmountByUnitResponse>,
         val categoryAmounts: List<CategoryAmountByUnitResponse>,
-        val totalSprayAmountLiters: BigDecimal?,
+        val totalSprayAmountMl: BigDecimal?,
         val sprayAmountCoverage: CoverageResponse,
         val targets: List<TargetCountResponse>,
     ) {
@@ -345,7 +347,9 @@ object FarmingReportStatisticsResponses {
                 categoryDistribution = source.categoryDistribution.map(CountDistributionResponse::from),
                 pesticideAmounts = source.pesticideAmounts.map(AmountByUnitResponse::from),
                 categoryAmounts = source.categoryAmounts.map(CategoryAmountByUnitResponse::from),
-                totalSprayAmountLiters = source.totalSprayAmountLiters,
+                totalSprayAmountMl = source.totalSprayAmountLiters
+                    ?.movePointRight(3)
+                    ?.setScale(4),
                 sprayAmountCoverage = CoverageResponse.from(source.sprayAmountCoverage),
                 targets = source.targets.map(TargetCountResponse::from),
             )
@@ -398,6 +402,7 @@ object FarmingReportStatisticsResponses {
         val medicinalParts: List<HarvestPartStatisticsResponse>,
         val finalGrowthPeriodMonths: Int?,
         val growthPeriodRangeMonths: GrowthPeriodRangeResponse?,
+        val growthPeriodDistribution: List<CountDistributionResponse>,
     ) {
         companion object {
             fun from(source: HarvestStatistics) = HarvestStatisticsResponse(
@@ -418,6 +423,7 @@ object FarmingReportStatisticsResponses {
                 medicinalParts = source.medicinalParts.map(HarvestPartStatisticsResponse::from),
                 finalGrowthPeriodMonths = source.finalGrowthPeriodMonths,
                 growthPeriodRangeMonths = source.growthPeriodRangeMonths?.let(GrowthPeriodRangeResponse::from),
+                growthPeriodDistribution = source.growthPeriodDistribution.map(CountDistributionResponse::from),
             )
         }
     }

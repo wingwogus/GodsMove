@@ -14,8 +14,8 @@ class FarmingCycleReportQueryRepositoryImpl(
     override fun searchCompleted(
         condition: FarmingCycleReportQueryRepository.SearchCondition,
     ): FarmingCycleReportQueryRepository.SearchResult {
-        val where = completedScopeWhere(condition.farmId, condition.cropId)
-        val params = completedScopeParams(condition.memberId, condition.farmId, condition.cropId)
+        val where = completedScopeWhere(condition.farmIds, condition.cropIds)
+        val params = completedScopeParams(condition.memberId, condition.farmIds, condition.cropIds)
 
         condition.cursor?.let { cursor ->
             where += cursorPredicate()
@@ -31,8 +31,8 @@ class FarmingCycleReportQueryRepositoryImpl(
     override fun searchWorkItems(
         condition: FarmingCycleReportQueryRepository.WorkItemSearchCondition,
     ): FarmingCycleReportQueryRepository.WorkItemSearchResult {
-        val where = workItemScopeWhere(condition.farmId, condition.cropId)
-        val params = workItemScopeParams(condition.memberId, condition.farmId, condition.cropId)
+        val where = workItemScopeWhere(condition.farmIds, condition.cropIds)
+        val params = workItemScopeParams(condition.memberId, condition.farmIds, condition.cropIds)
         val query = entityManager.createQuery(
             """
             select r.id, r.status, r.farm.id, r.farm.name, r.crop.id, r.crop.name,
@@ -65,8 +65,8 @@ class FarmingCycleReportQueryRepositoryImpl(
         endsAt: LocalDateTime,
         finalHarvestRecordId: UUID,
     ): FarmingCycleReport? {
-        val where = completedScopeWhere(farmId, cropId)
-        val params = completedScopeParams(memberId, farmId, cropId)
+        val where = completedScopeWhere(setOf(farmId), setOf(cropId))
+        val params = completedScopeParams(memberId, setOf(farmId), setOf(cropId))
         where += cursorPredicate()
         params["cursorEndsAt"] = endsAt
         params["cursorFinalHarvestRecordId"] = finalHarvestRecordId
@@ -96,43 +96,43 @@ class FarmingCycleReportQueryRepositoryImpl(
     }
 
     private fun completedScopeWhere(
-        farmId: UUID?,
-        cropId: UUID?,
+        farmIds: Set<UUID>,
+        cropIds: Set<UUID>,
     ): MutableList<String> = mutableListOf(
         "r.member.id = :memberId",
         "r.status = :completed",
     ).apply {
-        farmId?.let { add("r.farm.id = :farmId") }
-        cropId?.let { add("r.crop.id = :cropId") }
+        farmIds.takeIf { it.isNotEmpty() }?.let { add("r.farm.id in :farmIds") }
+        cropIds.takeIf { it.isNotEmpty() }?.let { add("r.crop.id in :cropIds") }
     }
 
     private fun completedScopeParams(
         memberId: UUID,
-        farmId: UUID?,
-        cropId: UUID?,
+        farmIds: Set<UUID>,
+        cropIds: Set<UUID>,
     ): MutableMap<String, Any> = mutableMapOf<String, Any>(
         "memberId" to memberId,
         "completed" to FarmingCycleReportStatus.COMPLETED,
     ).apply {
-        farmId?.let { put("farmId", it) }
-        cropId?.let { put("cropId", it) }
+        farmIds.takeIf { it.isNotEmpty() }?.let { put("farmIds", it) }
+        cropIds.takeIf { it.isNotEmpty() }?.let { put("cropIds", it) }
     }
 
     private fun workItemScopeWhere(
-        farmId: UUID?,
-        cropId: UUID?,
+        farmIds: Set<UUID>,
+        cropIds: Set<UUID>,
     ): MutableList<String> = mutableListOf(
         "r.member.id = :memberId",
         "r.status in :visibleStatuses",
     ).apply {
-        farmId?.let { add("r.farm.id = :farmId") }
-        cropId?.let { add("r.crop.id = :cropId") }
+        farmIds.takeIf { it.isNotEmpty() }?.let { add("r.farm.id in :farmIds") }
+        cropIds.takeIf { it.isNotEmpty() }?.let { add("r.crop.id in :cropIds") }
     }
 
     private fun workItemScopeParams(
         memberId: UUID,
-        farmId: UUID?,
-        cropId: UUID?,
+        farmIds: Set<UUID>,
+        cropIds: Set<UUID>,
     ): MutableMap<String, Any> = mutableMapOf<String, Any>(
         "memberId" to memberId,
         "visibleStatuses" to setOf(
@@ -140,8 +140,8 @@ class FarmingCycleReportQueryRepositoryImpl(
             FarmingCycleReportStatus.COMPLETED,
         ),
     ).apply {
-        farmId?.let { put("farmId", it) }
-        cropId?.let { put("cropId", it) }
+        farmIds.takeIf { it.isNotEmpty() }?.let { put("farmIds", it) }
+        cropIds.takeIf { it.isNotEmpty() }?.let { put("cropIds", it) }
     }
 
     private fun cursorPredicate(): String =

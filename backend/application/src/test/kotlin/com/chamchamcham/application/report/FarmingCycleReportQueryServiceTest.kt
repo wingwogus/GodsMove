@@ -37,7 +37,9 @@ import java.util.UUID
 class FarmingCycleReportQueryServiceTest {
     private val memberId = uuid("000000000001")
     private val farmId = uuid("000000000101")
+    private val secondFarmId = uuid("000000000102")
     private val cropId = uuid("000000000201")
+    private val secondCropId = uuid("000000000202")
     private val reportId = uuid("000000000301")
     private val activeReportId = uuid("000000000302")
     private val previousReportId = uuid("000000000303")
@@ -134,8 +136,8 @@ class FarmingCycleReportQueryServiceTest {
             queryRepository.searchCompleted(
                 FarmingCycleReportQueryRepository.SearchCondition(
                     memberId = memberId,
-                    farmId = farmId,
-                    cropId = cropId,
+                    farmIds = setOf(farmId),
+                    cropIds = setOf(cropId),
                     cursor = null,
                     size = 3,
                 ),
@@ -159,8 +161,8 @@ class FarmingCycleReportQueryServiceTest {
             queryRepository.searchCompleted(
                 FarmingCycleReportQueryRepository.SearchCondition(
                     memberId = memberId,
-                    farmId = farmId,
-                    cropId = cropId,
+                    farmIds = setOf(farmId),
+                    cropIds = setOf(cropId),
                     cursor = null,
                     size = 11,
                 ),
@@ -172,8 +174,8 @@ class FarmingCycleReportQueryServiceTest {
         verify(queryRepository).searchCompleted(
             FarmingCycleReportQueryRepository.SearchCondition(
                 memberId = memberId,
-                farmId = farmId,
-                cropId = cropId,
+                farmIds = setOf(farmId),
+                cropIds = setOf(cropId),
                 cursor = null,
                 size = 11,
             ),
@@ -211,8 +213,8 @@ class FarmingCycleReportQueryServiceTest {
             queryRepository.searchCompleted(
                 FarmingCycleReportQueryRepository.SearchCondition(
                     memberId = memberId,
-                    farmId = null,
-                    cropId = null,
+                    farmIds = emptySet(),
+                    cropIds = emptySet(),
                     cursor = null,
                     size = 21,
                 ),
@@ -226,8 +228,8 @@ class FarmingCycleReportQueryServiceTest {
         verify(queryRepository).searchCompleted(
             FarmingCycleReportQueryRepository.SearchCondition(
                 memberId = memberId,
-                farmId = null,
-                cropId = null,
+                farmIds = emptySet(),
+                cropIds = emptySet(),
                 cursor = null,
                 size = 21,
             ),
@@ -240,8 +242,8 @@ class FarmingCycleReportQueryServiceTest {
             queryRepository.searchCompleted(
                 FarmingCycleReportQueryRepository.SearchCondition(
                     memberId = memberId,
-                    farmId = null,
-                    cropId = cropId,
+                    farmIds = emptySet(),
+                    cropIds = setOf(cropId),
                     cursor = null,
                     size = 21,
                 ),
@@ -256,7 +258,7 @@ class FarmingCycleReportQueryServiceTest {
     @Test
     fun `list rejects crop that is not registered to member farm`() {
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
-        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId))
+        `when`(memberCropRepository.existsByMemberIdAndFarmIdInAndCropId(memberId, setOf(farmId), cropId))
             .thenReturn(false)
 
         val exception = assertThrows(BusinessException::class.java) {
@@ -267,9 +269,43 @@ class FarmingCycleReportQueryServiceTest {
         verifyNoInteractions(queryRepository)
     }
 
+    @Test
+    fun `list validates and forwards multiple farm and crop filters`() {
+        val farmIds = setOf(farmId, secondFarmId)
+        val cropIds = setOf(cropId, secondCropId)
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(farmRepository.findByIdAndOwnerId(secondFarmId, memberId)).thenReturn(farm)
+        cropIds.forEach { selectedCropId ->
+            `when`(memberCropRepository.existsByMemberIdAndFarmIdInAndCropId(memberId, farmIds, selectedCropId))
+                .thenReturn(true)
+        }
+        val expected = FarmingCycleReportQueryRepository.SearchCondition(
+            memberId = memberId,
+            farmIds = farmIds,
+            cropIds = cropIds,
+            cursor = null,
+            size = 21,
+        )
+        `when`(queryRepository.searchCompleted(expected))
+            .thenReturn(FarmingCycleReportQueryRepository.SearchResult(emptyList()))
+
+        val result = service.listCompleted(
+            FarmingCycleReportSearchCondition(
+                memberId = memberId,
+                farmIds = farmIds,
+                cropIds = cropIds,
+                cursor = null,
+                size = 20,
+            ),
+        )
+
+        assertThat(result.items).isEmpty()
+        verify(queryRepository).searchCompleted(expected)
+    }
+
     private fun stubScope() {
         `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
-        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId))
+        `when`(memberCropRepository.existsByMemberIdAndFarmIdInAndCropId(memberId, setOf(farmId), cropId))
             .thenReturn(true)
     }
 
@@ -281,8 +317,8 @@ class FarmingCycleReportQueryServiceTest {
     ): FarmingCycleReportSearchCondition =
         FarmingCycleReportSearchCondition(
             memberId = memberId,
-            farmId = farmId,
-            cropId = cropId,
+            farmIds = farmId?.let(::setOf).orEmpty(),
+            cropIds = cropId?.let(::setOf).orEmpty(),
             cursor = cursor,
             size = size,
         )

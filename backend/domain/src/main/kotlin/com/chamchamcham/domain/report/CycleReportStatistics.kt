@@ -96,6 +96,7 @@ data class PlantingStatistics(
     val photoAttachmentRatePct: BigDecimal? = null,
     val weatherDistribution: List<CountDistribution> = emptyList(),
     val averageTemperatureC: BigDecimal? = null,
+    val plantingMethodDistribution: List<CountDistribution> = emptyList(),
     val propagationMethods: List<PropagationStatistics> = emptyList(),
 ) {
     companion object {
@@ -201,6 +202,7 @@ data class HarvestStatistics(
     val medicinalParts: List<HarvestPartStatistics> = emptyList(),
     val finalGrowthPeriodMonths: Int? = null,
     val growthPeriodRangeMonths: GrowthPeriodRange? = null,
+    val growthPeriodDistribution: List<CountDistribution> = emptyList(),
 ) {
     companion object {
         fun empty() = HarvestStatistics()

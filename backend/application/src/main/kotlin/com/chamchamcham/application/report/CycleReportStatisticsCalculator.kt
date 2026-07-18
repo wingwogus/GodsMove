@@ -53,6 +53,10 @@ class CycleReportStatisticsCalculator {
             photoAttachmentRatePct = common.photoAttachmentRatePct,
             weatherDistribution = common.weatherDistribution,
             averageTemperatureC = common.averageTemperatureC,
+            plantingMethodDistribution = distribution(
+                values = details.map(PlantingReportSource::plantingMethod),
+                denominator = records.size,
+            ),
             propagationMethods = details
                 .groupBy { it.propagationMethod ?: it.plantingMethod }
                 .map { (method, items) ->
@@ -218,6 +222,14 @@ class CycleReportStatisticsCalculator {
                 .mapNotNull { it.growthPeriodMonths }
                 .takeIf { it.isNotEmpty() }
                 ?.let { GrowthPeriodRange(requireNotNull(it.minOrNull()), requireNotNull(it.maxOrNull())) },
+            growthPeriodDistribution = distribution(
+                values = details.mapNotNull { detail ->
+                    detail.growthPeriodMonths?.let { months ->
+                        CategoryRef(code = months.toString(), label = "${months}개월")
+                    }
+                },
+                denominator = records.size,
+            ),
         )
     }
 

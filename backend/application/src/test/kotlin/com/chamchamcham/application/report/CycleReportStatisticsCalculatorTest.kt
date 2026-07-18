@@ -53,6 +53,10 @@ class CycleReportStatisticsCalculatorTest {
             .isEqualTo("G")
         assertThat(result.propagationMethods.first { it.code == "CUTTING" }.quantityUnit)
             .isEqualTo("JU")
+        assertThat(result.plantingMethodDistribution.map { it.code to it.count })
+            .containsExactly("SEED" to 2, "SEEDLING" to 1)
+        assertThat(result.plantingMethodDistribution.map { it.code to it.ratePct })
+            .containsExactly("SEED" to BigDecimal("66.67"), "SEEDLING" to BigDecimal("33.33"))
     }
 
     @Test
@@ -171,6 +175,25 @@ class CycleReportStatisticsCalculatorTest {
         assertThat(result.medicinalParts.first { it.code == "ROOT_BARK" }.knownAmountKg).isNull()
         assertThat(result.finalGrowthPeriodMonths).isEqualTo(12)
         assertThat(result.growthPeriodRangeMonths).isEqualTo(GrowthPeriodRange(10, 12))
+    }
+
+    @Test
+    fun `harvest groups records by growth period months`() {
+        val result = calculator.calculate(
+            listOf(
+                harvest("10", "ROOT_BARK", 24, final = false, day = 1),
+                harvest("20", "ROOT_BARK", 24, final = false, day = 2),
+                harvest("30", "ROOT_BARK", 36, final = true, day = 3),
+            ),
+        ).harvest
+
+        assertThat(result.growthPeriodDistribution.map { Triple(it.code, it.label, it.count) })
+            .containsExactly(
+                Triple("24", "24개월", 2),
+                Triple("36", "36개월", 1),
+            )
+        assertThat(result.growthPeriodDistribution.map { it.code to it.ratePct })
+            .containsExactly("24" to BigDecimal("66.67"), "36" to BigDecimal("33.33"))
     }
 
     private fun assertDirectCommonFields(stats: Any, day: Int, photoAttached: Boolean) {

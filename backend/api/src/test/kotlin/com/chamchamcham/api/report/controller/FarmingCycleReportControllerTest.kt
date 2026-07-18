@@ -60,7 +60,9 @@ class FarmingCycleReportControllerTest(
 ) {
     private val memberId = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val farmId = UUID.fromString("00000000-0000-0000-0000-000000000201")
+    private val secondFarmId = UUID.fromString("00000000-0000-0000-0000-000000000202")
     private val cropId = UUID.fromString("00000000-0000-0000-0000-000000000301")
+    private val secondCropId = UUID.fromString("00000000-0000-0000-0000-000000000302")
     private val selectedReportId = UUID.fromString("00000000-0000-0000-0000-000000000601")
     private val previousReportId = UUID.fromString("00000000-0000-0000-0000-000000000602")
     private val finalHarvestRecordId = UUID.fromString("00000000-0000-0000-0000-000000000101")
@@ -116,8 +118,13 @@ class FarmingCycleReportControllerTest(
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.selected.id", equalTo(selectedReportId.toString())))
             .andExpect(jsonPath("$.data.selected.statistics.planting.recordCount", equalTo(1)))
+            .andExpect(jsonPath("$.data.selected.statistics.planting.plantingMethodDistribution[0].code", equalTo("SEED")))
+            .andExpect(jsonPath("$.data.selected.statistics.planting.plantingMethodDistribution[0].ratePct", equalTo(100.0)))
             .andExpect(jsonPath("$.data.selected.statistics.watering.recordCount", equalTo(2)))
+            .andExpect(jsonPath("$.data.selected.statistics.pestControl.totalSprayAmountMl", equalTo(2000.0)))
+            .andExpect(jsonPath("$.data.selected.statistics.pestControl.totalSprayAmountLiters").doesNotExist())
             .andExpect(jsonPath("$.data.selected.statistics.harvest.totalAmountKg", equalTo(30.0)))
+            .andExpect(jsonPath("$.data.selected.statistics.harvest.growthPeriodDistribution[0].code", equalTo("6")))
             .andExpect(jsonPath("$.data.selected.statistics.harvest.amountCoverage.recordedCount", equalTo(2)))
             .andExpect(jsonPath("$.data.selected.statistics.harvest.amountCoverage.targetCount", equalTo(3)))
             .andExpect(jsonPath("$.data.previous").doesNotExist())
@@ -243,6 +250,27 @@ class FarmingCycleReportControllerTest(
     }
 
     @Test
+    fun `list binds repeated farm and crop ids as multi filters`() {
+        val condition = FarmingCycleReportSearchCondition(
+            memberId = memberId,
+            farmIds = setOf(farmId, secondFarmId),
+            cropIds = setOf(cropId, secondCropId),
+            cursor = null,
+            size = 20,
+        )
+        `when`(service.listCompleted(condition)).thenReturn(FarmingCycleReportResult.Page(emptyList(), null))
+
+        mockMvc.perform(
+            get("/api/v1/farming-reports")
+                .with(authenticatedMember(memberId.toString()))
+                .param("farmId", farmId.toString(), secondFarmId.toString())
+                .param("cropId", cropId.toString(), secondCropId.toString()),
+        ).andExpect(status().isOk)
+
+        verify(service).listCompleted(condition)
+    }
+
+    @Test
     fun `snapshot response copies every nested statistic into API owned types`() {
         val statistics = representativeStatistics()
 
@@ -254,7 +282,13 @@ class FarmingCycleReportControllerTest(
         assertThat(response.statistics).isNotInstanceOf(CycleReportStatistics::class.java)
         assertThat(response.statistics)
             .usingRecursiveComparison()
+            .ignoringFields(
+                "pestControl.totalSprayAmountMl",
+                "pestControl.totalSprayAmountLiters",
+            )
             .isEqualTo(statistics)
+        assertThat(response.statistics.pestControl.totalSprayAmountMl)
+            .isEqualByComparingTo("2000.0000")
     }
 
     private fun searchCondition(
@@ -264,8 +298,8 @@ class FarmingCycleReportControllerTest(
         size: Int = 20,
     ) = FarmingCycleReportSearchCondition(
         memberId = memberId,
-        farmId = farmId,
-        cropId = cropId,
+        farmIds = farmId?.let(::setOf).orEmpty(),
+        cropIds = cropId?.let(::setOf).orEmpty(),
         cursor = cursor,
         size = size,
     )
@@ -339,6 +373,7 @@ class FarmingCycleReportControllerTest(
             photoAttachmentRatePct = BigDecimal("100.0"),
             weatherDistribution = listOf(distribution("SUNNY", "맑음")),
             averageTemperatureC = BigDecimal("18.5"),
+            plantingMethodDistribution = listOf(distribution("SEED", "씨앗 심기")),
             propagationMethods = listOf(
                 PropagationStatistics(
                     code = "SEED",
@@ -431,6 +466,7 @@ class FarmingCycleReportControllerTest(
             ),
             finalGrowthPeriodMonths = 6,
             growthPeriodRangeMonths = GrowthPeriodRange(5, 7),
+            growthPeriodDistribution = listOf(distribution("6", "6개월")),
         ),
         etc = CommonOnlyStatistics(
             recordCount = 1,

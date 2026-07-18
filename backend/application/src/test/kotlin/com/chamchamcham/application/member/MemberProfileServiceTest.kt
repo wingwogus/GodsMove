@@ -29,7 +29,6 @@ import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
 import org.mockito.Mockito.never
-import org.mockito.Mockito.times
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
 import org.mockito.junit.jupiter.MockitoExtension
@@ -312,7 +311,7 @@ class MemberProfileServiceTest {
     }
 
     @Test
-    fun `withdraw clears profile deletes member and publishes distinct Cloudinary ids`() {
+    fun `withdraw clears profile bulk deletes member and publishes distinct Cloudinary ids`() {
         `when`(memberRepository.findByIdForUpdate(memberId)).thenReturn(member)
         `when`(uploadedMediaRepository.findCloudinaryPublicIdsByOwnerId(memberId))
             .thenReturn(listOf("profile/image", "community/image", "community/image"))
@@ -320,8 +319,8 @@ class MemberProfileServiceTest {
         service.withdraw(memberId)
 
         assertNull(member.profileMedia)
-        verify(memberRepository, times(2)).flush()
-        verify(memberRepository).delete(member)
+        verify(memberRepository).flush()
+        verify(memberRepository).hardDeleteById(memberId)
         val event = capturedWithdrawalEvent()
         assertEquals(memberId, event.memberId)
         assertThat(event.cloudinaryPublicIds)

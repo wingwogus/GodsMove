@@ -8,6 +8,8 @@ import com.chamchamcham.domain.farming.FarmingRecord
 import com.chamchamcham.domain.farming.EntryMode
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.member.Member
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
+import com.fasterxml.jackson.module.kotlin.readValue
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -78,6 +80,18 @@ class FarmingCycleReportRepositoryJsonTest @Autowired constructor(
     }
 
     @Test
+    fun `statistics JSON saved before distribution fields remains readable`() {
+        val statistics = jacksonObjectMapper().readValue<CycleReportStatistics>(
+            """{"planting":{"recordCount":1},"harvest":{"recordCount":1}}""",
+        )
+
+        assertThat(statistics.planting.recordCount).isEqualTo(1)
+        assertThat(statistics.planting.plantingMethodDistribution).isEmpty()
+        assertThat(statistics.harvest.recordCount).isEqualTo(1)
+        assertThat(statistics.harvest.growthPeriodDistribution).isEmpty()
+    }
+
+    @Test
     fun `member scoped lookup does not expose another members report`() {
         val report = repository.saveAndFlush(completedReport())
 
@@ -112,6 +126,7 @@ class FarmingCycleReportRepositoryJsonTest @Autowired constructor(
                 lastWorkedOn = LocalDate.of(2026, 1, 1),
                 workedDayCount = 1,
                 photoAttachedRecordCount = 1,
+                plantingMethodDistribution = listOf(distribution("SEED", "씨앗 심기", 1)),
                 propagationMethods = listOf(
                     PropagationStatistics(
                         code = "SEED",
@@ -202,6 +217,7 @@ class FarmingCycleReportRepositoryJsonTest @Autowired constructor(
                 ),
                 finalGrowthPeriodMonths = 6,
                 growthPeriodRangeMonths = GrowthPeriodRange(5, 7),
+                growthPeriodDistribution = listOf(distribution("6", "6개월", 7)),
             ),
             etc = CommonOnlyStatistics(recordCount = 8),
         )

@@ -254,8 +254,8 @@ class FarmingWorkReportQueryServiceTest {
     fun `list uses lookahead and exact cycle thumbnails with latest pictured fallback`() {
         val expectedCondition = FarmingCycleReportQueryRepository.WorkItemSearchCondition(
             memberId = memberId,
-            farmId = farmId,
-            cropId = cropId,
+            farmIds = setOf(farmId),
+            cropIds = setOf(cropId),
             workType = null,
             cursor = null,
             size = 3,
@@ -305,8 +305,8 @@ class FarmingWorkReportQueryServiceTest {
         val page = service.list(
             FarmingWorkReportSearchCondition(
                 memberId = memberId,
-                farmId = farmId,
-                cropId = cropId,
+                farmIds = setOf(farmId),
+                cropIds = setOf(cropId),
                 workType = null,
                 cursor = null,
                 size = 2,
@@ -335,8 +335,8 @@ class FarmingWorkReportQueryServiceTest {
     fun `list resolves active cycle thumbnail without a final harvest`() {
         val expectedCondition = FarmingCycleReportQueryRepository.WorkItemSearchCondition(
             memberId = memberId,
-            farmId = farmId,
-            cropId = cropId,
+            farmIds = setOf(farmId),
+            cropIds = setOf(cropId),
             workType = WorkType.WATERING,
             cursor = null,
             size = 2,
@@ -365,8 +365,8 @@ class FarmingWorkReportQueryServiceTest {
         val page = service.list(
             FarmingWorkReportSearchCondition(
                 memberId = memberId,
-                farmId = farmId,
-                cropId = cropId,
+                farmIds = setOf(farmId),
+                cropIds = setOf(cropId),
                 workType = WorkType.WATERING,
                 cursor = null,
                 size = 1,
@@ -393,8 +393,8 @@ class FarmingWorkReportQueryServiceTest {
         val cursor = cursorCodec.encode(cursorPayload)
         val expectedCondition = FarmingCycleReportQueryRepository.WorkItemSearchCondition(
             memberId = memberId,
-            farmId = null,
-            cropId = null,
+            farmIds = emptySet(),
+            cropIds = emptySet(),
             workType = WorkType.PEST_CONTROL,
             cursor = FarmingCycleReportQueryRepository.WorkItemCursor(
                 lastWorkedOn = cursorPayload.lastWorkedOn,
@@ -422,8 +422,8 @@ class FarmingWorkReportQueryServiceTest {
         val page = service.list(
             FarmingWorkReportSearchCondition(
                 memberId = memberId,
-                farmId = null,
-                cropId = null,
+                farmIds = emptySet(),
+                cropIds = emptySet(),
                 workType = WorkType.PEST_CONTROL,
                 cursor = cursor,
                 size = 1,
@@ -451,8 +451,8 @@ class FarmingWorkReportQueryServiceTest {
             service.list(
                 FarmingWorkReportSearchCondition(
                     memberId = memberId,
-                    farmId = null,
-                    cropId = null,
+                    farmIds = emptySet(),
+                    cropIds = emptySet(),
                     workType = null,
                     cursor = legacyCursor,
                     size = 1,
@@ -499,8 +499,8 @@ class FarmingWorkReportQueryServiceTest {
         )
         val expectedCondition = FarmingCycleReportQueryRepository.WorkItemSearchCondition(
             memberId = memberId,
-            farmId = null,
-            cropId = null,
+            farmIds = emptySet(),
+            cropIds = emptySet(),
             workType = WorkType.WATERING,
             cursor = null,
             size = 3,
@@ -540,8 +540,8 @@ class FarmingWorkReportQueryServiceTest {
         val page = service.list(
             FarmingWorkReportSearchCondition(
                 memberId = memberId,
-                farmId = null,
-                cropId = null,
+                farmIds = emptySet(),
+                cropIds = emptySet(),
                 workType = WorkType.WATERING,
                 cursor = null,
                 size = 2,
@@ -559,8 +559,8 @@ class FarmingWorkReportQueryServiceTest {
     fun `list resolves tied pictured records by created time then record id`() {
         val expectedCondition = FarmingCycleReportQueryRepository.WorkItemSearchCondition(
             memberId = memberId,
-            farmId = farmId,
-            cropId = cropId,
+            farmIds = setOf(farmId),
+            cropIds = setOf(cropId),
             workType = WorkType.WATERING,
             cursor = null,
             size = 2,
@@ -588,8 +588,8 @@ class FarmingWorkReportQueryServiceTest {
         val page = service.list(
             FarmingWorkReportSearchCondition(
                 memberId = memberId,
-                farmId = farmId,
-                cropId = cropId,
+                farmIds = setOf(farmId),
+                cropIds = setOf(cropId),
                 workType = WorkType.WATERING,
                 cursor = null,
                 size = 1,
@@ -605,8 +605,8 @@ class FarmingWorkReportQueryServiceTest {
     fun `empty projection still performs one fixed source load with empty scopes`() {
         val expectedCondition = FarmingCycleReportQueryRepository.WorkItemSearchCondition(
             memberId = memberId,
-            farmId = null,
-            cropId = null,
+            farmIds = emptySet(),
+            cropIds = emptySet(),
             workType = null,
             cursor = null,
             size = 11,
@@ -625,8 +625,8 @@ class FarmingWorkReportQueryServiceTest {
         val page = service.list(
             FarmingWorkReportSearchCondition(
                 memberId = memberId,
-                farmId = null,
-                cropId = null,
+                farmIds = emptySet(),
+                cropIds = emptySet(),
                 workType = null,
                 cursor = null,
                 size = 10,

@@ -101,7 +101,7 @@ class FarmingCycleReportProjectionServiceTest {
         val saved = capturedSavedReports().single()
         assertThat(saved.status).isEqualTo(FarmingCycleReportStatus.ACTIVE)
         assertThat(saved.statistics.watering.recordCount).isEqualTo(1)
-        assertThat(saved.statisticsSchemaVersion).isEqualTo(2)
+        assertThat(saved.statisticsSchemaVersion).isEqualTo(3)
         assertThat(saved.sourceRevision).isEqualTo(1)
     }
 
@@ -258,7 +258,7 @@ class FarmingCycleReportProjectionServiceTest {
             finalRecordId = finalHarvestRecordId,
             startsAt = baseTime.plusDays(1),
             endsAt = baseTime.plusDays(10),
-            statisticsSchemaVersion = 2,
+            statisticsSchemaVersion = 3,
         )
         val revision = completed.sourceRevision
         stubScope(existing = listOf(completed))
