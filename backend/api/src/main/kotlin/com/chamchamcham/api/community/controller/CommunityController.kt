@@ -40,6 +40,16 @@ class CommunityController(
         return ResponseEntity.ok(ApiResponse.ok(boards.map(CommunityResponses.BoardResponse::from)))
     }
 
+    @GetMapping("/members/{memberId}/post-crops")
+    fun listPostCrops(
+        @AuthenticationPrincipal authenticatedMemberId: String?,
+        @PathVariable memberId: UUID
+    ): ResponseEntity<ApiResponse<List<CommunityResponses.BoardResponse>>> {
+        parseMemberId(authenticatedMemberId)
+        val crops = communityPostService.listPostCrops(memberId)
+        return ResponseEntity.ok(ApiResponse.ok(crops.map(CommunityResponses.BoardResponse::from)))
+    }
+
     @GetMapping("/posts")
     fun listPosts(
         @AuthenticationPrincipal memberId: String?,

@@ -321,6 +321,17 @@ class CommunityPostServiceTest {
     }
 
     @Test
+    fun `list post crops maps distinct crops from the query repository`() {
+        `when`(communityPostQueryRepository.findDistinctCropsByAuthor(memberId))
+            .thenReturn(listOf(crop, secondCrop))
+
+        val boards = service.listPostCrops(memberId)
+
+        assertThat(boards.map { it.cropId }).containsExactly(cropId, secondCropId)
+        assertThat(boards.map { it.cropName }).containsExactly("황기", "인삼")
+    }
+
+    @Test
     fun `get detail returns ordered images counts and liked by me`() {
         setCreatedAt(existingPost, postCreatedAt)
         `when`(communityPostRepository.findByIdAndIsDeletedFalse(postId)).thenReturn(existingPost)

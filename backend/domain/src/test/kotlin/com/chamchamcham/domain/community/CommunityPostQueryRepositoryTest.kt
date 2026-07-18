@@ -331,6 +331,20 @@ class CommunityPostQueryRepositoryTest @Autowired constructor(
         assertThat(total).isEqualTo(1)
     }
 
+    @Test
+    fun `findDistinctCropsByAuthor dedupes crops and excludes deleted posts and other authors`() {
+        persistPost(title = "황기 글 1", author = member, crop = hwanggiCrop)
+        persistPost(title = "황기 글 2", author = member, crop = hwanggiCrop)
+        persistPost(title = "삭제된 인삼 글", author = member, crop = ginsengCrop, isDeleted = true)
+        persistPost(title = "다른 회원 인삼 글", author = otherMember, crop = ginsengCrop)
+        entityManager.flush()
+        entityManager.clear()
+
+        val crops = queryRepository.findDistinctCropsByAuthor(memberId)
+
+        assertThat(crops.map { it.id }).containsExactly(hwanggiCropId)
+    }
+
     private fun persistPost(
         title: String,
         body: String = "본문",

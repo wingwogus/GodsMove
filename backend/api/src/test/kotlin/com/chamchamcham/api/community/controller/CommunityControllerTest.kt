@@ -85,6 +85,24 @@ class CommunityControllerTest(
     }
 
     @Test
+    fun `list post crops returns crops for the path member id not the authenticated caller`() {
+        `when`(communityPostService.listPostCrops(authorMemberId)).thenReturn(
+            listOf(
+                CommunityPostResult.Board(cropId = cropId, cropName = "황기"),
+                CommunityPostResult.Board(cropId = secondCropId, cropName = "인삼")
+            )
+        )
+
+        mockMvc.perform(
+            get("/api/v1/community/members/$authorMemberId/post-crops")
+                .with(authenticatedMember(memberId.toString()))
+        )
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.data[0].cropId", equalTo(cropId.toString())))
+            .andExpect(jsonPath("$.data[1].cropId", equalTo(secondCropId.toString())))
+    }
+
+    @Test
     fun `list posts returns cursor page`() {
         `when`(communityPostService.search(anySearchCondition())).thenReturn(postPageResult())
 
