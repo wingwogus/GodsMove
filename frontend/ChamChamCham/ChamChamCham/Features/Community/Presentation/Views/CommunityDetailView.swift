@@ -65,6 +65,9 @@ struct CommunityDetailView: View {
         .navigationDestination(for: MemberProfileRoute.self) { route in
             MemberProfileView(memberId: route.memberId, container: container)
         }
+        .navigationDestination(for: RecordDetail.self) { record in
+            RecordDetailView(recordId: record.id, repository: container.makeRecordRepository())
+        }
         .safeAreaInset(edge: .bottom) { commentComposer }
         .photosPicker(isPresented: $showPhotoPicker, selection: $pickerItems, maxSelectionCount: 1, matching: .images)
         .onChange(of: pickerItems) { _, items in
@@ -204,8 +207,11 @@ struct CommunityDetailView: View {
                     .padding(.top, Spacing.sm)
 
                 if let farmingRecord = viewModel.farmingRecord {
-                    CommunityFarmingRecordCard(record: farmingRecord)
-                        .padding(.top, Spacing.md)
+                    NavigationLink(value: farmingRecord) {
+                        CommunityFarmingRecordCard(record: farmingRecord)
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.top, Spacing.md)
                 }
 
                 reactionRow(detail)

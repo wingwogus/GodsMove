@@ -95,6 +95,7 @@ struct ReportGrowthPeriodRange: Hashable, Sendable {
 }
 
 struct PlantingReportStatistics: Hashable, Sendable {
+    let plantingMethodDistribution: [ReportCountDistribution]
     let propagationMethods: [ReportPropagationStatistics]
 }
 
@@ -134,6 +135,7 @@ struct HarvestReportStatistics: Hashable, Sendable {
     let medicinalParts: [ReportHarvestPartStatistics]
     let finalGrowthPeriodMonths: Int?
     let growthPeriodRangeMonths: ReportGrowthPeriodRange?
+    let growthPeriodDistribution: [ReportCountDistribution]
 }
 
 struct FarmingWorkReportStatistics: Hashable, Sendable {

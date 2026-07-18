@@ -73,12 +73,12 @@ struct ReportResponseDecodingTests {
     @Test("each supported typed statistics branch decodes when sibling keys are omitted")
     func typedStatisticsBranches() throws {
         let fixtures: [(WorkType, String, String)] = [
-            (.planting, "planting", "\"propagationMethods\": [{\"code\":\"SEED\",\"label\":\"종자\",\"recordCount\":2,\"recordRatePct\":66.7,\"totalQuantity\":120.5,\"quantityUnit\":\"립\",\"quantityCoverage\":{\"recordedCount\":2,\"targetCount\":3}}]"),
+            (.planting, "planting", "\"plantingMethodDistribution\":[{\"code\":\"SEED\",\"label\":\"씨앗 심기\",\"count\":2,\"ratePct\":100}],\"propagationMethods\": [{\"code\":\"SEED\",\"label\":\"종자\",\"recordCount\":2,\"recordRatePct\":66.7,\"totalQuantity\":120.5,\"quantityUnit\":\"립\",\"quantityCoverage\":{\"recordedCount\":2,\"targetCount\":3}}]"),
             (.watering, "watering", "\"amountDistribution\": [{\"code\":\"LARGE\",\"label\":\"많이\",\"count\":2,\"ratePct\":100}], \"methodDistribution\": []"),
             (.fertilizing, "fertilizing", "\"totalAmountKg\":12.5,\"averageAmountKg\":6.25,\"amountCoverage\":{\"recordedCount\":2,\"targetCount\":2},\"materialCategories\":[{\"code\":\"COMPOST\",\"label\":\"퇴비\",\"recordCount\":2,\"recordRatePct\":100,\"amountKg\":12.5,\"amountRatePct\":100}],\"methodDistribution\":[],\"categoryMethods\":[]"),
             (.pestControl, "pestControl", "\"categoryDistribution\":[],\"pesticideAmounts\":[{\"unit\":\"ml\",\"amount\":250.5,\"coverage\":{\"recordedCount\":1,\"targetCount\":1}}],\"categoryAmounts\":[],\"totalSprayAmountMl\":20,\"sprayAmountCoverage\":{\"recordedCount\":1,\"targetCount\":1},\"targets\":[{\"target\":\"진딧물\",\"count\":1}]"),
             (.weeding, "weeding", "\"methodDistribution\": [{\"code\":\"HAND\",\"label\":\"손제초\",\"count\":2,\"ratePct\":100}]"),
-            (.harvest, "harvest", "\"totalAmountKg\":32.5,\"averageAmountKg\":16.25,\"amountCoverage\":{\"recordedCount\":2,\"targetCount\":2},\"firstHarvestedOn\":\"2026-09-01\",\"lastHarvestedOn\":\"2026-09-10\",\"medicinalParts\":[{\"code\":\"ROOT\",\"label\":\"뿌리\",\"recordCount\":2,\"recordRatePct\":100,\"knownAmountKg\":32.5,\"amountRatePct\":100,\"amountCoverage\":{\"recordedCount\":2,\"targetCount\":2}}],\"finalGrowthPeriodMonths\":5,\"growthPeriodRangeMonths\":{\"minMonths\":4,\"maxMonths\":6}")
+            (.harvest, "harvest", "\"totalAmountKg\":32.5,\"averageAmountKg\":16.25,\"amountCoverage\":{\"recordedCount\":2,\"targetCount\":2},\"firstHarvestedOn\":\"2026-09-01\",\"lastHarvestedOn\":\"2026-09-10\",\"medicinalParts\":[{\"code\":\"ROOT\",\"label\":\"뿌리\",\"recordCount\":2,\"recordRatePct\":100,\"knownAmountKg\":32.5,\"amountRatePct\":100,\"amountCoverage\":{\"recordedCount\":2,\"targetCount\":2}}],\"finalGrowthPeriodMonths\":5,\"growthPeriodRangeMonths\":{\"minMonths\":4,\"maxMonths\":6},\"growthPeriodDistribution\":[{\"code\":\"24\",\"label\":\"24개월\",\"count\":2,\"ratePct\":100}]")
         ]
 
         for (workType, key, extra) in fixtures {
@@ -196,7 +196,7 @@ struct ReportResponseDecodingTests {
             FarmingWorkReportDetailResponseDTO.self,
             json: detailJSON(
                 workType: WorkType.planting.rawValue,
-                branch: "\"planting\": {\(commonFields),\"propagationMethods\":[]}"
+                branch: "\"planting\": {\(commonFields),\"plantingMethodDistribution\":[],\"propagationMethods\":[]}"
             )
         )
 

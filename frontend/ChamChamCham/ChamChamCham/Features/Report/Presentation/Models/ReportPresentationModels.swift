@@ -45,6 +45,11 @@ struct ReportDetailPresentation: Hashable, Sendable {
                         ))
                     }
                 }
+                Self.appendDistributionChart(
+                    title: "진행한 심기 방법",
+                    values: statistics.plantingMethodDistribution,
+                    to: &charts
+                )
                 Self.appendChart(
                     title: "진행한 모종 번식법",
                     data: statistics.propagationMethods.map {
@@ -174,6 +179,11 @@ struct ReportDetailPresentation: Hashable, Sendable {
                             unit: "회"
                         )
                     },
+                    to: &charts
+                )
+                Self.appendDistributionChart(
+                    title: "재배 개월에 따른 수확량",
+                    values: statistics.growthPeriodDistribution,
                     to: &charts
                 )
             }
