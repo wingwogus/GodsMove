@@ -39,32 +39,37 @@ struct BoardSelectSheet: View {
         VStack(spacing: 0) {
             grabber
 
-            VStack(alignment: .leading, spacing: Spacing.md) {
-                Text("게시판 선택")
-                    .appTypography(.titleMediumEmphasized)
-                    .foregroundStyle(Color.Text.default)
+            Text("게시판 선택")
+                .appTypography(.titleMediumEmphasized)
+                .foregroundStyle(Color.Text.default)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, Spacing.lg - Spacing.xs)
+                .padding(.bottom, Spacing.md)
 
-                if isLoading {
-                    LoadingView().frame(maxWidth: .infinity)
-                } else {
-                    section(title: "진행중인 작물", boards: activeBoards)
-                    if !otherBoards.isEmpty {
-                        Divider().overlay(Color.Border.default)
-                        section(title: "기타 작물", boards: otherBoards)
+            // 작물이 많아져도 대응할 수 있도록 칩 영역만 스크롤한다. 제목과 완료 버튼은 고정.
+            if isLoading {
+                LoadingView().frame(maxWidth: .infinity, maxHeight: .infinity)
+            } else {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: Spacing.md) {
+                        section(title: "진행중인 작물", boards: activeBoards)
+                        if !otherBoards.isEmpty {
+                            Divider().overlay(Color.Border.default)
+                            section(title: "기타 작물", boards: otherBoards)
+                        }
                     }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, Spacing.lg - Spacing.xs)
+                    .padding(.bottom, Spacing.md)
                 }
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding(.horizontal, Spacing.lg - Spacing.xs)
-            .padding(.top, Spacing.md)
-
-            Spacer(minLength: Spacing.md)
 
             AppButton("완료", variant: .secondary, size: .medium, fullWidth: true) {
                 onComplete(selection)
                 dismiss()
             }
             .padding(.horizontal, Spacing.lg - Spacing.xs)
+            .padding(.top, Spacing.md)
             .padding(.bottom, Spacing.lg)
         }
         .background(Color.Object.default)
