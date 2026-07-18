@@ -8,54 +8,63 @@
 import Foundation
 import SwiftData
 
-/// A read-through cache of the last known server-side member/onboarding state, written only after a successful
-/// network response (login or onboarding-complete) — never something with a "pending" state to reconcile.
-/// Lets `RootView` route optimistically on cold launch before the network round-trip completes (offline-first),
-/// at the cost of the cache going stale until the next full login — there is currently no `GET /api/v1/users/me`
-/// to refresh it any other way.
-@Model
-final class CachedMemberProfile {
-    @Attribute(.unique) var id: UUID
-    var email: String?
-    var name: String?
-    var nickname: String?
-    var phone: String?
-    var birthDateRaw: String?
-    var experienceLevel: Int?
-    var managementTypeRaw: String?
-    var profileImageUrl: String?
-    var onboardingStatusRaw: String
-    var missingFieldsRaw: [String]
-    var updatedAt: Date
+extension SchemaV3 {
+    /// A read-through cache of the last known server-side member/onboarding state, written only after a successful
+    /// network response (login or onboarding-complete) — never something with a "pending" state to reconcile.
+    /// Lets `RootView` route optimistically on cold launch before the network round-trip completes (offline-first),
+    /// at the cost of the cache going stale until the next full login — there is currently no `GET /api/v1/users/me`
+    /// to refresh it any other way.
+    @Model
+    final class CachedMemberProfile {
+        @Attribute(.unique) var id: UUID
+        var email: String?
+        var name: String?
+        var nickname: String?
+        var phone: String?
+        var birthDateRaw: String?
+        var experienceLevel: Int?
+        var managementTypeRaw: String?
+        var profileImageUrl: String?
+        var onboardingStatusRaw: String
+        var missingFieldsRaw: [String]
+        var updatedAt: Date
 
-    init(
-        id: UUID,
-        email: String?,
-        name: String?,
-        nickname: String?,
-        phone: String?,
-        birthDateRaw: String?,
-        experienceLevel: Int?,
-        managementTypeRaw: String?,
-        profileImageUrl: String?,
-        onboardingStatusRaw: String,
-        missingFieldsRaw: [String],
-        updatedAt: Date
-    ) {
-        self.id = id
-        self.email = email
-        self.name = name
-        self.nickname = nickname
-        self.phone = phone
-        self.birthDateRaw = birthDateRaw
-        self.experienceLevel = experienceLevel
-        self.managementTypeRaw = managementTypeRaw
-        self.profileImageUrl = profileImageUrl
-        self.onboardingStatusRaw = onboardingStatusRaw
-        self.missingFieldsRaw = missingFieldsRaw
-        self.updatedAt = updatedAt
+        init(
+            id: UUID,
+            email: String?,
+            name: String?,
+            nickname: String?,
+            phone: String?,
+            birthDateRaw: String?,
+            experienceLevel: Int?,
+            managementTypeRaw: String?,
+            profileImageUrl: String?,
+            onboardingStatusRaw: String,
+            missingFieldsRaw: [String],
+            updatedAt: Date
+        ) {
+            self.id = id
+            self.email = email
+            self.name = name
+            self.nickname = nickname
+            self.phone = phone
+            self.birthDateRaw = birthDateRaw
+            self.experienceLevel = experienceLevel
+            self.managementTypeRaw = managementTypeRaw
+            self.profileImageUrl = profileImageUrl
+            self.onboardingStatusRaw = onboardingStatusRaw
+            self.missingFieldsRaw = missingFieldsRaw
+            self.updatedAt = updatedAt
+        }
     }
+}
 
+/// App-facing alias for the latest frozen version of this model. The persisted shape lives inside the
+/// versioned schema so a future breaking change adds `SchemaV4.CachedMemberProfile` while `SchemaV3`'s copy
+/// stays frozen — an existing store keeps matching `SchemaV3` and migrates forward instead of being orphaned.
+typealias CachedMemberProfile = SchemaV3.CachedMemberProfile
+
+extension CachedMemberProfile {
     var isOnboardingComplete: Bool {
         onboardingStatusRaw == OnboardingStatusDTO.complete.rawValue
     }
