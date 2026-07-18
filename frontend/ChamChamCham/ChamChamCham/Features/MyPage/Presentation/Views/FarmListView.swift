@@ -14,6 +14,17 @@ struct FarmListView: View {
     @State private var isShowingAdd = false
     @State private var isConfirmingDelete = false
 
+    /// Inline 농지명 edit (owned here so only one card edits at a time).
+    @State private var editingFarmId: UUID?
+    @State private var draftName = ""
+
+    /// Crop-edit sheet target.
+    @State private var cropEditFarm: StandaloneFarmResponseDTO?
+
+    /// Address-edit sheet target + the location engine it drives (a fresh instance per farm).
+    @State private var addressEditFarm: StandaloneFarmResponseDTO?
+    @State private var addressEditLocation = FarmLocationViewModel()
+
     init(container: DIContainer) {
         self.container = container
         _viewModel = State(initialValue: FarmListViewModel(repository: container.makeFarmRepository()))
@@ -24,14 +35,59 @@ struct FarmListView: View {
             .background(Color.Background.subtle)
             .safeAreaInset(edge: .bottom, spacing: 0) { deleteBar }
             .task { await viewModel.load() }
+            .appToast(message: $viewModel.toastMessage)
             .fullScreenCover(isPresented: $isShowingAdd) {
                 FarmAddView(
                     farmRepository: container.makeFarmRepository(),
                     cropCatalog: container.makeCropCatalogService()
                 ) {
                     Task { await viewModel.load() }
+                    viewModel.toastMessage = "농지 추가 완료되었습니다."
                 }
             }
+            .fullScreenCover(item: $cropEditFarm) { farm in
+                CropPickerView(
+                    loadCrops: { (try? await container.makeCropCatalogService().fetchCrops()) ?? [] },
+                    loadCategories: { (try? await container.makeCropCatalogService().fetchCategories()) ?? [] },
+                    initialSelection: farm.crops.map {
+                        Crop(id: $0.id, name: $0.name, categoryCode: $0.usePartCategory, categoryLabel: $0.usePartCategoryLabel)
+                    },
+                    onComplete: { crops in
+                        Task { await viewModel.updateCrops(farm, cropIds: crops.map(\.id)) }
+                    }
+                )
+            }
+            .fullScreenCover(item: $addressEditFarm) { farm in
+                FarmLocationPickerView(
+                    location: addressEditLocation,
+                    showsFarmNameField: false,
+                    headline: "재배지 주소 수정하기",
+                    subtitle: "재배지의 주소명을 입력해주세요.",
+                    ctaTitle: "저장",
+                    onBack: { addressEditFarm = nil },
+                    onPrimary: {
+                        Task {
+                            if await viewModel.updateLocation(farm, location: addressEditLocation) {
+                                addressEditFarm = nil
+                            }
+                        }
+                    }
+                )
+            }
+    }
+
+    /// 기존 주소로 재지오코딩해 지도 센터링 + 필지를 다시 조회한다(정밀 폴리곤 복원은 범위 밖 — 사용자가
+    /// 필요하면 재검색/지도 재탭으로 갱신). 각 밭마다 새 `FarmLocationViewModel`을 만들어 이전 편집 상태가
+    /// 남지 않게 한다.
+    private func beginAddressEdit(_ farm: StandaloneFarmResponseDTO) {
+        let location = FarmLocationViewModel()
+        addressEditLocation = location
+        addressEditFarm = farm
+        Task {
+            await location.selectAddress(
+                JusoAddress(roadAddrPart1: farm.roadAddress, jibunAddr: farm.jibunAddress ?? "", bdNm: "")
+            )
+        }
     }
 
     @ViewBuilder private var content: some View {
@@ -58,7 +114,20 @@ struct FarmListView: View {
                             farmName: farm.name,
                             roadAddress: farm.roadAddress,
                             crops: farm.crops.map(\.name),
-                            isSelected: viewModel.isSelected(farm.farmId)
+                            isSelected: viewModel.isSelected(farm.farmId),
+                            isEditingName: editingFarmId == farm.farmId,
+                            editingName: editingFarmId == farm.farmId ? $draftName : nil,
+                            onCommitName: {
+                                let name = draftName
+                                editingFarmId = nil
+                                Task { await viewModel.renameFarm(farm, to: name) }
+                            },
+                            onEditName: viewModel.isDeleting ? nil : {
+                                draftName = farm.name
+                                editingFarmId = farm.farmId
+                            },
+                            onTapAddress: viewModel.isDeleting ? nil : { beginAddressEdit(farm) },
+                            onTapCrops: viewModel.isDeleting ? nil : { cropEditFarm = farm }
                         )
                         .contentShape(Rectangle())
                         .onTapGesture {

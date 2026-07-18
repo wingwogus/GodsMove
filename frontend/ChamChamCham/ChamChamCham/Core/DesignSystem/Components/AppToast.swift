@@ -53,6 +53,39 @@ struct AppToast: View {
     }
 }
 
+/// Overlays a bottom `AppToast` that shows while `message != nil`, then auto-clears after `duration`.
+/// Modeled on `RecordToastModifier` (`Features/Record/Presentation/Views/RecordToast.swift`) — that one
+/// stays feature-local to Record; this is the DS-promoted version for any other screen.
+private struct AppToastModifier: ViewModifier {
+    @Binding var message: String?
+    var variant: AppToast.Variant = .success
+    var duration: Duration = .seconds(2)
+
+    func body(content: Content) -> some View {
+        content
+            .overlay(alignment: .bottom) {
+                if let message {
+                    AppToast(message: message, variant: variant)
+                        .padding(.horizontal, 20)
+                        .padding(.bottom, 24)
+                        .transition(.move(edge: .bottom).combined(with: .opacity))
+                        .task(id: message) {
+                            try? await Task.sleep(for: duration)
+                            withAnimation { self.message = nil }
+                        }
+                }
+            }
+            .animation(.easeInOut(duration: 0.2), value: message)
+    }
+}
+
+extension View {
+    /// Bottom auto-dismissing `AppToast` bound to an optional message.
+    func appToast(message: Binding<String?>, variant: AppToast.Variant = .success) -> some View {
+        modifier(AppToastModifier(message: message, variant: variant))
+    }
+}
+
 #Preview {
     VStack(spacing: Spacing.md) {
         AppToast(message: "메시지가 표시됩니다.")

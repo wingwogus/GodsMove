@@ -83,6 +83,10 @@ actor FakeFarmRepository: FarmRepository {
         return OnboardingTestFactory.standaloneFarmResponse(name: request.name)
     }
 
+    func updateFarm(id: UUID, _ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO {
+        OnboardingTestFactory.standaloneFarmResponse(name: request.name)
+    }
+
     func deleteFarm(id: UUID) async throws {}
 }
 

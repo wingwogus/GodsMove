@@ -16,6 +16,13 @@ struct FarmCard: View {
     var crops: [String] = []
     var isSelected: Bool = false
 
+    /// Inline 농지명 edit state (owned by the caller, e.g. `FarmListView`'s `editingFarmId`). When
+    /// `true`, the name row swaps `rowLabel` for a `TextField` bound to `editingName` and the trailing
+    /// pencil icon becomes a commit (checkmark) action. Defaults keep existing call sites unchanged.
+    var isEditingName: Bool = false
+    var editingName: Binding<String>? = nil
+    var onCommitName: (() -> Void)? = nil
+
     var onEditName: (() -> Void)? = nil
     var onTapAddress: (() -> Void)? = nil
     var onTapCrops: (() -> Void)? = nil
@@ -28,9 +35,7 @@ struct FarmCard: View {
 
     var body: some View {
         VStack(spacing: rowSpacing) {
-            row(icon: "pencil", action: onEditName) {
-                rowLabel(farmName)
-            }
+            nameRow
             row(icon: "chevron.right", action: onTapAddress) {
                 rowLabel(roadAddress)
             }
@@ -48,6 +53,40 @@ struct FarmCard: View {
             RoundedRectangle(cornerRadius: 20)
                 .stroke(isSelected ? Color.Border.primary : Color.Border.default, lineWidth: 1)
         )
+    }
+
+    // MARK: - Name row (inline edit)
+
+    @ViewBuilder private var nameRow: some View {
+        if isEditingName, let editingName {
+            HStack(spacing: Spacing.sm) {
+                TextField("농지명을 입력해주세요.", text: editingName)
+                    .appTypography(.bodyLargeEmphasized)
+                    .foregroundStyle(Color.Text.default)
+                    .submitLabel(.done)
+                    .onSubmit { onCommitName?() }
+                Spacer(minLength: Spacing.sm)
+                Button {
+                    onCommitName?()
+                } label: {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 20))
+                        .foregroundStyle(Color.Icon.subtle)
+                        .frame(width: 24, height: 24)
+                }
+                .buttonStyle(.plain)
+            }
+            .padding(.horizontal, Spacing.md)
+            .frame(maxWidth: .infinity, minHeight: rowHeight, maxHeight: rowHeight, alignment: .leading)
+            .background(
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(isSelected ? Color.Object.default : Color.Object.subtle)
+            )
+        } else {
+            row(icon: "pencil", action: onEditName) {
+                rowLabel(farmName)
+            }
+        }
     }
 
     // MARK: - Rows

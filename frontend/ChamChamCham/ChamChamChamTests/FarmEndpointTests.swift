@@ -34,4 +34,16 @@ struct FarmEndpointTests {
         #expect(endpoint.body == nil)
         #expect(endpoint.requiresAuth)
     }
+
+    @Test("update targets the farm id path with PUT and the request body")
+    func updatePath() throws {
+        let id = UUID()
+        let request = try SaveFarmRequestDTO(farm: OnboardingTestFactory.validDraft().representativeFarm)
+        let endpoint = FarmEndpoint.update(id, request)
+
+        #expect(endpoint.path == "api/v1/farms/\(id.uuidString)")
+        #expect(endpoint.method == .put)
+        #expect(endpoint.body != nil)
+        #expect(endpoint.requiresAuth)
+    }
 }

@@ -10,6 +10,8 @@ import SwiftUI
 /// 프로필 수정 컨테이너: 기본 정보 / 농업 정보 탭. Presented from the profile main avatar edit affordance.
 struct ProfileEditView: View {
     let container: DIContainer
+    /// Bubbles up basic-info save success so `ProfileMainView` can show a toast after the cover dismisses.
+    var onBasicInfoSaved: () -> Void = {}
     @Environment(\.dismiss) private var dismiss
     @State private var selectedTab = 0
 
@@ -28,6 +30,7 @@ struct ProfileEditView: View {
                     repository: container.makeMemberProfileRepository(),
                     mediaRepository: container.makeMediaUploadRepository()
                 ) {
+                    onBasicInfoSaved()
                     dismiss()
                 }
             } else {

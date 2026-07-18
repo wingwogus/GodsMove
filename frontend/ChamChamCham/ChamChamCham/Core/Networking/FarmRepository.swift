@@ -10,6 +10,7 @@ import Foundation
 protocol FarmRepository: Sendable {
     func listFarms() async throws -> [StandaloneFarmResponseDTO]
     func createFarm(_ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO
+    func updateFarm(id: UUID, _ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO
     func deleteFarm(id: UUID) async throws
 }
 
@@ -22,6 +23,10 @@ struct RemoteFarmRepository: FarmRepository {
 
     func createFarm(_ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO {
         try await apiClient.send(FarmEndpoint.create(request))
+    }
+
+    func updateFarm(id: UUID, _ request: SaveFarmRequestDTO) async throws -> StandaloneFarmResponseDTO {
+        try await apiClient.send(FarmEndpoint.update(id, request))
     }
 
     func deleteFarm(id: UUID) async throws {
