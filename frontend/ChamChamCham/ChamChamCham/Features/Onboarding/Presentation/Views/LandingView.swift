@@ -24,7 +24,7 @@ struct LandingView: View {
         VStack(spacing: 0) {
             Spacer()
 
-            AppIconView(source: .asset("app_logo"), size: 96, renderingMode: .original)
+            AppIconView(source: .asset("app_logo"), size: 120, renderingMode: .original)
 
             Spacer()
 

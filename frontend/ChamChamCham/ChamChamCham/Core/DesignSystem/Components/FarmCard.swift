@@ -63,10 +63,11 @@ struct FarmCard: View {
             HStack(spacing: Spacing.sm) {
                 content()
                 Spacer(minLength: Spacing.sm)
-                Image(systemName: icon)
-                    .font(.system(size: 20))
-                    .foregroundStyle(Color.Icon.subtle)
-                    .frame(width: 24, height: 24)
+                // TODO: 미구현 기능 - 편집/주소/작물 탭 재활성화 예정
+//                Image(systemName: icon)
+//                    .font(.system(size: 20))
+//                    .foregroundStyle(Color.Icon.subtle)
+//                    .frame(width: 24, height: 24)
             }
             .padding(.horizontal, Spacing.md)
             .frame(maxWidth: .infinity, minHeight: rowHeight, maxHeight: rowHeight, alignment: .leading)
