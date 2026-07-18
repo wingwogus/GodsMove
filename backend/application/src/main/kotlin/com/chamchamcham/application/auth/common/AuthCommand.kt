@@ -35,7 +35,8 @@ object AuthCommand {
         val identityToken: String,
         val nonce: String,
         val authorizationCode: String?,
-        val userIdentifier: String?
+        val userIdentifier: String?,
+        val name: String? = null
     )
 
     data class NaverLogin(

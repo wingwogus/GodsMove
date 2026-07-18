@@ -61,7 +61,11 @@ object AuthRequests {
         @field:NotBlank(message = "nonce를 입력해주세요")
         val nonce: String,
         val authorizationCode: String? = null,
-        val userIdentifier: String? = null
+        val userIdentifier: String? = null,
+        // Apple only returns the user's full name to the client on the very first authorization, and never
+        // inside the identity token — the client forwards it here so a new member can be created with a name,
+        // mirroring how Kakao/Naver names arrive from their user-info endpoints.
+        val name: String? = null
     )
 
     data class NaverLoginRequest(
