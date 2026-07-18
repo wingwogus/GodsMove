@@ -49,7 +49,13 @@ struct LandingView: View {
                     request.requestedScopes = [.fullName, .email]
                     request.nonce = NonceGenerator.sha256Hex(rawNonce)
                 } onCompletion: { result in
-                    Task { await authViewModel.loginWithApple(result: result, rawNonce: appleNonce, appState: appState) }
+                    Task {
+                        await authViewModel.loginWithApple(result: result, rawNonce: appleNonce, appState: appState)
+                        // Apple's official button can't route through `login(with:)` (its completion has a
+                        // different signature), so advance onboarding here just like the Kakao/Naver path —
+                        // otherwise a new (not-yet-onboarded) account authenticates but stays stuck on Landing.
+                        advanceAfterAuthentication()
+                    }
                 }
                 .signInWithAppleButtonStyle(.black)
                 .frame(height: Self.buttonHeight)
@@ -83,12 +89,17 @@ struct LandingView: View {
 
     private func login(with method: (AppState) async -> Void) async {
         await method(appState)
+        advanceAfterAuthentication()
+    }
+
+    /// Post-login navigation shared by every provider. A newly authenticated account that still needs
+    /// onboarding is pushed into the flow; an already-onboarded account satisfies RootView's
+    /// `isAuthenticated && isOnboarded` gate, which swaps to MainTabView on its own — nothing to do here.
+    private func advanceAfterAuthentication() {
         guard appState.isAuthenticated else { return }
         if !appState.isOnboarded {
             viewModel.continueAfterAuthentication()
         }
-        // else: appState now satisfies RootView's `isAuthenticated && isOnboarded` gate — it swaps to
-        // MainTabView on its own, no further action needed here.
     }
 }
 
