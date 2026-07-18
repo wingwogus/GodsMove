@@ -145,7 +145,7 @@ stacked bar"), 406×449. Two `card` states stacked with a red arrow annotation
   - Rows ordered by descending fraction (primary entry first), matching
     `ReportChartModel`'s `sorted` order.
 
-### ⚠️ Bug found — legend label/value style swapped
+### ✅ Fixed — legend label/value style swapped
 
 [ReportChartCard.swift:87-95](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Views/ReportChartCard.swift)
 does the opposite of the spec above:
@@ -160,9 +160,12 @@ Text(entry.formattedValue)
 ```
 
 Figma: label = emphasized + dark (`Text.default`), value = regular + subtle
-(`Text.subtle`). Code currently renders label = regular + subtle, value =
-emphasized + dark — inverted. **User decision (2026-07-18): document only, do
-not fix yet** (a separate in-progress change touches this area).
+(`Text.subtle`). Code previously rendered label = regular + subtle, value =
+emphasized + dark — inverted. **Fixed (2026-07-18, Tier 1-C of the report
+detail remediation plan)**: swapped in
+[ReportChartCard.swift:87-95](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Views/ReportChartCard.swift)
+to label = `.bodyMediumEmphasized` + `Color.Text.default`, value =
+`.bodyMedium` + `Color.Text.subtle`.
 
 ## Capture 3 — expand/collapse interaction, half donut chart
 
@@ -183,7 +186,7 @@ pattern, "진행한 모종 번식법" example, now with a realistic 6-category d
 - Slice colors confirmed again, same 6-color order as Capture 1 (indices
   1→6 = `#38c284, #a5e9b1, #f7dc11, #c8f468, #81dacb, #b1cbdf`).
 
-### ⚠️ Bug found — donut center label incorrectly hidden when expanded
+### ✅ Fixed — donut center label incorrectly hidden when expanded
 
 [ReportChartCard.swift:57-71](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Views/ReportChartCard.swift)
 uses the same `model.highlightedEntry(isExpanded: isExpanded)` call for both
@@ -192,8 +195,10 @@ uses the same `model.highlightedEntry(isExpanded: isExpanded)` call for both
 unconditionally returns `nil` when `isExpanded`. That's correct for the
 stacked bar (inline text should disappear on expand, confirmed Capture 2) but
 **wrong for the donut** — Figma Capture 3 shows the center label must persist
-regardless of expand state. **User decision (2026-07-18): document only, do
-not fix yet.**
+regardless of expand state. **Fixed (2026-07-18, Tier 1-D)**:
+`ReportChartModel.highlightedEntry(isExpanded:)` now branches on `style` —
+`.semiDonut` always returns `primary`, `.stackedBar` keeps the
+`isExpanded ? nil : primary` behavior.
 
 ## Where this is used today
 
@@ -209,8 +214,10 @@ driven by `ReportDetailPresentation.charts` computed from real
 the app in the Simulator and open a Report Detail screen for a report whose
 `workType` produces chart data (e.g. planting → 심기 방법/propagation charts).
 
-## Summary of open findings (not yet fixed, by user request)
+## Summary of findings
 
-1. `ReportChartCard` legend: label/value typography+color swapped (Capture 2 & 3).
-2. `ReportChartCard`/`ReportChartModel`: donut center label should stay visible
-   when expanded; only the stacked bar should hide its inline text (Capture 3).
+1. ✅ Fixed (2026-07-18, Tier 1-C): `ReportChartCard` legend label/value
+   typography+color swapped (Capture 2 & 3).
+2. ✅ Fixed (2026-07-18, Tier 1-D): `ReportChartCard`/`ReportChartModel` donut
+   center label now stays visible when expanded; only the stacked bar hides
+   its inline text (Capture 3).

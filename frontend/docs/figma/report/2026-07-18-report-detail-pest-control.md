@@ -69,22 +69,20 @@ just closing the loop on how chart style is chosen.
 - Donut/stacked-bar colors match `Color.Chart` exactly, same as prior
   captures — no color bug.
 
-## ⚠️ New findings (not fixed — documented only)
+## Findings
 
-### 1. All 3 chart titles differ from Figma's copy (3rd workType in a row)
-Code
-([ReportPresentationModels.swift:119-146](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)):
-`"관리 유형"`, `"유형별 사용량 (\(unit))"`, `"관리 대상"`. Figma:
-`"사용한 약제 종류"`, `"각 약제 사용량"`, `"대상 병해충"`. None match. This is
-the same systemic chart-title drift already seen on 물주기 and 비료 주기 —
-**3 for 3 workTypes captured so far have 100% chart-title mismatches**. This
-looks less like a per-workType copy bug and more like the Figma-facing chart
-titles were never synced with the implementation's placeholder strings at
-all. Worth treating as one cross-cutting copy pass across all of
-`ReportPresentationModels.swift`, not per-workType edits, once the full
-capture pass is done.
+### 1. All 3 chart titles differed from Figma's copy (✅ fixed, Tier 1-A)
+Code previously used `"관리 유형"`, `"유형별 사용량 (\(unit))"`, `"관리
+대상"`. Figma: `"사용한 약제 종류"`, `"각 약제 사용량"`, `"대상 병해충"`.
 
-### 2. Pesticide-amount metric title format differs from Figma
+**Fixed (2026-07-18, report detail remediation plan Tier 1-A)**:
+[ReportPresentationModels.swift](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)
+now uses `"사용한 약제 종류"` and `"대상 병해충"` verbatim; the amount-per-unit
+chart is titled `"각 약제 사용량"` and only gets a `(unit)` suffix when 2+
+distinct units are present in the data (to avoid ambiguous duplicate titles) —
+the Figma mock only has a single unit, so this matches Figma exactly there.
+
+### 2. Pesticide-amount metric title format differs from Figma (Tier 2 — documented only, not fixed)
 Code
 ([ReportPresentationModels.swift:107-112](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)):
 
@@ -103,7 +101,7 @@ Same class of issue as the watering metric-title finding: a wording gap
 between what the code emits per-record-unit and what Figma's simpler copy
 shows.
 
-### 3. "총 살포량" value unit mismatch: code hardcodes "L", Figma shows "ml"
+### 3. "총 살포량" value unit mismatch: code hardcodes "L", Figma shows "ml" (Tier 2 — documented only, not fixed)
 Code
 ([ReportPresentationModels.swift:113-117](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)):
 
@@ -132,19 +130,19 @@ presentation code.
 - **Date-range separator** `-` vs `~` — 4th recurrence.
 - **Inline record-row preview** — 4th recurrence, still a placeholder link.
 
-## Summary of open findings (not yet fixed)
+## Summary of findings
 
-1. Chart titles ("관리 유형"/"유형별 사용량 (unit)"/"관리 대상" in code vs
-   "사용한 약제 종류"/"각 약제 사용량"/"대상 병해충" in Figma) — 3rd
-   consecutive workType with 100% chart-title mismatch; treat as a
-   cross-cutting copy issue, not per-workType.
-2. Pesticide-amount metric title format ("농약 사용량 (unit)" vs Figma's
-   "총 농약 사용량") — same class as 물주기's metric-title finding.
-3. "총 살포량" value unit: code always shows `L`, Figma shows `ml` for the
-   same field — needs a DTO/backend check before touching, not a
-   presentation-only fix.
+1. ✅ Fixed (2026-07-18, Tier 1-A): chart titles now "사용한 약제 종류"/
+   "각 약제 사용량"/"대상 병해충", matching Figma (unit suffix kept only when
+   2+ distinct units exist).
+2. (Tier 2 — open, not fixed) Pesticide-amount metric title format ("농약
+   사용량 (unit)" vs Figma's "총 농약 사용량") — same class as 물주기's
+   metric-title finding; unit-summation issue blocks a blind title swap.
+3. (Tier 2 — open, not fixed) "총 살포량" value unit: code always shows `L`,
+   Figma shows `ml` for the same field — needs a DTO/backend check before
+   touching, not a presentation-only fix.
 4. (Reconfirmed, not new) Chart order for this workType is **correct** —
    contrast with 물주기/비료 주기 where it wasn't. Order issue is
    workType-specific, not universal.
-5. (Reconfirmed, not new) Date-range separator `-` vs `~`.
-6. (Reconfirmed, not new) Inline record-row preview scope gap.
+5. (Reconfirmed, not new, Tier 3) Date-range separator `-` vs `~`.
+6. (Reconfirmed, not new, Tier 3) Inline record-row preview scope gap.

@@ -54,16 +54,16 @@ workType wiring in
   `appendDistributionChart` call specifically.
 - Donut colors match `Color.Chart` — no color bug.
 
-## ⚠️ New findings (not fixed — documented only)
+## Findings
 
-### 1. Chart title mismatch (4th workType in a row)
-Code
-([ReportPresentationModels.swift:151](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)):
+### 1. Chart title mismatch (✅ fixed, Tier 1-A)
+Code previously used
 `Self.appendDistributionChart(title: "잡초 관리 방법", values: statistics.methodDistribution, to: &charts)`.
-Figma's only detail card is titled **"진행한 잡초 관리 방식"**, not
-"잡초 관리 방법". Same systemic chart-title drift as 물주기/비료 주기/병해충
-관리 — **4 of 4 workTypes captured so far have at least one chart-title
-mismatch**, and this workType's only chart is one of them.
+Figma's only detail card is titled **"진행한 잡초 관리 방식"**.
+
+**Fixed (2026-07-18, report detail remediation plan Tier 1-A)**:
+[ReportPresentationModels.swift](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)
+now uses `"진행한 잡초 관리 방식"` verbatim.
 
 ### 2. Chart order: trivially "correct" (only one chart)
 Not really a new finding — noting for completeness since chart order was an
@@ -76,11 +76,9 @@ not universal" conclusion from the pest-control capture.
 - **Date-range separator** `-` vs `~` — 5th recurrence.
 - **Inline record-row preview** — 5th recurrence, still a placeholder link.
 
-## Summary of open findings (not yet fixed)
+## Summary of findings
 
-1. Chart title ("잡초 관리 방법" in code vs Figma's "진행한 잡초 관리 방식") —
-   4th consecutive workType with a chart-title mismatch; reinforces treating
-   this as one cross-cutting copy pass across
-   `ReportPresentationModels.swift`, not a per-workType fix.
-2. (Reconfirmed, not new) Date-range separator `-` vs `~`.
-3. (Reconfirmed, not new) Inline record-row preview scope gap.
+1. ✅ Fixed (2026-07-18, Tier 1-A): chart title now "진행한 잡초 관리 방식",
+   matching Figma.
+2. (Reconfirmed, not new, Tier 3) Date-range separator `-` vs `~`.
+3. (Reconfirmed, not new, Tier 3) Inline record-row preview scope gap.

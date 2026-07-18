@@ -65,9 +65,9 @@ covered by
   question already tracked), record-list row shape — all match 심기 1:1, no
   new issues.
 
-## ⚠️ New findings (not fixed — documented only)
+## Findings
 
-### 1. Watering-specific metric title doesn't match Figma's wording
+### 1. Watering-specific metric title doesn't match Figma's wording (Tier 2 — documented only, not fixed)
 Code
 ([ReportPresentationModels.swift:66-69](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)):
 
@@ -91,28 +91,16 @@ decision — either update the Figma-facing copy to match what's actually
 computed (mode), or change the computation to a real average — not a
 find-and-replace string fix.
 
-### 2. Chart order and titles differ from Figma
-Code
-([ReportPresentationModels.swift:71-72](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)):
+### 2. Chart order and titles differ from Figma (✅ fixed, Tier 1-A/1-B)
+Code previously rendered **amount chart first** ("물의 양"), **method chart
+second** ("물 주는 방법"). Figma shows **method chart first** (`1711:24840`,
+titled **"진행한 물주기 방식"**), **amount chart second** (`1711:24850`,
+titled **"물 준 양"**).
 
-```swift
-Self.appendDistributionChart(title: "물의 양", values: statistics.amountDistribution, to: &charts)
-Self.appendDistributionChart(title: "물 주는 방법", values: statistics.methodDistribution, to: &charts)
-```
-
-This renders **amount chart first** ("물의 양"), **method chart second**
-("물 주는 방법") — `ReportDetailView.swift`'s `chartSection` renders `charts`
-in array order, so this is also the on-screen order.
-
-Figma shows the opposite: **method chart first** (`1711:24840`, titled
-**"진행한 물주기 방식"**), **amount chart second** (`1711:24850`, titled
-**"물 준 양"**). Both the order and the exact title strings differ from the
-current code on both charts. Documenting only — swapping order + retitling
-both is a small change but touches user-facing copy, worth confirming
-intent before editing (e.g. whether "물의 양"→"물 준 양" and "물 주는
-방법"→"진행한 물주기 방식" are the *only* difference, or whether other
-workTypes' distribution-chart titles have the same drift and should be
-checked together).
+**Fixed (2026-07-18, report detail remediation plan Tier 1)**:
+[ReportPresentationModels.swift](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)
+now appends `진행한 물주기 방식` (method) first, `물 준 양` (amount) second,
+matching Figma order and copy exactly.
 
 ## Reconfirmed open items (not new, still open from the 심기 capture)
 
@@ -124,14 +112,15 @@ checked together).
   `ReportRecordHistoryView` is still a placeholder. Same product-scope gap,
   not new.
 
-## Summary of open findings (not yet fixed)
+## Summary of findings
 
-1. Watering metric title/semantics mismatch: code's "가장 자주 준 물의 양"
-   (mode) vs Figma's "평균 물 준 양" (average) — needs a product decision,
-   not a blind copy fix.
-2. Chart order + titles: code is [물의 양, 물 주는 방법] vs Figma's
-   [진행한 물주기 방식, 물 준 양] (reversed order, different titles on both).
-3. (Reconfirmed, not new) Date-range separator `-` vs `~` — open design
+1. (Tier 2 — open, not fixed) Watering metric title/semantics mismatch:
+   code's "가장 자주 준 물의 양" (mode) vs Figma's "평균 물 준 양" (average) —
+   needs a product decision, not a blind copy fix. User instruction
+   (2026-07-18): 보류(defer), documentation only for now.
+2. ✅ Fixed (2026-07-18, Tier 1-A/1-B): chart order + titles now
+   [진행한 물주기 방식, 물 준 양], matching Figma.
+3. (Reconfirmed, not new, Tier 3) Date-range separator `-` vs `~` — open design
    question shared with the 심기 capture.
-4. (Reconfirmed, not new) Inline record-row preview — product scope gap
+4. (Reconfirmed, not new, Tier 3) Inline record-row preview — product scope gap
    shared with the 심기 capture.

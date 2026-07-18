@@ -52,17 +52,18 @@ per-bucket distribution).
 - **First chart ("수확 부위 종류") maps cleanly to code's `medicinalParts`
   data** (recordCount-based donut) — just the title differs (see finding 1).
 
-## ⚠️ New findings (not fixed — documented only)
+## Findings
 
-### 1. Chart title mismatch (5th workType-with-charts in a row)
-Code
-([ReportPresentationModels.swift:165-176](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)):
+### 1. Chart title mismatch (✅ fixed, Tier 1-A)
+Code previously used
 `Self.appendChart(title: "수확 부위", data: statistics.medicinalParts.map {...}, to: &charts)`.
-Figma titles the same chart **"수확 부위 종류"**. Same systemic drift as
-물주기/비료 주기/병해충 관리/잡초 관리 — **5 of 5 workTypes with any chart
-at all have had at least one chart-title mismatch.**
+Figma titles the same chart **"수확 부위 종류"**.
 
-### 2. Second Figma chart ("재배 개월에 따른 수확량") has no code/data-model equivalent at all
+**Fixed (2026-07-18, report detail remediation plan Tier 1-A)**:
+[ReportPresentationModels.swift](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)
+now uses `"수확 부위 종류"` verbatim.
+
+### 2. Second Figma chart ("재배 개월에 따른 수확량") has no code/data-model equivalent at all (Tier 2 — documented only, not fixed)
 This is a bigger gap than a title mismatch — there is **no chart-building
 call for this in code, and no field in `HarvestReportStatistics` that could
 back it**. The chart groups harvest records by growth-period bucket (e.g.
@@ -95,15 +96,15 @@ Noting for awareness, not as a confirmed finding.
 - **Date-range separator** `-` vs `~` — 7th recurrence.
 - **Inline record-row preview** — 7th recurrence, still a placeholder link.
 
-## Summary of open findings (not yet fixed)
+## Summary of findings
 
-1. Chart title ("수확 부위" in code vs Figma's "수확 부위 종류") — 5th
-   consecutive workType-with-charts with a chart-title mismatch (5/5).
-2. **Missing chart/data**: "재배 개월에 따른 수확량" has no code or domain
-   model support at all — a real scope gap requiring a new statistics field,
-   not a presentation fix. Flag for backend discussion in the eventual
-   remediation plan.
+1. ✅ Fixed (2026-07-18, Tier 1-A): chart title now "수확 부위 종류",
+   matching Figma.
+2. (Tier 2 — open, not fixed) **Missing chart/data**: "재배 개월에 따른
+   수확량" has no code or domain model support at all — a real scope gap
+   requiring a new statistics field (`growthPeriodDistribution:
+   [ReportCountDistribution]`), not a presentation fix. Needs backend work.
 3. (Inconclusive, not a confirmed finding) "재배 기간" metric didn't appear
    in this mock — may just be missing mock data, not a code bug.
-4. (Reconfirmed, not new) Date-range separator `-` vs `~`.
-5. (Reconfirmed, not new) Inline record-row preview scope gap.
+4. (Reconfirmed, not new, Tier 3) Date-range separator `-` vs `~`.
+5. (Reconfirmed, not new, Tier 3) Inline record-row preview scope gap.

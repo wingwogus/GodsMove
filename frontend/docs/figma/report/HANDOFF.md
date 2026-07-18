@@ -18,6 +18,49 @@ don't re-derive it.
   branches now each have one committed change from this session — check both
   `git log` on `dev` and on this worktree branch when picking up context.
 
+## ✅ Tier 1 remediation complete (2026-07-18, report detail full remediation plan)
+
+Following item 9 below, a full remediation plan was written
+(`/Users/user/.claude/plans/imperative-chasing-planet.md`) synthesizing all 8
+capture docs (chart-spec + 7 workTypes) into Tier 1 (frontend-only, fix now),
+Tier 2 (backend needed, documented only), Tier 3 (design/product decision,
+documented only). **Tier 1 is implemented and committed in this worktree**:
+
+- **1-A chart title parity**: all 6 mismatched chart titles across
+  planting/watering/fertilizing/pestControl/weeding/harvest now use Figma's
+  exact copy in
+  [ReportPresentationModels.swift](../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift).
+  Pest control's per-unit amount chart keeps a `(unit)` suffix only when 2+
+  distinct units exist (Figma mock has a single unit, so it renders without a
+  suffix there — no plain title collision if a future report has multiple
+  units).
+- **1-B chart order**: watering and fertilizing's method/style-distribution
+  chart now appends first, matching Figma (pest control was already correct;
+  weeding/pruning/planting have ≤1 chart so order doesn't apply).
+- **1-C legend swap**: `ReportChartCard.swift` legend rows now render label =
+  `.bodyMediumEmphasized` + `Color.Text.default`, value = `.bodyMedium` +
+  `Color.Text.subtle` (previously inverted).
+- **1-D donut expand label**: `ReportChartModel.highlightedEntry(isExpanded:)`
+  now branches on `style` — `.semiDonut` always keeps the center label,
+  `.stackedBar` still hides its inline text when expanded.
+- Verified with
+  `xcodebuild -scheme ChamChamCham -destination 'platform=iOS Simulator,name=iPhone 17' build`
+  → `BUILD SUCCEEDED`. `ReportChartCard` has no `#Preview`, so this pass relied
+  on the build + a manual diff self-review rather than an in-Simulator visual
+  check against real report data (no populated report was available to open in
+  this session) — flagging this explicitly per the plan's verification note.
+- All 8 capture docs' relevant findings were updated to "✅ Fixed" inline;
+  each doc's summary section now separates fixed (Tier 1) items from
+  still-open Tier 2/Tier 3 items.
+- **Explicitly deferred, not fixed** (per user decision, Tier 2/3 — see the
+  plan document for the full list): 심기 "진행한 심기 방식" chart (no backend
+  data source), 수확 growth-period-distribution chart (no backend data
+  source), 병해충 "총 살포량" L-vs-ml unit (needs backend/DTO contract check),
+  물주기 "평균 물 준 양" vs mode computation (user said 보류), 병해충
+  pesticide-amount metric title (unit-summation blocks a blind swap), date
+  separator `-` vs `~`, inline record-row preview, and 0-value fixed-bucket
+  visibility in expanded legends.
+
 ## ✅ RESOLVED (2026-07-18, later same day) — filter multi-select work merged
 
 The warning below was accurate when first written but is now **stale**. The
@@ -294,14 +337,25 @@ a follow-up session should start deciding fix vs. defer):
      didn't appear in this mock — may just be missing mock data.
    - Reconfirmed (not new): date-separator `-` vs `~`, inline record-row
      preview — 7th recurrence of both.
-8. Decide with the user whether `.etc` (기타) still needs its own Figma
-   capture — it shares `case .pruning, .etc: break`
-   ([ReportPresentationModels.swift:179-180](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)),
-   so it likely reproduces 가지·순 정리's "clean match, nothing to compare"
-   result. If skipped, **all workType captures are effectively done** and the
-   next step is the "리포트 전체 보완 수정 계획" the user wants once capturing
-   wraps up.
-9. `ReportCoachingSection.swift` (AI coaching cards) has not been compared
+8. **`.etc` (기타) capture explicitly skipped — user confirmed it's the
+   same as `.pruning`** ("기타는 스킵. .pruning이랑 똑같애."), matching the
+   code-level fact that both share `case .pruning, .etc: break`
+   ([ReportPresentationModels.swift:179-180](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)).
+   **The per-workType capture phase is now done.** No `2026-07-18-report-detail-etc.md`
+   exists and none is needed.
+9. **Next phase: 리포트 전체 보완 수정 계획 (comprehensive remediation plan)**
+   — the user's stated next step once all captures wrapped up. This has NOT
+   started yet as of this HANDOFF update. A new session picking this up
+   should synthesize all 8 capture docs (chart-spec + 7 workTypes) into one
+   plan covering, at minimum: the 5 confirmed chart-title mismatches, the
+   workType-specific chart-order issues (물주기/비료 주기 only), the
+   harvest growth-period-distribution missing-feature gap (likely needs
+   backend/DTO work, not just frontend), the date-separator `-` vs `~`
+   open design question, the inline record-row-preview scope gap, the 2
+   still-open chart-spec findings (legend styling, donut label-on-expand),
+   and the 병해충 관리 metric-title/unit findings. Don't start fixing code
+   until this plan exists and the user has reviewed it.
+10. `ReportCoachingSection.swift` (AI coaching cards) has not been compared
    against Figma yet — the 심기 capture shows 4 example coaching cards
    (잘한 점/이전 리포트과의 비교/개선 필요점/추천 행동) worth checking once a
    real coaching-populated capture is available.

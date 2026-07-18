@@ -69,41 +69,25 @@ workType wiring in
   no new issue (the known "center label hidden on expand" bug from that doc
   still applies here, not re-flagged).
 
-## ⚠️ New findings (not fixed — documented only)
+## Findings — ✅ fixed (Tier 1-A/1-B)
 
-### 1. All 3 chart titles differ from Figma's copy
-Code
-([ReportPresentationModels.swift:83-102](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)):
+### 1. All 3 chart titles differed from Figma's copy
+Code previously used `"비료 종류별 작업 횟수"` (count donut), `"비료 종류별
+사용량"` (amount donut), `"비료 주는 방법"` (method bar). Figma's titles:
+**"진행한 비료주기 방식"** (method bar), **"각 비료 사용 횟수"** (count
+donut), **"각 비료 사용량"** (amount donut).
 
-```swift
-Self.appendChart(title: "비료 종류별 작업 횟수", data: ..., to: &charts)   // count donut
-Self.appendChart(title: "비료 종류별 사용량", data: ..., to: &charts)     // amount donut
-Self.appendDistributionChart(title: "비료 주는 방법", values: statistics.methodDistribution, to: &charts)  // method bar
-```
+**Fixed (2026-07-18, report detail remediation plan Tier 1-A)**:
+[ReportPresentationModels.swift](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift)
+now uses Figma's exact copy for all three chart titles.
 
-Figma's titles for the same three charts: **"진행한 비료주기 방식"** (method
-bar), **"각 비료 사용 횟수"** (count donut), **"각 비료 사용량"** (amount
-donut) — none of the three match the code's strings verbatim. This is the
-same class of issue as the 물주기 capture's finding 2 (there, "물의 양"/"물
-주는 방법" vs Figma's "물 준 양"/"진행한 물주기 방식") — **now confirmed
-across two workTypes**, so this looks like a systemic chart-title copy drift
-across the whole Report Detail feature, not a one-off per workType.
-
-### 2. Chart order: method chart is always first in Figma, but code puts it in different positions per workType
+### 2. Chart order: method chart is always first in Figma, but code put it in different positions per workType
 Figma renders **method/style distribution first**, then the
 material-specific charts (진행한 비료주기 방식 → 각 비료 사용 횟수 → 각 비료
-사용량). Code appends **method chart last**
-([ReportPresentationModels.swift:102](../../../ChamChamCham/ChamChamCham/Features/Report/Presentation/Models/ReportPresentationModels.swift),
-after both material-category charts).
+사용량). Code previously appended the method chart **last**.
 
-Cross-referencing the 물주기 capture: there, code puts the method chart
-**second** (after the amount chart), while Figma puts it **first** too. So
-across both workTypes captured so far, **Figma consistently orders the
-"how it was done" method/style chart first**, while the code's append order
-is inconsistent per workType (second for watering, last for fertilizing).
-Worth checking the remaining workTypes' captures before deciding whether to
-fix this as one systemic "move `appendDistributionChart(methodDistribution)`
-first" change, or per-workType.
+**Fixed (2026-07-18, Tier 1-B)**: method-distribution chart now appends first,
+matching Figma order.
 
 ## Reconfirmed open items (not new)
 
@@ -112,14 +96,11 @@ first" change, or per-workType.
 - **Inline record-row preview** — same product-scope gap, recurs a third
   time; still just a placeholder link in code.
 
-## Summary of open findings (not yet fixed)
+## Summary of findings
 
-1. Chart titles ("비료 종류별 작업 횟수"/"비료 종류별 사용량"/"비료 주는
-   방법") don't match Figma's copy ("각 비료 사용 횟수"/"각 비료 사용량"/
-   "진행한 비료주기 방식") — same systemic pattern as 물주기's chart-title
-   finding.
-2. Chart order: code puts the method-distribution chart last; Figma puts it
-   first — same systemic pattern as 물주기's chart-order finding, now seen
-   twice.
-3. (Reconfirmed, not new) Date-range separator `-` vs `~`.
-4. (Reconfirmed, not new) Inline record-row preview scope gap.
+1. ✅ Fixed (2026-07-18, Tier 1-A): chart titles now "각 비료 사용 횟수"/
+   "각 비료 사용량"/"진행한 비료주기 방식", matching Figma.
+2. ✅ Fixed (2026-07-18, Tier 1-B): method-distribution chart now appends
+   first, matching Figma order.
+3. (Reconfirmed, not new, Tier 3) Date-range separator `-` vs `~`.
+4. (Reconfirmed, not new, Tier 3) Inline record-row preview scope gap.

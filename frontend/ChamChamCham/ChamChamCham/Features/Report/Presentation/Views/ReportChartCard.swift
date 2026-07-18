@@ -85,13 +85,13 @@ struct ReportChartCard: View {
                         .accessibilityHidden(true)
 
                     Text(entry.label)
-                        .appTypography(.bodyMedium)
-                        .foregroundStyle(Color.Text.subtle)
+                        .appTypography(.bodyMediumEmphasized)
+                        .foregroundStyle(Color.Text.default)
                         .frame(maxWidth: .infinity, alignment: .leading)
 
                     Text(entry.formattedValue)
-                        .appTypography(.bodyMediumEmphasized)
-                        .foregroundStyle(Color.Text.default)
+                        .appTypography(.bodyMedium)
+                        .foregroundStyle(Color.Text.subtle)
                         .multilineTextAlignment(.trailing)
                 }
                 .accessibilityElement(children: .ignore)
