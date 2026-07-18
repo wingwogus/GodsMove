@@ -63,7 +63,7 @@ struct BasicProfileView: View {
                             label: "닉네임",
                             placeholder: "닉네임을 입력해주세요.",
                             text: $viewModel.draft.nickname,
-                            isRequired: true,
+                            isRequired: false,
                             errorMessage: error(for: .nickname)
                         )
 

@@ -62,9 +62,6 @@ final class OnboardingViewModel {
         if draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             errors[.name] = "이름은 필수로 입력해주세요."
         }
-        if draft.nickname.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors[.nickname] = "닉네임은 필수로 입력해주세요."
-        }
         if draft.phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
             errors[.phone] = "연락처는 필수로 입력해주세요."
         }
