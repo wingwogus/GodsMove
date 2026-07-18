@@ -33,6 +33,8 @@ struct FarmCard: View {
     private let rowSpacing: CGFloat = 12
     private let cropDisplayLimit = 3
 
+    @FocusState private var isNameFieldFocused: Bool
+
     var body: some View {
         VStack(spacing: rowSpacing) {
             nameRow
@@ -64,6 +66,8 @@ struct FarmCard: View {
                     .appTypography(.bodyLargeEmphasized)
                     .foregroundStyle(Color.Text.default)
                     .submitLabel(.done)
+                    .focused($isNameFieldFocused)
+                    .onAppear { isNameFieldFocused = true }
                     .onSubmit { onCommitName?() }
                 Spacer(minLength: Spacing.sm)
                 Button {
@@ -96,28 +100,26 @@ struct FarmCard: View {
         action: (() -> Void)?,
         @ViewBuilder content: () -> Content
     ) -> some View {
-        Button {
-            action?()
-        } label: {
-            HStack(spacing: Spacing.sm) {
-                content()
-                Spacer(minLength: Spacing.sm)
-                // TODO: 미구현 기능 - 편집/주소/작물 탭 재활성화 예정
-//                Image(systemName: icon)
-//                    .font(.system(size: 20))
-//                    .foregroundStyle(Color.Icon.subtle)
-//                    .frame(width: 24, height: 24)
+        HStack(spacing: Spacing.sm) {
+            content()
+            Spacer(minLength: Spacing.sm)
+            Button {
+                action?()
+            } label: {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundStyle(Color.Icon.subtle)
+                    .frame(width: 24, height: 24)
             }
-            .padding(.horizontal, Spacing.md)
-            .frame(maxWidth: .infinity, minHeight: rowHeight, maxHeight: rowHeight, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.Object.default : Color.Object.subtle)
-            )
-            .contentShape(RoundedRectangle(cornerRadius: 8))
+            .buttonStyle(.plain)
+            .disabled(action == nil)
         }
-        .buttonStyle(.plain)
-        .disabled(action == nil)
+        .padding(.horizontal, Spacing.md)
+        .frame(maxWidth: .infinity, minHeight: rowHeight, maxHeight: rowHeight, alignment: .leading)
+        .background(
+            RoundedRectangle(cornerRadius: 8)
+                .fill(isSelected ? Color.Object.default : Color.Object.subtle)
+        )
     }
 
     private func rowLabel(_ text: String) -> some View {
