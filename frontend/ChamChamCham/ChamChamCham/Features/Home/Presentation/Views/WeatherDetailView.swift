@@ -51,25 +51,23 @@ struct WeatherDetailView: View {
     }
 
     private func todaySection(_ detail: WeatherDetail) -> some View {
-        VStack(alignment: .leading, spacing: Spacing.sm) {
-            HStack(spacing: Spacing.md) {
-                AppIconView(source: .asset(WeatherIconMapping.assetName(for: detail.condition.code)), size: 96, renderingMode: .original)
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("\(detail.temperature)°")
-                        .appTypography(.headlineLargeEmphasized)
-                        .foregroundStyle(Color.Text.default)
-                    HStack(spacing: 4) {
-                        Text("체감 \(optionalDegree(detail.feelsLikeTemperature))")
-                        Text("|")
-                        Text("최저 \(optionalDegree(detail.minTemperature)) - 최고 \(optionalDegree(detail.maxTemperature))")
-                    }
-                    .appTypography(.bodyMedium)
-                    .foregroundStyle(Color.Text.subtle)
+        HStack(spacing: Spacing.md) {
+            AppIconView(source: .asset(WeatherIconMapping.assetName(for: detail.condition.code)), size: 96, renderingMode: .original)
+            VStack(alignment: .leading, spacing: 4) {
+                Text("\(detail.temperature)°")
+                    .appTypography(.headlineLargeEmphasized)
+                    .foregroundStyle(Color.Text.default)
+                HStack(spacing: 4) {
+                    Text("체감 \(optionalDegree(detail.feelsLikeTemperature))")
+                    Text("|")
+                    Text("최저 \(optionalDegree(detail.minTemperature)) - 최고 \(optionalDegree(detail.maxTemperature))")
                 }
+                .appTypography(.bodyMedium)
+                .foregroundStyle(Color.Text.subtle)
+                Text(detail.address)
+                    .appTypography(.labelMedium)
+                    .foregroundStyle(Color.Text.muted)
             }
-            Text(detail.address)
-                .appTypography(.labelMedium)
-                .foregroundStyle(Color.Text.muted)
         }
     }
 
