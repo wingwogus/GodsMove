@@ -605,6 +605,36 @@ class FarmingRecordServiceTest {
     }
 
     @Test
+    fun `create throws when crop is not registered to the farm`() {
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
+        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId)).thenReturn(false)
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.create(baseCommand(workType = WorkType.WATERING))
+        }
+
+        assertEquals(ErrorCode.FARMING_RECORD_CROP_NOT_IN_FARM, exception.errorCode)
+        verify(farmingRecordRepository, never()).save(any(FarmingRecord::class.java))
+    }
+
+    @Test
+    fun `update throws when crop is not registered to the farm`() {
+        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId))
+            .thenReturn(existingRecord(workType = WorkType.PRUNING))
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
+        `when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId)).thenReturn(false)
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.update(updateCommand(workType = WorkType.WATERING))
+        }
+
+        assertEquals(ErrorCode.FARMING_RECORD_CROP_NOT_IN_FARM, exception.errorCode)
+    }
+
+    @Test
     fun `delete sets isDeleted without removing the row`() {
         val record = existingRecord(workType = WorkType.PRUNING)
         `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
