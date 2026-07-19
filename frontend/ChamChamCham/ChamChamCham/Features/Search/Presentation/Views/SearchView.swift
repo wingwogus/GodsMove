@@ -83,9 +83,9 @@ struct SearchView: View {
     private var queryBinding: Binding<String> {
         Binding(
             get: { viewModel.query },
-            // Only user-driven edits flow through here (programmatic `onSubmit` sets `query`
-            // directly and never re-triggers this setter). `onQueryChanged` exits the results phase
-            // and debounces/cancels the suggestions fetch internally.
+            // User-driven edits flow through here. A programmatic `onSubmit` can also re-trigger this
+            // setter once with the same value (Korean IME committing marked text on focus resign), so
+            // `onQueryChanged` guards against no-op writes to avoid dropping out of the results phase.
             set: { viewModel.onQueryChanged($0) }
         )
     }

@@ -48,6 +48,12 @@ final class SearchViewModel {
     /// so editing a keyword that was just searched shows suggestions (or 최근 검색어, when cleared to
     /// empty) again instead of leaving stale results on screen.
     func onQueryChanged(_ newValue: String) {
+        // Ignore no-op setter calls. Tapping a suggestion/recent-term runs `onSubmit` (which sets
+        // `query` + `submittedKeyword`), but the text binding's setter then fires a second time with
+        // the *same* value (e.g. the Korean IME committing its marked text on focus resign). Without
+        // this guard that spurious call would run `submittedKeyword = nil` and bounce us straight back
+        // out of the results phase — the exact "탭해도 결과로 안 넘어가는" bug.
+        guard newValue != query else { return }
         query = newValue
         submittedKeyword = nil
         let trimmed = newValue.trimmingCharacters(in: .whitespaces)
