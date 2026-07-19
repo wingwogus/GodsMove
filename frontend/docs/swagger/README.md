@@ -7,7 +7,8 @@ This folder stores the frontend-facing API contract generated from the deployed 
 - Snapshot hash: `openapi.sha256`
 - Human summary: `summary.md`
 
-The Notion-generated `frontend/docs/API 명세서/` folder is archived only. Never use or
+The Notion-generated API 명세서 folder is archived only under
+`frontend/docs/_archive/API 명세서 (Notion, 사용금지)/`. Never use or
 regenerate it for frontend API decisions.
 Do not hand-edit `openapi.json`; run `python3 scripts/sync_swagger_spec.py --write`.
 
