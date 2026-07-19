@@ -84,6 +84,7 @@ struct AppDateField: View {
                     get: { selection ?? Date() },
                     set: { selection = $0 }
                 ),
+                in: ...Date(),
                 displayedComponents: .date
             )
             .datePickerStyle(.graphical)
