@@ -9,6 +9,7 @@ import com.chamchamcham.application.report.ReportScope
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
+import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecord
@@ -48,6 +49,7 @@ class FarmingRecordService(
     private val memberRepository: MemberRepository,
     private val farmRepository: FarmRepository,
     private val cropRepository: CropRepository,
+    private val memberCropRepository: MemberCropRepository,
     private val farmingRecordRepository: FarmingRecordRepository,
     private val farmingRecordMediaRepository: FarmingRecordMediaRepository,
     private val farmingRecordQueryRepository: FarmingRecordQueryRepository,
@@ -71,6 +73,7 @@ class FarmingRecordService(
         val member = findMember(command.memberId)
         val farm = findFarm(command.farmId, command.memberId)
         val crop = findCrop(command.cropId)
+        assertCropRegisteredToFarm(command.memberId, command.farmId, command.cropId)
         val media = validateMedia(command.memberId, command.mediaIds)
 
         val record = farmingRecordRepository.save(
@@ -161,6 +164,7 @@ class FarmingRecordService(
 
         val farm = findFarm(command.farmId, command.memberId)
         val crop = findCrop(command.cropId)
+        assertCropRegisteredToFarm(command.memberId, command.farmId, command.cropId)
         val media = validateMedia(command.memberId, command.mediaIds)
 
         val previousScope = ReportScope(
@@ -505,6 +509,14 @@ class FarmingRecordService(
         cropRepository.findById(cropId).orElseThrow {
             BusinessException(ErrorCode.CROP_NOT_FOUND)
         }
+
+    // 회원이 해당 농장에 등록한(MemberCrop) 작물만 기록에 쓸 수 있다.
+    // farm 소유는 findFarm에서, 전역 작물 존재는 findCrop에서 확인하고, 여기서 (농장,작물) 등록 조합을 확인한다.
+    private fun assertCropRegisteredToFarm(memberId: UUID, farmId: UUID, cropId: UUID) {
+        if (!memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId)) {
+            throw BusinessException(ErrorCode.FARMING_RECORD_CROP_NOT_IN_FARM)
+        }
+    }
 
     private fun findPesticide(pesticideId: UUID): Pesticide =
         pesticideRepository.findById(pesticideId).orElseThrow {

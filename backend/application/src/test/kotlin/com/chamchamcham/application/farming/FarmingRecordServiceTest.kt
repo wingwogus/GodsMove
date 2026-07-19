@@ -9,6 +9,7 @@ import com.chamchamcham.domain.common.BaseTimeEntity
 import com.chamchamcham.domain.crop.Crop
 import com.chamchamcham.domain.crop.CropRepository
 import com.chamchamcham.domain.crop.CropUsePartCategory
+import com.chamchamcham.domain.crop.MemberCropRepository
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
 import com.chamchamcham.domain.farming.FarmingRecord
@@ -57,6 +58,7 @@ import org.mockito.ArgumentCaptor
 import org.mockito.ArgumentMatchers.any
 import org.mockito.Mock
 import org.mockito.Mockito.`when`
+import org.mockito.Mockito.lenient
 import org.mockito.Mockito.never
 import org.mockito.Mockito.verify
 import org.mockito.Mockito.verifyNoInteractions
@@ -82,6 +84,7 @@ class FarmingRecordServiceTest {
     @Mock private lateinit var memberRepository: MemberRepository
     @Mock private lateinit var farmRepository: FarmRepository
     @Mock private lateinit var cropRepository: CropRepository
+    @Mock private lateinit var memberCropRepository: MemberCropRepository
     @Mock private lateinit var farmingRecordRepository: FarmingRecordRepository
     @Mock private lateinit var farmingRecordMediaRepository: FarmingRecordMediaRepository
     @Mock private lateinit var farmingRecordQueryRepository: FarmingRecordQueryRepository
@@ -112,6 +115,7 @@ class FarmingRecordServiceTest {
             memberRepository = memberRepository,
             farmRepository = farmRepository,
             cropRepository = cropRepository,
+            memberCropRepository = memberCropRepository,
             farmingRecordRepository = farmingRecordRepository,
             farmingRecordMediaRepository = farmingRecordMediaRepository,
             farmingRecordQueryRepository = farmingRecordQueryRepository,
@@ -129,6 +133,9 @@ class FarmingRecordServiceTest {
             reportProjectionService = reportProjectionService,
             recordFeedbackLifecycleService = recordFeedbackLifecycleService,
         )
+        // 기존 create/update 해피패스는 등록된 (농장,작물) 조합을 전제하므로 기본 true로 둔다.
+        // 미등록 거부 케이스는 별도 테스트에서 이 조합만 false로 덮어쓴다.
+        lenient().`when`(memberCropRepository.existsByMemberIdAndFarmIdAndCropId(memberId, farmId, cropId)).thenReturn(true)
         member = Member(id = memberId, email = "$memberId@example.com", passwordHash = null)
         otherMember = Member(id = otherMemberId, email = "$otherMemberId@example.com", passwordHash = null)
         farm = Farm(id = farmId, owner = member, name = "약초농장", roadAddress = "서울시 강남구")
