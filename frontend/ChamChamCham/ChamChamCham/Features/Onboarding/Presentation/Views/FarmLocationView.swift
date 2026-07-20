@@ -42,6 +42,17 @@ struct FarmLocationView: View {
                 .ignoresSafeArea(.container, edges: .bottom)
         }
         .background(Color.Background.default)
+        // 농지명 필드에 키보드 툴바로 "완료"를 달아 탭-바깥 없이도 키보드를 닫을 수 있게 한다.
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("완료") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+                    )
+                }
+            }
+        }
         .overlay(alignment: .bottom) {
             bottomCTA
         }

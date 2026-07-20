@@ -114,13 +114,11 @@ struct BasicProfileView: View {
         }
         .background(Color.Background.default)
         .dismissKeyboardOnTap()
-        // "다음" 버튼은 키보드 위로 고정하고(키보드가 밀어 올리지 않음), ScrollView 본문은
-        // 키보드 세이프에어리어를 존중해 포커스된 하단 필드(연락처/귀농 년차)를 키보드 위로
-        // 자동 스크롤한다. 작은 기기(iPhone SE)에서 입력칸이 키보드에 가리는 것을 막는다.
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomCTA
-                .ignoresSafeArea(.keyboard, edges: .bottom)
         }
+        // 키보드가 하단 "다음" 버튼을 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .task(id: pickerItem) {
             guard let pickerItem,
                   let data = try? await pickerItem.loadTransferable(type: Data.self) else { return }
