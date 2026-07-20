@@ -3,6 +3,7 @@ package com.chamchamcham.api.auth.dto
 import com.chamchamcham.api.farm.dto.FarmRequests
 import com.chamchamcham.domain.member.ManagementType
 import jakarta.validation.Valid
+import jakarta.validation.constraints.AssertTrue
 import jakarta.validation.constraints.Email
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
@@ -12,6 +13,7 @@ import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
 import org.hibernate.validator.constraints.UniqueElements
 import java.time.LocalDate
+import java.time.Period
 import java.util.UUID
 
 object AuthRequests {
@@ -70,12 +72,9 @@ object AuthRequests {
     )
 
     data class CompleteOnboardingRequest(
-        @field:NotBlank(message = "이름을 입력해주세요")
-        val name: String,
-        @field:NotBlank(message = "전화번호를 입력해주세요")
-        val phone: String,
-        @field:NotNull(message = "생년월일을 입력해주세요")
-        val birthDate: LocalDate?,
+        val name: String? = null,
+        val phone: String? = null,
+        val birthDate: LocalDate? = null,
         val nickname: String? = null,
         @field:NotNull(message = "경험 수준을 입력해주세요")
         @field:Min(value = 0, message = "경험 수준은 0 이상이어야 합니다")
@@ -91,7 +90,13 @@ object AuthRequests {
         @field:UniqueElements(message = "작물은 중복해서 선택할 수 없습니다")
         val cropIds: List<UUID>,
         val profileMediaId: UUID? = null
-    )
+    ) {
+        @AssertTrue(message = "귀농연차는 만 나이를 초과할 수 없습니다")
+        fun isExperienceLevelWithinAge(): Boolean {
+            val age = birthDate?.let { Period.between(it, LocalDate.now()).years }
+            return age == null || experienceLevel == null || experienceLevel <= age
+        }
+    }
 
     data class ReissueRequest(
         val refreshToken: String? = null

@@ -44,9 +44,9 @@ object AuthCommand {
 
     data class CompleteOnboarding(
         val memberId: UUID,
-        val name: String,
-        val phone: String,
-        val birthDate: LocalDate,
+        val name: String?,
+        val phone: String?,
+        val birthDate: LocalDate?,
         val nickname: String?,
         val experienceLevel: Int,
         val managementType: ManagementType,
