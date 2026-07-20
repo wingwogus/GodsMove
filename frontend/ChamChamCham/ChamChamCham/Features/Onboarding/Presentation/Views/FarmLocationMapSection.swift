@@ -22,13 +22,11 @@ struct FarmLocationMapSection: View {
     /// 하단 카드가 화면 하단 CTA를 피하도록 두는 여백.
     var bottomInset: CGFloat = 32
 
-    @State private var locationManager = LocationManager()
     @State private var cameraPosition: MapCameraPosition = .automatic
     @State private var cameraSpanMeters: CLLocationDistance = 300
     @State private var mapCenter = FarmLocationMapSection.seoul
     @State private var mapStyleIsSatellite = false
     @State private var didSetInitialCamera = false
-    @State private var didCenterOnCurrentLocation = false
     @State private var manualAreaChosen = false
 
     /// 현재 위치 승인을 못 받았을 때의 폴백 카메라(서울 시청).
@@ -53,10 +51,6 @@ struct FarmLocationMapSection: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.Object.muted)
         .onAppear(perform: setInitialCameraIfNeeded)
-        .task { locationManager.requestAuthorization() }
-        .onChange(of: locationManager.lastCoordinate) { _, newValue in
-            centerOnCurrentLocationIfNeeded(newValue)
-        }
         .onChange(of: viewModel.resolvedCoordinate) { _, newValue in
             guard let newValue else { return }
             setCamera(to: newValue.clLocationCoordinate, span: cameraSpanMeters)
@@ -71,10 +65,6 @@ struct FarmLocationMapSection: View {
     private var mapSection: some View {
         MapReader { proxy in
             Map(position: $cameraPosition) {
-                if locationManager.isAuthorized {
-                    UserAnnotation()
-                }
-
                 if let coordinate = viewModel.resolvedCoordinate,
                    !viewModel.isDrawingMode, viewModel.drawnCoordinates.isEmpty {
                     Marker("농지", coordinate: coordinate.clLocationCoordinate)
@@ -383,14 +373,6 @@ struct FarmLocationMapSection: View {
         } else {
             setCamera(to: Self.seoul, span: 3000)
         }
-    }
-
-    private func centerOnCurrentLocationIfNeeded(_ coordinate: GeoPoint?) {
-        guard let coordinate,
-              viewModel.resolvedCoordinate == nil,
-              !didCenterOnCurrentLocation else { return }
-        didCenterOnCurrentLocation = true
-        setCamera(to: coordinate.clLocationCoordinate, span: 800)
     }
 
     private func setCamera(to coordinate: CLLocationCoordinate2D, span: CLLocationDistance) {

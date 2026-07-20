@@ -83,6 +83,10 @@ struct FarmLocationView: View {
             Text("재배지의 주소명과 농지명을 입력해주세요.")
                 .appTypography(.bodyLarge)
                 .foregroundStyle(Color.Text.muted)
+
+            Text("정확한 재배지 위치로 날씨·병해충 등 맞춤 영농 정보를 제공하기 위해 필요해요.")
+                .appTypography(.labelMedium)
+                .foregroundStyle(Color.Text.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
