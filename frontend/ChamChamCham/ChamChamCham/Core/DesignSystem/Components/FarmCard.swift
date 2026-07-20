@@ -17,8 +17,9 @@ struct FarmCard: View {
     var isSelected: Bool = false
 
     /// Inline 농지명 edit state (owned by the caller, e.g. `FarmListView`'s `editingFarmId`). When
-    /// `true`, the name row swaps `rowLabel` for a `TextField` bound to `editingName` and the trailing
-    /// pencil icon becomes a commit (checkmark) action. Defaults keep existing call sites unchanged.
+    /// `true`, the name row swaps `rowLabel` for a `TextField` bound to `editingName`; the trailing
+    /// icon clears the text, and the keyboard's 완료/done key commits via `onCommitName`. An empty
+    /// name shows an error border/message and blocks commit. Defaults keep existing call sites unchanged.
     var isEditingName: Bool = false
     var editingName: Binding<String>? = nil
     var onCommitName: (() -> Void)? = nil
@@ -61,36 +62,57 @@ struct FarmCard: View {
 
     @ViewBuilder private var nameRow: some View {
         if isEditingName, let editingName {
-            HStack(spacing: Spacing.sm) {
-                TextField("농지명을 입력해주세요.", text: editingName)
-                    .appTypography(.bodyLargeEmphasized)
-                    .foregroundStyle(Color.Text.default)
-                    .submitLabel(.done)
-                    .focused($isNameFieldFocused)
-                    .onAppear { isNameFieldFocused = true }
-                    .onSubmit { onCommitName?() }
-                Spacer(minLength: Spacing.sm)
-                Button {
-                    onCommitName?()
-                } label: {
-                    Image(systemName: "checkmark")
-                        .font(.system(size: 20))
-                        .foregroundStyle(Color.Icon.subtle)
-                        .frame(width: 24, height: 24)
+            VStack(alignment: .leading, spacing: Spacing.xs) {
+                HStack(spacing: Spacing.sm) {
+                    TextField("농지명을 입력해주세요.", text: editingName)
+                        .appTypography(.bodyLargeEmphasized)
+                        .foregroundStyle(Color.Text.default)
+                        .submitLabel(.done)
+                        .focused($isNameFieldFocused)
+                        .onAppear { isNameFieldFocused = true }
+                        .onSubmit { if !isNameEmpty { onCommitName?() } }
+                    Spacer(minLength: Spacing.sm)
+                    if !editingName.wrappedValue.isEmpty {
+                        Button {
+                            editingName.wrappedValue = ""
+                        } label: {
+                            AppIconView(source: .asset("cancel"), size: 24)
+                                .foregroundStyle(Color.Icon.subtle)
+                        }
+                        .buttonStyle(.plain)
+                    }
                 }
-                .buttonStyle(.plain)
+                .padding(.horizontal, Spacing.md)
+                .frame(maxWidth: .infinity, minHeight: rowHeight, maxHeight: rowHeight, alignment: .leading)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(isSelected ? Color.Object.default : Color.Object.subtle)
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 8)
+                        .stroke(nameRowBorderColor, lineWidth: 1)
+                )
+                if isNameEmpty {
+                    Text("농지명은 필수로 작성해주세요.")
+                        .appTypography(.labelMedium)
+                        .foregroundStyle(Color.Text.red)
+                }
             }
-            .padding(.horizontal, Spacing.md)
-            .frame(maxWidth: .infinity, minHeight: rowHeight, maxHeight: rowHeight, alignment: .leading)
-            .background(
-                RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.Object.default : Color.Object.subtle)
-            )
         } else {
             row(icon: "pencil", action: onEditName) {
                 rowLabel(farmName)
             }
         }
+    }
+
+    private var isNameEmpty: Bool {
+        editingName?.wrappedValue.trimmingCharacters(in: .whitespaces).isEmpty ?? false
+    }
+
+    private var nameRowBorderColor: Color {
+        if isNameEmpty { return Color.Border.error }
+        if isNameFieldFocused { return Color.Border.primary }
+        return Color.Border.default
     }
 
     // MARK: - Rows
