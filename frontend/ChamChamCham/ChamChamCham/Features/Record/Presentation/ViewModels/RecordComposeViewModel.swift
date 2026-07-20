@@ -29,11 +29,19 @@ final class RecordComposeViewModel {
     private var weatherLoadToken = 0
 
     // MARK: 사진 (0~5)
+    /// 첨부 사진 한 장의 미리보기 원본. 새로 고른 사진은 로컬 `Data`, 수정 진입 시 프리필로 채워진
+    /// 기존 사진은 서버 URL — 둘 다 같은 슬롯 UI(`AppImageUploadSlot`)로 그려진다.
+    enum AttachmentSource: Sendable {
+        case local(Data)
+        case remote(url: String)
+    }
+
     /// 첨부 사진 한 장. `id`는 업로드 중에도 안정적인 로컬 임시 id이며, 업로드가 끝나면
-    /// `mediaId`가 채워져 제출 시 사용된다. `isUploading`이 슬롯별 스피너를 구동한다.
+    /// `mediaId`가 채워져 제출 시 사용된다. 기존 사진(`source == .remote`)은 이미 `mediaId`를
+    /// 가진 채로 시작해 재업로드 없이 그대로 재제출된다. `isUploading`이 슬롯별 스피너를 구동한다.
     struct Attachment: Identifiable, Sendable {
         let id: UUID
-        let previewData: Data
+        let source: AttachmentSource
         var mediaId: UUID?
         var isUploading: Bool
     }
@@ -172,6 +180,11 @@ final class RecordComposeViewModel {
         if !prefill.missingFields.isEmpty {
             showValidation = true
         }
+
+        // 수정 진입: 기존 사진을 이미 업로드된 상태로 채운다 — 재업로드 없이 mediaId를 그대로 재제출.
+        attachments = prefill.existingPhotos.map {
+            Attachment(id: $0.mediaId, source: .remote(url: $0.url), mediaId: $0.mediaId, isUploading: false)
+        }
     }
 
     /// 정수로 떨어지는 값은 "30.0"이 아니라 "30"으로 채운다.
@@ -240,7 +253,7 @@ final class RecordComposeViewModel {
         guard canAddMorePhotos else { return }
         // 고른 사진을 스피너와 함께 즉시 보여주고, 업로드가 끝나면 mediaId를 채운다.
         let tempId = UUID()
-        attachments.append(Attachment(id: tempId, previewData: data, mediaId: nil, isUploading: true))
+        attachments.append(Attachment(id: tempId, source: .local(data), mediaId: nil, isUploading: true))
         do {
             let uploaded = try await mediaUpload.uploadFarmingRecordImage(data, originalFilename: nil)
             guard let index = attachments.firstIndex(where: { $0.id == tempId }) else { return }

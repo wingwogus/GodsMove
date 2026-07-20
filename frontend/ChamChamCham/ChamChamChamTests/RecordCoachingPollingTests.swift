@@ -125,6 +125,8 @@ private actor StubCoachingRecordRepository: RecordRepository {
     func searchPesticides(keyword: String?) async throws -> [Pesticide] { throw StubCoachingError.unused }
     func fetchPests(pesticideId: UUID) async throws -> [Pest] { throw StubCoachingError.unused }
     func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { throw StubCoachingError.unused }
+    func fetchEditPrefill(id: UUID) async throws -> VoiceRecordPrefill { throw StubCoachingError.unused }
+    func updateRecord(id: UUID, _ request: SaveRecordRequestDTO) async throws -> UUID { throw StubCoachingError.unused }
 }
 
 private enum StubCoachingError: Error { case unused }

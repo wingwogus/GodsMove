@@ -37,3 +37,16 @@ struct VoiceConfirmRecordSaver: RecordSaver {
         try await repository.confirm(sessionId: sessionId, request)
     }
 }
+
+/// 기록 수정 저장. `PATCH /farming-records/{id}`로 라우팅한다. entryMode는 백엔드 update 커맨드가
+/// 필드 자체를 갖지 않아 완전히 무시하므로 값 선택 고민 없이 `.manual`로 고정한다.
+struct UpdateRecordSaver: RecordSaver {
+    let repository: any RecordRepository
+    let recordId: UUID
+
+    var entryMode: EntryMode { .manual }
+
+    func save(_ request: SaveRecordRequestDTO) async throws -> UUID {
+        try await repository.updateRecord(id: recordId, request)
+    }
+}

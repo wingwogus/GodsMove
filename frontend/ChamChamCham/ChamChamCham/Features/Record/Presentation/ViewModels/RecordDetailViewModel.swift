@@ -32,6 +32,8 @@ final class RecordDetailViewModel {
     private(set) var coachingState: CoachingState = .loading
     private(set) var isDeleting = false
     var deleteError: String?
+    private(set) var isLoadingEditPrefill = false
+    var editPrefillError: String?
 
     private let recordId: UUID
     private let repository: any RecordRepository
@@ -107,6 +109,20 @@ final class RecordDetailViewModel {
             } catch {
                 return // cancelled while waiting
             }
+        }
+    }
+
+    /// Fetches this record's raw values as a compose-form prefill (수정 진입). Returns `nil` on failure and
+    /// surfaces the reason via `editPrefillError`, mirroring `delete()`'s success/failure shape.
+    func loadEditPrefill() async -> VoiceRecordPrefill? {
+        isLoadingEditPrefill = true
+        editPrefillError = nil
+        defer { isLoadingEditPrefill = false }
+        do {
+            return try await repository.fetchEditPrefill(id: recordId)
+        } catch {
+            editPrefillError = RecordErrorMessage.text(for: error)
+            return nil
         }
     }
 
