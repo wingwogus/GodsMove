@@ -1219,6 +1219,9 @@
           "farm": {
             "$ref": "#/components/schemas/FarmDraftRequest"
           },
+          "isExperienceLevelWithinAge": {
+            "type": "boolean"
+          },
           "managementType": {
             "enum": [
               "AGRICULTURAL_INDIVIDUAL",
@@ -1242,13 +1245,11 @@
           }
         },
         "required": [
-          "birthDate",
           "cropIds",
           "experienceLevel",
           "farm",
-          "managementType",
-          "name",
-          "phone"
+          "isExperienceLevelWithinAge",
+          "managementType"
         ],
         "type": "object"
       },
@@ -3795,10 +3796,20 @@
             ],
             "type": "string"
           },
+          "materialName": {
+            "type": "string"
+          },
           "memoPreview": {
             "type": "string"
           },
           "pesticideName": {
+            "type": "string"
+          },
+          "plantingMethod": {
+            "enum": [
+              "SEED",
+              "SEEDLING"
+            ],
             "type": "string"
           },
           "thumbnailUrl": {
@@ -4552,6 +4563,9 @@
             },
             "type": "array"
           },
+          "isExperienceLevelWithinAge": {
+            "type": "boolean"
+          },
           "managementType": {
             "enum": [
               "AGRICULTURAL_INDIVIDUAL",
@@ -4575,13 +4589,10 @@
           }
         },
         "required": [
-          "birthDate",
           "experienceLevel",
           "farms",
-          "managementType",
-          "name",
-          "nickname",
-          "phone"
+          "isExperienceLevelWithinAge",
+          "managementType"
         ],
         "type": "object"
       },
@@ -5242,6 +5253,37 @@
               "*/*": {
                 "schema": {
                   "$ref": "#/components/schemas/ApiResponseUnit"
+                }
+              }
+            },
+            "description": "OK"
+          }
+        },
+        "tags": [
+          "community-controller"
+        ]
+      }
+    },
+    "/api/v1/community/members/{memberId}/post-crops": {
+      "get": {
+        "operationId": "listPostCrops",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "memberId",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiResponseListBoardResponse"
                 }
               }
             },

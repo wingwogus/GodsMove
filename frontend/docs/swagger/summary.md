@@ -2,9 +2,9 @@
 
 - Source title: `ChamChamCham API`
 - Version: `v1`
-- SHA-256: `332e4cd7e249f9682d57928b1631cef2a2918727353c5299f0c142928f9feac8`
-- Paths: `59`
-- Operations: `69`
+- SHA-256: `2afd60fce1ff8215f3d3fbd0f7bb4ee2cf2c7fbfcac7afa318a60fb8f53cdf8f`
+- Paths: `60`
+- Operations: `70`
 - Schemas: `172`
 
 ## Operations
@@ -27,6 +27,7 @@
 | POST | `/api/v1/coaching/rag/query` | `query` |
 | GET | `/api/v1/community/boards` | `listBoards` |
 | DELETE | `/api/v1/community/comments/{commentId}` | `deleteComment` |
+| GET | `/api/v1/community/members/{memberId}/post-crops` | `listPostCrops` |
 | GET | `/api/v1/community/posts` | `listPosts` |
 | POST | `/api/v1/community/posts` | `createPost` |
 | DELETE | `/api/v1/community/posts/{postId}` | `deletePost` |
