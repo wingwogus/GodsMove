@@ -31,6 +31,7 @@ import com.chamchamcham.domain.farming.WeedingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
 import com.chamchamcham.domain.media.UploadedMedia
 import com.chamchamcham.domain.media.UploadedMediaRepository
+import com.chamchamcham.domain.media.UploadedMediaStatus
 import com.chamchamcham.domain.media.UploadedMediaUsageType
 import com.chamchamcham.domain.member.Member
 import com.chamchamcham.domain.member.MemberRepository
@@ -161,7 +162,7 @@ class FarmingRecordService(
 
         val farm = findFarm(command.farmId, command.memberId)
         val crop = findCrop(command.cropId)
-        val media = validateMedia(command.memberId, command.mediaIds)
+        val media = validateUpdatedMedia(record, command.memberId, command.mediaIds)
 
         val previousScope = ReportScope(
             memberId = command.memberId,
@@ -436,6 +437,43 @@ class FarmingRecordService(
                 throw BusinessException(ErrorCode.MEDIA_USAGE_MISMATCH)
             }
             if (!media.isAttachable()) {
+                throw BusinessException(ErrorCode.MEDIA_NOT_ATTACHABLE)
+            }
+            media
+        }
+    }
+
+    /// Update-time media validation. Editing without changing photos resubmits the record's own already-
+    /// `ATTACHED` mediaIds, which plain `validateMedia` would reject as `MEDIA_NOT_ATTACHABLE` (it only accepts
+    /// `TEMP`). Mirrors `CommunityPostService.validateUpdatedMedia`: media currently attached to THIS record is
+    /// accepted for re-attachment; media attached to any other record (or a different owner/usage) is rejected.
+    private fun validateUpdatedMedia(record: FarmingRecord, memberId: UUID, mediaIds: List<UUID>): List<UploadedMedia> {
+        if (mediaIds.isEmpty()) {
+            return emptyList()
+        }
+        val recordId = requireNotNull(record.id) { "Persisted farming record id is required" }
+        val mediaById = uploadedMediaRepository.findAllById(mediaIds)
+            .associateBy { requireNotNull(it.id) { "Persisted media id is required" } }
+        val recordMediaByMediaId = farmingRecordMediaRepository.findByUploadedMediaIdIn(mediaIds)
+            .associateBy { requireNotNull(it.uploadedMedia.id) { "Persisted media id is required" } }
+
+        return mediaIds.map { mediaId ->
+            val media = mediaById[mediaId] ?: throw BusinessException(ErrorCode.MEDIA_NOT_FOUND)
+            if (media.owner.id != memberId) {
+                throw BusinessException(ErrorCode.MEDIA_NOT_OWNED)
+            }
+            if (media.usageType != UploadedMediaUsageType.FARMING_RECORD) {
+                throw BusinessException(ErrorCode.MEDIA_USAGE_MISMATCH)
+            }
+
+            val recordMedia = recordMediaByMediaId[mediaId]
+            if (recordMedia != null && recordMedia.record.id != recordId) {
+                throw BusinessException(ErrorCode.MEDIA_NOT_ATTACHABLE)
+            }
+            if (!media.isAttachable() && media.status != UploadedMediaStatus.ATTACHED) {
+                throw BusinessException(ErrorCode.MEDIA_NOT_ATTACHABLE)
+            }
+            if (media.status == UploadedMediaStatus.ATTACHED && recordMedia?.record?.id != recordId) {
                 throw BusinessException(ErrorCode.MEDIA_NOT_ATTACHABLE)
             }
             media
