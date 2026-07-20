@@ -42,7 +42,7 @@ struct AppListItem<Thumbnail: View>: View {
             case .small: CGSize(width: 390, height: 120)
             case .medium: CGSize(width: 390, height: 160)
             case .large: CGSize(width: 390, height: 184)
-            case .xlarge: CGSize(width: 390, height: 169)
+            case .xlarge: CGSize(width: 390, height: 166)
             }
         }
 
@@ -222,7 +222,7 @@ struct AppListItem<Thumbnail: View>: View {
         VStack(alignment: .leading, spacing: 12) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(title)
-                    .appTypography(.titleLargeEmphasized)
+                    .appTypography(.titleMediumEmphasized)
                     .foregroundStyle(Color.Text.default)
                     .lineLimit(1)
                 Text(organization)
@@ -230,7 +230,7 @@ struct AppListItem<Thumbnail: View>: View {
                     .foregroundStyle(Color.Text.subtle)
                     .lineLimit(1)
             }
-            .frame(height: 57, alignment: .top)
+            .frame(height: 52, alignment: .top)
 
             HStack(alignment: .top, spacing: 16) {
                 VStack(alignment: .leading, spacing: 4) {
