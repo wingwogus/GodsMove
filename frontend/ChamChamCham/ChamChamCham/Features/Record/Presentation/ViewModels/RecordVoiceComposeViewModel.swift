@@ -134,6 +134,19 @@ final class RecordVoiceComposeViewModel {
         }
     }
 
+    /// 플로우 컨테이너(fullScreenCover)가 내려갈 때의 최종 안전망 — 명시 뒤로가기를 거치지
+    /// 않는 dismiss 경로에서도 연결/세션이 살아남지 않게 한다. .reviewing은 제외한다:
+    /// 검토까지 간 플로우의 dismissal은 저장(confirm) 직후가 대부분이라 여기서 취소하면
+    /// 확정된 세션에 불필요한 취소를 쏘게 된다. 검토 중 직접 이탈은 뒤로가기의 abandon()이 맡는다.
+    func flowDismissed() {
+        switch phase {
+        case .idle, .preparing, .conversing, .failed:
+            abandon()
+        case .processing, .reviewing, .cancelled:
+            break
+        }
+    }
+
     // MARK: - 세션 시작
 
     private func start() async {

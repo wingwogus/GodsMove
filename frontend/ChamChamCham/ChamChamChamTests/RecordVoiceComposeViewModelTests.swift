@@ -453,6 +453,41 @@ struct RecordVoiceComposeViewModelTests {
         #expect(await repo.createCount == 0)
     }
 
+    // MARK: - 플로우 dismissal 안전망
+
+    @Test("플로우 dismissal 안전망: 활성 단계에서는 abandon과 동일하게 정리하고 재호출은 멱등이다")
+    func flowDismissedActsLikeAbandonWhileActive() async {
+        let repo = StubVoiceSessionRepository()
+        let (vm, _, transport) = makeViewModel(voiceRepository: repo)
+        await startConversation(vm, transport)
+
+        vm.flowDismissed()
+        #expect(vm.phase == .cancelled)
+        #expect(await waitUntil { await repo.cancelledSessionIds.count == 1 })
+        #expect(await waitUntil { await transport.closeCount == 1 })
+
+        vm.flowDismissed() // 명시 뒤로가기 뒤 cover dismiss로 또 불려도
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(await repo.cancelledSessionIds.count == 1) // 중복 취소 없음
+    }
+
+    @Test("플로우 dismissal 안전망: 검토 단계 세션은 건드리지 않는다")
+    func flowDismissedLeavesReviewingSessionAlone() async {
+        let repo = StubVoiceSessionRepository()
+        let (vm, _, transport) = makeViewModel(voiceRepository: repo)
+        await startConversation(vm, transport)
+
+        await transport.emit(.itemStarted(itemId: "u1", role: .user))
+        await transport.emit(.userTranscript(itemId: "u1", text: "물 줬어요"))
+        await transport.emit(.functionCall(name: "save_farming_record", argumentsJSON: Self.toolJSON))
+        await transport.emit(.responseCompleted)
+        #expect(await waitUntil { vm.phase == .reviewing })
+
+        vm.flowDismissed() // 저장(confirm) 직후의 cover dismiss에 해당
+        #expect(vm.phase == .reviewing)
+        #expect(await repo.cancelledSessionIds.isEmpty) // 확정 경로 세션에 취소를 쏘지 않는다
+    }
+
     // MARK: - 대화 시간 한도
 
     @Test("시간 한도 도달: 실패가 아니라 지금까지의 내용을 살려 검토 화면으로 넘어간다")

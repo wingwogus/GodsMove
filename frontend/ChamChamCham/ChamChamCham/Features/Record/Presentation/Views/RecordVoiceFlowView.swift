@@ -74,6 +74,9 @@ struct RecordVoiceFlowView: View {
                 dismiss()
             }
         }
+        // fullScreenCover가 어떤 경로로든 내려갈 때의 최종 안전망 — 검토 화면 push로는
+        // NavigationStack 자체가 사라지지 않으므로 여기서는 발화하지 않는다.
+        .onDisappear { viewModel.flowDismissed() }
     }
 
     /// 검토 화면 상단 안내 배너 문구. 종료 사유에 따라 달라지며, 사용자가 직접 완료한 경우는
