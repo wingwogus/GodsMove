@@ -114,12 +114,12 @@ struct ReportFeedbackList: Hashable, Sendable {
 }
 
 struct ReportFilter: Equatable, Sendable {
-    var farmId: UUID?
-    var cropId: UUID?
+    var farmIds: Set<UUID> = []
+    var cropIds: Set<UUID> = []
     var workTypes: Set<WorkType> = []
 
     var isEmpty: Bool {
-        farmId == nil && cropId == nil && workTypes.isEmpty
+        farmIds.isEmpty && cropIds.isEmpty && workTypes.isEmpty
     }
 }
 

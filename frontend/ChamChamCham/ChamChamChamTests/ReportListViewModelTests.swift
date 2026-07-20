@@ -120,7 +120,7 @@ struct ReportListViewModelTests {
         let firstCropId = farms[0].crops[0].id
         let secondFarmId = farms[1].id
         let repository = StubReportRepository { filter, _, _ in
-            if filter.farmId == firstFarmId {
+            if filter.farmIds == [firstFarmId] {
                 try? await Task.sleep(for: .milliseconds(80))
                 return ReportResource(
                     value: ReportFixtures.domainPage(items: [ReportFixtures.summary(cropName: "늦은 황기")]),
@@ -134,15 +134,15 @@ struct ReportListViewModelTests {
         }
         let viewModel = ReportListViewModel(repository: repository, farmCropLoader: { farms })
         await viewModel.onAppear()
-        await viewModel.applyCropFilter(firstCropId)
+        await viewModel.applyCropFilter([firstCropId])
 
-        let staleTask = Task { await viewModel.applyFarmFilter(firstFarmId) }
+        let staleTask = Task { await viewModel.applyFarmFilter([firstFarmId]) }
         await Task.yield()
-        await viewModel.applyFarmFilter(secondFarmId)
+        await viewModel.applyFarmFilter([secondFarmId])
         await staleTask.value
 
-        #expect(viewModel.filter.farmId == secondFarmId)
-        #expect(viewModel.filter.cropId == nil)
+        #expect(viewModel.filter.farmIds == [secondFarmId])
+        #expect(viewModel.filter.cropIds.isEmpty)
         #expect(viewModel.reports.map(\.cropName) == ["최신 당귀"])
     }
 

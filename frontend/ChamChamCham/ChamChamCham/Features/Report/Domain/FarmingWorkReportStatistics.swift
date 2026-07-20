@@ -95,6 +95,7 @@ struct ReportGrowthPeriodRange: Hashable, Sendable {
 }
 
 struct PlantingReportStatistics: Hashable, Sendable {
+    let plantingMethodDistribution: [ReportCountDistribution]
     let propagationMethods: [ReportPropagationStatistics]
 }
 
@@ -116,7 +117,7 @@ struct PestControlReportStatistics: Hashable, Sendable {
     let categoryDistribution: [ReportCountDistribution]
     let pesticideAmounts: [ReportAmountByUnitStatistics]
     let categoryAmounts: [ReportCategoryAmountByUnitStatistics]
-    let totalSprayAmountLiters: Decimal?
+    let totalSprayAmountMl: Decimal?
     let sprayAmountCoverage: ReportCoverage
     let targets: [ReportTargetCount]
 }
@@ -134,6 +135,7 @@ struct HarvestReportStatistics: Hashable, Sendable {
     let medicinalParts: [ReportHarvestPartStatistics]
     let finalGrowthPeriodMonths: Int?
     let growthPeriodRangeMonths: ReportGrowthPeriodRange?
+    let growthPeriodDistribution: [ReportCountDistribution]
 }
 
 struct FarmingWorkReportStatistics: Hashable, Sendable {

@@ -63,7 +63,7 @@ struct BasicProfileView: View {
                             label: "닉네임",
                             placeholder: "닉네임을 입력해주세요.",
                             text: $viewModel.draft.nickname,
-                            isRequired: true,
+                            isRequired: false,
                             errorMessage: error(for: .nickname)
                         )
 
@@ -101,6 +101,8 @@ struct BasicProfileView: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .background(Color.Background.default)
+        // 키보드가 하단 "다음" 버튼을 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .dismissKeyboardOnTap()
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomCTA
@@ -128,20 +130,12 @@ struct BasicProfileView: View {
     }
 
     private var topAppBar: some View {
-        HStack {
-            Button {
-                viewModel.goBack()
-            } label: {
-                AppIconView(source: .asset("chevron_backward"), size: 24)
-                    .foregroundStyle(Color.Icon.default)
-                    .frame(width: 48, height: 48)
-            }
-            .buttonStyle(.plain)
-            Spacer()
-        }
-        .frame(height: 60)
-        .padding(.horizontal, 4)
-        .background(Color.Background.default)
+        AppTopAppBar(
+            title: "",
+            isDetail: true,
+            showBorder: false,
+            leading: .init(.asset("arrow_back_ios_new")) { viewModel.goBack() }
+        )
     }
 
     private var header: some View {

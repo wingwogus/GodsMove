@@ -17,8 +17,8 @@ struct ReportListPresentationTests {
         let defaults = ReportFilterChipPresentation.all(filter: ReportFilter(), farms: farms)
         let selected = ReportFilterChipPresentation.all(
             filter: ReportFilter(
-                farmId: farms[0].id,
-                cropId: farms[0].crops[0].id,
+                farmIds: [farms[0].id],
+                cropIds: [farms[0].crops[0].id],
                 workTypes: [.pestControl]
             ),
             farms: farms
@@ -41,6 +41,23 @@ struct ReportListPresentationTests {
         let workTypeChip = chips.first { $0.kind == .workType }
         #expect(workTypeChip?.title == "물주기 외 2")
         #expect(workTypeChip?.isSelected == true)
+    }
+
+    @Test("multi-selected farms and crops collapse into a '이름 외 N' chip title")
+    func multiSelectedFarmAndCropChip() {
+        let farms = ReportFixtures.farms().map(ReportFarmFilterOption.init(farm:))
+        let chips = ReportFilterChipPresentation.all(
+            filter: ReportFilter(
+                farmIds: Set(farms.map(\.id)),
+                cropIds: Set(farms.flatMap(\.crops).map(\.id))
+            ),
+            farms: farms
+        )
+
+        let farmChip = chips.first { $0.kind == .farm }
+        let cropChip = chips.first { $0.kind == .crop }
+        #expect(farmChip?.title == "북쪽 밭 외 1")
+        #expect(cropChip?.title == "황기 외 1")
     }
 
     @Test("card copy uses only summary fields and detects its thumbnail fallback")

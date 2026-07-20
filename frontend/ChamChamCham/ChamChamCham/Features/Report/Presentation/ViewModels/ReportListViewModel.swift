@@ -48,19 +48,19 @@ final class ReportListViewModel {
     var hasMore: Bool { nextCursor != nil }
     var isShowingCachedData: Bool { cachedAt != nil }
 
-    var selectedFarmName: String? {
-        guard let farmId = filter.farmId else { return nil }
-        return farms.first { $0.id == farmId }?.name
+    var selectedFarmNames: [String]? {
+        guard !filter.farmIds.isEmpty else { return nil }
+        return farms.filter { filter.farmIds.contains($0.id) }.map(\.name)
     }
 
-    var selectedCropName: String? {
-        guard let cropId = filter.cropId else { return nil }
-        return farms.lazy.flatMap(\.crops).first { $0.id == cropId }?.name
+    var selectedCropNames: [String]? {
+        guard !filter.cropIds.isEmpty else { return nil }
+        return farms.flatMap(\.crops).filter { filter.cropIds.contains($0.id) }.map(\.name)
     }
 
     var availableCrops: [ReportCropFilterOption] {
-        guard let farmId = filter.farmId else { return farms.flatMap(\.crops) }
-        return farms.first { $0.id == farmId }?.crops ?? []
+        guard !filter.farmIds.isEmpty else { return farms.flatMap(\.crops) }
+        return farms.filter { filter.farmIds.contains($0.id) }.flatMap(\.crops)
     }
 
     func onAppear() async {
@@ -116,20 +116,19 @@ final class ReportListViewModel {
         }
     }
 
-    func applyFarmFilter(_ farmId: UUID?) async {
-        guard filter.farmId != farmId else { return }
-        filter.farmId = farmId
-        if let farmId,
-           let cropId = filter.cropId,
-           farms.first(where: { $0.id == farmId })?.crops.contains(where: { $0.id == cropId }) != true {
-            filter.cropId = nil
+    func applyFarmFilter(_ farmIds: Set<UUID>) async {
+        guard filter.farmIds != farmIds else { return }
+        filter.farmIds = farmIds
+        if !farmIds.isEmpty {
+            let validCropIds = Set(farms.filter { farmIds.contains($0.id) }.flatMap(\.crops).map(\.id))
+            filter.cropIds.formIntersection(validCropIds)
         }
         await load(kind: .initial)
     }
 
-    func applyCropFilter(_ cropId: UUID?) async {
-        guard filter.cropId != cropId else { return }
-        filter.cropId = cropId
+    func applyCropFilter(_ cropIds: Set<UUID>) async {
+        guard filter.cropIds != cropIds else { return }
+        filter.cropIds = cropIds
         await load(kind: .initial)
     }
 

@@ -21,7 +21,7 @@ struct OnboardingFigmaStateTests {
         let errors = viewModel.basicProfileValidationErrors
 
         #expect(errors[.name] == "이름은 필수로 입력해주세요.")
-        #expect(errors[.nickname] == "닉네임은 필수로 입력해주세요.")
+        #expect(errors[.nickname] == nil)
         #expect(errors[.phone] == "연락처는 필수로 입력해주세요.")
         #expect(errors[.birthDate] == "생년월일은 필수로 입력해주세요.")
         #expect(errors[.experienceYears] == "귀농 년차는 필수로 입력해주세요.")
@@ -29,11 +29,10 @@ struct OnboardingFigmaStateTests {
         #expect(!viewModel.canProceedFromBasicProfile)
     }
 
-    @Test("basic profile validation passes only when every required field is present")
+    @Test("basic profile validation passes without a nickname when every other required field is present")
     func basicProfileValidationPassesWhenComplete() {
         let viewModel = makeOnboardingViewModel()
         viewModel.draft.name = "이름 입력 완료"
-        viewModel.draft.nickname = "닉네임 입력 완료"
         viewModel.draft.phone = "000-0000-0000"
         viewModel.draft.birthDate = Date(timeIntervalSince1970: 0)
         viewModel.draft.experienceYears = 2

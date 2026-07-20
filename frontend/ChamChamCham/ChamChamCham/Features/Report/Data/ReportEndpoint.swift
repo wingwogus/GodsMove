@@ -8,8 +8,8 @@
 import Foundation
 
 struct ReportQuery: Equatable, Sendable {
-    var farmId: UUID?
-    var cropId: UUID?
+    var farmIds: Set<UUID> = []
+    var cropIds: Set<UUID> = []
     var workTypes: Set<WorkType> = []
     var cursor: String?
     var size = 20
@@ -51,10 +51,10 @@ enum ReportEndpoint: Endpoint {
         guard case let .workItems(query) = self else { return [] }
 
         var items = [URLQueryItem(name: "size", value: String(query.size))]
-        if let farmId = query.farmId {
+        for farmId in query.farmIds {
             items.append(URLQueryItem(name: "farmId", value: farmId.uuidString))
         }
-        if let cropId = query.cropId {
+        for cropId in query.cropIds {
             items.append(URLQueryItem(name: "cropId", value: cropId.uuidString))
         }
         for workType in query.workTypes {

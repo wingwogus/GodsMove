@@ -45,6 +45,11 @@ struct ReportDetailPresentation: Hashable, Sendable {
                         ))
                     }
                 }
+                Self.appendDistributionChart(
+                    title: "진행한 심기 방법",
+                    values: statistics.plantingMethodDistribution,
+                    to: &charts
+                )
                 Self.appendChart(
                     title: "진행한 모종 번식법",
                     data: statistics.propagationMethods.map {
@@ -110,10 +115,10 @@ struct ReportDetailPresentation: Hashable, Sendable {
                         value: ReportValueFormatter.value(amount.amount, unit: amount.unit)
                     ))
                 }
-                if let total = statistics.totalSprayAmountLiters, total > 0 {
+                if let total = statistics.totalSprayAmountMl, total > 0 {
                     metrics.append(ReportMetricPresentation(
                         title: "총 살포량",
-                        value: ReportValueFormatter.value(total, unit: "L")
+                        value: ReportValueFormatter.value(total, unit: "mL")
                     ))
                 }
                 Self.appendDistributionChart(title: "사용한 약제 종류", values: statistics.categoryDistribution, to: &charts)
@@ -174,6 +179,11 @@ struct ReportDetailPresentation: Hashable, Sendable {
                             unit: "회"
                         )
                     },
+                    to: &charts
+                )
+                Self.appendDistributionChart(
+                    title: "재배 개월에 따른 수확량",
+                    values: statistics.growthPeriodDistribution,
                     to: &charts
                 )
             }

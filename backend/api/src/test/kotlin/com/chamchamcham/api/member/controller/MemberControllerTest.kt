@@ -103,18 +103,62 @@ class MemberControllerTest(
     }
 
     @Test
-    fun `update profile rejects blank name before service invocation`() {
+    fun `update profile succeeds without name phone birthDate or nickname`() {
+        given(memberProfileService.updateMyProfile(updateCommand().copy(name = null, phone = null, birthDate = null, nickname = null)))
+            .willReturn(myProfile())
+
         mockMvc.perform(
             put("/api/v1/members/me/profile")
                 .with(authenticatedMember(memberId.toString()))
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(profileJson().replace("\"name\":\"이황기\"", "\"name\":\"\""))
+                .content(
+                    profileJson()
+                        .replace("\"name\":\"이황기\",", "")
+                        .replace("\"phone\":\"010-1000-0001\",", "")
+                        .replace("\"birthDate\":\"1986-03-12\",", "")
+                        .replace("\"nickname\":\"황기농부\",", "")
+                )
+        )
+            .andExpect(status().isOk)
+    }
+
+    @Test
+    fun `update profile rejects experience level above requester age`() {
+        mockMvc.perform(
+            put("/api/v1/members/me/profile")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    profileJson()
+                        .replace("\"birthDate\":\"1986-03-12\"", "\"birthDate\":\"${LocalDate.now().minusYears(5)}\"")
+                        .replace("\"experienceLevel\":2", "\"experienceLevel\":50")
+                )
         )
             .andExpect(status().isBadRequest)
             .andExpect(jsonPath("$.error.code", equalTo("COMMON_001")))
-            .andExpect(jsonPath("$.error.detail.field", equalTo("name")))
 
         verifyNoInteractions(memberProfileService)
+    }
+
+    @Test
+    fun `update profile allows experience level up to one hundred when birthDate is absent`() {
+        given(
+            memberProfileService.updateMyProfile(
+                updateCommand().copy(birthDate = null, experienceLevel = 90)
+            )
+        ).willReturn(myProfile())
+
+        mockMvc.perform(
+            put("/api/v1/members/me/profile")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    profileJson()
+                        .replace("\"birthDate\":\"1986-03-12\",", "")
+                        .replace("\"experienceLevel\":2", "\"experienceLevel\":90")
+                )
+        )
+            .andExpect(status().isOk)
     }
 
     @Test

@@ -15,9 +15,17 @@ struct AppSearchBar: View {
     @Binding var text: String
     var placeholder: String = "검색어를 입력해주세요."
     var isError: Bool = false
+    /// Lets a parent own focus (e.g. to drop it proactively before a tap-driven navigation so the
+    /// tap isn't swallowed dismissing the keyboard). `nil` (default) keeps the previous
+    /// internally-owned-focus behavior for existing callers.
+    var externalFocus: FocusState<Bool>.Binding? = nil
 
-    @FocusState private var isFocused: Bool
+    @FocusState private var internalFocus: Bool
     @Environment(\.isEnabled) private var isEnabled
+
+    private var isFocused: Bool {
+        externalFocus?.wrappedValue ?? internalFocus
+    }
 
     var body: some View {
         HStack(spacing: 12) {
@@ -33,7 +41,7 @@ struct AppSearchBar: View {
                     }
                     TextField("", text: $text)
                         .foregroundStyle(Color.Text.default)
-                        .focused($isFocused)
+                        .focused(externalFocus ?? $internalFocus)
                 }
                 .appTypography(.bodyLarge)
             }

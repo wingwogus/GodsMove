@@ -13,32 +13,38 @@ import Testing
 struct ReportPresentationModelTests {
     @Test("planting shows unit-separated quantities and propagation distribution")
     func planting() {
-        let statistics = baseStatistics(planting: PlantingReportStatistics(propagationMethods: [
-            ReportPropagationStatistics(
-                code: "SEED",
-                label: "종자",
-                recordCount: 2,
-                recordRatePct: 67,
-                totalQuantity: 120,
-                quantityUnit: "g",
-                quantityCoverage: coverage
-            ),
-            ReportPropagationStatistics(
-                code: "SEEDLING",
-                label: "모종",
-                recordCount: 1,
-                recordRatePct: 33,
-                totalQuantity: 12,
-                quantityUnit: "주",
-                quantityCoverage: coverage
-            ),
-        ]))
+        let statistics = baseStatistics(planting: PlantingReportStatistics(
+            plantingMethodDistribution: [
+                distribution("SEED", "씨앗 심기", 2),
+                distribution("SEEDLING", "모종 심기", 1),
+            ],
+            propagationMethods: [
+                ReportPropagationStatistics(
+                    code: "SEED",
+                    label: "종자",
+                    recordCount: 2,
+                    recordRatePct: 67,
+                    totalQuantity: 120,
+                    quantityUnit: "g",
+                    quantityCoverage: coverage
+                ),
+                ReportPropagationStatistics(
+                    code: "SEEDLING",
+                    label: "모종",
+                    recordCount: 1,
+                    recordRatePct: 33,
+                    totalQuantity: 12,
+                    quantityUnit: "주",
+                    quantityCoverage: coverage
+                ),
+            ]
+        ))
 
         let presentation = ReportDetailPresentation(detail: detail(.planting, statistics: statistics))
 
         #expect(presentation.metrics.map(\.title) == ["총 작업 횟수", "종자 심은 양", "모종 심은 양"])
         #expect(presentation.metrics.map(\.value) == ["3회", "120g", "12주"])
-        #expect(presentation.charts.map(\.title) == ["심기 방법"])
+        #expect(presentation.charts.map(\.title) == ["진행한 심기 방법", "진행한 모종 번식법"])
     }
 
     @Test("watering and fertilizing expose their supplied distributions")
@@ -101,7 +107,7 @@ struct ReportPresentationModelTests {
                     coverage: coverage
                 ),
             ],
-            totalSprayAmountLiters: 20,
+            totalSprayAmountMl: 20,
             sprayAmountCoverage: coverage,
             targets: [ReportTargetCount(target: "진딧물", count: 2)]
         ))
@@ -110,7 +116,7 @@ struct ReportPresentationModelTests {
 
         #expect(presentation.metrics.map(\.value).contains("10g"))
         #expect(presentation.metrics.map(\.value).contains("250ml"))
-        #expect(presentation.metrics.map(\.value).contains("20L"))
+        #expect(presentation.metrics.map(\.value).contains("20mL"))
         #expect(presentation.charts.map(\.title) == [
             "관리 유형", "유형별 사용량 (g)", "유형별 사용량 (ml)", "관리 대상",
         ])
@@ -143,7 +149,8 @@ struct ReportPresentationModelTests {
                     amountCoverage: coverage
                 )],
                 finalGrowthPeriodMonths: 5,
-                growthPeriodRangeMonths: nil
+                growthPeriodRangeMonths: nil,
+                growthPeriodDistribution: [distribution("24", "24개월", 2)]
             ))
         ))
         let etc = ReportDetailPresentation(detail: detail(.etc, statistics: baseStatistics()))
@@ -153,7 +160,7 @@ struct ReportPresentationModelTests {
         #expect(pruning.charts.isEmpty)
         #expect(harvest.metrics.contains { $0.title == "총 수확량" && $0.value == "32.5kg" })
         #expect(harvest.metrics.contains { $0.title == "재배 기간" && $0.value == "5개월" })
-        #expect(harvest.charts.map(\.title) == ["수확 부위"])
+        #expect(harvest.charts.map(\.title) == ["수확 부위 종류", "재배 개월에 따른 수확량"])
         #expect(etc.metrics.map(\.title) == ["총 작업 횟수"])
         #expect(etc.charts.isEmpty)
     }

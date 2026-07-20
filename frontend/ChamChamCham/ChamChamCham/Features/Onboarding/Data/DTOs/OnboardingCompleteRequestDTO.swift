@@ -17,7 +17,7 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
     let name: String
     let phone: String
     let birthDate: String
-    let nickname: String
+    let nickname: String?
     let experienceLevel: Int
     let managementType: String
     let farm: FarmDraftRequestDTO
@@ -38,9 +38,6 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
         guard let birthDate = draft.birthDate else {
             throw OnboardingSubmissionError.missingRequiredField("birthDate")
         }
-        guard !draft.nickname.trimmingCharacters(in: .whitespaces).isEmpty else {
-            throw OnboardingSubmissionError.missingRequiredField("nickname")
-        }
         guard let experienceYears = draft.experienceYears else {
             throw OnboardingSubmissionError.missingRequiredField("experienceYears")
         }
@@ -57,7 +54,8 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
         self.name = draft.name
         self.phone = draft.phone
         self.birthDate = Self.wireDateFormatter.string(from: birthDate)
-        self.nickname = draft.nickname
+        let trimmedNickname = draft.nickname.trimmingCharacters(in: .whitespaces)
+        self.nickname = trimmedNickname.isEmpty ? nil : trimmedNickname
         self.experienceLevel = experienceYears
         self.managementType = managementType.rawValue
         self.farm = try FarmDraftRequestDTO(farm: representativeFarm)

@@ -60,8 +60,8 @@ final class DefaultReportRepository: ReportRepository {
     ) async throws -> ReportResource<FarmingWorkReportPage> {
         do {
             let response = try await remote.fetchWorkItems(ReportQuery(
-                farmId: filter.farmId,
-                cropId: filter.cropId,
+                farmIds: filter.farmIds,
+                cropIds: filter.cropIds,
                 workTypes: filter.workTypes,
                 cursor: cursor,
                 size: size

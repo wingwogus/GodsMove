@@ -53,6 +53,9 @@ struct CommunityPostQuery: Sendable, Equatable {
 /// write stay behind authentication.
 enum CommunityEndpoint: Endpoint {
     case listBoards
+    /// Distinct crops referenced in `memberId`'s posts, including crops they no longer currently
+    /// farm — backs the profile "기타 작물" filter section (unlike `listBoards`, works for any member).
+    case postCrops(memberId: UUID)
     case listPosts(CommunityPostQuery)
     case createPost(SavePostRequestDTO)
     case getPost(UUID)
@@ -69,6 +72,8 @@ enum CommunityEndpoint: Endpoint {
         switch self {
         case .listBoards:
             "\(Self.base)/boards"
+        case let .postCrops(memberId):
+            "\(Self.base)/members/\(memberId.uuidString)/post-crops"
         case .listPosts, .createPost:
             "\(Self.base)/posts"
         case let .getPost(id), let .updatePost(id, _), let .deletePost(id):
@@ -84,7 +89,7 @@ enum CommunityEndpoint: Endpoint {
 
     var method: HTTPMethod {
         switch self {
-        case .listBoards, .listPosts, .getPost, .listComments:
+        case .listBoards, .postCrops, .listPosts, .getPost, .listComments:
             .get
         case .createPost, .createComment, .toggleLike:
             .post
@@ -109,7 +114,7 @@ enum CommunityEndpoint: Endpoint {
     var requiresAuth: Bool {
         switch self {
         case .listPosts, .getPost, .listComments: false
-        case .listBoards, .createPost, .updatePost, .deletePost, .createComment, .deleteComment, .toggleLike: true
+        case .listBoards, .postCrops, .createPost, .updatePost, .deletePost, .createComment, .deleteComment, .toggleLike: true
         }
     }
 

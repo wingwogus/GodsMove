@@ -10,6 +10,7 @@ import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.WorkType
 import org.hamcrest.Matchers.equalTo
+import org.hamcrest.Matchers.nullValue
 import org.junit.jupiter.api.Test
 import org.mockito.Mockito.`when`
 import org.springframework.beans.factory.annotation.Autowired
@@ -365,6 +366,8 @@ class FarmingRecordControllerTest(
             .andExpect(status().isOk)
             .andExpect(jsonPath("$.data.items[0].id", equalTo(recordId.toString())))
             .andExpect(jsonPath("$.data.items[0].harvestAmount", equalTo(10)))
+            .andExpect(jsonPath("$.data.items[0].plantingMethod", nullValue()))
+            .andExpect(jsonPath("$.data.items[0].materialName", nullValue()))
             .andExpect(jsonPath("$.data.nextCursor", equalTo("cursor-1")))
     }
 

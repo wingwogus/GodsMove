@@ -29,7 +29,7 @@ struct SettingsView: View {
                 AppTopAppBar(
                     title: "설정",
                     isDetail: true,
-                    leading: .init(.asset("chevron_backward")) { dismiss() }
+                    leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
                 )
 
                 VStack(spacing: 0) {

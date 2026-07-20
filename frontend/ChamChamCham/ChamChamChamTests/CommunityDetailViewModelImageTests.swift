@@ -126,6 +126,8 @@ private actor RecordingCommunityRepository: CommunityRepository {
 
     func fetchBoards() async throws -> [CommunityBoard] { [] }
 
+    func fetchPostCrops(memberId: UUID) async throws -> [CommunityBoard] { [] }
+
     func fetchPosts(_ query: CommunityPostQuery) async throws -> CommunityPostPage {
         CommunityPostPage(items: [], nextCursor: nil)
     }

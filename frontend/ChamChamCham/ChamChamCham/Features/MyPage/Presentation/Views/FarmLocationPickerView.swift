@@ -49,18 +49,12 @@ struct FarmLocationPickerView: View {
     }
 
     private var topAppBar: some View {
-        HStack {
-            Button(action: onBack) {
-                AppIconView(source: .asset("chevron_backward"), size: 24)
-                    .foregroundStyle(Color.Icon.default)
-                    .frame(width: 48, height: 48)
-            }
-            .buttonStyle(.plain)
-            Spacer()
-        }
-        .frame(height: 60)
-        .padding(.horizontal, 4)
-        .background(Color.Background.default)
+        AppTopAppBar(
+            title: "",
+            isDetail: true,
+            showBorder: false,
+            leading: .init(.asset("arrow_back_ios_new"), action: onBack)
+        )
     }
 
     private var header: some View {

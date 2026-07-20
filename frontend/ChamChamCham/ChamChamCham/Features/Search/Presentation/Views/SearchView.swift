@@ -6,7 +6,6 @@
 //
 
 import SwiftUI
-import UIKit
 
 /// Root search screen, presented as a `fullScreenCover` from Home/영농 기록/정보 공유's search
 /// icons. Owns its own `NavigationStack` (for pushing 기록/게시글 detail) and switches between the
@@ -20,6 +19,8 @@ struct SearchView: View {
     @State private var recordViewModel: SearchRecordListViewModel
     @State private var policyViewModel: SearchPolicyListViewModel
     @State private var postViewModel: SearchPostListViewModel
+
+    @FocusState private var searchFieldFocused: Bool
 
     init(container: DIContainer) {
         self.container = container
@@ -45,8 +46,10 @@ struct SearchView: View {
             // bar included — is shoved up off-screen when the keyboard opens. The keyboard now just
             // overlays the bottom, and the scrollable content underneath can scroll past it.
             .ignoresSafeArea(.keyboard, edges: .bottom)
-            // Any drag through the results/suggestions/history lists drops the keyboard.
-            .scrollDismissesKeyboard(.immediately)
+            // Any drag through the results/suggestions/history lists drops the keyboard. `.interactively`
+            // (rather than `.immediately`) lets the drag/tap gesture itself decide whether to dismiss,
+            // instead of a list scroll eagerly eating the first tap on a suggestion/recent-term row.
+            .scrollDismissesKeyboard(.interactively)
             .navigationDestination(for: FarmingRecordSummary.self) { record in
                 RecordDetailView(recordId: record.id, repository: container.makeRecordRepository()) {
                     Task { await recordViewModel.reload(keyword: viewModel.submittedKeyword) }
@@ -70,7 +73,7 @@ struct SearchView: View {
             }
             .buttonStyle(.plain)
 
-            AppSearchBar(text: queryBinding)
+            AppSearchBar(text: queryBinding, externalFocus: $searchFieldFocused)
                 .onSubmit { submit(viewModel.query) }
         }
         .padding(.horizontal, 12)
@@ -80,25 +83,20 @@ struct SearchView: View {
     private var queryBinding: Binding<String> {
         Binding(
             get: { viewModel.query },
-            // Only user-driven edits flow through here (programmatic `onSubmit` sets `query`
-            // directly and never re-triggers this setter). `onQueryChanged` exits the results phase
-            // and debounces/cancels the suggestions fetch internally.
+            // User-driven edits flow through here. A programmatic `onSubmit` can also re-trigger this
+            // setter once with the same value (Korean IME committing marked text on focus resign), so
+            // `onQueryChanged` guards against no-op writes to avoid dropping out of the results phase.
             set: { viewModel.onQueryChanged($0) }
         )
     }
 
     /// Single funnel for a committed search (search-bar return, suggestion tap, recent-term tap):
-    /// runs the view model's submit and drops the keyboard, since none of these resign the field's
-    /// focus on their own.
+    /// drops the search field's focus FIRST, then runs the view model's submit. Dropping focus
+    /// before the state flips to the results phase means a single tap on a suggestion/recent-term
+    /// row goes straight to results instead of its first tap being swallowed by keyboard dismissal.
     private func submit(_ keyword: String) {
+        searchFieldFocused = false
         viewModel.onSubmit(keyword)
-        dismissKeyboard()
-    }
-
-    private func dismissKeyboard() {
-        UIApplication.shared.sendAction(
-            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
-        )
     }
 
     @ViewBuilder private var content: some View {

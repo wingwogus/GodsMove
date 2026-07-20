@@ -122,6 +122,8 @@ struct CropSelectionBody: View {
                 bottomTray
                     .padding(.bottom, -proxy.safeAreaInsets.bottom)
             }
+            // 키보드가 하단 트레이(선택 칩 + CTA)를 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
+            .ignoresSafeArea(.keyboard, edges: .bottom)
         }
         .task {
             selectedCategoryCode = selectedCategoryCode ?? categories.first?.code

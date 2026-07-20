@@ -86,26 +86,32 @@ enum ReportPreviewFixtures {
         )
         return FarmingWorkReportStatistics(
             common: common,
-            planting: workType == .planting ? PlantingReportStatistics(propagationMethods: [
-                ReportPropagationStatistics(
-                    code: "SEED",
-                    label: "종자",
-                    recordCount: 6,
-                    recordRatePct: 60,
-                    totalQuantity: 120,
-                    quantityUnit: "g",
-                    quantityCoverage: coverage
-                ),
-                ReportPropagationStatistics(
-                    code: "SEEDLING",
-                    label: "모종",
-                    recordCount: 4,
-                    recordRatePct: 40,
-                    totalQuantity: 40,
-                    quantityUnit: "주",
-                    quantityCoverage: coverage
-                ),
-            ]) : nil,
+            planting: workType == .planting ? PlantingReportStatistics(
+                plantingMethodDistribution: [
+                    ReportCountDistribution(code: "SEED", label: "씨앗 심기", count: 6, ratePct: 60),
+                    ReportCountDistribution(code: "SEEDLING", label: "모종 심기", count: 4, ratePct: 40),
+                ],
+                propagationMethods: [
+                    ReportPropagationStatistics(
+                        code: "SEED",
+                        label: "종자",
+                        recordCount: 6,
+                        recordRatePct: 60,
+                        totalQuantity: 120,
+                        quantityUnit: "g",
+                        quantityCoverage: coverage
+                    ),
+                    ReportPropagationStatistics(
+                        code: "SEEDLING",
+                        label: "모종",
+                        recordCount: 4,
+                        recordRatePct: 40,
+                        totalQuantity: 40,
+                        quantityUnit: "주",
+                        quantityCoverage: coverage
+                    ),
+                ]
+            ) : nil,
             watering: workType == .watering ? WateringReportStatistics(
                 amountDistribution: distributions + [
                     ReportCountDistribution(code: "D", label: "흠뻑", count: 1, ratePct: 10)
@@ -160,7 +166,7 @@ enum ReportPreviewFixtures {
                         coverage: coverage
                     ),
                 ],
-                totalSprayAmountLiters: 20,
+                totalSprayAmountMl: 20,
                 sprayAmountCoverage: coverage,
                 targets: [
                     ReportTargetCount(target: "진딧물", count: 3),
@@ -197,7 +203,11 @@ enum ReportPreviewFixtures {
                     ),
                 ],
                 finalGrowthPeriodMonths: 6,
-                growthPeriodRangeMonths: ReportGrowthPeriodRange(minMonths: 5, maxMonths: 7)
+                growthPeriodRangeMonths: ReportGrowthPeriodRange(minMonths: 5, maxMonths: 7),
+                growthPeriodDistribution: [
+                    ReportCountDistribution(code: "24", label: "24개월", count: 2, ratePct: 60),
+                    ReportCountDistribution(code: "18", label: "18개월", count: 1, ratePct: 40),
+                ]
             ) : nil
         )
     }

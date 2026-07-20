@@ -197,6 +197,27 @@ class MemberProfileServiceTest {
     }
 
     @Test
+    fun `update my profile succeeds when optional identity fields are absent`() {
+        val command = updateCommand(
+            profileMediaId = requireNotNull(member.profileMedia).id,
+            farms = listOf(updateFarmCommand(farmId))
+        ).copy(name = null, phone = null, birthDate = null, nickname = null)
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(farmRepository.findById(farmId)).thenReturn(Optional.of(farm))
+        `when`(cropRepository.findAllById(listOf(cropId))).thenReturn(listOf(crop))
+        `when`(memberCropRepository.findByMemberId(memberId)).thenReturn(listOf(memberCrop(farm, crop)))
+        `when`(farmRepository.findByOwnerId(memberId)).thenReturn(listOf(farm))
+
+        service.updateMyProfile(command)
+
+        assertNull(member.name)
+        assertNull(member.phone)
+        assertNull(member.birthDate)
+        assertNull(member.nickname)
+        assertEquals(7, member.experienceLevel)
+    }
+
+    @Test
     fun `update my profile replaces profile image and deletes previous image`() {
         val previousMedia = requireNotNull(member.profileMedia)
         val newMediaId = UUID.fromString("00000000-0000-0000-0000-000000000302")

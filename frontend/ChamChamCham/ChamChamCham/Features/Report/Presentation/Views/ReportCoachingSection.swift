@@ -68,7 +68,7 @@ struct ReportCoachingSection: View {
 
     private var coachingCards: some View {
         ScrollView(.horizontal) {
-            LazyHStack(alignment: .top, spacing: Spacing.md) {
+            HStack(alignment: .top, spacing: Spacing.md) {
                 ForEach(presentation.sections) { section in
                     VStack(alignment: .leading, spacing: Spacing.sm) {
                         Text(section.title)

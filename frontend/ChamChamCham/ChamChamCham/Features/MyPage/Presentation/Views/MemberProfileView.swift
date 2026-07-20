@@ -41,7 +41,7 @@ struct MemberProfileView: View {
             AppTopAppBar(
                 title: "프로필",
                 isDetail: true,
-                leading: .init(.asset("chevron_backward")) { dismiss() },
+                leading: .init(.asset("arrow_back_ios_new")) { dismiss() },
                 trailing: [.init(.asset("more_vert")) { showBlockSubmittedAlert = true }]
             )
 
@@ -176,7 +176,7 @@ struct MemberProfileView: View {
                 trailingSystemImage: "chevron.down"
             ) {
                 isShowingBoardSheet = true
-                Task { await viewModel.loadBoardsIfNeeded() }
+                Task { await viewModel.loadCropFilterOptionsIfNeeded() }
             }
             Spacer()
         }

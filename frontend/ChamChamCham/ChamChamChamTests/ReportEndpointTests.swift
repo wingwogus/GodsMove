@@ -36,8 +36,8 @@ struct ReportEndpointTests {
         let cropId = UUID()
         let cursor = "eyJpZCI6IjEifQ==&next"
         let query = queryDictionary(.workItems(ReportQuery(
-            farmId: farmId,
-            cropId: cropId,
+            farmIds: [farmId],
+            cropIds: [cropId],
             workTypes: [.pestControl],
             cursor: cursor,
             size: 37
@@ -59,6 +59,20 @@ struct ReportEndpointTests {
             .compactMap(\.value)
 
         #expect(Set(values) == [WorkType.watering.rawValue, WorkType.harvest.rawValue])
+    }
+
+    @Test("work items serialize multiple selected farms and crops as repeated query items")
+    func workItemsSerializeMultipleFarmsAndCrops() {
+        let farmA = UUID()
+        let farmB = UUID()
+        let cropA = UUID()
+        let cropB = UUID()
+        let items = ReportEndpoint.workItems(ReportQuery(farmIds: [farmA, farmB], cropIds: [cropA, cropB])).queryItems
+
+        let farmValues = Set(items.filter { $0.name == "farmId" }.compactMap(\.value))
+        let cropValues = Set(items.filter { $0.name == "cropId" }.compactMap(\.value))
+        #expect(farmValues == [farmA.uuidString, farmB.uuidString])
+        #expect(cropValues == [cropA.uuidString, cropB.uuidString])
     }
 
     @Test("detail and feedback endpoints match deployed paths")

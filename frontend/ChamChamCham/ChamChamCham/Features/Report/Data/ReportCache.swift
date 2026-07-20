@@ -101,8 +101,12 @@ final class ReportCache {
     }
 
     private static func listKey(for filter: ReportFilter) -> String {
-        let farm = filter.farmId?.uuidString ?? "all"
-        let crop = filter.cropId?.uuidString ?? "all"
+        let farm = filter.farmIds.isEmpty
+            ? "all"
+            : filter.farmIds.map(\.uuidString).sorted().joined(separator: ",")
+        let crop = filter.cropIds.isEmpty
+            ? "all"
+            : filter.cropIds.map(\.uuidString).sorted().joined(separator: ",")
         let workTypes = filter.workTypes.isEmpty
             ? "all"
             : filter.workTypes.map(\.rawValue).sorted().joined(separator: ",")

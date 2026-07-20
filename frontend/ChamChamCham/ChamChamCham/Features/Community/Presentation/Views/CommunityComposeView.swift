@@ -57,7 +57,7 @@ struct CommunityComposeView: View {
                 title: "게시물 작성하기",
                 isDetail: true,
                 showBorder: false,
-                leading: .init(.asset("chevron_backward")) { dismiss() }
+                leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
             )
 
             ScrollView {
@@ -75,6 +75,8 @@ struct CommunityComposeView: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .background(Color.Background.default)
+        // 키보드가 하단 "완료" 바를 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .dismissKeyboardOnTap()
         .safeAreaInset(edge: .bottom) {
             submitBar

@@ -58,7 +58,7 @@ class MemberController(
                 memberId = parseMemberId(memberId),
                 name = request.name,
                 phone = request.phone,
-                birthDate = requireNotNull(request.birthDate),
+                birthDate = request.birthDate,
                 nickname = request.nickname,
                 experienceLevel = requireNotNull(request.experienceLevel),
                 managementType = requireNotNull(request.managementType),

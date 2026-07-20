@@ -119,14 +119,14 @@ struct OnboardingCompleteRequestDTOTests {
         }
     }
 
-    @Test("throws when nickname is blank")
-    func throwsOnBlankNickname() {
+    @Test("encodes nickname as nil when blank")
+    func encodesNilNicknameWhenBlank() throws {
         var draft = OnboardingTestFactory.validDraft()
         draft.nickname = "   "
 
-        #expect(throws: OnboardingSubmissionError.self) {
-            _ = try OnboardingCompleteRequestDTO(draft: draft)
-        }
+        let json = try encodedJSON(try OnboardingCompleteRequestDTO(draft: draft))
+
+        #expect(json["nickname"] == nil)
     }
 
     @Test("throws when no crops are selected")

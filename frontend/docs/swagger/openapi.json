@@ -827,6 +827,9 @@
           "identityToken": {
             "type": "string"
           },
+          "name": {
+            "type": "string"
+          },
           "nonce": {
             "type": "string"
           },
@@ -5988,8 +5991,12 @@
             "name": "farmId",
             "required": false,
             "schema": {
-              "format": "uuid",
-              "type": "string"
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
             }
           },
           {
@@ -5997,8 +6004,12 @@
             "name": "cropId",
             "required": false,
             "schema": {
-              "format": "uuid",
-              "type": "string"
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
             }
           },
           {
@@ -6048,8 +6059,12 @@
             "name": "farmId",
             "required": false,
             "schema": {
-              "format": "uuid",
-              "type": "string"
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
             }
           },
           {
@@ -6057,8 +6072,12 @@
             "name": "cropId",
             "required": false,
             "schema": {
-              "format": "uuid",
-              "type": "string"
+              "items": {
+                "format": "uuid",
+                "type": "string"
+              },
+              "type": "array",
+              "uniqueItems": true
             }
           },
           {

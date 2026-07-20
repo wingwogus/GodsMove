@@ -187,24 +187,32 @@ struct ReportGrowthPeriodRangeResponseDTO: Codable, Sendable {
 
 struct PlantingReportStatisticsResponseDTO: Codable, Sendable {
     let common: ReportCommonStatisticsResponseDTO
+    let plantingMethodDistribution: [ReportCountDistributionResponseDTO]
     let propagationMethods: [ReportPropagationStatisticsResponseDTO]
 
-    private enum CodingKeys: String, CodingKey { case propagationMethods }
+    private enum CodingKeys: String, CodingKey { case plantingMethodDistribution, propagationMethods }
 
     init(from decoder: Decoder) throws {
         common = try ReportCommonStatisticsResponseDTO(from: decoder)
-        propagationMethods = try decoder.container(keyedBy: CodingKeys.self)
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        plantingMethodDistribution = try container
+            .decode([ReportCountDistributionResponseDTO].self, forKey: .plantingMethodDistribution)
+        propagationMethods = try container
             .decode([ReportPropagationStatisticsResponseDTO].self, forKey: .propagationMethods)
     }
 
     func encode(to encoder: Encoder) throws {
         try common.encode(to: encoder)
         var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(plantingMethodDistribution, forKey: .plantingMethodDistribution)
         try container.encode(propagationMethods, forKey: .propagationMethods)
     }
 
     func toDomain() -> PlantingReportStatistics {
-        PlantingReportStatistics(propagationMethods: propagationMethods.map { $0.toDomain() })
+        PlantingReportStatistics(
+            plantingMethodDistribution: plantingMethodDistribution.map { $0.toDomain() },
+            propagationMethods: propagationMethods.map { $0.toDomain() }
+        )
     }
 }
 
@@ -289,12 +297,12 @@ struct PestControlReportStatisticsResponseDTO: Codable, Sendable {
     let categoryDistribution: [ReportCountDistributionResponseDTO]
     let pesticideAmounts: [ReportAmountByUnitResponseDTO]
     let categoryAmounts: [ReportCategoryAmountByUnitResponseDTO]
-    let totalSprayAmountLiters: Decimal?
+    let totalSprayAmountMl: Decimal?
     let sprayAmountCoverage: ReportCoverageResponseDTO
     let targets: [ReportTargetCountResponseDTO]
 
     private enum CodingKeys: String, CodingKey {
-        case categoryDistribution, pesticideAmounts, categoryAmounts, totalSprayAmountLiters, sprayAmountCoverage, targets
+        case categoryDistribution, pesticideAmounts, categoryAmounts, totalSprayAmountMl, sprayAmountCoverage, targets
     }
 
     init(from decoder: Decoder) throws {
@@ -303,7 +311,7 @@ struct PestControlReportStatisticsResponseDTO: Codable, Sendable {
         categoryDistribution = try container.decode([ReportCountDistributionResponseDTO].self, forKey: .categoryDistribution)
         pesticideAmounts = try container.decode([ReportAmountByUnitResponseDTO].self, forKey: .pesticideAmounts)
         categoryAmounts = try container.decode([ReportCategoryAmountByUnitResponseDTO].self, forKey: .categoryAmounts)
-        totalSprayAmountLiters = try container.decodeIfPresent(Decimal.self, forKey: .totalSprayAmountLiters)
+        totalSprayAmountMl = try container.decodeIfPresent(Decimal.self, forKey: .totalSprayAmountMl)
         sprayAmountCoverage = try container.decode(ReportCoverageResponseDTO.self, forKey: .sprayAmountCoverage)
         targets = try container.decode([ReportTargetCountResponseDTO].self, forKey: .targets)
     }
@@ -314,7 +322,7 @@ struct PestControlReportStatisticsResponseDTO: Codable, Sendable {
         try container.encode(categoryDistribution, forKey: .categoryDistribution)
         try container.encode(pesticideAmounts, forKey: .pesticideAmounts)
         try container.encode(categoryAmounts, forKey: .categoryAmounts)
-        try container.encodeIfPresent(totalSprayAmountLiters, forKey: .totalSprayAmountLiters)
+        try container.encodeIfPresent(totalSprayAmountMl, forKey: .totalSprayAmountMl)
         try container.encode(sprayAmountCoverage, forKey: .sprayAmountCoverage)
         try container.encode(targets, forKey: .targets)
     }
@@ -324,7 +332,7 @@ struct PestControlReportStatisticsResponseDTO: Codable, Sendable {
             categoryDistribution: categoryDistribution.map { $0.toDomain() },
             pesticideAmounts: pesticideAmounts.map { $0.toDomain() },
             categoryAmounts: categoryAmounts.map { $0.toDomain() },
-            totalSprayAmountLiters: totalSprayAmountLiters,
+            totalSprayAmountMl: totalSprayAmountMl,
             sprayAmountCoverage: sprayAmountCoverage.toDomain(),
             targets: targets.map { $0.toDomain() }
         )
@@ -364,10 +372,11 @@ struct HarvestReportStatisticsResponseDTO: Codable, Sendable {
     let medicinalParts: [ReportHarvestPartStatisticsResponseDTO]
     let finalGrowthPeriodMonths: Int?
     let growthPeriodRangeMonths: ReportGrowthPeriodRangeResponseDTO?
+    let growthPeriodDistribution: [ReportCountDistributionResponseDTO]
 
     private enum CodingKeys: String, CodingKey {
         case totalAmountKg, averageAmountKg, amountCoverage, firstHarvestedOn, lastHarvestedOn
-        case medicinalParts, finalGrowthPeriodMonths, growthPeriodRangeMonths
+        case medicinalParts, finalGrowthPeriodMonths, growthPeriodRangeMonths, growthPeriodDistribution
     }
 
     init(from decoder: Decoder) throws {
@@ -381,6 +390,8 @@ struct HarvestReportStatisticsResponseDTO: Codable, Sendable {
         medicinalParts = try container.decode([ReportHarvestPartStatisticsResponseDTO].self, forKey: .medicinalParts)
         finalGrowthPeriodMonths = try container.decodeIfPresent(Int.self, forKey: .finalGrowthPeriodMonths)
         growthPeriodRangeMonths = try container.decodeIfPresent(ReportGrowthPeriodRangeResponseDTO.self, forKey: .growthPeriodRangeMonths)
+        growthPeriodDistribution = try container
+            .decode([ReportCountDistributionResponseDTO].self, forKey: .growthPeriodDistribution)
     }
 
     func encode(to encoder: Encoder) throws {
@@ -394,6 +405,7 @@ struct HarvestReportStatisticsResponseDTO: Codable, Sendable {
         try container.encode(medicinalParts, forKey: .medicinalParts)
         try container.encodeIfPresent(finalGrowthPeriodMonths, forKey: .finalGrowthPeriodMonths)
         try container.encodeIfPresent(growthPeriodRangeMonths, forKey: .growthPeriodRangeMonths)
+        try container.encode(growthPeriodDistribution, forKey: .growthPeriodDistribution)
     }
 
     func toDomain() -> HarvestReportStatistics {
@@ -405,7 +417,8 @@ struct HarvestReportStatisticsResponseDTO: Codable, Sendable {
             lastHarvestedOn: ReportDateParser.localDate(from: lastHarvestedOn),
             medicinalParts: medicinalParts.map { $0.toDomain() },
             finalGrowthPeriodMonths: finalGrowthPeriodMonths,
-            growthPeriodRangeMonths: growthPeriodRangeMonths?.toDomain()
+            growthPeriodRangeMonths: growthPeriodRangeMonths?.toDomain(),
+            growthPeriodDistribution: growthPeriodDistribution.map { $0.toDomain() }
         )
     }
 }

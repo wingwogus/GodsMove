@@ -45,6 +45,8 @@ struct FarmLocationView: View {
         .overlay(alignment: .bottom) {
             bottomCTA
         }
+        // 농지명 입력 시 키보드가 하단 CTA를 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .sheet(isPresented: $isSearchSheetPresented) {
             AddressSearchSheet(viewModel: farmLocationViewModel) { address in
                 Task { await farmLocationViewModel.selectAddress(address) }
@@ -53,20 +55,12 @@ struct FarmLocationView: View {
     }
 
     private var topAppBar: some View {
-        HStack {
-            Button {
-                viewModel.goBack()
-            } label: {
-                AppIconView(source: .asset("chevron_backward"), size: 24)
-                    .foregroundStyle(Color.Icon.default)
-                    .frame(width: 48, height: 48)
-            }
-            .buttonStyle(.plain)
-            Spacer()
-        }
-        .frame(height: 60)
-        .padding(.horizontal, 4)
-        .background(Color.Background.default)
+        AppTopAppBar(
+            title: "",
+            isDetail: true,
+            showBorder: false,
+            leading: .init(.asset("arrow_back_ios_new")) { viewModel.goBack() }
+        )
     }
 
     private var header: some View {
