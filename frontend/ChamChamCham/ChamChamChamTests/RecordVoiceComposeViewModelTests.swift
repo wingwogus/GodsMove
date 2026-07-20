@@ -20,15 +20,22 @@ struct RecordVoiceComposeViewModelTests {
     // MARK: - 스텁
 
     private actor ManualVoiceTransport: VoiceRealtimeTransport {
+        /// 주입 시 connect()가 fire()까지 매달린다 — .preparing 중 이탈 경합 재현용.
+        private let connectGate: DeadlineGate?
         private var continuation: AsyncStream<VoiceRealtimeEvent>.Continuation?
         private(set) var connectCount = 0
         private(set) var lastClientSecret: String?
         private(set) var muteCalls: [Bool] = []
         private(set) var closeCount = 0
 
+        init(connectGate: DeadlineGate? = nil) {
+            self.connectGate = connectGate
+        }
+
         func connect(clientSecret: String) async throws -> AsyncStream<VoiceRealtimeEvent> {
             connectCount += 1
             lastClientSecret = clientSecret
+            if let connectGate { await connectGate.wait() }
             let (stream, continuation) = AsyncStream.makeStream(of: VoiceRealtimeEvent.self)
             self.continuation = continuation
             return stream
@@ -54,6 +61,8 @@ struct RecordVoiceComposeViewModelTests {
         private let createError: (any Error)?
         private let submitError: (any Error)?
         private let missingFields: [String]
+        /// 주입 시 createSession()이 fire()까지 매달린다 — .preparing 중 이탈 경합 재현용.
+        private let createGate: DeadlineGate?
         private(set) var createCount = 0
         private(set) var submittedTurns: [[VoiceTurn]] = []
         private(set) var submittedCandidates: [VoiceCandidateRequestDTO] = []
@@ -65,16 +74,19 @@ struct RecordVoiceComposeViewModelTests {
             ),
             missingFields: [String] = [],
             createError: (any Error)? = nil,
-            submitError: (any Error)? = nil
+            submitError: (any Error)? = nil,
+            createGate: DeadlineGate? = nil
         ) {
             self.sessionInfo = sessionInfo
             self.missingFields = missingFields
             self.createError = createError
             self.submitError = submitError
+            self.createGate = createGate
         }
 
         func createSession() async throws -> VoiceSessionInfo {
             createCount += 1
+            if let createGate { await createGate.wait() }
             if let createError { throw createError }
             return sessionInfo
         }
@@ -365,6 +377,80 @@ struct RecordVoiceComposeViewModelTests {
         try? await Task.sleep(for: .milliseconds(50)) // 이벤트 전파 시간
         #expect(vm.transcript.isEmpty)
         #expect(vm.phase == .cancelled)
+    }
+
+    @Test(".preparing 중 abandon: 늦게 발급된 세션은 연결하지 않고 best-effort 취소한다 (BR-VOICE-007)")
+    func abandonDuringCreateSessionCancelsOrphan() async {
+        let gate = DeadlineGate()
+        let sessionId = UUID()
+        let repo = StubVoiceSessionRepository(
+            sessionInfo: VoiceSessionInfo(
+                sessionId: sessionId, clientSecret: "ek_test", model: "gpt-realtime", maxDurationSeconds: 330
+            ),
+            createGate: gate
+        )
+        let (vm, _, transport) = makeViewModel(voiceRepository: repo)
+
+        vm.micTapped()
+        #expect(await waitUntil { await repo.createCount == 1 })
+        #expect(vm.phase == .preparing)
+
+        vm.abandon()
+        #expect(vm.phase == .cancelled)
+
+        await gate.fire() // 화면이 닫힌 뒤에야 세션 발급이 끝난다
+        #expect(await waitUntil { await repo.cancelledSessionIds == [sessionId] })
+        #expect(await transport.connectCount == 0)
+        #expect(vm.phase == .cancelled)
+    }
+
+    @Test(".preparing 중 abandon: 늦게 성립한 연결은 다시 닫고 이벤트를 소비하지 않는다 (BR-VOICE-007)")
+    func abandonDuringConnectClosesLateConnection() async {
+        let gate = DeadlineGate()
+        let repo = StubVoiceSessionRepository()
+        let transport = ManualVoiceTransport(connectGate: gate)
+        let (vm, _, _) = makeViewModel(voiceRepository: repo, transport: transport)
+
+        vm.micTapped()
+        #expect(await waitUntil { await transport.connectCount == 1 })
+
+        vm.abandon()
+        #expect(vm.phase == .cancelled)
+        // abandon의 정리(세션 취소 + 1차 close)가 끝난 뒤에 연결이 성립해야 재-close를 관찰한다
+        #expect(await waitUntil { await repo.cancelledSessionIds.count == 1 })
+        #expect(await waitUntil { await transport.closeCount == 1 })
+
+        await gate.fire() // 화면이 닫힌 뒤에야 연결이 성립한다
+        #expect(await waitUntil { await transport.closeCount == 2 })
+
+        await transport.emit(.connected)
+        try? await Task.sleep(for: .milliseconds(50)) // 이벤트 전파 시간
+        #expect(vm.phase == .cancelled) // 늦은 연결의 이벤트로 대화가 시작되지 않는다
+        #expect(await repo.cancelledSessionIds.count == 1) // 중복 취소 없음
+    }
+
+    @Test(".preparing 중 abandon: 늦게 닫힌 권한 프롬프트가 failed로 되살리지 않는다")
+    func abandonDuringMicPermissionStaysCancelled() async {
+        let gate = DeadlineGate()
+        let repo = StubVoiceSessionRepository()
+        let vm = RecordVoiceComposeViewModel(
+            voiceRepository: repo,
+            recordRepository: StubRecordRepository(),
+            transport: ManualVoiceTransport(),
+            requestMicPermission: { await gate.wait(); return false },
+            waitForDeadline: { _ in await DeadlineGate().wait() }
+        )
+
+        vm.micTapped()
+        #expect(await waitUntil { vm.phase == .preparing })
+
+        vm.abandon()
+        #expect(vm.phase == .cancelled)
+
+        await gate.fire() // 권한 거부 응답이 화면이 닫힌 뒤에야 돌아온다
+        try? await Task.sleep(for: .milliseconds(50))
+        #expect(vm.phase == .cancelled) // .failed로 되살아나지 않는다
+        #expect(await repo.createCount == 0)
     }
 
     // MARK: - 대화 시간 한도

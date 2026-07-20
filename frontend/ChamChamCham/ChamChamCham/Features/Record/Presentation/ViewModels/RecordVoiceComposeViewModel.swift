@@ -40,6 +40,9 @@ final class RecordVoiceComposeViewModel {
     private let waitForDeadline: @Sendable (_ seconds: Int) async -> Void
 
     private var sessionId: UUID?
+    /// start() 실행 핸들. abandon()이 .preparing 도중 취소해 진행 중인 네트워크 요청
+    /// (세션 발급, SDP 교환)을 조기 중단시킨다. 재개 후 정합성은 start()의 phase 가드가 맡는다.
+    private var startTask: Task<Void, Never>?
     private var eventTask: Task<Void, Never>?
     /// save_farming_record tool 호출의 arguments 원문. turns의 extractedFields로도 실린다.
     private var toolArgumentsJSON: String?
@@ -87,7 +90,8 @@ final class RecordVoiceComposeViewModel {
     func micTapped() {
         switch phase {
         case .idle:
-            Task { await start() }
+            startTask?.cancel()
+            startTask = Task { await start() }
         case let .conversing(muted):
             phase = .conversing(muted: !muted)
             Task { await transport.setMuted(!muted) }
@@ -104,13 +108,17 @@ final class RecordVoiceComposeViewModel {
     /// failed에서만 유효. BR-VOICE-008: 기존 세션은 버리고 새 세션으로 시작한다.
     func retryTapped() {
         guard case .failed = phase else { return }
-        Task { await start() }
+        startTask?.cancel()
+        startTask = Task { await start() }
     }
 
     /// 뒤로가기/닫기 (BR-VOICE-007). 서버 취소는 best-effort — 실패해도 화면은 닫힌다.
     func abandon() {
         switch phase {
         case .idle, .preparing, .conversing, .failed, .reviewing:
+            // .preparing 도중이면 start()의 남은 단계(세션 발급/연결)를 여기서 중단시킨다.
+            startTask?.cancel()
+            startTask = nil
             cancelDeadline()
             eventTask?.cancel()
             eventTask = nil
@@ -137,22 +145,40 @@ final class RecordVoiceComposeViewModel {
         cancelDeadline()
         phase = .preparing
 
-        guard await requestMicPermission() else {
+        let granted = await requestMicPermission()
+        // 각 await 재개 지점마다 phase를 재확인한다 — abandon()이 같은 MainActor에서 동기적으로
+        // .cancelled로 바꾸므로, 이 가드가 이탈 후 세션 발급/연결이 이어지는 경합을 막는다.
+        guard case .preparing = phase else { return }
+        guard granted else {
             phase = .failed(message: "마이크 권한이 필요해요. 설정에서 마이크 접근을 허용해주세요.")
             return
         }
 
         do {
             let session = try await voiceRepository.createSession()
+            guard case .preparing = phase else {
+                // 화면이 닫힌 뒤에야 발급된 세션 — abandon 시점엔 sessionId가 nil이라
+                // 거기서 못 지운 세션이므로 여기서 best-effort 취소한다.
+                await voiceRepository.cancel(sessionId: session.sessionId)
+                return
+            }
             sessionId = session.sessionId
             maxDurationSeconds = session.maxDurationSeconds
             let stream = try await transport.connect(clientSecret: session.clientSecret)
+            guard case .preparing = phase else {
+                // 화면이 닫힌 뒤에야 성립한 연결 — abandon의 close와 순서가 어긋나도
+                // close는 멱등이라 다시 닫는 것이 안전하다. 세션 취소는 abandon이 이미 보냈다.
+                await transport.close()
+                return
+            }
             eventTask = Task { [weak self] in
                 for await event in stream {
                     self?.handle(event)
                 }
             }
         } catch {
+            // 취소(abandon)로 중단된 요청을 .failed로 되살리지 않는다.
+            guard case .preparing = phase else { return }
             await failAndCleanUp(message: Self.failureMessage(for: error))
         }
     }
