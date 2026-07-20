@@ -22,6 +22,7 @@ import jakarta.validation.constraints.Min
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Size
+import org.hibernate.validator.constraints.UniqueElements
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.UUID
@@ -69,6 +70,7 @@ object FarmingRecordRequests {
         val harvest: HarvestDetailRequest? = null,
 
         @field:Size(max = 5, message = "사진은 최대 5장까지 첨부할 수 있습니다")
+        @field:UniqueElements(message = "중복된 사진은 첨부할 수 없습니다")
         val mediaIds: List<UUID> = emptyList(),
 
         val entryMode: EntryMode = EntryMode.MANUAL,
