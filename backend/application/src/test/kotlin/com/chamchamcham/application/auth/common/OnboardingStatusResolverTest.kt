@@ -14,9 +14,9 @@ class OnboardingStatusResolverTest {
         val member = Member(
             id = UUID.fromString("00000000-0000-0000-0000-000000000001"),
             email = null,
-            name = "홍길동",
+            name = null,
             phone = null,
-            birthDate = LocalDate.of(1998, 3, 12),
+            birthDate = null,
             nickname = null,
             experienceLevel = null,
             managementType = null,
@@ -28,13 +28,31 @@ class OnboardingStatusResolverTest {
         assertEquals(AuthResult.OnboardingStatus.REQUIRED, result.status)
         assertEquals(
             listOf(
-                AuthResult.OnboardingField.PHONE,
-                AuthResult.OnboardingField.NICKNAME,
                 AuthResult.OnboardingField.EXPERIENCE_LEVEL,
                 AuthResult.OnboardingField.MANAGEMENT_TYPE
             ),
             result.missingFields
         )
+    }
+
+    @Test
+    fun `resolve is complete even when optional profile fields are absent`() {
+        val member = Member(
+            id = UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            email = null,
+            name = null,
+            phone = null,
+            birthDate = null,
+            nickname = null,
+            experienceLevel = 3,
+            managementType = ManagementType.AGRICULTURAL_INDIVIDUAL,
+            passwordHash = null
+        )
+
+        val result = OnboardingStatusResolver().resolve(member)
+
+        assertEquals(AuthResult.OnboardingStatus.COMPLETE, result.status)
+        assertTrue(result.missingFields.isEmpty())
     }
 
     @Test
