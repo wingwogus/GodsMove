@@ -57,7 +57,7 @@ struct CommunityComposeView: View {
                 title: "게시물 작성하기",
                 isDetail: true,
                 showBorder: false,
-                leading: .init(.asset("chevron_backward")) { dismiss() }
+                leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
             )
 
             ScrollView {

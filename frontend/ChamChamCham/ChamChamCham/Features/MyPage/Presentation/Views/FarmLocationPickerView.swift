@@ -53,7 +53,7 @@ struct FarmLocationPickerView: View {
             title: "",
             isDetail: true,
             showBorder: false,
-            leading: .init(.asset("chevron_backward"), action: onBack)
+            leading: .init(.asset("arrow_back_ios_new"), action: onBack)
         )
     }
 

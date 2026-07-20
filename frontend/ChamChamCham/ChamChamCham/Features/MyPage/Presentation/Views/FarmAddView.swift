@@ -107,7 +107,7 @@ private struct FarmAddCropStepView: View {
             title: "",
             isDetail: true,
             showBorder: false,
-            leading: .init(.asset("chevron_backward")) { dismiss() }
+            leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
         )
     }
 

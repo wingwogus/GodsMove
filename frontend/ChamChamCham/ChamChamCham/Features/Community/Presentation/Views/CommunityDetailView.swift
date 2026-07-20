@@ -109,7 +109,7 @@ struct CommunityDetailView: View {
     private var header: some View {
         HStack(spacing: 0) {
             Button { dismiss() } label: {
-                AppIconView(source: .asset("chevron_backward"), size: 32)
+                AppIconView(source: .asset("arrow_back_ios_new"), size: 32)
                     .foregroundStyle(Color.Icon.default)
                     .frame(width: 48, height: 48)
             }

@@ -37,7 +37,7 @@ struct PolicyWebView: View {
             AppTopAppBar(
                 title: link.title,
                 isDetail: true,
-                leading: .init(.asset("chevron_backward")) { dismiss() }
+                leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
             )
 
             ZStack {

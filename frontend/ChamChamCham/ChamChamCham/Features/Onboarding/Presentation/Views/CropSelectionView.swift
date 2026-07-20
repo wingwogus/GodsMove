@@ -55,7 +55,7 @@ struct CropSelectionView: View {
             title: "",
             isDetail: true,
             showBorder: false,
-            leading: .init(.asset("chevron_backward")) { viewModel.goBack() }
+            leading: .init(.asset("arrow_back_ios_new")) { viewModel.goBack() }
         )
     }
 }

@@ -20,7 +20,7 @@ struct ProfileEditView: View {
             AppTopAppBar(
                 title: "프로필 수정",
                 isDetail: true,
-                leading: .init(.asset("chevron_backward")) { dismiss() }
+                leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
             )
 
             AppTabBar(titles: ["기본 정보", "농업 정보"], selection: $selectedTab)

@@ -17,7 +17,7 @@ struct ReportRecordHistoryView: View {
             AppTopAppBar(
                 title: ReportRecordHistoryPresentation.title,
                 isDetail: true,
-                leading: .init(.asset("chevron_backward")) { dismiss() }
+                leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
             )
 
             VStack(spacing: Spacing.md) {
