@@ -160,6 +160,8 @@ struct FarmingRecordPickerView: View {
             .scrollDismissesKeyboard(.interactively)
         }
         .background(Color.Background.default)
+        // 키보드가 하단 "선택" 바를 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .dismissKeyboardOnTap()
         .safeAreaInset(edge: .bottom) {
             selectBar

@@ -73,6 +73,9 @@ struct RecordComposeView: View {
             .scrollDismissesKeyboard(.interactively)
             bottomButton
         }
+        // 키보드가 올라와도 하단 "완료" 버튼이 위로 밀려 키보드에 붙지 않도록 고정한다. 키보드는 하단을
+        // 덮고, 스크롤 내용은 그 아래로 스크롤된다 (SearchView와 동일 패턴).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .dismissKeyboardOnTap()
         .navigationBarHidden(true)
         .task { await vm.onAppear() }
@@ -497,6 +500,8 @@ private struct PesticidePickerSheet: View {
             .padding(.vertical, 12)
             .background(Color.Background.default)
         }
+        // 키보드가 하단 "완료" 바를 밀어 올리지 않도록 고정한다.
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .dismissKeyboardOnTap()
         .task {
             selection = current
