@@ -74,7 +74,7 @@ struct ProfileBasicInfoView: View {
                     placeholder: "귀농 연차를 입력해주세요.",
                     text: experienceYearsText,
                     isRequired: true,
-                    helperText: "맞춤 농사 정보를 제공하기 위해 필요해요.",
+                    helperText: "맞춤 농업 관련 정책을 제공하기 위해 필요해요.",
                     errorMessage: viewModel.experienceError,
                     keyboardType: .numberPad
                 )
