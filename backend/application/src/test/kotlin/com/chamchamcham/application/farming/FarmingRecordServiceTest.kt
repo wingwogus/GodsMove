@@ -575,6 +575,44 @@ class FarmingRecordServiceTest {
     }
 
     @Test
+    fun `update keeps an already-attached photo that belongs to this same record`() {
+        // Regression for MEDIA_NOT_ATTACHABLE on edit: resubmitting a photo the record already has (an
+        // unchanged photo) must not be rejected just because its status is ATTACHED rather than TEMP.
+        val record = existingRecord(workType = WorkType.PRUNING)
+        val alreadyAttached = uploadedMedia(mediaId1, status = UploadedMediaStatus.ATTACHED)
+        val ownRecordMedia = FarmingRecordMedia(record = record, uploadedMedia = alreadyAttached, displayOrder = 0)
+        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
+        `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(alreadyAttached))
+        `when`(farmingRecordMediaRepository.findByUploadedMediaIdIn(listOf(mediaId1))).thenReturn(listOf(ownRecordMedia))
+
+        service.update(updateCommand(workType = WorkType.PRUNING, mediaIds = listOf(mediaId1)))
+
+        verify(farmingRecordMediaRepository).deleteByRecord(record)
+        assertEquals(UploadedMediaStatus.ATTACHED, alreadyAttached.status)
+    }
+
+    @Test
+    fun `update rejects a photo already attached to a different record`() {
+        val record = existingRecord(workType = WorkType.PRUNING)
+        val otherRecord = existingRecord(id = secondRecordId, workType = WorkType.PRUNING)
+        val attachedElsewhere = uploadedMedia(mediaId1, status = UploadedMediaStatus.ATTACHED)
+        val otherRecordMedia = FarmingRecordMedia(record = otherRecord, uploadedMedia = attachedElsewhere, displayOrder = 0)
+        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
+        `when`(farmRepository.findByIdAndOwnerId(farmId, memberId)).thenReturn(farm)
+        `when`(cropRepository.findById(cropId)).thenReturn(Optional.of(crop))
+        `when`(uploadedMediaRepository.findAllById(listOf(mediaId1))).thenReturn(listOf(attachedElsewhere))
+        `when`(farmingRecordMediaRepository.findByUploadedMediaIdIn(listOf(mediaId1))).thenReturn(listOf(otherRecordMedia))
+
+        val exception = assertThrows(BusinessException::class.java) {
+            service.update(updateCommand(workType = WorkType.PRUNING, mediaIds = listOf(mediaId1)))
+        }
+
+        assertEquals(ErrorCode.MEDIA_NOT_ATTACHABLE, exception.errorCode)
+    }
+
+    @Test
     fun `update throws not found for missing or deleted record`() {
         `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(null)
 
