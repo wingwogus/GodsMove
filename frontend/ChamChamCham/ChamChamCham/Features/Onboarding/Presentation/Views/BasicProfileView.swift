@@ -55,7 +55,8 @@ struct BasicProfileView: View {
                             label: "이름",
                             placeholder: "이름을 입력해주세요.",
                             text: $viewModel.draft.name,
-                            isRequired: true,
+                            isRequired: false,
+                            helperText: "다른 이용자에게 표시되는 이름이에요. 입력하지 않아도 서비스 이용에 지장 없어요.",
                             errorMessage: error(for: .name)
                         )
 
@@ -71,7 +72,8 @@ struct BasicProfileView: View {
                             label: "연락처",
                             placeholder: "000-0000-0000",
                             text: $viewModel.draft.phone,
-                            isRequired: true,
+                            isRequired: false,
+                            helperText: "농지 관련 알림 발송 등에 사용돼요. 입력하지 않아도 서비스 이용에 지장 없어요.",
                             errorMessage: error(for: .phone),
                             keyboardType: .phonePad
                         )
@@ -79,7 +81,8 @@ struct BasicProfileView: View {
                         AppDateField(
                             label: "생년월일",
                             selection: $viewModel.draft.birthDate,
-                            isRequired: true,
+                            isRequired: false,
+                            helperText: "귀농 년차가 나이를 넘지 않는지 확인하는 데 참고돼요. 입력하지 않아도 서비스 이용에 지장 없어요.",
                             errorMessage: error(for: .birthDate)
                         )
 
@@ -88,6 +91,7 @@ struct BasicProfileView: View {
                             placeholder: "귀농 년차를 입력해주세요.",
                             text: experienceYearsText,
                             isRequired: true,
+                            helperText: "맞춤 농사 정보를 제공하기 위해 필요해요.",
                             errorMessage: error(for: .experienceYears),
                             keyboardType: .numberPad
                         )

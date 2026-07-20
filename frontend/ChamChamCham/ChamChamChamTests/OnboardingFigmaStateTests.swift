@@ -20,25 +20,44 @@ struct OnboardingFigmaStateTests {
 
         let errors = viewModel.basicProfileValidationErrors
 
-        #expect(errors[.name] == "이름은 필수로 입력해주세요.")
+        #expect(errors[.name] == nil)
         #expect(errors[.nickname] == nil)
-        #expect(errors[.phone] == "연락처는 필수로 입력해주세요.")
-        #expect(errors[.birthDate] == "생년월일은 필수로 입력해주세요.")
+        #expect(errors[.phone] == nil)
+        #expect(errors[.birthDate] == nil)
         #expect(errors[.experienceYears] == "귀농 년차는 필수로 입력해주세요.")
         #expect(errors[.managementType] == nil)
         #expect(!viewModel.canProceedFromBasicProfile)
     }
 
-    @Test("basic profile validation passes without a nickname when every other required field is present")
+    @Test("basic profile validation passes without name/nickname/phone/birthDate when experienceYears and managementType are present")
     func basicProfileValidationPassesWhenComplete() {
         let viewModel = makeOnboardingViewModel()
-        viewModel.draft.name = "이름 입력 완료"
-        viewModel.draft.phone = "000-0000-0000"
-        viewModel.draft.birthDate = Date(timeIntervalSince1970: 0)
         viewModel.draft.experienceYears = 2
         viewModel.draft.managementType = .agriculturalIndividual
 
         #expect(viewModel.basicProfileValidationErrors.isEmpty)
+        #expect(viewModel.canProceedFromBasicProfile)
+    }
+
+    @Test("basic profile validation fails when experienceYears exceeds the age derived from birthDate")
+    func basicProfileValidationFailsWhenExperienceExceedsAge() {
+        let viewModel = makeOnboardingViewModel()
+        viewModel.draft.birthDate = Calendar.current.date(byAdding: .year, value: -20, to: Date())
+        viewModel.draft.experienceYears = 25
+        viewModel.draft.managementType = .agriculturalIndividual
+
+        #expect(viewModel.basicProfileValidationErrors[.experienceYears] == "귀농 년차는 나이를 넘을 수 없어요.")
+        #expect(!viewModel.canProceedFromBasicProfile)
+    }
+
+    @Test("basic profile validation allows experienceYears up to 100 when birthDate is absent")
+    func basicProfileValidationAllowsUpTo100WithoutBirthDate() {
+        let viewModel = makeOnboardingViewModel()
+        viewModel.draft.birthDate = nil
+        viewModel.draft.experienceYears = 100
+        viewModel.draft.managementType = .agriculturalIndividual
+
+        #expect(viewModel.basicProfileValidationErrors[.experienceYears] == nil)
         #expect(viewModel.canProceedFromBasicProfile)
     }
 
