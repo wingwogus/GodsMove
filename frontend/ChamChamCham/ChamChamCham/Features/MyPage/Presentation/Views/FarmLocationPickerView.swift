@@ -176,7 +176,6 @@ struct FarmLocationPickerView: View {
             .padding(.horizontal, Spacing.lg - Spacing.xs)
             .padding(.top, Spacing.md)
             .padding(.bottom, Spacing.md)
-            .background(Color.Background.default)
         }
     }
 
