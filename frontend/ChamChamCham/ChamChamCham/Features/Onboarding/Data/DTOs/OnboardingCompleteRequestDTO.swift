@@ -14,9 +14,11 @@ enum OnboardingSubmissionError: Error, Sendable {
 }
 
 struct OnboardingCompleteRequestDTO: Encodable, Sendable {
+    // name/phone/birthDate/nickname are all optional server-side (Guideline 5.1.1(v) — not directly relevant to
+    // the app's core functionality, so onboarding must not require them).
     let name: String
     let phone: String
-    let birthDate: String
+    let birthDate: String?
     let nickname: String?
     let experienceLevel: Int
     let managementType: String
@@ -25,19 +27,13 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
     // Optional server-side (`profileMediaId: UUID? = null`) — the profile photo is a "선택" field, so onboarding
     // completes with or without it. Nil when the user skipped the photo or its upload failed and they chose to proceed.
     let profileMediaId: UUID?
+    /// The server can't compute this itself since `birthDate` may be absent — the client sends its own
+    /// birthDate-vs-experienceLevel check. See `OnboardingDraft.isExperienceLevelWithinAge`.
+    let isExperienceLevelWithinAge: Bool
 
     init(draft: OnboardingDraft) throws {
         let representativeFarm = draft.representativeFarm
 
-        guard !draft.name.trimmingCharacters(in: .whitespaces).isEmpty else {
-            throw OnboardingSubmissionError.missingRequiredField("name")
-        }
-        guard !draft.phone.trimmingCharacters(in: .whitespaces).isEmpty else {
-            throw OnboardingSubmissionError.missingRequiredField("phone")
-        }
-        guard let birthDate = draft.birthDate else {
-            throw OnboardingSubmissionError.missingRequiredField("birthDate")
-        }
         guard let experienceYears = draft.experienceYears else {
             throw OnboardingSubmissionError.missingRequiredField("experienceYears")
         }
@@ -53,7 +49,7 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
 
         self.name = draft.name
         self.phone = draft.phone
-        self.birthDate = Self.wireDateFormatter.string(from: birthDate)
+        self.birthDate = draft.birthDate.map(Self.wireDateFormatter.string(from:))
         let trimmedNickname = draft.nickname.trimmingCharacters(in: .whitespaces)
         self.nickname = trimmedNickname.isEmpty ? nil : trimmedNickname
         self.experienceLevel = experienceYears
@@ -61,6 +57,7 @@ struct OnboardingCompleteRequestDTO: Encodable, Sendable {
         self.farm = try FarmDraftRequestDTO(farm: representativeFarm)
         self.cropIds = representativeFarm.cropIDs
         self.profileMediaId = draft.profileMediaId
+        self.isExperienceLevelWithinAge = draft.isExperienceLevelWithinAge
     }
 
     /// Also reused to parse `CachedMemberProfile.birthDateRaw` back into a `Date` when prefilling onboarding from a

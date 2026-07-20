@@ -33,3 +33,32 @@ extension View {
         }
     }
 }
+
+// MARK: - Fixed bottom CTA + keyboard pattern
+//
+// Screens with a text field/editor and a fixed bottom CTA (`.safeAreaInset(edge: .bottom)` or
+// `.overlay(alignment: .bottom)`) must apply `.ignoresSafeArea(.keyboard, edges: .bottom)` as
+// the LAST modifier in the chain — after the modifier that adds the bottom CTA, not before it
+// and not nested inside the CTA's own content closure. Applying it earlier, or only to the CTA
+// view itself, does not stop the ancestor view from avoiding the keyboard, so the CTA still
+// rides up and sticks to the keyboard instead of staying pinned to the screen bottom while the
+// keyboard covers it.
+//
+//     VStack { ... }
+//         .safeAreaInset(edge: .bottom) { bottomCTA }   // or .overlay(alignment: .bottom) { ... }
+//         .ignoresSafeArea(.keyboard, edges: .bottom)   // must come after, wraps the whole chain
+//
+// Separately, any keyboard without a Return/완료 key (`.numberPad`, `.phonePad`, etc.) should get
+// an explicit dismiss button via the keyboard accessory toolbar, since tap-outside/scroll-to-dismiss
+// alone feels unresponsive for those fields:
+//
+//     .toolbar {
+//         ToolbarItemGroup(placement: .keyboard) {
+//             Spacer()
+//             Button("완료") {
+//                 UIApplication.shared.sendAction(
+//                     #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+//                 )
+//             }
+//         }
+//     }

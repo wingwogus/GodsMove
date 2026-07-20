@@ -165,7 +165,12 @@ struct RecordListView: View {
         }
         .toolbar(.hidden, for: .navigationBar)
         .navigationDestination(for: UUID.self) { recordId in
-            RecordDetailView(recordId: recordId, repository: repository) {
+            RecordDetailView(
+                recordId: recordId,
+                repository: repository,
+                weatherRepository: weatherRepository,
+                mediaUpload: mediaUpload
+            ) {
                 Task { await viewModel.reload() }
             }
         }

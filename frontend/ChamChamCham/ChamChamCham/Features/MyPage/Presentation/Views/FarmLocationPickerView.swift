@@ -40,7 +40,20 @@ struct FarmLocationPickerView: View {
         }
         .background(Color.Background.default)
         .toolbar(.hidden, for: .navigationBar)
+        // 농지명 필드에 키보드 툴바로 "완료"를 달아 탭-바깥 없이도 키보드를 닫을 수 있게 한다.
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("완료") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+                    )
+                }
+            }
+        }
         .overlay(alignment: .bottom) { bottomCTA }
+        // 농지명 입력 시 키보드가 하단 CTA를 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .sheet(isPresented: $isSearchSheetPresented) {
             AddressSearchSheet(viewModel: location) { address in
                 Task { await location.selectAddress(address) }
@@ -163,7 +176,6 @@ struct FarmLocationPickerView: View {
             .padding(.horizontal, Spacing.lg - Spacing.xs)
             .padding(.top, Spacing.md)
             .padding(.bottom, Spacing.md)
-            .background(Color.Background.default)
         }
     }
 

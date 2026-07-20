@@ -110,6 +110,8 @@ struct RecordVoiceComposeViewModelTests {
         func searchPesticides(keyword: String?) async throws -> [Pesticide] { pesticides }
         func fetchPests(pesticideId: UUID) async throws -> [Pest] { pests }
         func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { throw Unused() }
+        func fetchEditPrefill(id: UUID) async throws -> VoiceRecordPrefill { throw Unused() }
+        func updateRecord(id: UUID, _ request: SaveRecordRequestDTO) async throws -> UUID { throw Unused() }
     }
 
     /// 대화 시간 한도 대기를 테스트에서 제어하는 게이트. `fire()`를 부를 때까지 `wait()`가

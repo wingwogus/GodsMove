@@ -17,7 +17,7 @@ struct AddressSearchSheet: View {
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
-                AppSearchBar(text: $searchQuery, placeholder: "도로명 주소를 입력하세요 (예: 판교역로 235)")
+                AppSearchBar(text: $searchQuery, placeholder: "도로명 주소를 입력하세요\n(예: 판교역로 235)")
                     .padding(.horizontal, Spacing.lg)
                     .padding(.top, Spacing.md)
                     .padding(.bottom, Spacing.sm)

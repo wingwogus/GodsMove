@@ -78,4 +78,22 @@ struct OnboardingDraftTests {
         #expect(draft.activeFarm.farmAreaSqm == 1200.5)
         #expect(draft.activeFarm.farmAreaIsManualEntry)
     }
+
+    @Test("maxAllowedExperienceYears falls back to 100 when birthDate is absent")
+    func maxAllowedExperienceYearsFallsBackTo100() {
+        var draft = OnboardingDraft()
+        draft.birthDate = nil
+
+        #expect(draft.currentAge == nil)
+        #expect(draft.maxAllowedExperienceYears == 100)
+    }
+
+    @Test("maxAllowedExperienceYears is capped at the age derived from birthDate")
+    func maxAllowedExperienceYearsCappedAtAge() {
+        var draft = OnboardingDraft()
+        draft.birthDate = Calendar.current.date(byAdding: .year, value: -25, to: Date())
+
+        #expect(draft.currentAge == 25)
+        #expect(draft.maxAllowedExperienceYears == 25)
+    }
 }

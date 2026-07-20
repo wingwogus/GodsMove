@@ -50,14 +50,19 @@ struct CropProfileResponseDTO: Decodable, Sendable {
 }
 
 struct UpdateMyProfileRequestDTO: Encodable, Sendable {
+    // name/phone/birthDate/nickname are all optional server-side (Guideline 5.1.1(v) — not directly relevant to
+    // the app's core functionality, so profile edits must not require them).
     let name: String
     let phone: String
-    let birthDate: String
+    let birthDate: String?
     let nickname: String
     let experienceLevel: Int
     let managementType: String
     let profileMediaId: UUID?
     let farms: [UpdateMyProfileFarmRequestDTO]
+    /// The server can't compute this itself since `birthDate` may be absent — the client sends its own
+    /// birthDate-vs-experienceLevel check, mirroring `OnboardingDraft.isExperienceLevelWithinAge`.
+    let isExperienceLevelWithinAge: Bool
 }
 
 /// Backend's `PUT /members/me/profile` treats the whole profile as one atomic payload and requires at least one

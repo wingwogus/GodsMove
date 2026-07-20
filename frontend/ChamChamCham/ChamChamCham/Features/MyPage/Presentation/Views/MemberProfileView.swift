@@ -173,7 +173,7 @@ struct MemberProfileView: View {
             AppChip(
                 label: viewModel.selectedBoardName ?? "게시판 선택",
                 isSelected: !viewModel.selectedBoardCropIds.isEmpty,
-                trailingSystemImage: "chevron.down"
+                trailingSystemImage: .asset("keyboard_arrow_down")
             ) {
                 isShowingBoardSheet = true
                 Task { await viewModel.loadCropFilterOptionsIfNeeded() }

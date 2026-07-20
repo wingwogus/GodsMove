@@ -88,7 +88,12 @@ struct HomeView: View {
                 CommunityDetailView(postId: post.id, container: container)
             }
             .navigationDestination(for: FarmingRecordSummary.self) { record in
-                RecordDetailView(recordId: record.id, repository: container.makeRecordRepository()) {
+                RecordDetailView(
+                    recordId: record.id,
+                    repository: container.makeRecordRepository(),
+                    weatherRepository: container.makeWeatherRepository(),
+                    mediaUpload: container.makeMediaUploadRepository()
+                ) {
                     Task { await viewModel.reload() }
                 }
             }

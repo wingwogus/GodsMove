@@ -9,7 +9,7 @@ import Foundation
 import Observation
 
 /// 프로필 수정 · 기본 정보 탭. Prefills from the member profile and saves via `PUT /members/me/profile`.
-/// 이름은 수정 불가(표시 전용), 닉네임은 선택. 필수 = 연락처/생년월일/자격/귀농 연차.
+/// 이름은 수정 불가(표시 전용), 닉네임/연락처/생년월일은 선택. 필수 = 자격/귀농 연차.
 @Observable
 @MainActor
 final class ProfileBasicInfoViewModel {
@@ -91,34 +91,46 @@ final class ProfileBasicInfoViewModel {
 
     // MARK: - Validation
 
-    var phoneError: String? {
-        guard hasAttemptedSave else { return nil }
-        return phone.trimmingCharacters(in: .whitespaces).isEmpty ? "연락처를 입력해주세요." : nil
+    /// Full (만) age as of today, or `nil` when `birthDate` hasn't been entered — it's optional now that
+    /// Guideline 5.1.1(v) requires it not be required.
+    var currentAge: Int? {
+        guard let birthDate else { return nil }
+        return Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year
     }
 
-    var birthDateError: String? {
-        guard hasAttemptedSave else { return nil }
-        return birthDate == nil ? "생년월일을 선택해주세요." : nil
+    /// Upper bound for `experienceYears`: capped at the member's actual age when known, otherwise the server's
+    /// generic 0...100 range (`experienceLevel` schema bound) since there's nothing else to check it against.
+    var maxAllowedExperienceYears: Int {
+        currentAge ?? 100
+    }
+
+    /// Sent to the backend as `isExperienceLevelWithinAge` — the server can't derive this itself since
+    /// `birthDate` may be absent. `true` when there's no birth date to check against (nothing to contradict).
+    var isExperienceLevelWithinAge: Bool {
+        guard let experienceYears else { return true }
+        guard let currentAge else { return true }
+        return experienceYears <= currentAge
     }
 
     var experienceError: String? {
         guard hasAttemptedSave else { return nil }
-        return experienceYears == nil ? "귀농 연차를 입력해주세요." : nil
+        guard let experienceYears else { return "귀농 연차를 입력해주세요." }
+        guard experienceYears <= maxAllowedExperienceYears else {
+            return birthDate == nil ? "귀농 연차는 100년을 넘을 수 없어요." : "귀농 연차는 나이를 넘을 수 없어요."
+        }
+        return nil
     }
 
     var canSave: Bool {
-        !phone.trimmingCharacters(in: .whitespaces).isEmpty
-            && birthDate != nil
-            && experienceYears != nil
-            && !isSubmitting
-            && !isUploadingImage
+        guard let experienceYears, experienceYears <= maxAllowedExperienceYears else { return false }
+        return !isSubmitting && !isUploadingImage
     }
 
     // MARK: - Save
 
     func save() async -> Bool {
         hasAttemptedSave = true
-        guard let birthDate, let experienceYears, canSave else { return false }
+        guard let experienceYears, canSave else { return false }
         isSubmitting = true
         saveErrorMessage = nil
         defer { isSubmitting = false }
@@ -130,12 +142,13 @@ final class ProfileBasicInfoViewModel {
             let request = UpdateMyProfileRequestDTO(
                 name: name,
                 phone: phone,
-                birthDate: Self.wireDateFormatter.string(from: birthDate),
+                birthDate: birthDate.map(Self.wireDateFormatter.string(from:)),
                 nickname: nickname,
                 experienceLevel: experienceYears,
                 managementType: managementType.rawValue,
                 profileMediaId: profileMediaId,
-                farms: farms
+                farms: farms,
+                isExperienceLevelWithinAge: isExperienceLevelWithinAge
             )
             _ = try await repository.updateMyProfile(request)
             return true

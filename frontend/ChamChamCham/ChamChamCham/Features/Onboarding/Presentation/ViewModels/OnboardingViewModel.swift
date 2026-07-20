@@ -59,17 +59,12 @@ final class OnboardingViewModel {
 
     var basicProfileValidationErrors: [BasicProfileField: String] {
         var errors: [BasicProfileField: String] = [:]
-        if draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors[.name] = "이름은 필수로 입력해주세요."
-        }
-        if draft.phone.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-            errors[.phone] = "연락처는 필수로 입력해주세요."
-        }
-        if draft.birthDate == nil {
-            errors[.birthDate] = "생년월일은 필수로 입력해주세요."
-        }
         if draft.experienceYears == nil {
             errors[.experienceYears] = "귀농 년차는 필수로 입력해주세요."
+        } else if let experienceYears = draft.experienceYears, experienceYears > draft.maxAllowedExperienceYears {
+            errors[.experienceYears] = draft.birthDate == nil
+                ? "귀농 년차는 100년을 넘을 수 없어요."
+                : "귀농 년차는 나이를 넘을 수 없어요."
         }
         if draft.managementType == nil {
             errors[.managementType] = "자격은 필수로 선택해주세요."

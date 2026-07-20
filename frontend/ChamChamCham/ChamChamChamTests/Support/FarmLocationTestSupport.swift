@@ -17,6 +17,9 @@ struct StubAddressSearch: AddressSearching {
 
 struct StubVWorld: FarmlandGeocoding, ParcelLookup, ReverseGeocoding {
     var coordinate = CLLocationCoordinate2D(latitude: 37.5, longitude: 127.0)
+    /// 지오코딩 실패를 재현한다. nil이면 `geocode`가 `coordinate`를 반환한다.
+    /// 도로명·지번 폴백 및 좌표변환 완전 실패 UX를 검증하는 데 쓴다.
+    var geocodeError: FarmLocationAPIError?
     /// nil이면 `fetchParcel`이 `noParcelFound`를 던져 지적도 없는 상황을 재현한다.
     var parcel: FarmlandParcel?
     /// 역지오코딩 기본값은 non-nil이라 기존 테스트가 그대로 통과한다. NOT_FOUND(도로명/지번 없음)
@@ -26,7 +29,10 @@ struct StubVWorld: FarmlandGeocoding, ParcelLookup, ReverseGeocoding {
         jibunAddress: "전북 전주시 완산구 역지오코딩동 1"
     )
 
-    func geocode(roadAddress: String) async throws -> CLLocationCoordinate2D { coordinate }
+    func geocode(roadAddress: String, jibunAddress: String) async throws -> CLLocationCoordinate2D {
+        if let geocodeError { throw geocodeError }
+        return coordinate
+    }
 
     func fetchParcel(at coordinate: CLLocationCoordinate2D) async throws -> FarmlandParcel {
         guard let parcel else { throw FarmLocationAPIError.noParcelFound }

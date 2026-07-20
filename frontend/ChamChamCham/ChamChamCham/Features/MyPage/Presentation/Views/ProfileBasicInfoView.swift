@@ -55,16 +55,16 @@ struct ProfileBasicInfoView: View {
                     label: "연락처",
                     placeholder: "000-0000-0000",
                     text: $viewModel.phone,
-                    isRequired: true,
-                    errorMessage: viewModel.phoneError,
+                    isRequired: false,
+                    helperText: "농지 관련 알림 발송 등에 사용돼요. 입력하지 않아도 서비스 이용에 지장 없어요.",
                     keyboardType: .phonePad
                 )
 
                 AppDateField(
                     label: "생년월일",
                     selection: $viewModel.birthDate,
-                    isRequired: true,
-                    errorMessage: viewModel.birthDateError
+                    isRequired: false,
+                    helperText: "귀농 연차가 나이를 넘지 않는지 확인하는 데 참고돼요. 입력하지 않아도 서비스 이용에 지장 없어요."
                 )
 
                 qualificationSection
@@ -74,6 +74,7 @@ struct ProfileBasicInfoView: View {
                     placeholder: "귀농 연차를 입력해주세요.",
                     text: experienceYearsText,
                     isRequired: true,
+                    helperText: "맞춤 농업 관련 정책을 제공하기 위해 필요해요.",
                     errorMessage: viewModel.experienceError,
                     keyboardType: .numberPad
                 )

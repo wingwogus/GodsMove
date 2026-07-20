@@ -42,6 +42,17 @@ struct FarmLocationView: View {
                 .ignoresSafeArea(.container, edges: .bottom)
         }
         .background(Color.Background.default)
+        // 농지명 필드에 키보드 툴바로 "완료"를 달아 탭-바깥 없이도 키보드를 닫을 수 있게 한다.
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("완료") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+                    )
+                }
+            }
+        }
         .overlay(alignment: .bottom) {
             bottomCTA
         }
@@ -71,6 +82,10 @@ struct FarmLocationView: View {
 
             Text("재배지의 주소명과 농지명을 입력해주세요.")
                 .appTypography(.bodyLarge)
+                .foregroundStyle(Color.Text.muted)
+
+            Text("정확한 재배지 위치로 날씨·병해충 등 맞춤 영농 정보를 제공하기 위해 필요해요.")
+                .appTypography(.labelMedium)
                 .foregroundStyle(Color.Text.muted)
         }
         .frame(maxWidth: .infinity, alignment: .leading)

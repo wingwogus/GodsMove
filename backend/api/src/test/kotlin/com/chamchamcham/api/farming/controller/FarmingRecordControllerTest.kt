@@ -115,6 +115,17 @@ class FarmingRecordControllerTest(
     }
 
     @Test
+    fun `create record rejects duplicate media ids`() {
+        mockMvc.perform(
+            post("/api/v1/farming-records")
+                .with(authenticatedMember(memberId.toString()))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(saveRecordJson(mediaIdsJson = "[\"$mediaId\",\"$mediaId\"]"))
+        )
+            .andExpect(status().isBadRequest)
+    }
+
+    @Test
     fun `create record rejects non-positive harvest amount`() {
         mockMvc.perform(
             post("/api/v1/farming-records")

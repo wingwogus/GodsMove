@@ -17,6 +17,9 @@ final class FarmLocationViewModel {
         case loadingParcel
         case parcelNotFound
         case loaded
+        /// 주소→좌표 변환이 도로명·지번 모두 실패한 상태. 막다른 에러가 아니라, 지도에 직접
+        /// 표시하도록 안내하는 폴백 상태다. `retryable`은 네트워크성 실패라 재시도가 의미 있는 경우.
+        case coordinateUnavailable(retryable: Bool)
         case failed(String)
     }
 
@@ -31,6 +34,10 @@ final class FarmLocationViewModel {
     /// 지적도 없는 밭을 지도에 직접 그리는 모드와 그 꼭짓점들.
     var isDrawingMode = false
     var drawnCoordinates: [GeoPoint] = []
+
+    /// 상시 작도 진입 버튼으로 기존 필지를 대체하며 그리기 시작했을 때, 취소 시 되돌릴
+    /// 필지 스냅샷. 필지가 없는 상태에서 시작했다면 nil.
+    private var parcelBeforeDrawing: FarmlandParcel?
 
     var manualAreaSqm: Double? {
         let trimmedText = manualAreaText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -170,8 +177,12 @@ final class FarmLocationViewModel {
 
     // MARK: - Polygon drawing
 
-    /// 지도 직접 그리기 시작. 기존 수동 면적 입력은 배타적이므로 비운다.
+    /// 지도 직접 그리기 시작. 기존 수동 면적 입력은 배타적이므로 비운다. 기존 필지가
+    /// 있었다면 스냅샷해두고 비운다 — 작도 중엔 필지 폴리곤과 겹쳐 보이지 않도록 하고,
+    /// 취소 시 `cancelDrawing()`에서 되돌린다.
     func beginDrawing() {
+        parcelBeforeDrawing = selectedParcel
+        selectedParcel = nil
         isDrawingMode = true
         drawnCoordinates = []
         manualAreaText = ""
@@ -190,10 +201,13 @@ final class FarmLocationViewModel {
         drawnCoordinates = []
     }
 
-    /// 작도를 취소하고 폴백 선택(면적 입력/직접 그리기)으로 돌아간다.
+    /// 작도를 취소하고 폴백 선택(면적 입력/직접 그리기)으로 돌아간다. 상시 진입 버튼으로
+    /// 기존 필지를 대체하던 중이었다면 그 필지를 복원한다.
     func cancelDrawing() {
         isDrawingMode = false
         drawnCoordinates = []
+        selectedParcel = parcelBeforeDrawing
+        parcelBeforeDrawing = nil
     }
 
     /// 3점 이상이면 작도를 확정한다. 반환값은 성공 여부.
@@ -204,12 +218,23 @@ final class FarmLocationViewModel {
     func finishDrawing() async -> Bool {
         guard isDrawnPolygonValid else { return false }
         isDrawingMode = false
+        parcelBeforeDrawing = nil
         selectedAddress = nil
         guard let centroid = FarmlandParcel.centroid(of: drawnCoordinates) else { return true }
         if let reverse = try? await vworld.reverseGeocode(at: centroid.clLocationCoordinate) {
             selectedAddress = makeAddress(road: reverse.roadAddress, jibun: reverse.jibunAddress)
         }
         return true
+    }
+
+    /// 작도 완료 직후 역지오코딩이 실패해 주소가 비어 있을 때 다시 시도한다. VWorld는
+    /// 거리·신뢰도 정보를 주지 않으므로 성공해도 주소가 실제 위치와 다를 수 있다 —
+    /// 화면에서 사용자가 육안으로 확인하도록 안내한다.
+    func retryDrawnAddress() async {
+        guard let centroid = FarmlandParcel.centroid(of: drawnCoordinates) else { return }
+        if let reverse = try? await vworld.reverseGeocode(at: centroid.clLocationCoordinate) {
+            selectedAddress = makeAddress(road: reverse.roadAddress, jibun: reverse.jibunAddress)
+        }
     }
 
     /// 도로명/지번 중 존재하는 값으로 주소를 만든다. 둘 다 비면 nil(주소 미확정).
@@ -221,15 +246,39 @@ final class FarmLocationViewModel {
         return JusoAddress(roadAddrPart1: roadText, jibunAddr: jibunText, bdNm: "")
     }
 
+    /// 좌표변환에 실패한 주소로 재시도한다(네트워크성 실패 후 "다시 시도" 용). 선택된 주소가
+    /// 없으면 아무것도 하지 않는다.
+    func retryCoordinate() async {
+        guard let address = selectedAddress else { return }
+        await resolveCoordinate(for: address)
+    }
+
     private func resolveCoordinate(for address: JusoAddress) async {
         lookupState = .resolvingCoordinate
         do {
-            let coordinate = try await vworld.geocode(roadAddress: address.roadAddrPart1)
+            let coordinate = try await vworld.geocode(
+                roadAddress: address.roadAddrPart1,
+                jibunAddress: address.jibunAddr
+            )
             resolvedCoordinate = GeoPoint(coordinate)
             // 검색으로 선택한 주소를 유지해야 하므로 주소는 다시 채우지 않는다.
             await fetchParcel(at: coordinate, refreshAddress: false)
         } catch {
-            lookupState = .failed("주소의 좌표를 확인하지 못했어요")
+            // 도로명·지번 모두 실패. 막다른 에러 대신 "지도에 직접 표시" 안내 폴백으로 전환한다.
+            // 선택 주소는 유지해 사용자가 어떤 주소를 다루던 중인지 잃지 않는다.
+            resolvedCoordinate = nil
+            lookupState = .coordinateUnavailable(retryable: Self.isRetryable(error))
+        }
+    }
+
+    /// 네트워크/디코딩 실패는 재시도가 의미 있고, 주소 자체가 좌표를 못 가진 경우(`noResult`)는
+    /// 재시도해도 같으므로 바로 "지도에 직접 표시"로 유도한다.
+    private static func isRetryable(_ error: Error) -> Bool {
+        switch error {
+        case FarmLocationAPIError.network, FarmLocationAPIError.decoding:
+            return true
+        default:
+            return false
         }
     }
 

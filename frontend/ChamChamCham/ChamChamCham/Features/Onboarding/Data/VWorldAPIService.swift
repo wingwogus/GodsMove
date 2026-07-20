@@ -12,24 +12,48 @@ struct VWorldAPIService: FarmlandGeocoding, ParcelLookup, ReverseGeocoding, Send
     private let addressBaseURL = "https://api.vworld.kr/req/address"
     private let dataBaseURL = "https://api.vworld.kr/req/data"
 
-    /// V-World 주소 API(req/address, getcoord)로 도로명 주소를 좌표로 변환한다.
+    /// V-World 주소 API(req/address, getcoord)로 주소를 좌표로 변환한다.
     ///
     /// 원래 MapKit의 지오코딩을 사용했으나, 시뮬레이터 환경에서 실제 존재하는 주소도
     /// 전부 실패하는 것을 확인했다 (환경/네트워크 문제로 추정). 이미 검증된 V-World
     /// 키로 같은 주소를 조회하면 정상 동작하므로 MapKit 대신 V-World 주소 API를 사용한다.
-    func geocode(roadAddress: String) async throws -> CLLocationCoordinate2D {
+    ///
+    /// 도로명(`type=road`)으로 먼저 시도하고, 실패하거나 도로명이 없으면 지번(`type=parcel`)으로
+    /// 재시도한다. 산골·하천변 농지는 도로명이 없어 `roadAddress`가 비는 경우가 많은데, 이때
+    /// 지번 폴백이 없으면 정상 주소도 좌표 변환에 실패한다(App Store 리뷰에서 관측된 버그).
+    func geocode(roadAddress: String, jibunAddress: String) async throws -> CLLocationCoordinate2D {
+        let trimmedRoad = roadAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedJibun = jibunAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if !trimmedRoad.isEmpty {
+            if let coordinate = try? await getcoord(address: trimmedRoad, type: "road") {
+                return coordinate
+            }
+        }
+
+        if !trimmedJibun.isEmpty {
+            return try await getcoord(address: trimmedJibun, type: "parcel")
+        }
+
+        // 도로명·지번 모두 없거나 변환 실패.
+        throw FarmLocationAPIError.noResult
+    }
+
+    /// V-World getcoord 단일 요청. `type`은 "road"(도로명) 또는 "parcel"(지번).
+    private func getcoord(address: String, type: String) async throws -> CLLocationCoordinate2D {
         var components = URLComponents(string: addressBaseURL)
         components?.queryItems = [
             URLQueryItem(name: "service", value: "address"),
             URLQueryItem(name: "request", value: "getcoord"),
             URLQueryItem(name: "version", value: "2.0"),
             URLQueryItem(name: "crs", value: "epsg:4326"),
-            URLQueryItem(name: "address", value: roadAddress),
+            URLQueryItem(name: "address", value: address),
             URLQueryItem(name: "refine", value: "true"),
             URLQueryItem(name: "simple", value: "false"),
             URLQueryItem(name: "format", value: "json"),
-            URLQueryItem(name: "type", value: "road"),
-            URLQueryItem(name: "key", value: Secrets.vWorldAPIKey)
+            URLQueryItem(name: "type", value: type),
+            URLQueryItem(name: "key", value: Secrets.vWorldAPIKey),
+            URLQueryItem(name: "domain", value: Bundle.main.bundleIdentifier ?? "")
         ]
         guard let url = components?.url else { throw FarmLocationAPIError.invalidURL }
 

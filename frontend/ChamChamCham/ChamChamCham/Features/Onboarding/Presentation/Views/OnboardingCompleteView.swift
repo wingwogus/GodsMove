@@ -27,7 +27,10 @@ struct OnboardingCompleteView: View {
 
     private var successContent: some View {
         VStack(spacing: 16) {
-            AppIconView(source: .asset("check_circle"), size: 108)
+            Image("check_circle")
+                .resizable()
+                .scaledToFit()
+                .frame(width: 108, height: 108)
                 .foregroundStyle(Color.Object.primary)
 
             VStack(spacing: 4) {

@@ -142,6 +142,27 @@ struct OnboardingDraft: Codable {
         }
     }
 
+    /// Full (만) age as of today, or `nil` when `birthDate` hasn't been entered — it's optional now that
+    /// Guideline 5.1.1(v) requires it not be required.
+    var currentAge: Int? {
+        guard let birthDate else { return nil }
+        return Calendar.current.dateComponents([.year], from: birthDate, to: Date()).year
+    }
+
+    /// Upper bound for `experienceYears`: capped at the user's actual age when known, otherwise the server's
+    /// generic 0...100 range (`experienceLevel` schema bound) since there's nothing else to check it against.
+    var maxAllowedExperienceYears: Int {
+        currentAge ?? 100
+    }
+
+    /// Sent to the backend as `isExperienceLevelWithinAge` — the server can't derive this itself since
+    /// `birthDate` may be absent. `true` when there's no birth date to check against (nothing to contradict).
+    var isExperienceLevelWithinAge: Bool {
+        guard let experienceYears else { return true }
+        guard let currentAge else { return true }
+        return experienceYears <= currentAge
+    }
+
     mutating func addEmptyFarmAndSelect() {
         farms.append(OnboardingFarmDraft())
         activeFarmIndex = farms.count - 1
