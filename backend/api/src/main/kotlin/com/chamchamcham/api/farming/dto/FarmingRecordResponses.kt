@@ -41,6 +41,8 @@ object FarmingRecordResponses {
         val harvestAmount: BigDecimal?,
         val pesticideName: String?,
         val weedingMethod: WeedingMethod?,
+        val plantingMethod: PlantingMethod?,
+        val materialName: String?,
     ) {
         companion object {
             fun from(result: FarmingRecordResult.Summary): RecordSummaryResponse = RecordSummaryResponse(
@@ -57,6 +59,8 @@ object FarmingRecordResponses {
                 harvestAmount = result.harvestAmount,
                 pesticideName = result.pesticideName,
                 weedingMethod = result.weedingMethod,
+                plantingMethod = result.plantingMethod,
+                materialName = result.materialName,
             )
         }
     }

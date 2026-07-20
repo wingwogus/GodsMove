@@ -27,6 +27,8 @@ class FarmingRecordQueryRepositoryImpl(
                     harvestAmount = row[2] as java.math.BigDecimal?,
                     pesticideName = row[3] as String?,
                     weedingMethod = row[4] as WeedingMethod?,
+                    plantingMethod = row[5] as PlantingMethod?,
+                    materialName = row[6] as String?,
                 )
             }
         )
@@ -104,13 +106,15 @@ class FarmingRecordQueryRepositoryImpl(
 
         val query = entityManager.createQuery(
             """
-            select r, w.irrigationMethod, h.harvestAmount, pest.brandName, wd.weedingMethod
+            select r, w.irrigationMethod, h.harvestAmount, pest.brandName, wd.weedingMethod, pl.plantingMethod, fz.materialName
             from FarmingRecord r
             left join WateringRecord w on w.record = r
             left join HarvestRecord h on h.record = r
             left join PestControlRecord p on p.record = r
             left join p.pesticide pest
             left join WeedingRecord wd on wd.record = r
+            left join PlantingRecord pl on pl.record = r
+            left join FertilizingRecord fz on fz.record = r
             where ${where.joinToString(" and ")}
             order by r.workedAt desc, r.id desc
             """.trimIndent(),
