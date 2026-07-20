@@ -159,17 +159,17 @@ private struct ReportSemiDonut: View {
                 let radius = max(0, min(size.width / 2, size.height) - lineWidth / 2)
                 let center = CGPoint(x: size.width / 2, y: size.height)
                 var start = Angle.degrees(180)
+                let overlap = 0.75
 
                 for (index, entry) in entries.enumerated() {
                     let sweep = 180 * entry.fraction
-                    let gap = min(1.5, sweep / 4)
                     let end = Angle.degrees(start.degrees + sweep)
                     var path = Path()
                     path.addArc(
                         center: center,
                         radius: radius,
-                        startAngle: .degrees(start.degrees + gap),
-                        endAngle: .degrees(end.degrees - gap),
+                        startAngle: .degrees(start.degrees),
+                        endAngle: .degrees(end.degrees + (index == entries.count - 1 ? 0 : overlap)),
                         clockwise: false
                     )
                     context.stroke(
