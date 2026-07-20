@@ -38,6 +38,8 @@ object FarmingRecordResult {
         val harvestAmount: BigDecimal? = null,
         val pesticideName: String? = null,
         val weedingMethod: WeedingMethod? = null,
+        val plantingMethod: PlantingMethod? = null,
+        val materialName: String? = null,
     )
 
     data class Page(

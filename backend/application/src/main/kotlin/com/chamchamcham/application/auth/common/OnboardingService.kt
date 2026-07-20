@@ -56,7 +56,8 @@ class OnboardingService(
             name = command.name,
             phone = command.phone,
             birthDate = command.birthDate,
-            nickname = command.nickname?.trim().takeUnless { it.isNullOrBlank() } ?: command.name,
+            nickname = command.nickname?.trim()?.takeUnless { it.isBlank() }
+                ?: command.name?.trim()?.takeUnless { it.isBlank() },
             experienceLevel = command.experienceLevel,
             managementType = command.managementType
         )

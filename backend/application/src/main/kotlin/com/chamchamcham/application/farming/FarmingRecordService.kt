@@ -417,6 +417,8 @@ class FarmingRecordService(
             harvestAmount = row.harvestAmount,
             pesticideName = row.pesticideName,
             weedingMethod = row.weedingMethod,
+            plantingMethod = row.plantingMethod,
+            materialName = row.materialName,
         )
     }
 

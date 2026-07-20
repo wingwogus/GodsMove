@@ -121,6 +121,22 @@ class OnboardingServiceTest {
     }
 
     @Test
+    fun `complete leaves nickname null when both nickname and name are absent`() {
+        val member = member()
+        val crop = crop(id = cropId, externalNo = 422, name = "참당귀")
+        val command = completeOnboardingCommand(cropIds = listOf(cropId), nickname = null, name = null)
+
+        `when`(memberRepository.findById(memberId)).thenReturn(Optional.of(member))
+        `when`(cropRepository.findAllById(listOf(cropId))).thenReturn(listOf(crop))
+        `when`(farmRepository.save(any(Farm::class.java))).thenReturn(savedFarm(member, command.farm))
+
+        service.complete(command)
+
+        assertEquals(null, member.name)
+        assertEquals(null, member.nickname)
+    }
+
+    @Test
     fun `complete rejects missing crop before farm or member crop saves`() {
         val member = member()
         val command = completeOnboardingCommand(cropIds = listOf(cropId, secondCropId))
@@ -222,11 +238,12 @@ class OnboardingServiceTest {
     private fun completeOnboardingCommand(
         cropIds: List<UUID> = listOf(cropId),
         profileMediaId: UUID? = null,
-        nickname: String? = "길동"
+        nickname: String? = "길동",
+        name: String? = "홍길동"
     ): AuthCommand.CompleteOnboarding {
         return AuthCommand.CompleteOnboarding(
             memberId = memberId,
-            name = "홍길동",
+            name = name,
             phone = "010-1234-5678",
             birthDate = LocalDate.of(1990, 1, 1),
             nickname = nickname,

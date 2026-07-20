@@ -18,18 +18,6 @@ class OnboardingStatusResolver {
 
     private fun missingFields(member: Member): List<AuthResult.OnboardingField> {
         return buildList {
-            if (member.name.isNullOrBlank()) {
-                add(AuthResult.OnboardingField.NAME)
-            }
-            if (member.phone.isNullOrBlank()) {
-                add(AuthResult.OnboardingField.PHONE)
-            }
-            if (member.birthDate == null) {
-                add(AuthResult.OnboardingField.BIRTH_DATE)
-            }
-            if (member.nickname.isNullOrBlank()) {
-                add(AuthResult.OnboardingField.NICKNAME)
-            }
             if (member.experienceLevel == null) {
                 add(AuthResult.OnboardingField.EXPERIENCE_LEVEL)
             }

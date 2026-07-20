@@ -756,6 +756,8 @@ class FarmingRecordServiceTest {
                         harvestAmount = BigDecimal.TEN,
                         pesticideName = "친환경약제",
                         weedingMethod = WeedingMethod.HAND,
+                        plantingMethod = PlantingMethod.SEEDLING,
+                        materialName = "유박비료",
                     ),
                 )
             )
@@ -778,6 +780,8 @@ class FarmingRecordServiceTest {
         assertEquals(0, BigDecimal.TEN.compareTo(summary.harvestAmount))
         assertEquals("친환경약제", summary.pesticideName)
         assertEquals(WeedingMethod.HAND, summary.weedingMethod)
+        assertEquals(PlantingMethod.SEEDLING, summary.plantingMethod)
+        assertEquals("유박비료", summary.materialName)
     }
 
     @Test

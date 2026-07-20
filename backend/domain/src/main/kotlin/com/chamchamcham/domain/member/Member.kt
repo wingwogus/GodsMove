@@ -68,10 +68,10 @@ class Member(
     var profileMedia: UploadedMedia? = null,
 ) : BaseTimeEntity() {
     fun completeOnboarding(
-        name: String,
-        phone: String,
-        birthDate: LocalDate,
-        nickname: String,
+        name: String?,
+        phone: String?,
+        birthDate: LocalDate?,
+        nickname: String?,
         experienceLevel: Int,
         managementType: ManagementType
     ) {

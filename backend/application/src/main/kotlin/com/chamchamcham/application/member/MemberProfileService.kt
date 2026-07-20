@@ -131,9 +131,6 @@ class MemberProfileService(
         }
 
     private fun validateUpdateCommand(command: MemberProfileCommand.UpdateMyProfile) {
-        if (command.name.isBlank() || command.phone.isBlank() || command.nickname.isBlank()) {
-            throw BusinessException(ErrorCode.INVALID_INPUT)
-        }
         if (command.experienceLevel !in 0..100 || command.farms.isEmpty()) {
             throw BusinessException(ErrorCode.INVALID_INPUT)
         }
