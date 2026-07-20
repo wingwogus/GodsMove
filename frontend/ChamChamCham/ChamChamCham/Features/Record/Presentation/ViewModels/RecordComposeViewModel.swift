@@ -80,8 +80,18 @@ final class RecordComposeViewModel {
     // MARK: 수확
     var growthPeriod: String = ""
     var growthPeriodUnit: GrowthPeriodUnit = .month
-    var harvestAmount: String = ""
-    var harvestAmountUnknown: Bool = false
+    var harvestAmount: String = "" {
+        didSet {
+            guard !harvestAmount.isEmpty, harvestAmountUnknown else { return }
+            harvestAmountUnknown = false
+        }
+    }
+    var harvestAmountUnknown: Bool = false {
+        didSet {
+            guard harvestAmountUnknown, !harvestAmount.isEmpty else { return }
+            harvestAmount = ""
+        }
+    }
     var medicinalPart: MedicinalPart?
     var isLastHarvest: Bool = false
 
