@@ -36,6 +36,7 @@ enum class ErrorCode(
     FARMING_RECORD_DETAIL_REQUIRED("FARMING_002", "error.farming_record_detail_required", 400),
     FARMING_RECORD_INVALID_DETAIL("FARMING_003", "error.farming_record_invalid_detail", 400),
     FARMING_RECORD_FORBIDDEN("FARMING_004", "error.farming_record_forbidden", 403),
+    FARMING_RECORD_CROP_NOT_IN_FARM("FARMING_006", "error.farming_record_crop_not_in_farm", 400),
     WEATHER_LOCATION_REQUIRED("WEATHER_001", "error.weather_location_required", 400),
     WEATHER_PROVIDER_UNAVAILABLE("WEATHER_002", "error.weather_provider_unavailable", 503),
     WEATHER_DATE_IN_FUTURE("WEATHER_003", "error.weather_date_in_future", 400),
