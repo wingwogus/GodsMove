@@ -33,5 +33,6 @@ data class DetailWeather(
     val precipitationProbability: Int?,
     val uvIndex: Int?,
     val forecast: List<DailyForecast>,
-    val partial: PartialFailure
+    val partial: PartialFailure,
+    val advices: List<FarmingAdvice> = emptyList()
 )

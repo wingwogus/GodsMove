@@ -60,7 +60,8 @@ class FarmWeatherServiceTest {
             weatherParallelFetcher = weatherParallelFetcher,
             shortTermForecastPort = shortTermForecastPort,
             historicalObservationPort = historicalObservationPort,
-            clock = fixedClock
+            clock = fixedClock,
+            farmingActivityAdvisor = FarmingActivityAdvisor()
         )
     }
 
@@ -354,6 +355,27 @@ class FarmWeatherServiceTest {
         assertEquals(WeatherCondition.CLOUDY, result.condition)
         assertEquals(20, result.minTemperature)
         assertEquals(20, result.maxTemperature)
+    }
+
+    @Test
+    fun `getDetail은 ETC를 제외한 7개 작업의 조언을 담는다`() {
+        given(farmRepository.findByIdAndOwnerId(farmId, memberId)).willReturn(farm)
+        val sources = DetailSources(
+            current = currentObservation(precipitationType = WeatherCondition.RAIN),
+            latest = shortTermForecast(currentSky = WeatherCondition.CLEAR),
+            todayRange = dailyForecast(today),
+            midTermD4 = null,
+            uvIndex = 5,
+            partial = PartialFailure.of()
+        )
+        given(weatherParallelFetcher.fetchDetail(location())).willReturn(sources)
+
+        val result = service.getDetail(memberId, farmId)
+
+        assertThat(result.advices).hasSize(7)
+        assertThat(result.advices).noneMatch { it.workType == com.chamchamcham.domain.farming.WorkType.ETC }
+        val planting = result.advices.find { it.workType == com.chamchamcham.domain.farming.WorkType.PLANTING }
+        assertThat(planting?.level).isEqualTo(AdviceLevel.BAD)
     }
 
     private fun location(): WeatherLocation =
