@@ -249,7 +249,7 @@ struct FarmLocationManualFallbackTests {
         )
     }
 
-    @Test("역지오코딩이 완전히 실패해도 작도 후 수동 주소 입력으로 진행 가능해진다")
+    @Test("역지오코딩이 완전히 실패하면 상단 주소 필드가 직접 입력 모드로 전환되고, 입력하면 진행 가능해진다")
     func drawnPolygonProceedsWithManualAddressWhenReverseGeocodeFails() async {
         let viewModel = makeUnreachableViewModel()
         viewModel.beginDrawing()
@@ -261,67 +261,57 @@ struct FarmLocationManualFallbackTests {
 
         #expect(didFinish)
         #expect(viewModel.selectedAddress == nil) // 역지오코딩 실패라 아직 주소 없음
+        #expect(viewModel.needsManualAddressEntry) // 상단 필드가 직접 입력으로 전환돼야 함
         #expect(!viewModel.canProceed)
 
         viewModel.setManualAddress("전북 전주시 완산구 수동입력로 1")
 
         #expect(viewModel.selectedAddress?.jibunAddr == "전북 전주시 완산구 수동입력로 1")
         #expect(viewModel.isManualAddress)
+        #expect(viewModel.needsManualAddressEntry) // 타이핑 중에도 필드가 다시 버튼으로 안 바뀜(sticky)
         #expect(viewModel.canProceed)
     }
 
-    @Test("빈 문자열로 수동 주소를 설정하면 아무 효과가 없다")
-    func setManualAddressIgnoresBlankText() async {
+    @Test("수동 입력 필드를 비우면 주소가 지워지고 다시 canProceed가 false가 된다")
+    func clearingManualAddressRemovesSelection() async {
         let viewModel = makeUnreachableViewModel()
         viewModel.beginDrawing()
         for coordinate in FarmLocationTestFixtures.squareCoordinates() {
             viewModel.addDrawnVertex(coordinate)
         }
         await viewModel.finishDrawing()
+        viewModel.setManualAddress("전북 전주시 완산구 수동입력로 1")
+        #expect(viewModel.canProceed)
 
         viewModel.setManualAddress("   ")
 
         #expect(viewModel.selectedAddress == nil)
         #expect(!viewModel.canProceed)
+        #expect(viewModel.needsManualAddressEntry) // 지워도 필드는 계속 직접 입력 모드
     }
 
-    @Test("수동 입력 후 재시도가 성공하면 isManualAddress가 다시 false로 돌아간다")
+    @Test("역지오코딩 재시도가 성공하면 직접 입력 모드가 풀리고 자동 확인 모드로 되돌아간다")
     func retrySucceedingClearsManualFlag() async {
-        var stub = StubVWorld(parcel: nil)
-        stub.reverseGeocodeError = .network("offline")
+        // 기본 StubVWorld는 reverseGeocode가 성공한다 — "네트워크가 복구된 뒤 재시도" 상황.
         let viewModel = FarmLocationViewModel(
             addressSearch: StubAddressSearch(),
-            vworld: stub,
+            vworld: StubVWorld(parcel: nil),
             landCharacteristics: StubLandCharacteristics()
         )
         viewModel.beginDrawing()
         for coordinate in FarmLocationTestFixtures.squareCoordinates() {
             viewModel.addDrawnVertex(coordinate)
         }
-        await viewModel.finishDrawing()
-        viewModel.setManualAddress("전북 전주시 완산구 수동입력로 1")
+        // 이전에 자동 조회가 실패해 직접 입력 모드였던 상태를 재현한다.
+        viewModel.needsManualAddressEntry = true
+        viewModel.setManualAddress("임시 수동 입력")
         #expect(viewModel.isManualAddress)
 
-        // 네트워크가 복구된 상황을 재현: 재시도 시 이제 성공한다.
-        var recoveredStub = stub
-        recoveredStub.reverseGeocodeError = nil
-        let recoveredViewModel = FarmLocationViewModel(
-            addressSearch: StubAddressSearch(),
-            vworld: recoveredStub,
-            landCharacteristics: StubLandCharacteristics()
-        )
-        recoveredViewModel.beginDrawing()
-        for coordinate in FarmLocationTestFixtures.squareCoordinates() {
-            recoveredViewModel.addDrawnVertex(coordinate)
-        }
-        await recoveredViewModel.finishDrawing()
-        recoveredViewModel.setManualAddress("임시 수동 입력")
-        #expect(recoveredViewModel.isManualAddress)
+        await viewModel.retryDrawnAddress()
 
-        await recoveredViewModel.retryDrawnAddress()
-
-        #expect(!recoveredViewModel.isManualAddress)
-        #expect(recoveredViewModel.selectedAddress?.roadAddrPart1 == "전북 전주시 완산구 역지오코딩로 1")
+        #expect(!viewModel.isManualAddress)
+        #expect(!viewModel.needsManualAddressEntry) // 자동 조회가 성공했으니 버튼 모드로 복귀
+        #expect(viewModel.selectedAddress?.roadAddrPart1 == "전북 전주시 완산구 역지오코딩로 1")
     }
 
     @Test("필지 조회가 noParcelFound 외의 이유로 실패해도 canProceed로 가는 경로(작도)가 남아있다")

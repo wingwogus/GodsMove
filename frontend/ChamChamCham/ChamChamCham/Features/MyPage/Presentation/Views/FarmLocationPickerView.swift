@@ -121,18 +121,25 @@ struct FarmLocationPickerView: View {
         .frame(maxHeight: .infinity)
     }
 
+    /// 평소엔 JUSO 검색 시트를 여는 버튼. 작도 후 역지오코딩이 실패했을 때만(`needsManualAddressEntry`)
+    /// 같은 자리에서 직접 타이핑 가능한 텍스트 필드로 바뀐다 — 해외 네트워크 등으로 국내 주소
+    /// API가 전혀 응답하지 않아도 이 필드에 직접 입력해 등록을 끝낼 수 있게 한다.
+    @ViewBuilder
     private var addressOverlayField: some View {
-        Button {
-            isSearchSheetPresented = true
-        } label: {
+        if location.needsManualAddressEntry {
             HStack(spacing: Spacing.sm) {
-                AppIconView(source: .asset("search"), size: 22)
+                AppIconView(source: .asset("edit"), size: 22)
                     .foregroundStyle(Color.Icon.default)
-                Text(displayedAddressText ?? "주소지를 입력해주세요.")
-                    .appTypography(.bodyLarge)
-                    .foregroundStyle(displayedAddressText == nil ? Color.Text.muted : Color.Text.default)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
+                TextField(
+                    "주소를 직접 입력해주세요.",
+                    text: Binding(
+                        get: { location.selectedAddress?.jibunAddr ?? "" },
+                        set: { location.setManualAddress($0) }
+                    )
+                )
+                .appTypography(.bodyLarge)
+                .foregroundStyle(Color.Text.default)
+                .textInputAutocapitalization(.never)
             }
             .padding(.horizontal, Spacing.md)
             .frame(height: 56)
@@ -141,8 +148,29 @@ struct FarmLocationPickerView: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(addressBorderColor, lineWidth: 1)
             }
+        } else {
+            Button {
+                isSearchSheetPresented = true
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    AppIconView(source: .asset("search"), size: 22)
+                        .foregroundStyle(Color.Icon.default)
+                    Text(displayedAddressText ?? "주소지를 입력해주세요.")
+                        .appTypography(.bodyLarge)
+                        .foregroundStyle(displayedAddressText == nil ? Color.Text.muted : Color.Text.default)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, Spacing.md)
+                .frame(height: 56)
+                .background(Color.Background.default)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(addressBorderColor, lineWidth: 1)
+                }
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
     /// 도로명이 없는 농지(지적도에 도로명 미부여)는 지번 주소로 표시한다. 둘 다 없으면 nil(미입력).

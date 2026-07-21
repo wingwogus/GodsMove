@@ -39,10 +39,7 @@ struct FarmLocationView: View {
                 .padding(.bottom, 20)
 
             mapOverlaySection
-                // 이 서브트리에 하단 카드가 살고 TextField가 오버레이돼 있다. `.container`만
-                // 무시하면 서브트리가 바닥까지 늘어나면서 키보드 회피가 이 안쪽에 다시 적용돼
-                // 카드가 위로 밀려 상단 필드·우측 툴바와 겹친다. `.keyboard`까지 무시해 고정한다.
-                .ignoresSafeArea(.all, edges: .bottom)
+                .ignoresSafeArea(.container, edges: .bottom)
         }
         .background(Color.Background.default)
         // 농지명 필드에 키보드 툴바로 "완료"를 달아 탭-바깥 없이도 키보드를 닫을 수 있게 한다.
@@ -117,18 +114,25 @@ struct FarmLocationView: View {
         .frame(maxHeight: .infinity)
     }
 
+    /// 평소엔 JUSO 검색 시트를 여는 버튼. 작도 후 역지오코딩이 실패했을 때만(`needsManualAddressEntry`)
+    /// 같은 자리에서 직접 타이핑 가능한 텍스트 필드로 바뀐다 — 해외 네트워크 등으로 국내 주소
+    /// API가 전혀 응답하지 않아도 이 필드에 직접 입력해 온보딩을 끝낼 수 있게 한다.
+    @ViewBuilder
     private var addressOverlayField: some View {
-        Button {
-            isSearchSheetPresented = true
-        } label: {
+        if farmLocationViewModel.needsManualAddressEntry {
             HStack(spacing: 12) {
-                AppIconView(source: .asset("search"), size: 22)
+                AppIconView(source: .asset("edit"), size: 22)
                     .foregroundStyle(Color.Icon.default)
-                Text(displayedAddressText ?? "주소지를 입력해주세요.")
-                    .appTypography(.bodyLarge)
-                    .foregroundStyle(displayedAddressText == nil ? Color.Text.muted : Color.Text.default)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
+                TextField(
+                    "주소를 직접 입력해주세요.",
+                    text: Binding(
+                        get: { farmLocationViewModel.selectedAddress?.jibunAddr ?? "" },
+                        set: { farmLocationViewModel.setManualAddress($0) }
+                    )
+                )
+                .appTypography(.bodyLarge)
+                .foregroundStyle(Color.Text.default)
+                .textInputAutocapitalization(.never)
             }
             .padding(.horizontal, 16)
             .frame(height: 56)
@@ -137,8 +141,29 @@ struct FarmLocationView: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(addressBorderColor, lineWidth: 1)
             }
+        } else {
+            Button {
+                isSearchSheetPresented = true
+            } label: {
+                HStack(spacing: 12) {
+                    AppIconView(source: .asset("search"), size: 22)
+                        .foregroundStyle(Color.Icon.default)
+                    Text(displayedAddressText ?? "주소지를 입력해주세요.")
+                        .appTypography(.bodyLarge)
+                        .foregroundStyle(displayedAddressText == nil ? Color.Text.muted : Color.Text.default)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, 16)
+                .frame(height: 56)
+                .background(Color.Background.default)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(addressBorderColor, lineWidth: 1)
+                }
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
     /// 도로명이 없는 농지(지적도에 도로명 미부여)는 지번 주소로 표시한다. 둘 다 없으면 nil(미입력).

@@ -29,6 +29,13 @@ final class FarmLocationViewModel {
     /// `selectedAddress`가 역지오코딩이 아니라 `setManualAddress`로 채워졌는지. 작도 완료
     /// 후 주소 카드의 안내 문구를 "자동으로 확인된 위치" 대신 "직접 입력한 주소"로 갈리는 데 쓴다.
     var isManualAddress = false
+    /// 작도 완료 후 역지오코딩이 실패해 주소를 못 채운 상태. true면 상단 주소 필드(검색 시트를
+    /// 여는 버튼)가 직접 타이핑 가능한 텍스트 필드로 전환된다(`FarmLocationView`/
+    /// `FarmLocationPickerView`의 `addressOverlayField`). 한 번 켜지면 타이핑 중에 값이
+    /// 바뀌어도 꺼지지 않는다(sticky) — 안 그러면 입력 도중 필드가 버튼으로 되돌아간다.
+    /// `beginDrawing`/`cancelDrawing`/`selectAddress`로 새 맥락이 시작되거나 `retryDrawnAddress`가
+    /// 성공해야 꺼진다.
+    var needsManualAddressEntry = false
     var resolvedCoordinate: GeoPoint?
     var selectedParcel: FarmlandParcel?
     var manualAreaText: String = ""
@@ -178,6 +185,7 @@ final class FarmLocationViewModel {
         resolvedCoordinate = nil
         isDrawingMode = false
         drawnCoordinates = []
+        needsManualAddressEntry = false
         await resolveCoordinate(for: address)
     }
 
@@ -201,6 +209,7 @@ final class FarmLocationViewModel {
         isDrawingMode = true
         drawnCoordinates = []
         manualAreaText = ""
+        needsManualAddressEntry = false
     }
 
     func addDrawnVertex(_ coordinate: CLLocationCoordinate2D) {
@@ -223,6 +232,7 @@ final class FarmLocationViewModel {
         drawnCoordinates = []
         selectedParcel = parcelBeforeDrawing
         parcelBeforeDrawing = nil
+        needsManualAddressEntry = false
     }
 
     /// 3점 이상이면 작도를 확정한다. 반환값은 성공 여부.
@@ -240,6 +250,8 @@ final class FarmLocationViewModel {
         if let reverse = try? await vworld.reverseGeocode(at: centroid.clLocationCoordinate) {
             selectedAddress = makeAddress(road: reverse.roadAddress, jibun: reverse.jibunAddress)
         }
+        // 역지오코딩이 실패했으면(해외 네트워크 등) 상단 주소 필드를 직접 입력으로 전환한다.
+        needsManualAddressEntry = (selectedAddress == nil)
         return true
     }
 
@@ -251,16 +263,24 @@ final class FarmLocationViewModel {
         if let reverse = try? await vworld.reverseGeocode(at: centroid.clLocationCoordinate) {
             selectedAddress = makeAddress(road: reverse.roadAddress, jibun: reverse.jibunAddress)
             isManualAddress = false
+            needsManualAddressEntry = false
         }
     }
 
     /// 역지오코딩이 실패했을 때(네트워크 미도달 등) 사용자가 직접 타이핑한 주소로 진행할 수
     /// 있게 한다. 폴리곤 좌표가 실제 위치의 진실이고, 주소는 사람이 알아보기 위한 라벨이므로
-    /// 자동 조회가 안 되면 사용자가 직접 채우는 것으로 대체 가능하다.
+    /// 자동 조회가 안 되면 사용자가 직접 채우는 것으로 대체 가능하다. 상단 주소 필드의 실시간
+    /// 텍스트 바인딩이라 매 타이핑마다 호출된다 — 빈 문자열은 `selectedAddress`를 nil로 되돌려
+    /// 지우기가 그대로 반영되게 한다. `needsManualAddressEntry`는 건드리지 않는다(sticky):
+    /// 타이핑 중에 필드가 다시 버튼으로 바뀌면 안 되기 때문이다.
     func setManualAddress(_ text: String) {
         let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        selectedAddress = JusoAddress(roadAddrPart1: "", jibunAddr: trimmed, bdNm: "")
+        guard !trimmed.isEmpty else {
+            selectedAddress = nil
+            isManualAddress = false
+            return
+        }
+        selectedAddress = JusoAddress(roadAddrPart1: "", jibunAddr: text, bdNm: "")
         isManualAddress = true
     }
 

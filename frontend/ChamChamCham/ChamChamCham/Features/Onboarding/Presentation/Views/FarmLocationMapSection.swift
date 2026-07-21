@@ -28,7 +28,6 @@ struct FarmLocationMapSection: View {
     @State private var mapStyleIsSatellite = false
     @State private var didSetInitialCamera = false
     @State private var manualAreaChosen = false
-    @State private var manualAddressText = ""
 
     /// 현재 위치 승인을 못 받았을 때의 폴백 카메라(서울 시청).
     private static let seoul = CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780)
@@ -58,9 +57,6 @@ struct FarmLocationMapSection: View {
         }
         .onChange(of: viewModel.lookupState) { _, _ in
             manualAreaChosen = false
-        }
-        .onChange(of: viewModel.isDrawingMode) { _, isDrawing in
-            if isDrawing { manualAddressText = "" }
         }
     }
 
@@ -379,8 +375,9 @@ struct FarmLocationMapSection: View {
 
     /// 작도 완료 후 역지오코딩된 주소. VWorld는 거리·신뢰도를 검증하지 않으므로 자동 확정하지
     /// 않고 사용자가 육안으로 확인하도록 노출한다. 자동 조회가 응답하지 않는 경우(해외
-    /// 네트워크 등, 이 앱 특성상 정상적으로 있을 수 있는 경로)에는 직접 입력으로 대체한다 —
-    /// 폴리곤 좌표가 실제 위치의 진실이고 주소는 사람이 알아보기 위한 라벨이기 때문이다.
+    /// 네트워크 등, 이 앱 특성상 정상적으로 있을 수 있는 경로)에는 상단 주소 필드가 직접 입력
+    /// 가능한 텍스트 필드로 전환된다(`needsManualAddressEntry`, `FarmLocationView`/
+    /// `FarmLocationPickerView` 참고) — 이 카드는 재시도만 제공하고 새 입력 UI를 만들지 않는다.
     @ViewBuilder
     private var drawnAddressSection: some View {
         if let address = viewModel.selectedAddress,
@@ -399,22 +396,9 @@ struct FarmLocationMapSection: View {
             }
         } else {
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                infoBanner("이 위치는 등록된 도로명 주소가 없을 수 있어요. 주소를 직접 입력해주세요.")
-                AppTextField(
-                    label: nil,
-                    placeholder: "주소를 입력해주세요",
-                    text: $manualAddressText
-                )
-                HStack(spacing: Spacing.sm) {
-                    AppButton("다시 확인", variant: .neutral, size: .small, fullWidth: true) {
-                        Task { await viewModel.retryDrawnAddress() }
-                    }
-                    AppButton(
-                        "입력 완료", icon: .asset("check"), variant: .secondary, size: .small, fullWidth: true,
-                        appearsDisabled: manualAddressText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    ) {
-                        viewModel.setManualAddress(manualAddressText)
-                    }
+                infoBanner("이 위치의 주소를 확인하지 못했어요. 위 주소 입력란에 직접 입력해주세요.")
+                AppButton("주소 다시 확인", variant: .neutral, size: .small, fullWidth: true) {
+                    Task { await viewModel.retryDrawnAddress() }
                 }
             }
         }
