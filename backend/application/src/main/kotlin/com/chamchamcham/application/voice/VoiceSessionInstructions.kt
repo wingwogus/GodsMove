@@ -102,6 +102,9 @@ object VoiceSessionInstructions {
           seedAmountUnit)만 묻고, 모종 심기(SEEDLING)면 모종수(seedlingCount/seedlingUnit)만 물으세요.
           번식법(propagationMethod)은 모종 심기일 때만 선택적으로 물을 수 있습니다.
           반대쪽 항목은 절대 채우지 마세요.
+        - WATERING(물주기)·WEEDING(제초)·PRUNING(가지치기)·ETC(기타)는 반드시 필요한 상세가 없습니다.
+          이 유형들은 상세를 더 묻거나 기다리지 말고, 농지·작물이 확인되면 memo를 작성해 곧바로
+          save_farming_record를 호출하세요. 특히 ETC는 물어볼 상세가 없다는 이유로 대화를 계속 끌지 마세요.
     """.trimIndent()
 
     // 예외 상황을 사용자가 반드시 인지하도록 하는 규칙. 조용히 넘기거나 값을 지어내지 않는다.

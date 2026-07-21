@@ -131,6 +131,15 @@ class VoiceSessionInstructionsTest {
     }
 
     @Test
+    fun `상세 없는 유형은 상세를 기다리지 말고 곧바로 저장하도록 지시한다`() {
+        val instructions = build()
+
+        // 상세 없는 유형(특히 ETC)에서 모델이 대화만 끌고 저장을 안 하던 버그 방지 회귀 테스트.
+        assertThat(instructions).contains("반드시 필요한 상세가 없습니다")
+        assertThat(instructions).contains("대화를 계속 끌지 마세요")
+    }
+
+    @Test
     fun `못 처리한 예외를 사용자에게 인지시키는 규칙을 포함한다`() {
         val instructions = build()
 
