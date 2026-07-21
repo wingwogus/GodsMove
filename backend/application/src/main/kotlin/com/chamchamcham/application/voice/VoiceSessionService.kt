@@ -15,6 +15,8 @@ import com.chamchamcham.domain.voice.VoiceRecordTurn
 import com.chamchamcham.domain.voice.VoiceRecordSessionRepository
 import com.chamchamcham.domain.voice.VoiceRecordTurnRepository
 import com.chamchamcham.domain.voice.VoiceSessionStatus
+import com.chamchamcham.domain.voice.VoiceTurnRole
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
@@ -101,13 +103,40 @@ class VoiceSessionService(
         val transcript = command.turns.joinToString("\n") { "${it.role}: ${it.content}" }
         session.markWaitingConfirmation(transcript)
 
+        val missingFields = VoiceRecordCandidateAnalyzer.missingFields(command.candidate)
+        logCandidateDiagnostics(command, missingFields)
+
         return VoiceSessionResult.Processed(
             sessionId = requireNotNull(session.id),
             status = session.status,
             candidate = command.candidate,
-            missingFields = VoiceRecordCandidateAnalyzer.missingFields(command.candidate),
+            missingFields = missingFields,
         )
     }
+
+    /**
+     * "음성 → 작성 화면 전 필드 공백" 버그 진단용. 프론트가 realtime tool 인자를 캡처했는지
+     * (candidate가 채워졌는지) vs 모델이 애초에 일부만 채웠는지를 서버 로그로 가린다.
+     * 개인정보 원문(메모 내용 등)은 남기지 않고 present/absent·길이만 기록한다.
+     */
+    private fun logCandidateDiagnostics(command: VoiceSessionCommand.SubmitTurns, missingFields: List<String>) {
+        val candidate = command.candidate
+        val userTurns = command.turns.count { it.role == VoiceTurnRole.USER }
+        val assistantTurns = command.turns.count { it.role == VoiceTurnRole.ASSISTANT }
+        val lastAssistantLen = command.turns.lastOrNull { it.role == VoiceTurnRole.ASSISTANT }?.content?.length ?: 0
+        logger.info {
+            "voice.submitTurns 진단 sessionId=${command.sessionId} " +
+                "turns=${command.turns.size}(user=$userTurns,assistant=$assistantTurns) " +
+                "candidate[farmId=${candidate.farmId != null},cropId=${candidate.cropId != null}," +
+                "workType=${candidate.workType},workedAt=${candidate.workedAt != null}," +
+                "memoLen=${candidate.memo?.length ?: -1},hasDetail=${hasAnyDetail(candidate)}] " +
+                "missingFields=$missingFields lastAssistantLen=$lastAssistantLen"
+        }
+    }
+
+    private fun hasAnyDetail(candidate: VoiceRecordCandidate): Boolean =
+        candidate.planting != null || candidate.watering != null || candidate.fertilizing != null ||
+            candidate.pestControl != null || candidate.weeding != null || candidate.harvest != null
 
     fun confirm(command: VoiceSessionCommand.Confirm): VoiceSessionResult.Confirmed {
         val session = findSession(command.sessionId, command.memberId)
@@ -174,6 +203,8 @@ class VoiceSessionService(
             ?: throw BusinessException(ErrorCode.VOICE_SESSION_NOT_FOUND)
 
     companion object {
+        private val logger = KotlinLogging.logger {}
+
         private const val MAX_PESTICIDE_CATALOG_ROWS = 200
         private const val MAX_PESTICIDE_OPTIONS = 50
         private const val MAX_PESTS_PER_PESTICIDE = 5
