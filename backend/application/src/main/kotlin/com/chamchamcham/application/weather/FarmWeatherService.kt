@@ -24,7 +24,8 @@ class FarmWeatherService(
     private val weatherParallelFetcher: WeatherParallelFetcher,
     private val shortTermForecastPort: ShortTermForecastPort,
     private val historicalObservationPort: HistoricalObservationPort,
-    private val clock: Clock
+    private val clock: Clock,
+    private val farmingActivityAdvisor: FarmingActivityAdvisor
 ) {
     fun getHome(memberId: UUID, farmId: UUID?): HomeWeather {
         val farm = resolveFarm(memberId, farmId)
@@ -48,7 +49,7 @@ class FarmWeatherService(
         val sources = weatherParallelFetcher.fetchDetail(location)
         val today = LocalDate.now(clock)
 
-        return DetailWeather(
+        val detail = DetailWeather(
             farmId = requireNotNull(farm.id) { "Persisted farm id is required" },
             address = farm.roadAddress,
             observedAt = sources.current.observedAt,
@@ -64,6 +65,7 @@ class FarmWeatherService(
             forecast = buildForecast(today, sources),
             partial = sources.partial
         )
+        return detail.copy(advices = farmingActivityAdvisor.advise(WeatherFlags.from(detail)))
     }
 
     fun getDaily(memberId: UUID, farmId: UUID?, date: LocalDate): DailyWeather {

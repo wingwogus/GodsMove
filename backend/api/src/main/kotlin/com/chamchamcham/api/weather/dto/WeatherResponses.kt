@@ -1,8 +1,10 @@
 package com.chamchamcham.api.weather.dto
 
+import com.chamchamcham.application.weather.AdviceLevel
 import com.chamchamcham.application.weather.DailyForecast
 import com.chamchamcham.application.weather.DailyWeather
 import com.chamchamcham.application.weather.DetailWeather
+import com.chamchamcham.application.weather.FarmingAdvice
 import com.chamchamcham.application.weather.HomeWeather
 import com.chamchamcham.application.weather.PartialFailure
 import com.chamchamcham.application.weather.WeatherCondition
@@ -103,12 +105,37 @@ object WeatherResponses {
         }
     }
 
+    data class AdviceLevelResponse(val code: String, val text: String) {
+        companion object {
+            fun from(level: AdviceLevel): AdviceLevelResponse =
+                AdviceLevelResponse(code = level.name, text = level.text)
+        }
+    }
+
+    data class AdviceResponse(
+        val workType: String,
+        val workTypeLabel: String,
+        val level: AdviceLevelResponse,
+        val message: String
+    ) {
+        companion object {
+            fun from(advice: FarmingAdvice): AdviceResponse =
+                AdviceResponse(
+                    workType = advice.workType.name,
+                    workTypeLabel = advice.workType.label,
+                    level = AdviceLevelResponse.from(advice.level),
+                    message = advice.message
+                )
+        }
+    }
+
     data class DetailResponse(
         val farmId: UUID,
         val address: String,
         val observedAt: LocalDateTime,
         val current: CurrentResponse,
         val forecast: List<ForecastResponse>,
+        val advices: List<AdviceResponse>,
         val partial: PartialResponse
     ) {
         companion object {
@@ -119,6 +146,7 @@ object WeatherResponses {
                     observedAt = result.observedAt,
                     current = CurrentResponse.from(result),
                     forecast = result.forecast.map(ForecastResponse::from),
+                    advices = result.advices.map(AdviceResponse::from),
                     partial = PartialResponse.from(result.partial)
                 )
         }
