@@ -12,10 +12,12 @@ import com.chamchamcham.domain.farming.PlantingRecordRepository
 import com.chamchamcham.domain.farming.WateringRecordRepository
 import com.chamchamcham.domain.farming.WeedingRecordRepository
 import com.chamchamcham.domain.farming.WorkType
+import com.chamchamcham.application.weather.WeatherFallback
 import org.springframework.stereotype.Component
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.util.UUID
 
 @Component
@@ -154,19 +156,35 @@ class RecordFeedbackContextAssembler(
             weatherPort.fetch(latitude, longitude, WEATHER_LIMIT_DAYS) to emptyList()
         } catch (exception: BusinessException) {
             when (exception.errorCode) {
+                // 좌표 문제는 외부 API 장애가 아니라 데이터 부재라 폴백 대상이 아니다(null 유지).
                 ErrorCode.WEATHER_LOCATION_REQUIRED -> null to listOf(WEATHER_LOCATION_UNAVAILABLE)
-                ErrorCode.WEATHER_PROVIDER_UNAVAILABLE -> null to listOf(WEATHER_PROVIDER_UNAVAILABLE)
+                // 외부 provider 장애는 서비스가 멈추지 않도록 폴백 날씨를 제공한다. degraded 사유는 남긴다.
+                ErrorCode.WEATHER_PROVIDER_UNAVAILABLE -> fallbackWeather() to listOf(WEATHER_PROVIDER_UNAVAILABLE)
                 else -> throw exception
             }
         } catch (_: RuntimeException) {
-            null to listOf(WEATHER_PROVIDER_UNAVAILABLE)
+            fallbackWeather() to listOf(WEATHER_PROVIDER_UNAVAILABLE)
         }
     }
+
+    // 외부 날씨 API 장애 시의 고정 폴백 라이브 날씨. 가짜 데이터에 위험경보를 붙이지 않으려고
+    // forecastDays는 비우고 riskFlags도 없다. source로 폴백임을 추적 가능하게 한다.
+    private fun fallbackWeather(): RecordFeedbackLiveWeather =
+        RecordFeedbackLiveWeather(
+            current = RecordFeedbackCurrentWeather(
+                temperatureC = WeatherFallback.TEMPERATURE,
+                skyCondition = WeatherFallback.CONDITION.text,
+                observedAt = LocalDateTime.now(clock),
+            ),
+            forecastDays = emptyList(),
+            source = FALLBACK_SOURCE,
+        )
 
     private companion object {
         const val WEATHER_LIMIT_DAYS = 7
         const val WEATHER_LOCATION_UNAVAILABLE = "weather_location_unavailable"
         const val WEATHER_PROVIDER_UNAVAILABLE = "weather_provider_unavailable"
         const val WEATHER_SKIPPED_FOR_HISTORICAL_RECORD = "weather_skipped_for_historical_record"
+        const val FALLBACK_SOURCE = "FALLBACK"
     }
 }
