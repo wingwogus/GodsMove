@@ -100,8 +100,6 @@ struct RecordListView: View {
                     .frame(height: 56)
 
                 if selectedTab == 0 {
-                    filterChipRow
-                        .collapsibleFilterRow(isVisible: isRecordFilterRowVisible)
                     recordList
                 } else {
                     ReportListView(viewModel: reportViewModel)
@@ -251,39 +249,47 @@ struct RecordListView: View {
     // MARK: - List
 
     private var recordList: some View {
-        ScrollView {
-            FilterRowPanObserver(isVisible: $isRecordFilterRowVisible)
-                .frame(height: 1)
-            if viewModel.isLoading {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .padding(.top, Spacing.xl)
-            } else if let errorMessage = viewModel.errorMessage {
-                emptyState(text: errorMessage, systemImage: "exclamationmark.triangle")
-            } else if viewModel.records.isEmpty {
-                emptyState(
-                    text: viewModel.filter.isEmpty
-                        ? "아직 작성한 영농 기록이 없어요.\n오른쪽 아래 + 버튼으로 첫 기록을 남겨보세요."
-                        : "선택한 조건에 맞는 기록이 없어요.\n다른 작물이나 기간으로 다시 확인해보세요.",
-                    systemImage: "square.stack.3d.up.slash"
-                )
-            } else {
-                LazyVStack(spacing: 20) {
-                    ForEach(viewModel.records) { record in
-                        NavigationLink(value: record.id) {
-                            RecordRow(record: record)
+        ZStack(alignment: .top) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    FilterRowPanObserver(isVisible: $isRecordFilterRowVisible)
+                        .frame(height: 1)
+                    if viewModel.isLoading {
+                        ProgressView()
+                            .frame(maxWidth: .infinity)
+                            .padding(.top, Spacing.xl)
+                    } else if let errorMessage = viewModel.errorMessage {
+                        emptyState(text: errorMessage, systemImage: "exclamationmark.triangle")
+                    } else if viewModel.records.isEmpty {
+                        emptyState(
+                            text: viewModel.filter.isEmpty
+                                ? "아직 작성한 영농 기록이 없어요.\n오른쪽 아래 + 버튼으로 첫 기록을 남겨보세요."
+                                : "선택한 조건에 맞는 기록이 없어요.\n다른 작물이나 기간으로 다시 확인해보세요.",
+                            systemImage: "square.stack.3d.up.slash"
+                        )
+                    } else {
+                        LazyVStack(spacing: 20) {
+                            ForEach(viewModel.records) { record in
+                                NavigationLink(value: record.id) {
+                                    RecordRow(record: record)
+                                }
+                                .buttonStyle(.plain)
+                                .task { await viewModel.loadMoreIfNeeded(currentItem: record) }
+                            }
+                            if viewModel.isLoadingMore {
+                                ProgressView().padding(Spacing.md)
+                            }
                         }
-                        .buttonStyle(.plain)
-                        .task { await viewModel.loadMoreIfNeeded(currentItem: record) }
-                    }
-                    if viewModel.isLoadingMore {
-                        ProgressView().padding(Spacing.md)
+                        .padding(.top, 20)
+                        .padding(.bottom, 112)
                     }
                 }
-                .padding(.top, 20)
-                .padding(.bottom, 112)
+                .padding(.top, isRecordFilterRowVisible ? 60 : 0)
             }
+            filterChipRow
+                .filterRowOverlay(isVisible: isRecordFilterRowVisible)
         }
+        .clipped()
         .refreshable {
             // `reload()`이 fetch 전에 `isLoading = true`로 body 리빌드를 유발하면, `.refreshable`이
             // 소유한 Task가 그 리빌드로 취소되면서 진행 중인 URLSession 호출이 `URLError(.cancelled)`를

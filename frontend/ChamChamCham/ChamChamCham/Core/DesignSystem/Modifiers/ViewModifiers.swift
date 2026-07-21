@@ -34,21 +34,22 @@ extension View {
         }
     }
 
-    func collapsibleFilterRow(isVisible: Bool, height: CGFloat = 60) -> some View {
-        modifier(CollapsibleFilterRowModifier(isVisible: isVisible, height: height))
+    func filterRowOverlay(isVisible: Bool, height: CGFloat = 60) -> some View {
+        modifier(FilterRowOverlayModifier(isVisible: isVisible, height: height))
     }
 
 }
 
-private struct CollapsibleFilterRowModifier: ViewModifier {
+private struct FilterRowOverlayModifier: ViewModifier {
     let isVisible: Bool
     let height: CGFloat
 
     func body(content: Content) -> some View {
         content
-            .frame(height: isVisible ? height : 0)
+            .frame(height: height)
             .opacity(isVisible ? 1 : 0)
-            .clipped()
+            .offset(y: isVisible ? 0 : -height)
+            .allowsHitTesting(isVisible)
     }
 }
 

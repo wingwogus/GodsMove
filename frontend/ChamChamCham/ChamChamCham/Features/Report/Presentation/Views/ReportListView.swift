@@ -17,8 +17,6 @@ struct ReportListView: View {
         GeometryReader { proxy in
             let inset = ReportListLayout.horizontalInset(availableWidth: proxy.size.width)
             VStack(spacing: 0) {
-                filterRow(horizontalInset: inset)
-                    .collapsibleFilterRow(isVisible: isFilterRowVisible)
                 reportList(horizontalInset: inset)
             }
         }
@@ -71,40 +69,48 @@ struct ReportListView: View {
     }
 
     private func reportList(horizontalInset: CGFloat) -> some View {
-        ScrollView {
-            FilterRowPanObserver(isVisible: $isFilterRowVisible)
-                .frame(height: 1)
-            LazyVStack(spacing: ReportListLayout.cardSpacing) {
-                if viewModel.isShowingCachedData {
-                    cachedBanner
-                }
-
-                if viewModel.isLoading, viewModel.reports.isEmpty {
-                    loadingState
-                } else if let errorMessage = viewModel.errorMessage, viewModel.reports.isEmpty {
-                    errorState(errorMessage)
-                } else if viewModel.reports.isEmpty {
-                    emptyState
-                } else {
-                    ForEach(viewModel.reports) { report in
-                        NavigationLink(value: ReportRoute.detail(report.key)) {
-                            ReportListCard(summary: report)
+        ZStack(alignment: .top) {
+            ScrollView {
+                VStack(spacing: 0) {
+                    FilterRowPanObserver(isVisible: $isFilterRowVisible)
+                        .frame(height: 1)
+                    LazyVStack(spacing: ReportListLayout.cardSpacing) {
+                        if viewModel.isShowingCachedData {
+                            cachedBanner
                         }
-                        .buttonStyle(.plain)
-                        .task { await viewModel.loadMoreIfNeeded(currentItem: report) }
-                    }
 
-                    if viewModel.isLoadingMore {
-                        ProgressView()
-                            .padding(Spacing.md)
-                            .accessibilityLabel("리포트 더 불러오는 중")
+                        if viewModel.isLoading, viewModel.reports.isEmpty {
+                            loadingState
+                        } else if let errorMessage = viewModel.errorMessage, viewModel.reports.isEmpty {
+                            errorState(errorMessage)
+                        } else if viewModel.reports.isEmpty {
+                            emptyState
+                        } else {
+                            ForEach(viewModel.reports) { report in
+                                NavigationLink(value: ReportRoute.detail(report.key)) {
+                                    ReportListCard(summary: report)
+                                }
+                                .buttonStyle(.plain)
+                                .task { await viewModel.loadMoreIfNeeded(currentItem: report) }
+                            }
+
+                            if viewModel.isLoadingMore {
+                                ProgressView()
+                                    .padding(Spacing.md)
+                                    .accessibilityLabel("리포트 더 불러오는 중")
+                            }
+                        }
                     }
+                    .padding(.horizontal, horizontalInset)
+                    .padding(.top, 20)
+                    .padding(.bottom, Spacing.xl)
                 }
+                .padding(.top, isFilterRowVisible ? 60 : 0)
             }
-            .padding(.horizontal, horizontalInset)
-            .padding(.top, 20)
-            .padding(.bottom, Spacing.xl)
+            filterRow(horizontalInset: horizontalInset)
+                .filterRowOverlay(isVisible: isFilterRowVisible)
         }
+        .clipped()
         .refreshable { await viewModel.refresh() }
         .overlay(alignment: .top) {
             if viewModel.isRefreshing {
