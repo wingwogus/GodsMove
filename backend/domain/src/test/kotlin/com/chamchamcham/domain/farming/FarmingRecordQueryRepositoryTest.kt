@@ -303,15 +303,15 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
     }
 
     @Test
-    fun `search exposes pesticide brand name for pest control records and leaves other summary fields null`() {
+    fun `search exposes pesticide item name for pest control records and leaves other summary fields null`() {
         val record = persistRecord(workType = WorkType.PEST_CONTROL)
-        persistPestControlDetail(record, pesticideName = "친환경약제")
+        persistPestControlDetail(record, pesticideName = "만코제브 수화제", brandName = "빔")
         entityManager.flush()
         entityManager.clear()
 
         val row = queryRepository.search(condition()).rows.single()
 
-        assertThat(row.pesticideName).isEqualTo("친환경약제")
+        assertThat(row.pesticideName).isEqualTo("만코제브 수화제")
         assertThat(row.irrigationMethod).isNull()
         assertThat(row.harvestAmount).isNull()
         assertThat(row.weedingMethod).isNull()
@@ -506,9 +506,9 @@ class FarmingRecordQueryRepositoryTest @Autowired constructor(
         )
     }
 
-    private fun persistPestControlDetail(record: FarmingRecord, pesticideName: String) {
+    private fun persistPestControlDetail(record: FarmingRecord, pesticideName: String, brandName: String = pesticideName) {
         val pesticide = persist(
-            Pesticide(itemName = pesticideName, brandName = pesticideName),
+            Pesticide(itemName = pesticideName, brandName = brandName),
             now
         )
         persist(

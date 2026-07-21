@@ -354,7 +354,7 @@ class FarmingRecordService(
             WorkType.PEST_CONTROL -> pestControl = pestControlRecordRepository.findByRecord_Id(recordId)?.let {
                 FarmingRecordResult.PestControlDetail(
                     pesticideId = requireNotNull(it.pesticide.id) { "Persisted pesticide id is required" },
-                    pesticideName = it.pesticide.brandName,
+                    pesticideName = it.pesticide.itemName,
                     pesticideAmount = it.pesticideAmount,
                     pesticideAmountUnit = it.pesticideAmountUnit,
                     totalSprayAmount = it.totalSprayAmount,

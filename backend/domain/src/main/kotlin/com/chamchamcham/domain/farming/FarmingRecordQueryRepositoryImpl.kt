@@ -106,7 +106,7 @@ class FarmingRecordQueryRepositoryImpl(
 
         val query = entityManager.createQuery(
             """
-            select r, w.irrigationMethod, h.harvestAmount, pest.brandName, wd.weedingMethod, pl.plantingMethod, fz.materialName
+            select r, w.irrigationMethod, h.harvestAmount, pest.itemName, wd.weedingMethod, pl.plantingMethod, fz.materialName
             from FarmingRecord r
             left join WateringRecord w on w.record = r
             left join HarvestRecord h on h.record = r

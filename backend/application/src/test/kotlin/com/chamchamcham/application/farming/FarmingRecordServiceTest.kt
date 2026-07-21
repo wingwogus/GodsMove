@@ -813,6 +813,30 @@ class FarmingRecordServiceTest {
     }
 
     @Test
+    fun `getDetail exposes selected pesticide item name instead of brand name`() {
+        val record = existingRecord(workType = WorkType.PEST_CONTROL)
+        setTimestamps(record, LocalDateTime.of(2026, 6, 1, 9, 0))
+        val pesticideId = UUID.randomUUID()
+        val pesticide = Pesticide(id = pesticideId, itemName = "만코제브 수화제", brandName = "빔")
+        `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(record)
+        `when`(farmingRecordMediaRepository.findByRecord_Id(recordId)).thenReturn(emptyList())
+        `when`(pestControlRecordRepository.findByRecord_Id(recordId)).thenReturn(
+            PestControlRecord(
+                record = record,
+                pesticide = pesticide,
+                pesticideAmount = BigDecimal.ONE,
+                pesticideAmountUnit = PesticideAmountUnit.ML,
+                totalSprayAmount = BigDecimal.TEN,
+                totalSprayAmountUnit = SprayAmountUnit.ML,
+            )
+        )
+
+        val detail = service.getDetail(memberId, recordId)
+
+        assertEquals("만코제브 수화제", detail.pestControl?.pesticideName)
+    }
+
+    @Test
     fun `getDetail throws not found for missing or deleted record`() {
         `when`(farmingRecordRepository.findByIdAndIsDeletedFalse(recordId)).thenReturn(null)
 
