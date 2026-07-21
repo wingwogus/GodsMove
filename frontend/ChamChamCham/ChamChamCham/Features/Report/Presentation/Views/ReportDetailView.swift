@@ -76,7 +76,7 @@ struct ReportDetailView: View {
                         onRefresh: { Task { await viewModel.refreshFeedback() } },
                         onRegenerate: { Task { await viewModel.regenerate() } }
                     )
-                    historyLink
+//                    historyLink
                 }
                 .padding(.horizontal, inset)
                 .padding(.top, 12)

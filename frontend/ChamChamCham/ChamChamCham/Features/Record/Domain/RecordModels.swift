@@ -73,6 +73,63 @@ struct FarmingRecordSummary: Identifiable, Hashable, Sendable {
     let weatherCondition: String
     let weatherTemperature: Int
     let workedAt: Date
+    /// workType별 2번째 뱃지용 상세값. 해당 활동유형에서만 값이 있고 나머지는 nil(PRUNING/ETC는 전부 nil → 2번째 뱃지 없음).
+    let plantingMethod: PlantingMethod?
+    let irrigationMethod: IrrigationMethod?
+    let materialName: String?
+    let pesticideName: String?
+    let weedingMethod: WeedingMethod?
+    let harvestAmount: Double?
+
+    init(
+        id: UUID,
+        cropId: UUID,
+        cropName: String,
+        workType: WorkType,
+        memoPreview: String,
+        thumbnailUrl: String?,
+        weatherCondition: String,
+        weatherTemperature: Int,
+        workedAt: Date,
+        plantingMethod: PlantingMethod? = nil,
+        irrigationMethod: IrrigationMethod? = nil,
+        materialName: String? = nil,
+        pesticideName: String? = nil,
+        weedingMethod: WeedingMethod? = nil,
+        harvestAmount: Double? = nil
+    ) {
+        self.id = id
+        self.cropId = cropId
+        self.cropName = cropName
+        self.workType = workType
+        self.memoPreview = memoPreview
+        self.thumbnailUrl = thumbnailUrl
+        self.weatherCondition = weatherCondition
+        self.weatherTemperature = weatherTemperature
+        self.workedAt = workedAt
+        self.plantingMethod = plantingMethod
+        self.irrigationMethod = irrigationMethod
+        self.materialName = materialName
+        self.pesticideName = pesticideName
+        self.weedingMethod = weedingMethod
+        self.harvestAmount = harvestAmount
+    }
+
+    /// 2번째 뱃지에 보여줄 workType별 상세 라벨. 값이 없으면(PRUNING/ETC 포함) nil — 뱃지 자체를 숨긴다.
+    var detailBadgeLabel: String? {
+        switch workType {
+        case .planting: plantingMethod?.label
+        case .watering: irrigationMethod?.label
+        case .fertilizing: materialName
+        case .pestControl: pesticideName
+        case .weeding: weedingMethod?.label
+        case .harvest: harvestAmount.map { amount in
+            let rounded = amount == amount.rounded() ? String(Int(amount)) : String(amount)
+            return "\(rounded)kg"
+        }
+        case .pruning, .etc: nil
+        }
+    }
 }
 
 /// One cursor page of records. `nextCursor == nil` means there are no more pages.

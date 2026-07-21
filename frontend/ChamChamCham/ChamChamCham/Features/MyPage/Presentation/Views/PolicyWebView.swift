@@ -7,8 +7,10 @@
 
 import SwiftUI
 
-/// Route pushed from `SettingsView`'s policy link rows onto its `NavigationStack`.
-struct PolicyLink: Hashable {
+/// Route pushed from `SettingsView`'s policy link rows onto its `NavigationStack`, and also presented
+/// as a sheet from `LandingView` (which has no navigation stack of its own to push onto).
+struct PolicyLink: Hashable, Identifiable {
+    var id: URL { url }
     let title: String
     let url: URL
 

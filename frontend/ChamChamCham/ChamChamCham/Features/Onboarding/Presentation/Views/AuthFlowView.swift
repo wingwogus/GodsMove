@@ -13,6 +13,7 @@ struct AuthFlowView: View {
     @State private var authViewModel: AuthViewModel
     @Environment(\.scenePhase) private var scenePhase
     @Environment(AppState.self) private var appState
+    @State private var isResumePromptPresented = false
 
     init(container: DIContainer) {
         self.container = container
@@ -48,13 +49,14 @@ struct AuthFlowView: View {
             if appState.isAuthenticated, viewModel.currentStep == .landing {
                 viewModel.continueAfterAuthentication()
             }
+            isResumePromptPresented = appState.isAuthenticated && viewModel.shouldShowResumePrompt
+        }
+        .onChange(of: viewModel.shouldShowResumePrompt) { _, newValue in
+            isResumePromptPresented = appState.isAuthenticated && newValue
         }
         .alert(
             "이전 온보딩을 이어서 할까요?",
-            isPresented: Binding(
-                get: { appState.isAuthenticated && viewModel.shouldShowResumePrompt },
-                set: { _ in }
-            )
+            isPresented: $isResumePromptPresented
         ) {
             Button("이어서 하기") {
                 viewModel.resumeSavedDraft()

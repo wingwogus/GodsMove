@@ -4,11 +4,14 @@ import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import com.chamchamcham.domain.farm.Farm
 import com.chamchamcham.domain.farm.FarmRepository
+import mu.KotlinLogging
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
 import java.util.UUID
+
+private val logger = KotlinLogging.logger {}
 
 /**
  * 농지 날씨 유스케이스 3개. 기상청 API를 모른다 — 병렬 조립은 [WeatherParallelFetcher]에,
@@ -76,11 +79,22 @@ class FarmWeatherService(
         val location = toLocation(farm)
 
         // 오늘은 단기예보(todayRange)에서, 과거는 ASOS에서 — 기상청이 오늘 ASOS를 주지 않는다.
-        return if (date == today) {
-            todayDailyWeather(location, date)
-        } else {
-            historicalObservationPort.fetch(location, date)
-                ?: throw BusinessException(ErrorCode.WEATHER_DAILY_DATA_NOT_FOUND)
+        return try {
+            if (date == today) {
+                todayDailyWeather(location, date)
+            } else {
+                historicalObservationPort.fetch(location, date)
+                    ?: throw BusinessException(ErrorCode.WEATHER_DAILY_DATA_NOT_FOUND)
+            }
+        } catch (exception: BusinessException) {
+            // 외부 provider 장애(해외 VPN·기상청 장애)면 서비스가 멈추지 않도록 폴백을 반환한다.
+            // 입력 검증(미래/과거)과 실데이터 부재(404)는 그대로 전파한다.
+            if (exception.errorCode == ErrorCode.WEATHER_PROVIDER_UNAVAILABLE) {
+                logger.warn { "weather daily fallback applied (provider unavailable) date=$date" }
+                WeatherFallback.dailyWeather(date)
+            } else {
+                throw exception
+            }
         }
     }
 

@@ -364,8 +364,8 @@ struct RecordListView: View {
 /// One row in the record list (Figma `list`, size `large`). Maps `RecordSummaryResponse` fields onto the
 /// existing `AppListItem(size: .large)`.
 ///
-/// Field mapping (to confirm with product — see capture doc): badges = [작물, 활동유형], title = 메모 미리보기,
-/// caption = 날씨, date = 작업일(MM/dd), thumbnail = 첨부 사진.
+/// Field mapping (to confirm with product — see capture doc): badges = [작물, workType별 상세값(없으면 숨김)],
+/// title = 메모 미리보기, caption = 날씨, date = 작업일(MM/dd), thumbnail = 첨부 사진.
 struct RecordRow: View {
     let record: FarmingRecordSummary
     var showsDivider: Bool = true
@@ -375,15 +375,20 @@ struct RecordRow: View {
             size: .large,
             title: record.workType.label,
             caption: record.memoPreview,
-            badges: [
-                AppListItemBadge(record.cropName, style: .solidPastel, variant: .primary),
-                AppListItemBadge(record.workType.label),
-            ],
+            badges: badges,
             dateText: dateText,
             showsDivider: showsDivider
         ) {
             RecordRemoteImage(url: record.thumbnailUrl, workType: record.workType)
         }
+    }
+
+    private var badges: [AppListItemBadge] {
+        var badges = [AppListItemBadge(record.cropName, style: .solidPastel, variant: .primary)]
+        if let detailLabel = record.detailBadgeLabel {
+            badges.append(AppListItemBadge(detailLabel))
+        }
+        return badges
     }
 
     private var weatherText: String {

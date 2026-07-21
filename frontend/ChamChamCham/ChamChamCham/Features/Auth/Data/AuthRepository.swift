@@ -58,6 +58,7 @@ struct RemoteAuthRepository: AuthRepository {
     func logout() async throws {
         let _: EmptyDTO = try await apiClient.send(AuthEndpoint.logout)
         await authTokenStore.clear()
+        OnboardingDraftStore().clear()
     }
 
     /// Hard-deletes the member on the backend (DB cascade removes owned data, existing access
@@ -65,6 +66,7 @@ struct RemoteAuthRepository: AuthRepository {
     func withdraw() async throws {
         let _: EmptyDTO = try await apiClient.send(MemberEndpoint.withdraw)
         await authTokenStore.clear()
+        OnboardingDraftStore().clear()
     }
 
     /// Every provider's login call returns the same token-bearing shape — save to Keychain right where the

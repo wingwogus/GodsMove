@@ -1,13 +1,11 @@
 package com.chamchamcham.application.weather
 
-import com.chamchamcham.application.exception.business.BusinessException
 import mu.KotlinLogging
 import org.springframework.beans.factory.DisposableBean
 import org.springframework.stereotype.Component
 import java.time.Clock
 import java.time.LocalDate
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.CompletionException
 import java.util.concurrent.Executors
 
 private val logger = KotlinLogging.logger {}
@@ -64,32 +62,36 @@ class WeatherParallelFetcher(
         val latestFuture = supplyLatest(location)
         val todayRangeFuture = supplyTodayRange(location)
         // D4 날짜는 호출자가 아니라 여기서 Clock으로 계산한다 — 인자 없는 LocalDate.now() 금지.
-        val d4Date = LocalDate.now(clock).plusDays(4)
+        val today = LocalDate.now(clock)
+        val d4Date = today.plusDays(4)
         val midFuture = supplyMidTerm(location, d4Date)
         val uvFuture = supplyUvIndex(location)
 
-        val current = joinRequired(currentFuture)
-        val latest = latestFuture.join()
-        val todayRange = todayRangeFuture.join()
-        val midTermD4 = midFuture.join()
-        val uvIndex = uvFuture.join()
+        val currentRaw = currentFuture.join()
+        val latestRaw = latestFuture.join()
+        val todayRangeRaw = todayRangeFuture.join()
+        val midTermD4Raw = midFuture.join()
+        val uvIndexRaw = uvFuture.join()
 
         // 날짜 존재가 아니라 온도까지 있어야 D4를 확보한 것이다 — 단기예보는 D4를 온도 없는
         // 반쪽짜리로 줄 때가 있고, 그때 서비스는 중기예보를 쓴다(DailyForecast.hasTemperatureRange).
-        val d4FromLatest = latest?.dailyForecasts?.any { it.date == d4Date && it.hasTemperatureRange } ?: false
+        val d4FromLatest = latestRaw?.dailyForecasts?.any { it.date == d4Date && it.hasTemperatureRange } ?: false
+        // missing 판정은 폴백 치환 전 원본 nullness로 한다 — 폴백으로 채워도 degraded는 정직하게 유지.
         val partial = PartialFailure.of(
-            "todayMinMax" to (todayRange == null),
-            "forecast" to (latest == null),
-            "forecast.D4" to (!d4FromLatest && midTermD4 == null),
-            "uvIndex" to (uvIndex == null)
+            "current" to (currentRaw == null),
+            "todayMinMax" to (todayRangeRaw == null),
+            "forecast" to (latestRaw == null),
+            "forecast.D4" to (!d4FromLatest && midTermD4Raw == null),
+            "uvIndex" to (uvIndexRaw == null)
         )
 
+        val providerDown = currentRaw == null
         return DetailSources(
-            current = current,
-            latest = latest,
-            todayRange = todayRange,
-            midTermD4 = midTermD4,
-            uvIndex = uvIndex,
+            current = currentRaw ?: WeatherFallback.currentObservation(clock),
+            latest = latestRaw ?: fallbackIfProviderDown(providerDown) { WeatherFallback.shortTermForecast(today) },
+            todayRange = todayRangeRaw ?: fallbackIfProviderDown(providerDown) { WeatherFallback.dailyForecast(today) },
+            midTermD4 = midTermD4Raw ?: fallbackIfProviderDown(providerDown) { WeatherFallback.dailyForecast(d4Date) },
+            uvIndex = uvIndexRaw ?: fallbackIfProviderDown(providerDown) { WeatherFallback.UV_INDEX },
             partial = partial
         )
     }
@@ -99,20 +101,38 @@ class WeatherParallelFetcher(
         val latestFuture = supplyLatest(location)
         val todayRangeFuture = supplyTodayRange(location)
 
-        val current = joinRequired(currentFuture)
-        val latest = latestFuture.join()
-        val todayRange = todayRangeFuture.join()
+        val currentRaw = currentFuture.join()
+        val latestRaw = latestFuture.join()
+        val todayRangeRaw = todayRangeFuture.join()
 
         val partial = PartialFailure.of(
-            "todayMinMax" to (todayRange == null),
-            "forecast" to (latest == null)
+            "current" to (currentRaw == null),
+            "todayMinMax" to (todayRangeRaw == null),
+            "forecast" to (latestRaw == null)
         )
 
-        return HomeSources(current = current, latest = latest, todayRange = todayRange, partial = partial)
+        val providerDown = currentRaw == null
+        val today = LocalDate.now(clock)
+        return HomeSources(
+            current = currentRaw ?: WeatherFallback.currentObservation(clock),
+            latest = latestRaw ?: fallbackIfProviderDown(providerDown) { WeatherFallback.shortTermForecast(today) },
+            todayRange = todayRangeRaw ?: fallbackIfProviderDown(providerDown) { WeatherFallback.dailyForecast(today) },
+            partial = partial
+        )
     }
 
-    private fun supplyCurrent(location: WeatherLocation): CompletableFuture<CurrentObservation> =
-        CompletableFuture.supplyAsync({ currentObservationPort.fetch(location) }, executor)
+    // 필수 소스(current) 실패 = 외부 provider 전체 장애(해외 VPN·기상청 장애)로 보고 나머지도 폴백으로
+    // 채운다. current가 살아있는 부분 결측은 예전처럼 null로 둔다 — 없는 값을 지어내지 않기 위해서다.
+    private fun <T> fallbackIfProviderDown(providerDown: Boolean, fallback: () -> T): T? =
+        if (providerDown) fallback() else null
+
+    // 실황도 이제 예외를 던지지 않는다 — 실패하면 null로 흡수하고, 호출부가 provider 장애로 판단해
+    // 폴백으로 채운다(과거엔 여기서 503이 요청 전체를 실패시켰다).
+    private fun supplyCurrent(location: WeatherLocation): CompletableFuture<CurrentObservation?> =
+        CompletableFuture.supplyAsync(
+            { fetchOptional("current") { currentObservationPort.fetch(location) } },
+            executor
+        )
 
     private fun supplyLatest(location: WeatherLocation): CompletableFuture<ShortTermForecast?> =
         CompletableFuture.supplyAsync(
@@ -143,16 +163,6 @@ class WeatherParallelFetcher(
         } catch (ex: Exception) {
             logger.warn { "weather optional source failed: $sourceName (${ex.javaClass.simpleName})" }
             null
-        }
-
-    // join()은 태스크 예외를 CompletionException으로 감싼다. 그대로 두면 GlobalExceptionHandler가
-    // BusinessException 매칭에 실패해 503이어야 할 게 500으로 샌다. cause가 BusinessException이면 언랩한다.
-    private fun joinRequired(future: CompletableFuture<CurrentObservation>): CurrentObservation =
-        try {
-            future.join()
-        } catch (ex: CompletionException) {
-            val cause = ex.cause
-            if (cause is BusinessException) throw cause else throw ex
         }
 
     override fun destroy() {

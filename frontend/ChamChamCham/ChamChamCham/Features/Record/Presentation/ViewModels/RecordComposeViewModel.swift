@@ -333,7 +333,7 @@ final class RecordComposeViewModel {
 
     var canSubmit: Bool {
         farmCropError == nil && workTypeError == nil && memoError == nil
-            && weather != nil && detailValid && !isSubmitting
+            && weather != nil && detailValid && !isSubmitting && !isUploadingImage
     }
 
     // MARK: - 제출

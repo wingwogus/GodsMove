@@ -32,23 +32,6 @@ struct FarmLocationMapSection: View {
     /// 현재 위치 승인을 못 받았을 때의 폴백 카메라(서울 시청).
     private static let seoul = CLLocationCoordinate2D(latitude: 37.5665, longitude: 126.9780)
 
-    /// 대한민국을 넉넉히 덮는 근사 바운딩박스(제주·울릉도·독도 포함). 정확한 국경/EEZ가 아니라
-    /// 서비스 지역 제한용 사각 경계다 — 이 앱은 대한민국 전용 서비스이므로 지도 팬/탭을 이
-    /// 범위로 제한한다.
-    private static let koreaBounds = (minLat: 33.0, maxLat: 38.65, minLon: 124.5, maxLon: 131.95)
-
-    private static func isWithinKorea(_ coordinate: CLLocationCoordinate2D) -> Bool {
-        (koreaBounds.minLat...koreaBounds.maxLat).contains(coordinate.latitude)
-            && (koreaBounds.minLon...koreaBounds.maxLon).contains(coordinate.longitude)
-    }
-
-    private static func clampedToKorea(_ coordinate: CLLocationCoordinate2D) -> CLLocationCoordinate2D {
-        CLLocationCoordinate2D(
-            latitude: min(max(coordinate.latitude, koreaBounds.minLat), koreaBounds.maxLat),
-            longitude: min(max(coordinate.longitude, koreaBounds.minLon), koreaBounds.maxLon)
-        )
-    }
-
     var body: some View {
         ZStack(alignment: .top) {
             mapSection
@@ -108,17 +91,10 @@ struct FarmLocationMapSection: View {
             }
             .mapStyle(mapStyleIsSatellite ? .hybrid(elevation: .realistic) : .standard)
             .onMapCameraChange { context in
-                let center = context.region.center
-                if Self.isWithinKorea(center) {
-                    mapCenter = center
-                } else {
-                    // 대한민국 밖으로 팬 하면 경계 안으로 튕겨 들어온다(서비스 지역 제한).
-                    setCamera(to: Self.clampedToKorea(center), span: cameraSpanMeters)
-                }
+                mapCenter = context.region.center
             }
             .onTapGesture { screenPoint in
-                guard let coordinate = proxy.convert(screenPoint, from: .local),
-                      Self.isWithinKorea(coordinate) else { return }
+                guard let coordinate = proxy.convert(screenPoint, from: .local) else { return }
                 Task { await viewModel.handleMapTap(at: coordinate) }
             }
         }
@@ -233,7 +209,7 @@ struct FarmLocationMapSection: View {
             case .coordinateUnavailable(let retryable):
                 coordinateUnavailableCard(retryable: retryable)
             case .failed(let message):
-                mapStatusCard { infoBanner(message) }
+                failedCard(message)
             case .idle:
                 EmptyView()
             }
@@ -293,6 +269,20 @@ struct FarmLocationMapSection: View {
                             viewModel.beginDrawing()
                         }
                     }
+                }
+            }
+        }
+    }
+
+    /// 필지 조회·주소 검색 등에서 `noParcelFound`/`coordinateUnavailable`이 아닌 그 외
+    /// 실패(네트워크 미도달 등)의 안내 카드. 다른 실패 카드들과 마찬가지로 "지도에 직접
+    /// 그리기"를 항상 제시해, 해당 서비스가 전혀 응답하지 않아도 등록을 끝낼 수 있게 한다.
+    private func failedCard(_ message: String) -> some View {
+        mapStatusCard {
+            VStack(alignment: .leading, spacing: Spacing.sm) {
+                infoBanner(message)
+                AppButton("지도에 직접 그리기", icon: .asset("edit"), variant: .secondary, size: .small, fullWidth: true) {
+                    viewModel.beginDrawing()
                 }
             }
         }
@@ -384,7 +374,10 @@ struct FarmLocationMapSection: View {
     }
 
     /// 작도 완료 후 역지오코딩된 주소. VWorld는 거리·신뢰도를 검증하지 않으므로 자동 확정하지
-    /// 않고 사용자가 육안으로 확인하도록 노출한다. 실패 시엔 재시도를 제공한다.
+    /// 않고 사용자가 육안으로 확인하도록 노출한다. 자동 조회가 응답하지 않는 경우(해외
+    /// 네트워크 등, 이 앱 특성상 정상적으로 있을 수 있는 경로)에는 상단 주소 필드가 직접 입력
+    /// 가능한 텍스트 필드로 전환된다(`needsManualAddressEntry`, `FarmLocationView`/
+    /// `FarmLocationPickerView` 참고) — 이 카드는 재시도만 제공하고 새 입력 UI를 만들지 않는다.
     @ViewBuilder
     private var drawnAddressSection: some View {
         if let address = viewModel.selectedAddress,
@@ -393,13 +386,17 @@ struct FarmLocationMapSection: View {
                 Text(address.roadAddrPart1.isEmpty ? address.jibunAddr : address.roadAddrPart1)
                     .appTypography(.bodyMedium)
                     .foregroundStyle(Color.Text.default)
-                Text("자동으로 확인된 위치예요. 실제 밭 위치와 다르면 다시 그려주세요.")
-                    .appTypography(.labelMedium)
-                    .foregroundStyle(Color.Text.subtle)
+                Text(
+                    viewModel.isManualAddress
+                        ? "직접 입력한 주소예요. 실제 밭 위치와 다르면 다시 입력해주세요."
+                        : "자동으로 확인된 위치예요. 실제 밭 위치와 다르면 다시 그려주세요."
+                )
+                .appTypography(.labelMedium)
+                .foregroundStyle(Color.Text.subtle)
             }
         } else {
             VStack(alignment: .leading, spacing: Spacing.sm) {
-                infoBanner("이 위치의 주소를 확인하지 못했어요.")
+                infoBanner("이 위치의 주소를 확인하지 못했어요. 위 주소 입력란에 직접 입력해주세요.")
                 AppButton("주소 다시 확인", variant: .neutral, size: .small, fullWidth: true) {
                     Task { await viewModel.retryDrawnAddress() }
                 }

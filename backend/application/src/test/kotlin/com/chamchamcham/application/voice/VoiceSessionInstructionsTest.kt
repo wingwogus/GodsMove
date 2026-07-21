@@ -96,4 +96,36 @@ class VoiceSessionInstructionsTest {
 
         assertThat(instructions).contains("등록된 농지가 없습니다")
     }
+
+    @Test
+    fun `필수값을 다 모아도 사용자에게 완료를 확인한 뒤 저장하도록 지시한다`() {
+        val instructions = build()
+
+        assertThat(instructions).contains("더 기록하거나 덧붙일 내용")
+        assertThat(instructions).contains("사용자가 마쳤다고")
+    }
+
+    @Test
+    fun `저장 전 확인 화면에서 검토·수정 후 저장됨을 안내하도록 지시한다`() {
+        val instructions = build()
+
+        assertThat(instructions).contains("확인 화면에서 검토")
+        assertThat(instructions).contains("자동 저장되는 것이 아님")
+    }
+
+    @Test
+    fun `작업 유형을 특정할 수 없으면 ETC로 분류하도록 지시한다`() {
+        val instructions = build()
+
+        assertThat(instructions).contains("특정할 수 없으면")
+        assertThat(instructions).contains("ETC(기타)로 분류")
+    }
+
+    @Test
+    fun `못 처리한 예외를 사용자에게 인지시키는 규칙을 포함한다`() {
+        val instructions = build()
+
+        assertThat(instructions).contains("확인 화면에서 정확한 농약")
+        assertThat(instructions).contains("한 기록에는 한 작업만")
+    }
 }

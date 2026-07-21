@@ -131,9 +131,14 @@ final class FarmListViewModel {
         let longitude = location?.submissionCoordinate?.longitude ?? farm.longitude
         guard let latitude, let longitude else { return nil }
 
+        // 도로명이 없는 농지는 지번을 roadAddress 자리에 채워 보낸다(백엔드 roadAddress non-null).
+        let roadAddress: String? = location?.selectedAddress.map {
+            $0.roadAddrPart1.isEmpty ? $0.jibunAddr : $0.roadAddrPart1
+        }
+
         return SaveFarmRequestDTO(
             name: name ?? farm.name,
-            roadAddress: location?.selectedAddress?.roadAddrPart1 ?? farm.roadAddress,
+            roadAddress: roadAddress ?? farm.roadAddress,
             jibunAddress: location?.selectedAddress?.jibunAddr ?? farm.jibunAddress,
             latitude: latitude,
             longitude: longitude,
