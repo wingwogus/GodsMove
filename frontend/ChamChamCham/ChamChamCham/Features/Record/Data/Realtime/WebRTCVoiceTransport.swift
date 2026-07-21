@@ -7,6 +7,7 @@
 
 import AVFAudio
 import Foundation
+import os
 @preconcurrency import WebRTC
 
 /// OpenAI Realtime과의 WebRTC 직결 구현. 오디오/이벤트는 백엔드를 거치지 않는다.
@@ -204,6 +205,8 @@ actor WebRTCVoiceTransport: VoiceRealtimeTransport {
 /// WebRTC가 자기 스레드에서 호출하는 델리게이트 전달자. 저장 상태는 Sendable한
 /// continuation과 open 시 1회 보낼 페이로드뿐이며, 모든 콜백은 parse → yield 순수 전달이다.
 final class VoiceRealtimeEventRelay: NSObject {
+    fileprivate static let diagnosticsLog = Logger(subsystem: "ChamChamCham", category: "voice.realtime")
+
     private let continuation: AsyncStream<VoiceRealtimeEvent>.Continuation
     private let onChannelOpenPayload: Data
 
@@ -229,8 +232,37 @@ extension VoiceRealtimeEventRelay: RTCDataChannelDelegate {
     }
 
     func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {
-        guard !buffer.isBinary, let event = RealtimeEventParser.parse(buffer.data) else { return }
+        let event = buffer.isBinary ? nil : RealtimeEventParser.parse(buffer.data)
+        logIncomingEvent(buffer, parsed: event != nil)
+        guard let event else { return }
         continuation.yield(event)
+    }
+
+    /// [진단] "음성 → 작성 화면 전 필드 공백" 버그 추적용. 파서가 nil을 반환해 조용히 폐기되는
+    /// 이벤트까지 포함해 실제로 어떤 oai-event가 오는지, tool 인자가 잡히는지 확인한다.
+    /// 개인정보 보호를 위해 인자 값은 남기지 않고 필드명(키)·길이만 기록한다. 원인 확정 후 제거/게이팅.
+    private func logIncomingEvent(_ buffer: RTCDataBuffer, parsed: Bool) {
+        guard !buffer.isBinary,
+              let json = try? JSONSerialization.jsonObject(with: buffer.data) as? [String: Any],
+              let type = json["type"] as? String else { return }
+
+        guard type.contains("function_call") || type.contains("output_item") else {
+            Self.diagnosticsLog.debug("oai-event type=\(type, privacy: .public) parsed=\(parsed, privacy: .public)")
+            return
+        }
+
+        let item = json["item"] as? [String: Any]
+        let argsString = (json["arguments"] as? String) ?? (item?["arguments"] as? String)
+        let name = (json["name"] as? String) ?? (item?["name"] as? String)
+        let argKeys = argsString
+            .flatMap { $0.data(using: .utf8) }
+            .flatMap { try? JSONSerialization.jsonObject(with: $0) as? [String: Any] }
+            .map { $0.keys.sorted().joined(separator: ",") }
+        Self.diagnosticsLog.debug("""
+        oai-event type=\(type, privacy: .public) parsed=\(parsed, privacy: .public) \
+        name=\(name ?? "nil", privacy: .public) argsLen=\(argsString?.count ?? -1, privacy: .public) \
+        argKeys=[\(argKeys ?? "nil", privacy: .public)]
+        """)
     }
 }
 

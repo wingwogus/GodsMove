@@ -7,6 +7,7 @@
 
 import AVFAudio
 import Foundation
+import os
 
 /// 음성 기록 대화 화면의 상태 머신 (BR-VOICE-001~008, BR-STATE-001).
 ///
@@ -18,6 +19,8 @@ import Foundation
 @MainActor
 @Observable
 final class RecordVoiceComposeViewModel {
+    private static let diagnosticsLog = Logger(subsystem: "ChamChamCham", category: "voice.realtime")
+
     private(set) var phase: VoiceSessionPhase = .idle
     private(set) var transcript: [VoiceTranscriptItem] = []
     /// AI가 지금 답변(발화)하는 중인지. 마이크 상태 안내("AI가 답하고 있어요")에 쓰인다.
@@ -294,6 +297,16 @@ final class RecordVoiceComposeViewModel {
         }
 
         let candidate = toolArgumentsJSON.flatMap(VoiceCandidateMapper.parseToolArguments)
+        // [진단] "음성 → 작성 화면 전 필드 공백" 버그 추적용. tool 인자 캡처 여부와 파싱된
+        // candidate의 필드 유무(값 아님)를 남겨 화면 프리필 결과와 연결한다. 원인 확정 후 제거.
+        Self.diagnosticsLog.debug("""
+        endConversation reason=\(String(describing: reason), privacy: .public) \
+        toolArgsLen=\(self.toolArgumentsJSON?.count ?? -1, privacy: .public) \
+        candidate[farmId=\(candidate?.farmId != nil, privacy: .public),\
+        cropId=\(candidate?.cropId != nil, privacy: .public),\
+        workType=\(candidate?.workType.map { String(describing: $0) } ?? "nil", privacy: .public),\
+        memoLen=\(candidate?.memo?.count ?? -1, privacy: .public)]
+        """)
         let (pesticide, pest) = await resolvePestControl(candidate)
         let candidateDTO = VoiceCandidateMapper.makeCandidateDTO(
             from: candidate, resolvedPesticide: pesticide, resolvedPest: pest, now: Date()
