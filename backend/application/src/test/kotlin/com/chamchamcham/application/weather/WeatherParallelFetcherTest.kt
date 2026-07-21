@@ -3,7 +3,6 @@ package com.chamchamcham.application.weather
 import com.chamchamcham.application.exception.ErrorCode
 import com.chamchamcham.application.exception.business.BusinessException
 import org.assertj.core.api.Assertions.assertThat
-import org.junit.jupiter.api.Assertions.assertThrows
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.extension.ExtendWith
@@ -55,15 +54,47 @@ class WeatherParallelFetcherTest {
     }
 
     @Test
-    fun `필수 소스인 실황이 BusinessException을 던지면 CompletionException이 아니라 그대로 전파된다`() {
+    fun `필수 소스인 실황이 실패하면 요청 전체를 폴백으로 채우고 missing에 current가 담긴다`() {
+        // 해외 VPN·기상청 장애 = 모든 KMA 호출 실패. 예전엔 503으로 요청 전체가 죽었다.
         given(currentObservationPort.fetch(location))
             .willThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+        given(shortTermForecastPort.fetchLatest(location))
+            .willThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+        given(shortTermForecastPort.fetchTodayRange(location))
+            .willThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+        given(midTermForecastPort.fetch(location, d4Date))
+            .willThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+        given(uvIndexPort.fetch(location))
+            .willThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
 
-        val thrown = assertThrows(BusinessException::class.java) {
-            fetcher.fetchDetail(location)
-        }
+        val result = fetcher.fetchDetail(location)
 
-        assertThat(thrown.errorCode).isEqualTo(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE)
+        assertThat(result.current.temperature).isEqualTo(WeatherFallback.TEMPERATURE)
+        assertThat(result.current.precipitationType).isNull()
+        assertThat(result.latest!!.currentSky).isEqualTo(WeatherCondition.CLOUDY)
+        assertThat(result.todayRange!!.minTemperature).isEqualTo(WeatherFallback.MIN_TEMPERATURE)
+        assertThat(result.midTermD4).isNotNull()
+        assertThat(result.uvIndex).isEqualTo(WeatherFallback.UV_INDEX)
+        assertThat(result.partial.degraded).isTrue()
+        assertThat(result.partial.missing).contains("current")
+    }
+
+    @Test
+    fun `fetchHome도 실황 실패 시 흐림 20도 폴백으로 채운다`() {
+        given(currentObservationPort.fetch(location))
+            .willThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+        given(shortTermForecastPort.fetchLatest(location))
+            .willThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+        given(shortTermForecastPort.fetchTodayRange(location))
+            .willThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+
+        val result = fetcher.fetchHome(location)
+
+        assertThat(result.current.temperature).isEqualTo(WeatherFallback.TEMPERATURE)
+        assertThat(result.latest!!.currentSky).isEqualTo(WeatherCondition.CLOUDY)
+        assertThat(result.todayRange!!.minTemperature).isEqualTo(WeatherFallback.MIN_TEMPERATURE)
+        assertThat(result.partial.degraded).isTrue()
+        assertThat(result.partial.missing).contains("current")
     }
 
     @Test
