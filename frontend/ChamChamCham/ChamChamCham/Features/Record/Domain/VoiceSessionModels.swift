@@ -113,6 +113,7 @@ struct VoiceRecordPrefill: Sendable, Hashable {
     var harvestAmount: Double?
     var harvestAmountUnknown: Bool = false
     var medicinalPart: MedicinalPart?
+    var isLastHarvest: Bool = false
     /// 서버 판정 누락 필드(`farmId`/`cropId`/`workType`/`workedAt`/`detail` 리터럴).
     /// 비어 있지 않으면 검토 화면이 진입 즉시 검증 문구를 노출한다(BR-EXCEPTION-005).
     var missingFields: [String] = []

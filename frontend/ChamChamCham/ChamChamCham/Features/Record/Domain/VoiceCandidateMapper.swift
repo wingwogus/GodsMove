@@ -62,6 +62,7 @@ struct VoiceToolCandidate: Sendable, Equatable {
         var medicinalPart: MedicinalPart?
         var source: String?
         var growthPeriod: Int?
+        var isLastHarvest: Bool?
     }
 }
 
@@ -125,7 +126,8 @@ enum VoiceCandidateMapper {
                 amountUnknown: harvest["harvestAmountUnknown"] as? Bool ?? false,
                 medicinalPart: enumValue(harvest["medicinalPart"], MedicinalPart.init(rawValue:)),
                 source: nonBlank(harvest["harvestSource"]),
-                growthPeriod: integer(harvest["growthPeriod"])
+                growthPeriod: integer(harvest["growthPeriod"]),
+                isLastHarvest: harvest["isLastHarvest"] as? Bool
             )
         }
         return candidate
@@ -201,7 +203,7 @@ enum VoiceCandidateMapper {
                 harvestSource: detail.source ?? "CULTIVATED",
                 growthPeriod: growthPeriod,
                 growthPeriodUnit: GrowthPeriodUnit.month.rawValue, // 도구 계약: 재배기간은 개월 고정
-                isLastHarvest: false
+                isLastHarvest: detail.isLastHarvest ?? false
             )
         }
 
@@ -254,6 +256,7 @@ enum VoiceCandidateMapper {
             harvestAmount: candidate?.harvest?.amount,
             harvestAmountUnknown: candidate?.harvest?.amountUnknown ?? false,
             medicinalPart: candidate?.harvest?.medicinalPart,
+            isLastHarvest: candidate?.harvest?.isLastHarvest ?? false,
             missingFields: missingFields
         )
     }
