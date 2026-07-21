@@ -53,11 +53,34 @@ class VoiceSessionInstructionsTest {
     }
 
     @Test
-    fun `농약량 단위와 마지막 수확 여부를 필수로 안내한다`() {
+    fun `농약 사용량 단위와 최종 수확 여부를 필수로 안내한다`() {
         val instructions = build()
 
-        assertThat(instructions).contains("농약량과 그 단위")
-        assertThat(instructions).contains("마지막 수확")
+        assertThat(instructions).contains("농약 사용량과 그 단위")
+        assertThat(instructions).contains("최종 수확")
+    }
+
+    @Test
+    fun `단위가 하나뿐인 항목은 되묻지 말고 자동으로 채우도록 안내한다`() {
+        val instructions = build()
+
+        assertThat(instructions).contains("파종량(g)·모종수(주)·총 살포량(ml)")
+        assertThat(instructions).contains("되묻지 말고 자동으로 채우")
+    }
+
+    @Test
+    fun `감지된 작업 유형의 항목만 묻고 다른 유형 항목은 묻지 않도록 안내한다`() {
+        val instructions = build()
+
+        assertThat(instructions).contains("다른 작업 유형의 항목은 절대 묻지")
+    }
+
+    @Test
+    fun `농장과 작물 목록을 먼저 알려주고 작업 유형은 화면 표기로 말하도록 안내한다`() {
+        val instructions = build()
+
+        assertThat(instructions).contains("먼저 알려주고")
+        assertThat(instructions).contains("물주기")
     }
 
     @Test

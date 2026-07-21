@@ -35,6 +35,11 @@ class FarmingRecordVoiceToolSchemaTest {
     }
 
     @Test
+    fun `수확 상세에 harvestSource 필드가 없다`() {
+        assertThat(detailProperties("harvest")).doesNotContainKey("harvestSource")
+    }
+
+    @Test
     fun `memo는 30~500자 요약을 직접 작성하라고 지시한다`() {
         @Suppress("UNCHECKED_CAST")
         val memo = properties()["memo"] as Map<String, Any?>
