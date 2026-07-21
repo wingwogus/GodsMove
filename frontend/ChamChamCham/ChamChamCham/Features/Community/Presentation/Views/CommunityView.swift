@@ -202,11 +202,11 @@ struct CommunityView: View {
                 }
                 .padding(.top, isCropChipRowVisible ? 60 : 0)
             }
+            .refreshable { await viewModel.reload() }
             cropChipRow
                 .filterRowOverlay(isVisible: isCropChipRowVisible)
         }
         .clipped()
-        .refreshable { await viewModel.reload() }
     }
 
     private var sortSelection: Binding<CommunityPostSort> {

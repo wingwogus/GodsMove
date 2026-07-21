@@ -107,11 +107,11 @@ struct ReportListView: View {
                 }
                 .padding(.top, isFilterRowVisible ? 60 : 0)
             }
+            .refreshable { await viewModel.refresh() }
             filterRow(horizontalInset: horizontalInset)
                 .filterRowOverlay(isVisible: isFilterRowVisible)
         }
         .clipped()
-        .refreshable { await viewModel.refresh() }
         .overlay(alignment: .top) {
             if viewModel.isRefreshing {
                 ProgressView()

@@ -286,17 +286,17 @@ struct RecordListView: View {
                 }
                 .padding(.top, isRecordFilterRowVisible ? 60 : 0)
             }
+            .refreshable {
+                // `reload()`이 fetch 전에 `isLoading = true`로 body 리빌드를 유발하면, `.refreshable`이
+                // 소유한 Task가 그 리빌드로 취소되면서 진행 중인 URLSession 호출이 `URLError(.cancelled)`를
+                // 던지고, 이것이 "네트워크 연결을 확인해주세요"로 오표시된다. 별도 unstructured Task에서
+                // 돌려 취소 경로 밖으로 빼낸다. (HomeView 커밋 7ee27851과 동일한 수정)
+                await Task { await viewModel.reload() }.value
+            }
             filterChipRow
                 .filterRowOverlay(isVisible: isRecordFilterRowVisible)
         }
         .clipped()
-        .refreshable {
-            // `reload()`이 fetch 전에 `isLoading = true`로 body 리빌드를 유발하면, `.refreshable`이
-            // 소유한 Task가 그 리빌드로 취소되면서 진행 중인 URLSession 호출이 `URLError(.cancelled)`를
-            // 던지고, 이것이 "네트워크 연결을 확인해주세요"로 오표시된다. 별도 unstructured Task에서
-            // 돌려 취소 경로 밖으로 빼낸다. (HomeView 커밋 7ee27851과 동일한 수정)
-            await Task { await viewModel.reload() }.value
-        }
     }
 
     private func emptyState(text: String, systemImage: String) -> some View {
