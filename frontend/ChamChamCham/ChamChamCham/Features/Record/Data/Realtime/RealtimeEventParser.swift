@@ -43,11 +43,22 @@ enum RealtimeEventParser {
                   let transcript = json["transcript"] as? String else { return nil }
             return .assistantTranscriptDone(itemId: itemId, text: transcript)
 
+        case "response.function_call_arguments.done":
+            // GA WebRTC 스트림은 완성된 tool 인자를 이 이벤트의 최상위 name/arguments로 보낸다.
+            // (output_item.done만 보면 arguments가 비어 도착해 농지·작물·메모가 통째로 유실될 수 있다.)
+            guard let name = json["name"] as? String,
+                  let arguments = json["arguments"] as? String,
+                  !arguments.isEmpty else { return nil }
+            return .functionCall(name: name, argumentsJSON: arguments)
+
         case "response.output_item.done":
+            // 폴백: 완료된 function_call 아이템에 arguments가 실려 오는 형태도 받는다.
+            // 단, 빈 문자열은 유실 신호이므로 무시한다(function_call_arguments.done을 기다린다).
             guard let item = json["item"] as? [String: Any],
                   item["type"] as? String == "function_call",
                   let name = item["name"] as? String,
-                  let arguments = item["arguments"] as? String else { return nil }
+                  let arguments = item["arguments"] as? String,
+                  !arguments.isEmpty else { return nil }
             return .functionCall(name: name, argumentsJSON: arguments)
 
         case "response.done":

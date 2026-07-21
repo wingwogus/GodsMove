@@ -72,6 +72,20 @@ struct RealtimeEventParserTests {
         #expect(parse(json) == .functionCall(name: "save_farming_record", argumentsJSON: "{\"workType\":\"WATERING\"}"))
     }
 
+    @Test("function_call_arguments.done의 최상위 name/arguments를 캡처한다")
+    func functionCallArgumentsDone() {
+        let json = """
+        {"type":"response.function_call_arguments.done","name":"save_farming_record","arguments":"{\\"workType\\":\\"WATERING\\"}"}
+        """
+        #expect(parse(json) == .functionCall(name: "save_farming_record", argumentsJSON: "{\"workType\":\"WATERING\"}"))
+    }
+
+    @Test("빈 arguments는 유실 신호이므로 functionCall을 만들지 않는다")
+    func emptyArgumentsIgnored() {
+        #expect(parse(#"{"type":"response.function_call_arguments.done","name":"save_farming_record","arguments":""}"#) == nil)
+        #expect(parse(#"{"type":"response.output_item.done","item":{"id":"i","type":"function_call","name":"save_farming_record","arguments":""}}"#) == nil)
+    }
+
     @Test("message 아이템의 output_item.done은 무시한다")
     func messageOutputItemDoneIgnored() {
         let json = """

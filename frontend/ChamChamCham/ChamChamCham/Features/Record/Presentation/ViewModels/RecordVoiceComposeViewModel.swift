@@ -191,6 +191,9 @@ final class RecordVoiceComposeViewModel {
 
         case let .functionCall(name, argumentsJSON):
             guard name == "save_farming_record" else { return }
+            // 빈/공백 인자는 유실 신호다 — "초안 있음"으로 오인해 자동 종료·이동하지 않도록 무시하고,
+            // 이미 받은 유효 인자를 뒤늦게 온 빈 인자가 덮어쓰지 않게 한다(중복 이벤트 방어).
+            guard !argumentsJSON.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return }
             toolArgumentsJSON = argumentsJSON
 
         case .responseCompleted:

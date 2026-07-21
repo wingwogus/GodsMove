@@ -134,7 +134,7 @@ final class RecordComposeViewModel {
 
     func onAppear() async {
         guard farms.isEmpty else { return }
-        farms = (try? await repository.fetchFarmCrops()) ?? []
+        farms = await loadFarmCrops()
         if let prefill {
             applyPrefill(prefill)
         }
@@ -142,6 +142,16 @@ final class RecordComposeViewModel {
         if selectedFarmId == nil, farms.count == 1 {
             selectedFarmId = farms[0].farmId
         }
+    }
+
+    /// 농지 목록은 음성 후보의 농지·작물 매칭에 필요하다. 일시적 네트워크 오류로 목록이 비면
+    /// 음성으로 잡은 농지·작물이 조용히 유실되므로, 조회가 실패(throw)하면 한 번 재시도한다.
+    /// 성공한 빈 목록(등록 농지 없음)은 재시도하지 않는다.
+    private func loadFarmCrops() async -> [FarmWithCrops] {
+        if let farms = try? await repository.fetchFarmCrops() {
+            return farms
+        }
+        return (try? await repository.fetchFarmCrops()) ?? []
     }
 
     /// 음성 후보(AI 초안)를 폼에 채운다. farms 로드 뒤에 불러야 farmId 설정의 didSet이
@@ -185,6 +195,7 @@ final class RecordComposeViewModel {
         harvestAmount = Self.numberText(prefill.harvestAmount)
         harvestAmountUnknown = prefill.harvestAmountUnknown
         medicinalPart = prefill.medicinalPart
+        isLastHarvest = prefill.isLastHarvest
 
         // 서버가 알려준 누락 필드는 진입 즉시 기존 필수값 문구로 표시한다 (BR-EXCEPTION-005).
         if !prefill.missingFields.isEmpty {

@@ -88,6 +88,16 @@ struct VoiceCandidateMapperTests {
         #expect(result?.harvestSource == "FORAGED")
     }
 
+    @Test("수확: isLastHarvest가 오면 DTO와 프리필에 그대로 반영된다")
+    func harvestLastHarvestCarried() {
+        let json = """
+        {"workType":"HARVEST","memo":"m",
+         "harvest":{"harvestAmount":12.5,"growthPeriod":18,"isLastHarvest":true}}
+        """
+        #expect(dto(json).harvest?.isLastHarvest == true)
+        #expect(prefill(json).isLastHarvest == true)
+    }
+
     @Test("수확: 수확량 모름이면 amount는 비운다")
     func harvestAmountUnknown() {
         let json = """

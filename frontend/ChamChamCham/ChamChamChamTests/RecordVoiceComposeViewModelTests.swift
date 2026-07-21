@@ -196,6 +196,23 @@ struct RecordVoiceComposeViewModelTests {
         #expect(await waitUntil { vm.phase == .conversing(muted: false) })
     }
 
+    @Test("빈 tool 인자는 무시돼 자동 종료되지 않는다")
+    func emptyToolArgumentsIgnored() async {
+        let (vm, _, transport) = makeViewModel()
+        await startConversation(vm, transport)
+
+        await transport.emit(.functionCall(name: "save_farming_record", argumentsJSON: "   "))
+        await transport.emit(.responseCompleted)
+        // FIFO 스트림이 위 두 이벤트를 처리했음을 뒤따르는 전사로 확인한다.
+        await transport.emit(.itemStarted(itemId: "a1", role: .assistant))
+        await transport.emit(.assistantTranscriptDone(itemId: "a1", text: "계속 진행할게요"))
+        #expect(await waitUntil { vm.transcript.contains { $0.text == "계속 진행할게요" } })
+
+        // 빈 인자는 초안으로 오인되지 않아 대화가 계속되고 검토로 넘어가지 않는다.
+        #expect(vm.phase == .conversing(muted: false))
+        #expect(vm.reviewHandoff == nil)
+    }
+
     @Test("마이크 권한 거부: failed로 접히고 세션은 만들지 않는다")
     func micPermissionDenied() async {
         let (vm, repo, _) = makeViewModel(micPermission: false)
