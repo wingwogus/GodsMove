@@ -89,6 +89,18 @@ struct ProfileBasicInfoView: View {
             .padding(.top, Spacing.md)
             .padding(.bottom, Spacing.xl)
         }
+        // 연락처(.phonePad)·귀농 연차(.numberPad)는 Return/완료 키가 없어 탭-바깥/스크롤로만
+        // 닫혀 답답하다. 키보드 툴바에 "확인"을 달아 어떤 키보드든 닫을 수 있게 한다.
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("확인") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+                    )
+                }
+            }
+        }
         .background(Color.Background.default)
         .safeAreaInset(edge: .bottom, spacing: 0) {
             AppButton("저장", variant: .secondary, size: .medium, fullWidth: true) {
@@ -101,6 +113,7 @@ struct ProfileBasicInfoView: View {
             .padding(.vertical, Spacing.md)
             .background(Color.Background.default)
         }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .task { await viewModel.load() }
         .task(id: pickerItem) {
             guard let pickerItem,
