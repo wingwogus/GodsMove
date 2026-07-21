@@ -69,9 +69,15 @@ object FarmingRecordVoiceToolSchema {
         mapOf(
             "plantingMethod" to enumProperty("심기 방법(필수)", PlantingMethod.entries.map { it.name }),
             "seedAmount" to mapOf("type" to "number", "description" to "파종량(plantingMethod=SEED일 때 필수)"),
-            "seedAmountUnit" to enumProperty("파종량 단위(plantingMethod=SEED일 때만)", SeedAmountUnit.entries.map { it.name }),
+            "seedAmountUnit" to enumProperty(
+                "파종량 단위(plantingMethod=SEED일 때만). 항상 G이므로 사용자에게 묻지 말고 자동으로 채운다.",
+                SeedAmountUnit.entries.map { it.name },
+            ),
             "seedlingCount" to mapOf("type" to "integer", "description" to "모종수(plantingMethod=SEEDLING일 때 필수)"),
-            "seedlingUnit" to enumProperty("모종수 단위(plantingMethod=SEEDLING일 때만)", SeedlingUnit.entries.map { it.name }),
+            "seedlingUnit" to enumProperty(
+                "모종수 단위(plantingMethod=SEEDLING일 때만). 항상 JU이므로 사용자에게 묻지 말고 자동으로 채운다.",
+                SeedlingUnit.entries.map { it.name },
+            ),
             "propagationMethod" to enumProperty(
                 "번식법(plantingMethod=SEEDLING일 때만 선택 입력 가능)",
                 PropagationMethod.entries.map { it.name },
@@ -108,7 +114,10 @@ object FarmingRecordVoiceToolSchema {
             "pesticideAmount" to mapOf("type" to "number", "description" to "농약량(필수)"),
             "pesticideAmountUnit" to enumProperty("농약량 단위(필수)", PesticideAmountUnit.entries.map { it.name }),
             "totalSprayAmount" to mapOf("type" to "number", "description" to "총 살포량(필수)"),
-            "totalSprayAmountUnit" to enumProperty("총 살포량 단위(필수)", SprayAmountUnit.entries.map { it.name }),
+            "totalSprayAmountUnit" to enumProperty(
+                "총 살포량 단위(필수). 항상 ML이므로 사용자에게 묻지 말고 자동으로 채운다.",
+                SprayAmountUnit.entries.map { it.name },
+            ),
             "pestTarget" to mapOf("type" to "string", "description" to "방제 대상 병해충"),
         ),
     )
