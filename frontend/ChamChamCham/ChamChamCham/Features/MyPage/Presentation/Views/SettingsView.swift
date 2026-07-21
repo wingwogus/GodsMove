@@ -62,11 +62,13 @@ struct SettingsView: View {
                 }
                 Button("취소", role: .cancel) {}
             }
-            .confirmationDialog("회원탈퇴할까요?", isPresented: $isConfirmingWithdraw, titleVisibility: .visible) {
-                Button("회원탈퇴", role: .destructive) {
+            .confirmationDialog("정말 탈퇴하시겠어요?", isPresented: $isConfirmingWithdraw, titleVisibility: .visible) {
+                Button("탈퇴할게요", role: .destructive) {
                     Task { await viewModel.withdraw(appState: appState) }
                 }
                 Button("취소", role: .cancel) {}
+            } message: {
+                Text("탈퇴 후에는 계정을 복구할 수 없어요.")
             }
         }
     }

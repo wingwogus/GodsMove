@@ -112,7 +112,8 @@ struct MemberProfileDTOTests {
                     dataSource: .onboardingJusoVWorld,
                     cropIds: [cropId]
                 )
-            ]
+            ],
+            isExperienceLevelWithinAge: true
         )
 
         let data = try JSONEncoder().encode(request)
@@ -122,6 +123,27 @@ struct MemberProfileDTOTests {
         #expect(json["name"] as? String == "홍길동")
         #expect(farms.first?["farmId"] as? String == farmId.uuidString)
         #expect(farms.first?["cropIds"] as? [String] == [cropId.uuidString])
+        #expect(json["isExperienceLevelWithinAge"] as? Bool == true)
+    }
+
+    @Test("encodes nil birthDate when the member hasn't provided one")
+    func encodesNilBirthDate() throws {
+        let request = UpdateMyProfileRequestDTO(
+            name: "",
+            phone: "",
+            birthDate: nil,
+            nickname: "",
+            experienceLevel: 5,
+            managementType: "AGRICULTURAL_INDIVIDUAL",
+            profileMediaId: nil,
+            farms: [],
+            isExperienceLevelWithinAge: true
+        )
+
+        let data = try JSONEncoder().encode(request)
+        let json = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+
+        #expect(json["birthDate"] == nil)
     }
 
     @Test("member endpoints match Swagger paths")
@@ -135,7 +157,8 @@ struct MemberProfileDTOTests {
             experienceLevel: 7,
             managementType: "AGRICULTURAL_INDIVIDUAL",
             profileMediaId: nil,
-            farms: []
+            farms: [],
+            isExperienceLevelWithinAge: true
         )
 
         #expect(MemberEndpoint.myProfile.path == "api/v1/members/me")

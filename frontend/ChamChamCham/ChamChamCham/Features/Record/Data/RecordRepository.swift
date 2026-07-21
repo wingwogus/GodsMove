@@ -8,8 +8,7 @@
 import Foundation
 
 /// The single async entry point the record presentation layer talks to. Returns domain types (not DTOs),
-/// mirroring `CommunityRepository`. List + detail + create are wired; update/delete land with the
-/// (not-yet-captured) 수정/삭제 flow.
+/// mirroring `CommunityRepository`. List + detail + create + update + delete are all wired.
 protocol RecordRepository: Sendable {
     func fetchRecords(_ query: RecordQuery) async throws -> RecordPage
     func fetchDetail(id: UUID) async throws -> RecordDetail
@@ -22,6 +21,13 @@ protocol RecordRepository: Sendable {
 
     @discardableResult
     func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID
+
+    /// 수정 폼 프리필. 상세조회(`GET /farming-records/{id}`)를 재사용해 원본 raw 값(ids, enum 코드,
+    /// 사진 mediaId)을 보존한 `VoiceRecordPrefill`로 매핑한다.
+    func fetchEditPrefill(id: UUID) async throws -> VoiceRecordPrefill
+
+    @discardableResult
+    func updateRecord(id: UUID, _ request: SaveRecordRequestDTO) async throws -> UUID
 }
 
 struct RemoteRecordRepository: RecordRepository {
@@ -90,6 +96,17 @@ struct RemoteRecordRepository: RecordRepository {
     @discardableResult
     func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID {
         let response: RecordIdResponseDTO = try await apiClient.send(RecordEndpoint.createRecord(request))
+        return response.id
+    }
+
+    func fetchEditPrefill(id: UUID) async throws -> VoiceRecordPrefill {
+        let dto: RecordDetailResponseDTO = try await apiClient.send(RecordEndpoint.recordDetail(id: id))
+        return dto.toEditPrefill()
+    }
+
+    @discardableResult
+    func updateRecord(id: UUID, _ request: SaveRecordRequestDTO) async throws -> UUID {
+        let response: RecordIdResponseDTO = try await apiClient.send(RecordEndpoint.updateRecord(id: id, request))
         return response.id
     }
 }

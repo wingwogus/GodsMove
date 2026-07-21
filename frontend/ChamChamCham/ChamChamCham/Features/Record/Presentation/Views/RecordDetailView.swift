@@ -10,22 +10,40 @@ import SwiftUI
 /// 영농기록 결과 상세(읽기) — Figma `심기 작업 결과 - 씨앗` (node `1498:21864`). Structure is shared across all
 /// eight workTypes; only the 작업 정보 rows differ (assembled in `RecordDetailLabels`).
 ///
-/// Scope (2026-07-14): read + delete. The ⋮ menu uses native confirmation dialogs (no custom UI). 수정(edit) is
-/// deferred — the deployed detail response returns no media ids, so an edit can't preserve existing photos
-/// (conflict C-19). The "참참참의 코칭" (AI) section is now wired to per-record feedback
-/// (`GET /api/v1/farming-records/{id}/feedback`, backend commit `b943ba9e`), polled via the view model;
-/// regeneration (STALE/FAILED) is out of scope for now.
+/// Scope (2026-07-14 → 2026-07-20): read + delete + 수정(edit). The ⋮ menu uses native confirmation dialogs
+/// (no custom UI). Edit reuses `RecordComposeView`/`RecordComposeViewModel` via `UpdateRecordSaver` +
+/// a raw-value prefill fetched through `fetchEditPrefill` — see the record-edit plan for the backend
+/// verification that resolved the earlier media-id concern (conflict C-19; the deployed contract already
+/// returns `mediaId`/`cropId`/`farmId` as of backend commit `39ba10a1`). The "참참참의 코칭" (AI) section is
+/// wired to per-record feedback (`GET /api/v1/farming-records/{id}/feedback`, backend commit `b943ba9e`),
+/// polled via the view model; regeneration (STALE/FAILED) is out of scope for now.
 struct RecordDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @State private var viewModel: RecordDetailViewModel
     @State private var showActions = false
     @State private var showDeleteConfirm = false
+    @State private var showEditCompose = false
+    @State private var editPrefill: VoiceRecordPrefill?
+    private let recordId: UUID
     private let onMutated: () -> Void
+    private let repository: any RecordRepository
+    private let weatherRepository: any WeatherRepository
+    private let mediaUpload: any MediaUploadRepository
     private let horizontalInset: CGFloat = 20
 
-    /// `onMutated` fires after a successful delete (later: edit) so the list can refresh.
-    init(recordId: UUID, repository: any RecordRepository, onMutated: @escaping () -> Void = {}) {
+    /// `onMutated` fires after a successful delete or edit so the list can refresh.
+    init(
+        recordId: UUID,
+        repository: any RecordRepository,
+        weatherRepository: any WeatherRepository,
+        mediaUpload: any MediaUploadRepository,
+        onMutated: @escaping () -> Void = {}
+    ) {
+        self.recordId = recordId
         self.onMutated = onMutated
+        self.repository = repository
+        self.weatherRepository = weatherRepository
+        self.mediaUpload = mediaUpload
         _viewModel = State(initialValue: RecordDetailViewModel(recordId: recordId, repository: repository))
     }
 
@@ -53,6 +71,7 @@ struct RecordDetailView: View {
         .task { await viewModel.onAppear() }
         .task { await viewModel.loadCoaching() }
         .confirmationDialog("기록 관리", isPresented: $showActions, titleVisibility: .hidden) {
+            Button("수정") { Task { await startEditing() } }
             Button("삭제", role: .destructive) { showDeleteConfirm = true }
             Button("취소", role: .cancel) {}
         }
@@ -80,13 +99,50 @@ struct RecordDetailView: View {
         } message: {
             Text(viewModel.deleteError ?? "")
         }
+        .alert(
+            "기록을 불러오지 못했어요",
+            isPresented: Binding(
+                get: { viewModel.editPrefillError != nil },
+                set: { if !$0 { viewModel.editPrefillError = nil } }
+            )
+        ) {
+            Button("확인", role: .cancel) {}
+        } message: {
+            Text(viewModel.editPrefillError ?? "")
+        }
+        .fullScreenCover(isPresented: $showEditCompose) {
+            if let editPrefill {
+                NavigationStack {
+                    RecordComposeView(
+                        repository: repository,
+                        weatherRepository: weatherRepository,
+                        mediaUpload: mediaUpload,
+                        saver: UpdateRecordSaver(repository: repository, recordId: recordId),
+                        prefill: editPrefill,
+                        isEditing: true
+                    ) { _ in
+                        Task {
+                            await viewModel.load()
+                            onMutated()
+                        }
+                    }
+                }
+            }
+        }
         .overlay {
-            if viewModel.isDeleting {
+            if viewModel.isDeleting || viewModel.isLoadingEditPrefill {
                 ZStack {
                     Color.black.opacity(0.08).ignoresSafeArea()
                     ProgressView()
                 }
             }
+        }
+    }
+
+    private func startEditing() async {
+        if let prefill = await viewModel.loadEditPrefill() {
+            editPrefill = prefill
+            showEditCompose = true
         }
     }
 
@@ -377,12 +433,27 @@ private struct PreviewCoachingRepository: RecordRepository {
     func searchPesticides(keyword: String?) async throws -> [Pesticide] { [] }
     func fetchPests(pesticideId: UUID) async throws -> [Pest] { [] }
     func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { UUID() }
+    func fetchEditPrefill(id: UUID) async throws -> VoiceRecordPrefill { VoiceRecordPrefill() }
+    func updateRecord(id: UUID, _ request: SaveRecordRequestDTO) async throws -> UUID { id }
+}
+
+/// Preview-only stand-in for `WeatherRepository` (needed since 수정 now presents `RecordComposeView` from this
+/// screen). `MediaUploadRepository` reuses the shared `PreviewMediaUploadRepository` (`PreviewOnboardingDependencies.swift`) — no farmingRecordImage upload happens in these coaching previews.
+private struct PreviewWeatherRepository: WeatherRepository {
+    func fetchHome(farmId: UUID?) async throws -> CurrentWeather {
+        CurrentWeather(temperature: 22, condition: WeatherCondition(code: "1", text: "맑음"), minTemperature: 18, maxTemperature: 26)
+    }
+    func fetchDetail(farmId: UUID?) async throws -> WeatherDetail {
+        throw OnboardingSubmissionError.missingRequiredField("preview")
+    }
 }
 
 #Preview("코칭 - 준비 중") {
     RecordDetailView(
         recordId: UUID(),
-        repository: PreviewCoachingRepository(coaching: RecordCoaching(status: .pending, feedback: nil))
+        repository: PreviewCoachingRepository(coaching: RecordCoaching(status: .pending, feedback: nil)),
+        weatherRepository: PreviewWeatherRepository(),
+        mediaUpload: PreviewMediaUploadRepository()
     )
 }
 
@@ -398,13 +469,17 @@ private struct PreviewCoachingRepository: RecordRepository {
                     CoachingNextAction(text: "잎끝이 마르는지 관찰해 주세요.", due: .nextCheck)
                 ]
             )
-        ))
+        )),
+        weatherRepository: PreviewWeatherRepository(),
+        mediaUpload: PreviewMediaUploadRepository()
     )
 }
 
 #Preview("코칭 - 실패") {
     RecordDetailView(
         recordId: UUID(),
-        repository: PreviewCoachingRepository(coaching: RecordCoaching(status: .failed, feedback: nil))
+        repository: PreviewCoachingRepository(coaching: RecordCoaching(status: .failed, feedback: nil)),
+        weatherRepository: PreviewWeatherRepository(),
+        mediaUpload: PreviewMediaUploadRepository()
     )
 }

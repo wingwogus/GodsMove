@@ -88,7 +88,12 @@ struct HomeView: View {
                 CommunityDetailView(postId: post.id, container: container)
             }
             .navigationDestination(for: FarmingRecordSummary.self) { record in
-                RecordDetailView(recordId: record.id, repository: container.makeRecordRepository()) {
+                RecordDetailView(
+                    recordId: record.id,
+                    repository: container.makeRecordRepository(),
+                    weatherRepository: container.makeWeatherRepository(),
+                    mediaUpload: container.makeMediaUploadRepository()
+                ) {
                     Task { await viewModel.reload() }
                 }
             }
@@ -123,31 +128,44 @@ struct HomeView: View {
         return false
     }
 
+    // `.failed` shows its own "다시 시도" `Button`; nesting that inside this card's navigation `Button`
+    // would nest two buttons and make the inner one's tap handling unreliable, so this card only becomes
+    // a `Button` (navigating to weather detail) once weather has actually loaded — otherwise it's a plain
+    // container and the retry button inside `weatherCardContent` is the only tappable control.
+    @ViewBuilder
     private var weatherCard: some View {
-        Button {
-            if isWeatherReady { path.append(HomeRoute.weatherDetail) }
-        } label: {
-            VStack(alignment: .leading, spacing: Spacing.sm) {
-                HStack {
-                    Text("날씨")
-                        .appTypography(.bodyMedium)
-                        .foregroundStyle(Color.Text.subtle)
-                    Spacer()
-                    AppIconView(source: .asset("arrow_forward"), size: 24)
-                        .foregroundStyle(Color.Icon.default)
-                }
-                weatherCardContent
+        if isWeatherReady {
+            Button {
+                path.append(HomeRoute.weatherDetail)
+            } label: {
+                weatherCardBody
             }
-            .padding(Spacing.md)
-            .frame(height: 167, alignment: .top)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color.Object.default)
-            .overlay {
-                RoundedRectangle(cornerRadius: 16).stroke(Color.Border.subtle, lineWidth: 1)
-            }
-            .clipShape(RoundedRectangle(cornerRadius: 16))
+            .buttonStyle(.plain)
+        } else {
+            weatherCardBody
         }
-        .buttonStyle(.plain)
+    }
+
+    private var weatherCardBody: some View {
+        VStack(alignment: .leading, spacing: Spacing.sm) {
+            HStack {
+                Text("날씨")
+                    .appTypography(.bodyMedium)
+                    .foregroundStyle(Color.Text.subtle)
+                Spacer()
+                AppIconView(source: .asset("arrow_forward"), size: 24)
+                    .foregroundStyle(Color.Icon.default)
+            }
+            weatherCardContent
+        }
+        .padding(Spacing.md)
+        .frame(height: 167, alignment: .top)
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.Object.default)
+        .overlay {
+            RoundedRectangle(cornerRadius: 16).stroke(Color.Border.subtle, lineWidth: 1)
+        }
+        .clipShape(RoundedRectangle(cornerRadius: 16))
     }
 
     @ViewBuilder private var weatherCardContent: some View {
@@ -173,10 +191,21 @@ struct HomeView: View {
                 .foregroundStyle(Color.Text.muted)
             }
         case let .failed(message):
-            Text(message)
-                .appTypography(.labelMedium)
-                .foregroundStyle(Color.Text.muted)
-                .lineLimit(2)
+            VStack(alignment: .leading, spacing: 4) {
+                Text(message)
+                    .appTypography(.labelMedium)
+                    .foregroundStyle(Color.Text.muted)
+                    .lineLimit(2)
+                Button {
+                    Task { await viewModel.retryWeather() }
+                } label: {
+                    Text("다시 시도")
+                        .appTypography(.labelMedium)
+                        .foregroundStyle(Color.Text.primary)
+                        .underline()
+                }
+                .buttonStyle(.plain)
+            }
         }
     }
 

@@ -330,6 +330,32 @@ class FarmWeatherServiceTest {
         assertEquals(historical, result)
     }
 
+    @Test
+    fun `getDaily 오늘 provider 장애면 흐림 20도 폴백을 반환한다`() {
+        given(farmRepository.findByIdAndOwnerId(farmId, memberId)).willReturn(farm)
+        given(shortTermForecastPort.fetchTodayRange(location()))
+            .willThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+
+        val result = service.getDaily(memberId, farmId, today)
+
+        assertEquals(WeatherCondition.CLOUDY, result.condition)
+        assertEquals(20, result.minTemperature)
+        assertEquals(20, result.maxTemperature)
+    }
+
+    @Test
+    fun `getDaily 과거 provider 장애면 흐림 20도 폴백을 반환한다`() {
+        given(farmRepository.findByIdAndOwnerId(farmId, memberId)).willReturn(farm)
+        given(historicalObservationPort.fetch(location(), today.minusDays(2)))
+            .willThrow(BusinessException(ErrorCode.WEATHER_PROVIDER_UNAVAILABLE))
+
+        val result = service.getDaily(memberId, farmId, today.minusDays(2))
+
+        assertEquals(WeatherCondition.CLOUDY, result.condition)
+        assertEquals(20, result.minTemperature)
+        assertEquals(20, result.maxTemperature)
+    }
+
     private fun location(): WeatherLocation =
         WeatherLocation(
             latitude = 37.5,

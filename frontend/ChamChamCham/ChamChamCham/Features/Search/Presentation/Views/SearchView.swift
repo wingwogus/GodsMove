@@ -51,7 +51,12 @@ struct SearchView: View {
             // instead of a list scroll eagerly eating the first tap on a suggestion/recent-term row.
             .scrollDismissesKeyboard(.interactively)
             .navigationDestination(for: FarmingRecordSummary.self) { record in
-                RecordDetailView(recordId: record.id, repository: container.makeRecordRepository()) {
+                RecordDetailView(
+                    recordId: record.id,
+                    repository: container.makeRecordRepository(),
+                    weatherRepository: container.makeWeatherRepository(),
+                    mediaUpload: container.makeMediaUploadRepository()
+                ) {
                     Task { await recordViewModel.reload(keyword: viewModel.submittedKeyword) }
                 }
             }

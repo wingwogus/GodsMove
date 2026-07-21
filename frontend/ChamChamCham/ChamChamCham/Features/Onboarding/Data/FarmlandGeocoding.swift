@@ -8,7 +8,11 @@
 import CoreLocation
 
 protocol FarmlandGeocoding: Sendable {
-    func geocode(roadAddress: String) async throws -> CLLocationCoordinate2D
+    /// 도로명 주소로 좌표 변환을 시도하고, 실패하거나 도로명이 없으면 지번 주소로 재시도한다.
+    ///
+    /// 산골·하천변 농지 등은 도로명이 없어 `roadAddress`가 빈 문자열인 경우가 많다. 이때
+    /// 지번(`jibunAddress`)으로 폴백해야 좌표를 얻을 수 있다. 둘 다 실패하면 throw한다.
+    func geocode(roadAddress: String, jibunAddress: String) async throws -> CLLocationCoordinate2D
 }
 
 protocol ParcelLookup: Sendable {

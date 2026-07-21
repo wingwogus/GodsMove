@@ -109,14 +109,61 @@ struct OnboardingCompleteRequestDTOTests {
         #expect(json["profileMediaId"] == nil)
     }
 
-    @Test("throws when a required field is blank")
+    @Test("throws when a required field is missing")
     func throwsOnMissingRequiredField() {
         var draft = OnboardingTestFactory.validDraft()
-        draft.name = "   "
+        draft.managementType = nil
 
         #expect(throws: OnboardingSubmissionError.self) {
             _ = try OnboardingCompleteRequestDTO(draft: draft)
         }
+    }
+
+    @Test("succeeds and encodes nil birthDate, blank name/phone when those optional fields are absent")
+    func succeedsWithoutOptionalContactFields() throws {
+        var draft = OnboardingTestFactory.validDraft()
+        draft.name = ""
+        draft.phone = ""
+        draft.birthDate = nil
+
+        let json = try encodedJSON(try OnboardingCompleteRequestDTO(draft: draft))
+
+        #expect(json["name"] as? String == "")
+        #expect(json["phone"] as? String == "")
+        #expect(json["birthDate"] == nil)
+    }
+
+    @Test("isExperienceLevelWithinAge is true when experienceYears is within age")
+    func isExperienceLevelWithinAgeTrueWhenWithinAge() throws {
+        var draft = OnboardingTestFactory.validDraft()
+        draft.birthDate = Calendar.current.date(byAdding: .year, value: -30, to: Date())
+        draft.experienceYears = 5
+
+        let json = try encodedJSON(try OnboardingCompleteRequestDTO(draft: draft))
+
+        #expect(json["isExperienceLevelWithinAge"] as? Bool == true)
+    }
+
+    @Test("isExperienceLevelWithinAge is false when experienceYears exceeds age")
+    func isExperienceLevelWithinAgeFalseWhenExceedsAge() throws {
+        var draft = OnboardingTestFactory.validDraft()
+        draft.birthDate = Calendar.current.date(byAdding: .year, value: -20, to: Date())
+        draft.experienceYears = 25
+
+        let json = try encodedJSON(try OnboardingCompleteRequestDTO(draft: draft))
+
+        #expect(json["isExperienceLevelWithinAge"] as? Bool == false)
+    }
+
+    @Test("isExperienceLevelWithinAge is true when birthDate is absent")
+    func isExperienceLevelWithinAgeTrueWhenBirthDateAbsent() throws {
+        var draft = OnboardingTestFactory.validDraft()
+        draft.birthDate = nil
+        draft.experienceYears = 99
+
+        let json = try encodedJSON(try OnboardingCompleteRequestDTO(draft: draft))
+
+        #expect(json["isExperienceLevelWithinAge"] as? Bool == true)
     }
 
     @Test("encodes nickname as nil when blank")

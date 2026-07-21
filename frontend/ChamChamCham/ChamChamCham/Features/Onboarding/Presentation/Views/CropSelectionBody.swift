@@ -306,7 +306,7 @@ struct CropSelectionBody: View {
     }
 
     private func selectedCropChip(_ crop: SelectedCropChip) -> some View {
-        AppChip(label: crop.name, isSelected: true, style: .solidPastel, trailingSystemImage: "xmark") {
+        AppChip(label: crop.name, isSelected: true, style: .solidPastel, trailingSystemImage: .asset("close_small")) {
             _ = onToggle(crop.id)
             selectionLimitMessage = nil
         }

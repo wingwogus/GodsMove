@@ -39,7 +39,7 @@ struct ProfileBasicInfoViewModelTests {
         #expect(viewModel.birthDate != nil)
     }
 
-    @Test("cannot save until required fields are valid; nickname stays optional")
+    @Test("cannot save until experienceYears is valid; phone/birthDate/nickname stay optional")
     func validationGatesSaving() async {
         let profile = MyPageFixtures.profile(
             phone: "", birthDate: nil, experienceLevel: nil, managementType: "AGRICULTURAL_INDIVIDUAL"
@@ -53,12 +53,10 @@ struct ProfileBasicInfoViewModelTests {
 
         #expect(!viewModel.canSave)
 
-        viewModel.phone = "010-0000-0000"
-        viewModel.birthDate = Date(timeIntervalSince1970: 0)
         viewModel.experienceYears = 1
         viewModel.nickname = "" // optional
 
-        #expect(viewModel.canSave)
+        #expect(viewModel.canSave) // phone/birthDate left blank, still savable
     }
 
     @Test("validation errors surface only after a save attempt")
@@ -71,13 +69,29 @@ struct ProfileBasicInfoViewModelTests {
         )
         await viewModel.load()
 
-        #expect(viewModel.phoneError == nil)
+        #expect(viewModel.experienceError == nil)
 
         let saved = await viewModel.save()
         #expect(saved == false)
-        #expect(viewModel.phoneError != nil)
-        #expect(viewModel.birthDateError != nil)
         #expect(viewModel.experienceError != nil)
+    }
+
+    @Test("experienceError flags experienceYears that exceed the age derived from birthDate")
+    func experienceErrorFlagsAgeExceeded() async {
+        let profile = MyPageFixtures.profile(phone: "", birthDate: nil, experienceLevel: nil)
+        let viewModel = ProfileBasicInfoViewModel(
+            repository: StubMemberProfileRepository(profile: profile),
+            mediaRepository: FakeMediaUploadRepository(),
+            farmRepository: StubFarmRepository()
+        )
+        await viewModel.load()
+        viewModel.birthDate = Calendar.current.date(byAdding: .year, value: -20, to: Date())
+        viewModel.experienceYears = 25
+
+        #expect(!viewModel.canSave)
+        let saved = await viewModel.save()
+        #expect(saved == false)
+        #expect(viewModel.experienceError == "귀농 연차는 나이를 넘을 수 없어요.")
     }
 
     @Test("save builds the update request preserving name and mapping enums/date")

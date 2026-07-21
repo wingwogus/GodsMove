@@ -18,7 +18,9 @@ struct RecordDetailLabelsTests {
     /// Decodes a `{...}` detail body and returns "label=value" strings for concise assertions.
     private func pairs(_ json: String) throws -> [String] {
         let base = """
-        {"id":"11111111-1111-1111-1111-111111111111","farmName":"1번밭","cropName":"도라지",
+        {"id":"11111111-1111-1111-1111-111111111111",
+         "farmId":"22222222-2222-2222-2222-222222222222","farmName":"1번밭",
+         "cropId":"33333333-3333-3333-3333-333333333333","cropName":"도라지",
          "workType":"ETC","workedAt":"2026-12-12T09:00:00","weatherCondition":"맑음","weatherTemperature":14,
         """
         let full = base + json.dropFirst() // splice detail object(s) into the base object
@@ -63,7 +65,7 @@ struct RecordDetailLabelsTests {
     @Test("병해충 관리")
     func pestControl() throws {
         let rows = try pairs(#"""
-        {"pestControl":{"pesticideName":"신의한수농약","pestTarget":"짱큰나방","pesticideAmount":20,
+        {"pestControl":{"pesticideName":"신의한수농약","pestName":"짱큰나방","pesticideAmount":20,
         "pesticideAmountUnit":"ML","totalSprayAmount":150,"totalSprayAmountUnit":"L"}}
         """#)
         #expect(rows == ["사용 농약=신의한수농약", "농약 사용량=20ml", "총 살포량=150L", "대상 병해충=짱큰나방"])

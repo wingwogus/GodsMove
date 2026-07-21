@@ -66,7 +66,12 @@ struct CommunityDetailView: View {
             MemberProfileView(memberId: route.memberId, container: container)
         }
         .navigationDestination(for: RecordDetail.self) { record in
-            RecordDetailView(recordId: record.id, repository: container.makeRecordRepository())
+            RecordDetailView(
+                recordId: record.id,
+                repository: container.makeRecordRepository(),
+                weatherRepository: container.makeWeatherRepository(),
+                mediaUpload: container.makeMediaUploadRepository()
+            )
         }
         .safeAreaInset(edge: .bottom) { commentComposer }
         .photosPicker(isPresented: $showPhotoPicker, selection: $pickerItems, maxSelectionCount: 1, matching: .images)

@@ -31,6 +31,13 @@ struct RecordSummaryResponseDTO: Decodable, Sendable {
     let weatherTemperature: Int
     let workType: String
     let workedAt: String
+    /// workType별 2번째 뱃지용 상세값. 해당 활동유형에서만 값이 오고 나머지는 항상 null(PRUNING/ETC는 전부 null).
+    let plantingMethod: String?
+    let irrigationMethod: String?
+    let materialName: String?
+    let pesticideName: String?
+    let weedingMethod: String?
+    let harvestAmount: Double?
 }
 
 /// `GET /members/me/farm-crops` → one entry per farm, each carrying its crops.
@@ -61,7 +68,13 @@ extension RecordSummaryResponseDTO {
             thumbnailUrl: thumbnailUrl,
             weatherCondition: weatherCondition,
             weatherTemperature: weatherTemperature,
-            workedAt: RecordDateParser.date(from: workedAt)
+            workedAt: RecordDateParser.date(from: workedAt),
+            plantingMethod: plantingMethod.flatMap(PlantingMethod.init(rawValue:)),
+            irrigationMethod: irrigationMethod.flatMap(IrrigationMethod.init(rawValue:)),
+            materialName: materialName,
+            pesticideName: pesticideName,
+            weedingMethod: weedingMethod.flatMap(WeedingMethod.init(rawValue:)),
+            harvestAmount: harvestAmount
         )
     }
 }

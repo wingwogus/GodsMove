@@ -55,7 +55,8 @@ struct BasicProfileView: View {
                             label: "이름",
                             placeholder: "이름을 입력해주세요.",
                             text: $viewModel.draft.name,
-                            isRequired: true,
+                            isRequired: false,
+                            helperText: "다른 이용자에게 표시되는 이름이에요. 입력하지 않아도 서비스 이용에 지장 없어요.",
                             errorMessage: error(for: .name)
                         )
 
@@ -71,7 +72,8 @@ struct BasicProfileView: View {
                             label: "연락처",
                             placeholder: "000-0000-0000",
                             text: $viewModel.draft.phone,
-                            isRequired: true,
+                            isRequired: false,
+                            helperText: "농지 관련 알림 발송 등에 사용돼요. 입력하지 않아도 서비스 이용에 지장 없어요.",
                             errorMessage: error(for: .phone),
                             keyboardType: .phonePad
                         )
@@ -79,7 +81,8 @@ struct BasicProfileView: View {
                         AppDateField(
                             label: "생년월일",
                             selection: $viewModel.draft.birthDate,
-                            isRequired: true,
+                            isRequired: false,
+                            helperText: "귀농 년차가 나이를 넘지 않는지 확인하는 데 참고돼요. 입력하지 않아도 서비스 이용에 지장 없어요.",
                             errorMessage: error(for: .birthDate)
                         )
 
@@ -88,6 +91,7 @@ struct BasicProfileView: View {
                             placeholder: "귀농 년차를 입력해주세요.",
                             text: experienceYearsText,
                             isRequired: true,
+                            helperText: "맞춤 농업 관련 정책을 제공하기 위해 필요해요.",
                             errorMessage: error(for: .experienceYears),
                             keyboardType: .numberPad
                         )
@@ -99,14 +103,26 @@ struct BasicProfileView: View {
                 .padding(.bottom, 40)
             }
             .scrollDismissesKeyboard(.interactively)
+            // 연락처(.phonePad)·귀농 년차(.numberPad)는 Return/완료 키가 없어 탭-바깥/스크롤로만
+            // 닫혀 답답하다. 키보드 툴바에 "완료"를 달아 어떤 키보드든 닫을 수 있게 한다.
+            .toolbar {
+                ToolbarItemGroup(placement: .keyboard) {
+                    Spacer()
+                    Button("완료") {
+                        UIApplication.shared.sendAction(
+                            #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+                        )
+                    }
+                }
+            }
         }
         .background(Color.Background.default)
-        // 키보드가 하단 "다음" 버튼을 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
-        .ignoresSafeArea(.keyboard, edges: .bottom)
         .dismissKeyboardOnTap()
         .safeAreaInset(edge: .bottom, spacing: 0) {
             bottomCTA
         }
+        // 키보드가 하단 "다음" 버튼을 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .task(id: pickerItem) {
             guard let pickerItem,
                   let data = try? await pickerItem.loadTransferable(type: Data.self) else { return }

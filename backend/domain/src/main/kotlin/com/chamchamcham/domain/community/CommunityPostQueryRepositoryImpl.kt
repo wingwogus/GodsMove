@@ -1,5 +1,6 @@
 package com.chamchamcham.domain.community
 
+import com.chamchamcham.domain.crop.Crop
 import jakarta.persistence.EntityManager
 import org.springframework.stereotype.Repository
 import java.util.UUID
@@ -47,6 +48,18 @@ class CommunityPostQueryRepositoryImpl(
         params.forEach(query::setParameter)
         return query.singleResult
     }
+
+    override fun findDistinctCropsByAuthor(authorMemberId: UUID): List<Crop> =
+        entityManager.createQuery(
+            """
+            select distinct p.crop
+            from CommunityPost p
+            where p.isDeleted = false and p.author.id = :authorMemberId
+            """.trimIndent(),
+            Crop::class.java
+        )
+            .setParameter("authorMemberId", authorMemberId)
+            .resultList
 
     private fun buildFilterPredicates(
         condition: CommunityPostQueryRepository.SearchCondition

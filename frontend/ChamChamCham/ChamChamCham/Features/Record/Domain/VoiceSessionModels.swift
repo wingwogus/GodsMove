@@ -77,7 +77,15 @@ enum VoiceSessionError: Error, Equatable {
     case providerUnavailable
 }
 
-/// AI 후보를 검토 화면(RecordComposeViewModel)에 채워 넣기 위한 평탄화 프리필.
+/// 이미 저장된 사진 한 장(수정 프리필 전용). `mediaId`는 저장 시 그대로 재전송해 사진을 보존한다.
+struct ExistingPhoto: Sendable, Hashable {
+    let mediaId: UUID
+    let url: String
+}
+
+/// AI 후보를 검토 화면(RecordComposeViewModel)에 채워 넣기 위한 평탄화 프리필. 기록 수정(edit)도
+/// 같은 폼을 재사용하므로 이 타입을 그대로 채워 넣는다 — `existingPhotos`만 수정 전용이며 음성
+/// 경로는 항상 빈 배열이다.
 /// candidate DTO 정제에서 탈락한 원문 값도 유지한다 — 사용자가 검토에서 이어 채운다.
 struct VoiceRecordPrefill: Sendable, Hashable {
     var farmId: UUID?
@@ -108,6 +116,8 @@ struct VoiceRecordPrefill: Sendable, Hashable {
     /// 서버 판정 누락 필드(`farmId`/`cropId`/`workType`/`workedAt`/`detail` 리터럴).
     /// 비어 있지 않으면 검토 화면이 진입 즉시 검증 문구를 노출한다(BR-EXCEPTION-005).
     var missingFields: [String] = []
+    /// 수정(edit) 전용: 기존에 저장된 사진. 음성/신규 작성 경로는 항상 빈 배열.
+    var existingPhotos: [ExistingPhoto] = []
 }
 
 /// 검토 화면으로 넘어간 이유. 사유에 따라 검토 화면 상단 안내 배너가 달라진다.

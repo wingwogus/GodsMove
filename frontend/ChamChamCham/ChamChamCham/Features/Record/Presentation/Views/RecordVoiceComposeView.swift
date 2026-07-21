@@ -180,6 +180,9 @@ struct RecordVoiceComposeView: View {
             if isMicBusy {
                 ProgressView()
                     .tint(Color.Icon.inverse)
+            } else if isListening {
+                AppIconView(source: .asset("pause"), size: 40)
+                    .foregroundStyle(Color.Icon.primary)
             } else {
                 AppIconView(source: .asset("mic"), size: 40)
                     .foregroundStyle(Color.Icon.inverse)
@@ -205,9 +208,9 @@ struct RecordVoiceComposeView: View {
         }
     }
 
-    /// 수음 중(unmuted)일 때만 primary — 캡처의 idle(`Object.bold`)에서 가장 작은 이탈.
+    /// 듣는 중(`isListening`)일 때만 secondary — 그 외(idle/음소거/AI 발화 중)는 전부 검정.
     private var micBackground: Color {
-        if case .conversing(muted: false) = vm.phase { Color.Object.primary } else { Color.Object.bold }
+        isListening ? Color.Object.secondary : Color.Object.bold
     }
 
     private var micAccessibilityLabel: String {

@@ -22,9 +22,17 @@ struct FarmListView: View {
     /// Crop-edit sheet target.
     @State private var cropEditFarm: StandaloneFarmResponseDTO?
 
-    /// Address-edit sheet target + the location engine it drives (a fresh instance per farm).
-    @State private var addressEditFarm: StandaloneFarmResponseDTO?
-    @State private var addressEditLocation = FarmLocationViewModel()
+    /// Address-edit sheet target. Farm + its location engine are bundled into one item so the
+    /// presented cover, the initial address, and `onPrimary` all reference the same instance —
+    /// avoiding the "one render behind" capture bug of parallel `@State` (첫 진입 빈 화면 원인).
+    @State private var addressEdit: AddressEditContext?
+
+    /// 주소 수정 대상 밭 + 그 밭 전용 `FarmLocationViewModel`. cover 표시마다 새로 만든다.
+    private struct AddressEditContext: Identifiable {
+        let id: UUID
+        let farm: StandaloneFarmResponseDTO
+        let location: FarmLocationViewModel
+    }
 
     init(container: DIContainer) {
         self.container = container
@@ -56,18 +64,23 @@ struct FarmListView: View {
                     }
                 )
             }
-            .fullScreenCover(item: $addressEditFarm) { farm in
+            .fullScreenCover(item: $addressEdit) { context in
                 FarmLocationPickerView(
-                    location: addressEditLocation,
+                    location: context.location,
                     showsFarmNameField: false,
+                    initialAddress: JusoAddress(
+                        roadAddrPart1: context.farm.roadAddress,
+                        jibunAddr: context.farm.jibunAddress ?? "",
+                        bdNm: ""
+                    ),
                     headline: "재배지 주소 수정하기",
                     subtitle: "재배지의 주소명을 입력해주세요.",
                     ctaTitle: "저장",
-                    onBack: { addressEditFarm = nil },
+                    onBack: { addressEdit = nil },
                     onPrimary: {
                         Task {
-                            if await viewModel.updateLocation(farm, location: addressEditLocation) {
-                                addressEditFarm = nil
+                            if await viewModel.updateLocation(context.farm, location: context.location) {
+                                addressEdit = nil
                             }
                         }
                     }
@@ -75,18 +88,11 @@ struct FarmListView: View {
             }
     }
 
-    /// 기존 주소로 재지오코딩해 지도 센터링 + 필지를 다시 조회한다(정밀 폴리곤 복원은 범위 밖 — 사용자가
-    /// 필요하면 재검색/지도 재탭으로 갱신). 각 밭마다 새 `FarmLocationViewModel`을 만들어 이전 편집 상태가
-    /// 남지 않게 한다.
+    /// 각 밭마다 새 `FarmLocationViewModel`을 만들어 이전 편집 상태가 남지 않게 한다. 기존 주소로의
+    /// 재지오코딩·지도 센터링·필지 재조회는 `FarmLocationPickerView`의 `.task`가 `initialAddress`로
+    /// 수행한다(정밀 폴리곤 복원은 범위 밖 — 필요하면 재검색/지도 재탭으로 갱신).
     private func beginAddressEdit(_ farm: StandaloneFarmResponseDTO) {
-        let location = FarmLocationViewModel()
-        addressEditLocation = location
-        addressEditFarm = farm
-        Task {
-            await location.selectAddress(
-                JusoAddress(roadAddrPart1: farm.roadAddress, jibunAddr: farm.jibunAddress ?? "", bdNm: "")
-            )
-        }
+        addressEdit = AddressEditContext(id: farm.farmId, farm: farm, location: FarmLocationViewModel())
     }
 
     @ViewBuilder private var content: some View {

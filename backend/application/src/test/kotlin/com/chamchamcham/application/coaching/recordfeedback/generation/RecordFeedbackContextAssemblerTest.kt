@@ -439,7 +439,7 @@ class RecordFeedbackContextAssemblerTest {
     }
 
     @Test
-    fun `provider business failure produces reduced context warning`() {
+    fun `provider business failure falls back to fixed weather with warning`() {
         stubOwnedRecord(WorkType.PRUNING)
         `when`(mediaRepository.findByRecord_Id(recordId)).thenReturn(emptyList())
         `when`(weatherPort.fetch(37.1, 128.2, 7))
@@ -447,19 +447,25 @@ class RecordFeedbackContextAssemblerTest {
 
         val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
-        assertThat(context.weather).isNull()
+        assertThat(context.weather).isNotNull()
+        assertThat(context.weather!!.source).isEqualTo("FALLBACK")
+        assertThat(context.weather!!.current.skyCondition).isEqualTo("흐림")
+        assertThat(context.weather!!.current.temperatureC).isEqualTo(20)
+        assertThat(context.weather!!.forecastDays).isEmpty()
         assertThat(context.warnings).containsExactly("weather_provider_unavailable")
     }
 
     @Test
-    fun `provider runtime failure produces reduced context warning`() {
+    fun `provider runtime failure falls back to fixed weather with warning`() {
         stubOwnedRecord(WorkType.PRUNING)
         `when`(mediaRepository.findByRecord_Id(recordId)).thenReturn(emptyList())
         `when`(weatherPort.fetch(37.1, 128.2, 7)).thenThrow(IllegalStateException("provider down"))
 
         val context = assembler.assemble(memberId, recordId, SOURCE_REVISION)
 
-        assertThat(context.weather).isNull()
+        assertThat(context.weather).isNotNull()
+        assertThat(context.weather!!.source).isEqualTo("FALLBACK")
+        assertThat(context.weather!!.current.skyCondition).isEqualTo("흐림")
         assertThat(context.warnings).containsExactly("weather_provider_unavailable")
     }
 

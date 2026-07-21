@@ -16,6 +16,10 @@ struct FarmLocationPickerView: View {
     /// Farm-add step 1 shows an inline 농지명 field; address-edit does not (name is edited on the card).
     var showsFarmNameField: Bool = false
     var farmName: Binding<String>? = nil
+    /// 주소 수정 진입 시 기존 밭 주소로 미리 채운다. 이 뷰의 `.task`에서 채워야, 부모가 미리
+    /// 채운 뒤 cover가 이전 인스턴스를 캡처해 빈 화면이 뜨는 타이밍 문제를 피할 수 있다. 추가
+    /// 흐름은 nil을 넘겨 빈 화면으로 시작한다.
+    var initialAddress: JusoAddress? = nil
 
     var headline: String = "재배지 설정하기"
     var subtitle: String = "재배지의 주소명을 입력해주세요."
@@ -40,11 +44,30 @@ struct FarmLocationPickerView: View {
         }
         .background(Color.Background.default)
         .toolbar(.hidden, for: .navigationBar)
+        // 농지명 필드에 키보드 툴바로 "완료"를 달아 탭-바깥 없이도 키보드를 닫을 수 있게 한다.
+        .toolbar {
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+                Button("완료") {
+                    UIApplication.shared.sendAction(
+                        #selector(UIResponder.resignFirstResponder), to: nil, from: nil, for: nil
+                    )
+                }
+            }
+        }
         .overlay(alignment: .bottom) { bottomCTA }
+        // 농지명 입력 시 키보드가 하단 CTA를 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
+        .ignoresSafeArea(.keyboard, edges: .bottom)
         .sheet(isPresented: $isSearchSheetPresented) {
             AddressSearchSheet(viewModel: location) { address in
                 Task { await location.selectAddress(address) }
             }
+        }
+        // 실제로 화면에 바인딩된 이 인스턴스를 채워야 한다. 부모가 미리 채우면 cover가 이전
+        // 인스턴스를 캡처해 첫 진입에 빈 화면이 뜬다(두 번째 진입에야 채워지는 증상의 원인).
+        .task {
+            guard let initialAddress, location.selectedAddress == nil else { return }
+            await location.selectAddress(initialAddress)
         }
     }
 
@@ -98,18 +121,25 @@ struct FarmLocationPickerView: View {
         .frame(maxHeight: .infinity)
     }
 
+    /// 평소엔 JUSO 검색 시트를 여는 버튼. 작도 후 역지오코딩이 실패했을 때만(`needsManualAddressEntry`)
+    /// 같은 자리에서 직접 타이핑 가능한 텍스트 필드로 바뀐다 — 해외 네트워크 등으로 국내 주소
+    /// API가 전혀 응답하지 않아도 이 필드에 직접 입력해 등록을 끝낼 수 있게 한다.
+    @ViewBuilder
     private var addressOverlayField: some View {
-        Button {
-            isSearchSheetPresented = true
-        } label: {
+        if location.needsManualAddressEntry {
             HStack(spacing: Spacing.sm) {
-                AppIconView(source: .asset("search"), size: 22)
+                AppIconView(source: .asset("edit"), size: 22)
                     .foregroundStyle(Color.Icon.default)
-                Text(displayedAddressText ?? "주소지를 입력해주세요.")
-                    .appTypography(.bodyLarge)
-                    .foregroundStyle(displayedAddressText == nil ? Color.Text.muted : Color.Text.default)
-                    .lineLimit(1)
-                Spacer(minLength: 0)
+                TextField(
+                    "주소를 직접 입력해주세요.",
+                    text: Binding(
+                        get: { location.selectedAddress?.jibunAddr ?? "" },
+                        set: { location.setManualAddress($0) }
+                    )
+                )
+                .appTypography(.bodyLarge)
+                .foregroundStyle(Color.Text.default)
+                .textInputAutocapitalization(.never)
             }
             .padding(.horizontal, Spacing.md)
             .frame(height: 56)
@@ -118,8 +148,29 @@ struct FarmLocationPickerView: View {
                 RoundedRectangle(cornerRadius: 8, style: .continuous)
                     .stroke(addressBorderColor, lineWidth: 1)
             }
+        } else {
+            Button {
+                isSearchSheetPresented = true
+            } label: {
+                HStack(spacing: Spacing.sm) {
+                    AppIconView(source: .asset("search"), size: 22)
+                        .foregroundStyle(Color.Icon.default)
+                    Text(displayedAddressText ?? "주소지를 입력해주세요.")
+                        .appTypography(.bodyLarge)
+                        .foregroundStyle(displayedAddressText == nil ? Color.Text.muted : Color.Text.default)
+                        .lineLimit(1)
+                    Spacer(minLength: 0)
+                }
+                .padding(.horizontal, Spacing.md)
+                .frame(height: 56)
+                .background(Color.Background.default)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 8, style: .continuous)
+                        .stroke(addressBorderColor, lineWidth: 1)
+                }
+            }
+            .buttonStyle(.plain)
         }
-        .buttonStyle(.plain)
     }
 
     /// 도로명이 없는 농지(지적도에 도로명 미부여)는 지번 주소로 표시한다. 둘 다 없으면 nil(미입력).
@@ -163,7 +214,6 @@ struct FarmLocationPickerView: View {
             .padding(.horizontal, Spacing.lg - Spacing.xs)
             .padding(.top, Spacing.md)
             .padding(.bottom, Spacing.md)
-            .background(Color.Background.default)
         }
     }
 

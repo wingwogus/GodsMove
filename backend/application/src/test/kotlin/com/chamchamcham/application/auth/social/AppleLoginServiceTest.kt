@@ -151,6 +151,28 @@ class AppleLoginServiceTest {
     }
 
     @Test
+    fun `login forwards client-supplied name when creating a new member`() {
+        val savedMember = Member(id = newMemberId, email = null, name = "홍길동", passwordHash = null, role = "ROLE_USER")
+
+        `when`(appleOidcTokenVerifier.verify("identity-token", "raw-nonce"))
+            .thenReturn(claims(email = null, emailVerified = false))
+        `when`(externalIdentityRepository.findByProviderAndProviderSubject(AuthProvider.APPLE, "apple-sub"))
+            .thenReturn(null)
+        `when`(memberRepository.save(Mockito.any(Member::class.java))).thenReturn(savedMember)
+        `when`(externalIdentityRepository.save(Mockito.any(ExternalIdentity::class.java)))
+            .thenAnswer { it.getArgument(0) }
+        `when`(tokenProvider.generateToken(newMemberId, "ROLE_USER"))
+            .thenReturn(AuthResult.TokenPair("access-token", "refresh-token"))
+        `when`(tokenProvider.getRefreshTokenValiditySeconds()).thenReturn(120L)
+
+        service.login(command(name = "홍길동"))
+
+        val memberCaptor = ArgumentCaptor.forClass(Member::class.java)
+        verify(memberRepository).save(memberCaptor.capture())
+        assertEquals("홍길동", memberCaptor.value.name)
+    }
+
+    @Test
     fun `login rejects replayed nonce hash`() {
         nonceRepository.reserveResult = false
         `when`(appleOidcTokenVerifier.verify("identity-token", "raw-nonce")).thenReturn(claims())
@@ -216,12 +238,13 @@ class AppleLoginServiceTest {
         )
     }
 
-    private fun command(userIdentifier: String? = "apple-sub"): AuthCommand.AppleLogin {
+    private fun command(userIdentifier: String? = "apple-sub", name: String? = null): AuthCommand.AppleLogin {
         return AuthCommand.AppleLogin(
             identityToken = "identity-token",
             nonce = "raw-nonce",
             authorizationCode = "authorization-code",
-            userIdentifier = userIdentifier
+            userIdentifier = userIdentifier,
+            name = name
         )
     }
 

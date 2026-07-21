@@ -13,6 +13,7 @@ struct LandingView: View {
     @Environment(AuthViewModel.self) private var authViewModel
     @Environment(AppState.self) private var appState
     @State private var appleNonce = ""
+    @State private var presentedPolicyLink: PolicyLink?
 
     private var isLoggingIn: Bool { authViewModel.loginState == .loggingIn }
 
@@ -81,10 +82,36 @@ struct LandingView: View {
                 .underline()
                 .padding(.top, Spacing.xs)
                 .disabled(isLoggingIn)
+
+                policyLinksRow
+                    .padding(.top, Spacing.md)
             }
         }
         .padding(.horizontal, Spacing.lg)
         .padding(.bottom, Spacing.xl)
+        .sheet(item: $presentedPolicyLink) { link in
+            NavigationStack {
+                PolicyWebView(link: link)
+            }
+        }
+    }
+
+    private var policyLinksRow: some View {
+        HStack(spacing: Spacing.xs) {
+            policyLinkButton(.termsOfService)
+            Text("·")
+                .appTypography(.labelMedium)
+                .foregroundStyle(Color.Text.muted)
+            policyLinkButton(.privacyPolicy)
+        }
+    }
+
+    private func policyLinkButton(_ link: PolicyLink) -> some View {
+        Button(link.title) {
+            presentedPolicyLink = link
+        }
+        .appTypography(.labelMedium)
+        .foregroundStyle(Color.Text.muted)
     }
 
     private func login(with method: (AppState) async -> Void) async {

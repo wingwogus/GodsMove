@@ -15,10 +15,16 @@ import Foundation
 // without crashing on an unexpected value. See `docs/figma/record/2026-07-14-record-detail-implementation-plan.md`.
 //
 // Do NOT reuse the compose `RecordComposeModels` enums to decode this — they'd fail on deployed-only values.
+//
+// `farmId`/`cropId`/media `mediaId`/pest-control `pesticideId`·`pestId` are confirmed present and non-null in
+// the backend response (`FarmingRecordResponses.RecordDetailResponse`, verified against source directly — see
+// `docs/superpowers/plans/` record-edit plan), so they're decoded as required rather than optional/raw-tolerant.
 
 struct RecordDetailResponseDTO: Decodable, Sendable {
     let id: UUID
+    let farmId: UUID
     let farmName: String
+    let cropId: UUID
     let cropName: String
     let workType: String
     let workedAt: String
@@ -57,8 +63,10 @@ struct RecordDetailResponseDTO: Decodable, Sendable {
     }
 
     struct PestControlDetailDTO: Decodable, Sendable {
+        let pesticideId: UUID?
         let pesticideName: String?
-        let pestTarget: String?
+        let pestId: UUID?
+        let pestName: String?
         let pesticideAmount: Double?
         let pesticideAmountUnit: String?
         let totalSprayAmount: Double?
@@ -101,6 +109,66 @@ extension RecordDetailResponseDTO {
             infoRows: RecordDetailLabels.infoRows(from: self)
         )
     }
+
+    /// 기록 수정 폼 프리필. `toDomain()`의 표시용 라벨과 달리, 폼이 그대로 재제출할 수 있는 원본
+    /// enum 코드/id를 보존한다. 알 수 없는 코드(배포·dev 계약 드리프트)는 해당 필드만 nil로
+    /// 떨어뜨려 폼 진입 자체는 항상 성공한다 — `VoiceCandidateMapper`와 동일한 관용 원칙.
+    func toEditPrefill() -> VoiceRecordPrefill {
+        var prefill = VoiceRecordPrefill(
+            farmId: farmId,
+            cropId: cropId,
+            workType: WorkType(rawValue: workType),
+            workedAt: RecordDateParser.date(from: workedAt),
+            memo: memo
+        )
+
+        if let p = planting {
+            prefill.plantingMethod = (p.plantingMethod ?? p.propagationMethod).flatMap(PlantingMethod.init(rawValue:))
+            prefill.seedAmount = p.seedAmount
+            prefill.seedlingCount = p.seedlingCount
+            if let propagationMethod = p.propagationMethod, propagationMethod != "SEED" {
+                prefill.propagationMethod = PropagationMethod(rawValue: propagationMethod)
+            }
+        }
+
+        if let w = watering {
+            prefill.irrigationAmount = w.irrigationAmount.flatMap(IrrigationAmount.init(rawValue:))
+            prefill.irrigationMethod = w.irrigationMethod.flatMap(IrrigationMethod.init(rawValue:))
+        }
+
+        if let f = fertilizing {
+            prefill.fertilizerMaterialName = f.materialName
+            prefill.fertilizerAmount = f.amount
+            prefill.fertilizerAmountUnit = f.amountUnit.flatMap(FertilizerAmountUnit.init(rawValue:))
+            prefill.fertilizingMethod = f.applicationMethod.flatMap(FertilizingMethod.init(rawValue:))
+        }
+
+        if let pc = pestControl {
+            if let pesticideId = pc.pesticideId {
+                prefill.pesticide = Pesticide(id: pesticideId, itemName: pc.pesticideName ?? "", brandName: "")
+            }
+            prefill.pesticideAmount = pc.pesticideAmount
+            prefill.pesticideAmountUnit = pc.pesticideAmountUnit.flatMap(PesticideAmountUnit.init(rawValue:))
+            prefill.totalSprayAmount = pc.totalSprayAmount
+            if let pestId = pc.pestId {
+                prefill.pest = Pest(id: pestId, name: pc.pestName ?? "")
+            }
+        }
+
+        if let wd = weeding {
+            prefill.weedingMethod = wd.weedingMethod.flatMap(WeedingMethod.init(rawValue:))
+        }
+
+        if let h = harvest {
+            prefill.growthPeriod = h.growthPeriod
+            prefill.harvestAmount = h.harvestAmount
+            prefill.harvestAmountUnknown = h.amountUnknown ?? false
+            prefill.medicinalPart = h.medicinalPart.flatMap(MedicinalPart.init(rawValue:))
+        }
+
+        prefill.existingPhotos = images?.map { ExistingPhoto(mediaId: $0.mediaId, url: $0.url) } ?? []
+        return prefill
+    }
 }
 
 /// Tolerant enum→label lookups + '작업 정보' row assembly. Unknown values fall back to the raw string rather
@@ -141,7 +209,7 @@ enum RecordDetailLabels {
             add("사용 농약", pc.pesticideName)
             add("농약 사용량", amount(pc.pesticideAmount, pc.pesticideAmountUnit))
             add("총 살포량", amount(pc.totalSprayAmount, pc.totalSprayAmountUnit))
-            add("대상 병해충", pc.pestTarget)
+            add("대상 병해충", pc.pestName)
         }
 
         if let wd = dto.weeding {

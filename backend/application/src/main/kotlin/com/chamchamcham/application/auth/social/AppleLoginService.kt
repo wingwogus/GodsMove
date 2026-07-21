@@ -33,6 +33,7 @@ class AppleLoginService(
             provider = AuthProvider.APPLE,
             providerSubject = claims.subject,
             email = claims.email?.takeIf { claims.emailVerified },
+            name = command.name?.takeIf { it.isNotBlank() },
             beforeSideEffects = { reserveNonce(claims) }
         )
     }

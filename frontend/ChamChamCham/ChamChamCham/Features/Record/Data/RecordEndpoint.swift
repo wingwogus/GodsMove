@@ -43,6 +43,7 @@ enum RecordEndpoint: Endpoint {
     case recordDetail(id: UUID)
     case recordFeedback(id: UUID)
     case deleteRecord(id: UUID)
+    case updateRecord(id: UUID, SaveRecordRequestDTO)
     case activeCrops
     case createRecord(SaveRecordRequestDTO)
     case pesticides(keyword: String?, cursor: String?, size: Int)
@@ -52,7 +53,7 @@ enum RecordEndpoint: Endpoint {
         switch self {
         case .listRecords, .createRecord:
             "api/v1/farming-records"
-        case let .recordDetail(id), let .deleteRecord(id):
+        case let .recordDetail(id), let .deleteRecord(id), let .updateRecord(id, _):
             "api/v1/farming-records/\(id.uuidString)"
         case let .recordFeedback(id):
             "api/v1/farming-records/\(id.uuidString)/feedback"
@@ -69,6 +70,8 @@ enum RecordEndpoint: Endpoint {
         switch self {
         case .createRecord:
             .post
+        case .updateRecord:
+            .patch
         case .deleteRecord:
             .delete
         case .listRecords, .recordDetail, .recordFeedback, .activeCrops, .pesticides, .pests:
@@ -79,6 +82,8 @@ enum RecordEndpoint: Endpoint {
     var body: (any Encodable & Sendable)? {
         switch self {
         case let .createRecord(dto):
+            dto
+        case let .updateRecord(_, dto):
             dto
         default:
             nil
@@ -119,7 +124,7 @@ enum RecordEndpoint: Endpoint {
                 items.append(URLQueryItem(name: "cursor", value: cursor))
             }
             return items
-        case .recordDetail, .recordFeedback, .deleteRecord, .activeCrops, .createRecord, .pests:
+        case .recordDetail, .recordFeedback, .deleteRecord, .updateRecord, .activeCrops, .createRecord, .pests:
             return []
         }
     }

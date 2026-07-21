@@ -46,16 +46,35 @@ actor TokenRefreshCoordinator {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.httpBody = try? JSONEncoder().encode(ReissueRequestBody(refreshToken: refreshToken))
 
+        let data: Data
+        let response: URLResponse
+        do {
+            (data, response) = try await session.data(for: request)
+        } catch {
+            throw APIError.network(error)
+        }
+
+        guard let http = response as? HTTPURLResponse else {
+            throw APIError.network(URLError(.badServerResponse))
+        }
+
+        // Only a confirmed auth rejection from the server may wipe the session — a transport error,
+        // an unrelated server failure, or a malformed body must leave the refresh token intact.
+        if http.statusCode == 401 || http.statusCode == 403 {
+            await authTokenStore.clear()
+            throw APIError.unauthorized
+        }
+
+        guard (200...299).contains(http.statusCode) else {
+            throw APIError.server(statusCode: http.statusCode)
+        }
+
         guard
-            let (data, response) = try? await session.data(for: request),
-            let http = response as? HTTPURLResponse,
-            (200...299).contains(http.statusCode),
             let envelope = try? JSONDecoder().decode(APIEnvelope<TokenResponseDTO>.self, from: data),
             envelope.success,
             let pair = envelope.data
         else {
-            await authTokenStore.clear()
-            throw APIError.unauthorized
+            throw APIError.decoding(URLError(.cannotParseResponse))
         }
 
         await authTokenStore.save(accessToken: pair.accessToken, refreshToken: pair.refreshToken)

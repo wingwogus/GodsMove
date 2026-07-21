@@ -19,10 +19,13 @@ struct RecordComposeView: View {
     private let onSessionInvalid: (() -> Void)?
     private let entryNotice: String?
     private let isVoiceReview: Bool
+    private let isEditing: Bool
 
     /// `saver`/`prefill`/`onSessionInvalid`/`entryNotice`/`isVoiceReview`는 음성 검토 재사용
     /// 전용 — 텍스트 작성 호출부는 기본값 그대로 두면 기존 동작과 동일하다. `entryNotice`는
     /// 종료 사유별 상단 안내 배너 문구(없으면 미표시), `isVoiceReview`는 타이틀 구분용이다.
+    /// `isEditing`은 기록 수정 진입 전용 — 타이틀만 구분하고("기록 수정") 나머지 폼 동작은
+    /// `saver`(`UpdateRecordSaver`)/`prefill`(기존 기록 raw 값)이 이미 알아서 분기한다.
     init(
         repository: any RecordRepository,
         weatherRepository: any WeatherRepository,
@@ -32,6 +35,7 @@ struct RecordComposeView: View {
         onSessionInvalid: (() -> Void)? = nil,
         entryNotice: String? = nil,
         isVoiceReview: Bool = false,
+        isEditing: Bool = false,
         onComplete: @escaping (UUID) -> Void
     ) {
         _viewModel = State(initialValue: RecordComposeViewModel(
@@ -44,15 +48,21 @@ struct RecordComposeView: View {
         self.onSessionInvalid = onSessionInvalid
         self.entryNotice = entryNotice
         self.isVoiceReview = isVoiceReview
+        self.isEditing = isEditing
         self.onComplete = onComplete
     }
 
     private var vm: RecordComposeViewModel { viewModel }
 
+    private var title: String {
+        if isEditing { return "기록 수정" }
+        return isVoiceReview ? "음성 기록 확인" : "기록하기"
+    }
+
     var body: some View {
         VStack(spacing: 0) {
             AppTopAppBar(
-                title: isVoiceReview ? "음성 기록 확인" : "기록하기",
+                title: title,
                 isDetail: true,
                 leading: .init(.asset("arrow_back_ios_new")) { dismiss() }
             )
@@ -361,14 +371,31 @@ struct RecordComposeView: View {
         }
     }
 
-    /// 고른 사진은 즉시 미리보기로 보여주고, 업로드가 끝날 때까지 스피너를 덧씌운다.
+    /// 새로 고른 사진은 즉시 미리보기로 보여주고 업로드가 끝날 때까지 스피너를 덧씌운다. 수정 진입 시
+    /// 채워진 기존 사진(`source == .remote`)은 서버 URL을 그대로 그린다.
     @ViewBuilder
     private func photoThumbnail(for attachment: RecordComposeViewModel.Attachment) -> some View {
         ZStack {
-            if let uiImage = UIImage(data: attachment.previewData) {
-                Image(uiImage: uiImage).resizable().scaledToFill()
-            } else {
-                Color.Object.muted
+            switch attachment.source {
+            case let .local(data):
+                if let uiImage = UIImage(data: data) {
+                    Image(uiImage: uiImage).resizable().scaledToFill()
+                } else {
+                    Color.Object.muted
+                }
+            case let .remote(url):
+                if let parsed = URL(string: url) {
+                    AsyncImage(url: parsed) { phase in
+                        switch phase {
+                        case let .success(image):
+                            image.resizable().scaledToFill()
+                        default:
+                            Color.Object.muted
+                        }
+                    }
+                } else {
+                    Color.Object.muted
+                }
             }
             if attachment.isUploading {
                 Color.black.opacity(0.3)

@@ -66,13 +66,46 @@ final class HomeViewModel {
         _ = await (weatherLoad, recordsLoad, policyLoad, postsLoad)
     }
 
+    /// 로그인/회원가입 직후 등 간헐적으로 날씨 조회가 실패하는 사례가 있다 — 서버 쪽 외부 기상 제공사
+    /// 호출이 그 타이밍에 일시적으로 실패하는 것으로 보이며(`error.weather_provider_unavailable` 같은
+    /// 원시 키가 관측됨), 화면을 아래로 당겨 새로고침하면 곧바로 해결되는 경우가 많았다. 사용자가 직접
+    /// 새로고침하지 않아도 되도록 실패 시 바로 실패로 보여주지 않고 짧은 대기 후 최대 2번 더 조용히
+    /// 재시도한다. `.unauthorized`/`FARM_001`처럼 재시도해도 결과가 같을 에러는 곧장 실패 처리한다.
     private func loadWeather() async {
         weatherState = .loading
-        do {
-            // farmId 생략 → 백엔드가 첫 등록 농지로 해석(계획대로), 여기서 별도 농지 조회가 필요 없다.
-            weatherState = .loaded(try await weatherRepository.fetchHome(farmId: nil))
-        } catch {
-            weatherState = .failed(HomeErrorMessage.text(for: error))
+        weatherState = await fetchWeatherWithRetry()
+    }
+
+    /// 카드의 "다시 시도" 버튼에서 호출 — 섹션 전체를 다시 로딩 스피너로 되돌리지 않고 조용히 재시도한다.
+    func retryWeather() async {
+        weatherState = await fetchWeatherWithRetry()
+    }
+
+    private func fetchWeatherWithRetry() async -> HomeSectionState<CurrentWeather> {
+        let retryDelaysNanoseconds: [UInt64] = [300_000_000, 800_000_000]
+        var lastError: Error?
+        for delay in [0] + retryDelaysNanoseconds {
+            if delay > 0 {
+                try? await Task.sleep(nanoseconds: delay)
+            }
+            do {
+                // farmId 생략 → 백엔드가 첫 등록 농지로 해석(계획대로), 여기서 별도 농지 조회가 필요 없다.
+                return .loaded(try await weatherRepository.fetchHome(farmId: nil))
+            } catch {
+                lastError = error
+                if !Self.isRetryableWeatherError(error) { break }
+            }
+        }
+        return .failed(HomeErrorMessage.text(for: lastError!))
+    }
+
+    private static func isRetryableWeatherError(_ error: Error) -> Bool {
+        guard let apiError = error as? APIError else { return true }
+        switch apiError {
+        case .unauthorized, .apiError(code: "FARM_001", _), .validation:
+            return false
+        case .network, .server, .decoding, .apiError:
+            return true
         }
     }
 

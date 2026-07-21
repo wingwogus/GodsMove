@@ -12,30 +12,65 @@ struct VWorldAPIService: FarmlandGeocoding, ParcelLookup, ReverseGeocoding, Send
     private let addressBaseURL = "https://api.vworld.kr/req/address"
     private let dataBaseURL = "https://api.vworld.kr/req/data"
 
-    /// V-World 주소 API(req/address, getcoord)로 도로명 주소를 좌표로 변환한다.
+    /// 해외 네트워크 경로에서 국내 공공 API가 아예 응답하지 않을 수 있어(App Store 리뷰에서
+    /// 확인됨), 기본 60초 타임아웃 대신 짧게 못 박아 실패 상태로 빨리 전환시킨다.
+    private static let requestTimeout: TimeInterval = 8
+
+    /// V-World 주소 API(req/address, getcoord)로 주소를 좌표로 변환한다.
     ///
     /// 원래 MapKit의 지오코딩을 사용했으나, 시뮬레이터 환경에서 실제 존재하는 주소도
     /// 전부 실패하는 것을 확인했다 (환경/네트워크 문제로 추정). 이미 검증된 V-World
     /// 키로 같은 주소를 조회하면 정상 동작하므로 MapKit 대신 V-World 주소 API를 사용한다.
-    func geocode(roadAddress: String) async throws -> CLLocationCoordinate2D {
+    ///
+    /// 도로명(`type=road`)·지번(`type=parcel`)을 동시에 요청해 성공한 쪽(도로명 우선)을
+    /// 반환한다. 산골·하천변 농지는 도로명이 없어 `roadAddress`가 비는 경우가 많은데, 이때
+    /// 지번 폴백이 없으면 정상 주소도 좌표 변환에 실패한다(App Store 리뷰에서 관측된 버그).
+    /// 순차 시도 시 최악의 경우 두 번의 타임아웃이 누적되므로 병행 호출로 대기 시간을 줄인다.
+    func geocode(roadAddress: String, jibunAddress: String) async throws -> CLLocationCoordinate2D {
+        let trimmedRoad = roadAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedJibun = jibunAddress.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedRoad.isEmpty || !trimmedJibun.isEmpty else {
+            throw FarmLocationAPIError.noResult
+        }
+
+        async let roadTask: CLLocationCoordinate2D? = trimmedRoad.isEmpty
+            ? nil
+            : try? await getcoord(address: trimmedRoad, type: "road")
+        async let jibunTask: CLLocationCoordinate2D? = trimmedJibun.isEmpty
+            ? nil
+            : try? await getcoord(address: trimmedJibun, type: "parcel")
+
+        if let road = await roadTask {
+            return road
+        }
+        if let jibun = await jibunTask {
+            return jibun
+        }
+        throw FarmLocationAPIError.noResult
+    }
+
+    /// V-World getcoord 단일 요청. `type`은 "road"(도로명) 또는 "parcel"(지번).
+    private func getcoord(address: String, type: String) async throws -> CLLocationCoordinate2D {
         var components = URLComponents(string: addressBaseURL)
         components?.queryItems = [
             URLQueryItem(name: "service", value: "address"),
             URLQueryItem(name: "request", value: "getcoord"),
             URLQueryItem(name: "version", value: "2.0"),
             URLQueryItem(name: "crs", value: "epsg:4326"),
-            URLQueryItem(name: "address", value: roadAddress),
+            URLQueryItem(name: "address", value: address),
             URLQueryItem(name: "refine", value: "true"),
             URLQueryItem(name: "simple", value: "false"),
             URLQueryItem(name: "format", value: "json"),
-            URLQueryItem(name: "type", value: "road"),
-            URLQueryItem(name: "key", value: Secrets.vWorldAPIKey)
+            URLQueryItem(name: "type", value: type),
+            URLQueryItem(name: "key", value: Secrets.vWorldAPIKey),
+            URLQueryItem(name: "domain", value: Bundle.main.bundleIdentifier ?? "")
         ]
         guard let url = components?.url else { throw FarmLocationAPIError.invalidURL }
 
         let data: Data
         do {
-            (data, _) = try await URLSession.shared.data(from: url)
+            let request = URLRequest(url: url, timeoutInterval: Self.requestTimeout)
+            (data, _) = try await URLSession.shared.data(for: request)
         } catch {
             throw FarmLocationAPIError.network(error.localizedDescription)
         }
@@ -71,7 +106,8 @@ struct VWorldAPIService: FarmlandGeocoding, ParcelLookup, ReverseGeocoding, Send
 
         let data: Data
         do {
-            (data, _) = try await URLSession.shared.data(from: url)
+            let request = URLRequest(url: url, timeoutInterval: Self.requestTimeout)
+            (data, _) = try await URLSession.shared.data(for: request)
         } catch {
             throw FarmLocationAPIError.network(error.localizedDescription)
         }
@@ -126,7 +162,8 @@ struct VWorldAPIService: FarmlandGeocoding, ParcelLookup, ReverseGeocoding, Send
         }
 
         do {
-            let (data, _) = try await URLSession.shared.data(from: url)
+            let request = URLRequest(url: url, timeoutInterval: Self.requestTimeout)
+            let (data, _) = try await URLSession.shared.data(for: request)
             let decoded = try JSONDecoder().decode(VWorldGetAddressResponse.self, from: data)
             guard decoded.response.status == "OK" else {
                 // NOT_FOUND / ERROR 등: 해당 타입 주소가 없을 뿐 요청 자체는 성공.

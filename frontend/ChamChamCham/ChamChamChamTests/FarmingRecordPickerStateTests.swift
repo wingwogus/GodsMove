@@ -37,6 +37,8 @@ struct FarmingRecordPickerStateTests {
         func searchPesticides(keyword: String?) async throws -> [Pesticide] { throw Unused() }
         func fetchPests(pesticideId: UUID) async throws -> [Pest] { throw Unused() }
         func createRecord(_ request: SaveRecordRequestDTO) async throws -> UUID { throw Unused() }
+        func fetchEditPrefill(id: UUID) async throws -> VoiceRecordPrefill { throw Unused() }
+        func updateRecord(id: UUID, _ request: SaveRecordRequestDTO) async throws -> UUID { throw Unused() }
     }
 
     private static let strawberryId = UUID(uuidString: "AAAAAAAA-0000-0000-0000-000000000001")!

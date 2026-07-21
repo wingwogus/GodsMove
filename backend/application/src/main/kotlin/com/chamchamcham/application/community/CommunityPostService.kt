@@ -56,6 +56,19 @@ class CommunityPostService(
             }
     }
 
+    /** Crops [authorMemberId] has posted under, including crops no longer in their current
+     * `MemberCrop` set — backs the profile "기타 작물" filter (see [listBoards] for the
+     * currently-farmed counterpart). */
+    @Transactional(readOnly = true)
+    fun listPostCrops(authorMemberId: UUID): List<CommunityPostResult.Board> =
+        communityPostQueryRepository.findDistinctCropsByAuthor(authorMemberId)
+            .map { crop ->
+                CommunityPostResult.Board(
+                    cropId = requireNotNull(crop.id) { "Persisted crop id is required" },
+                    cropName = crop.name
+                )
+            }
+
     @Transactional(readOnly = true)
     fun search(condition: CommunityPostSearchCondition): CommunityPostResult.Page {
         if (condition.memberId == null && (condition.likedOnly || condition.mineOnly)) {

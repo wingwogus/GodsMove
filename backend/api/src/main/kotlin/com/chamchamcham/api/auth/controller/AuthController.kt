@@ -97,7 +97,8 @@ class AuthController(
                 identityToken = request.identityToken,
                 nonce = request.nonce,
                 authorizationCode = request.authorizationCode,
-                userIdentifier = request.userIdentifier
+                userIdentifier = request.userIdentifier,
+                name = request.name
             )
         )
         return ResponseEntity.ok(ApiResponse.ok(AuthResponses.LoginResponse.from(result)))
@@ -121,7 +122,7 @@ class AuthController(
                 memberId = parseMemberId(memberId),
                 name = request.name,
                 phone = request.phone,
-                birthDate = requireNotNull(request.birthDate),
+                birthDate = request.birthDate,
                 nickname = request.nickname,
                 experienceLevel = requireNotNull(request.experienceLevel),
                 managementType = requireNotNull(request.managementType),

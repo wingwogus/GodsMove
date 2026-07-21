@@ -86,8 +86,7 @@ struct AppImageUploadSlot<Thumbnail: View>: View {
 
             if thumbnail != nil, let onRemove {
                 Button(action: onRemove) {
-                    Image(systemName: "xmark")
-                        .font(.system(size: size.removeIconSize * 0.45, weight: .bold))
+                    AppIconView(source: .asset("cancel"), size: size.removeIconSize * 0.45)
                         .foregroundStyle(Color.Text.inverse)
                         .frame(width: size.removeIconSize, height: size.removeIconSize)
                         .background(Color.Object.bold)
