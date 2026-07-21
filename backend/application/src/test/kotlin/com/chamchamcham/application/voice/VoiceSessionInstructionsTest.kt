@@ -122,6 +122,15 @@ class VoiceSessionInstructionsTest {
     }
 
     @Test
+    fun `ETC로 분류해도 농지·작물·memo를 채워 save_farming_record를 호출하도록 지시한다`() {
+        val instructions = build()
+
+        // ETC를 분류만 하고 멈춰 tool 호출이 안 돼 후보(candidate)가 비던 버그 방지 회귀 테스트.
+        assertThat(instructions).contains("ETC로 분류했더라도")
+        assertThat(instructions).contains("save_farming_record를 반드시 호출")
+    }
+
+    @Test
     fun `못 처리한 예외를 사용자에게 인지시키는 규칙을 포함한다`() {
         val instructions = build()
 
