@@ -3,7 +3,6 @@ package com.chamchamcham.application.voice
 import com.chamchamcham.domain.crop.CropUsePartCategory
 import com.chamchamcham.domain.farming.FertilizerAmountUnit
 import com.chamchamcham.domain.farming.FertilizingMethod
-import com.chamchamcham.domain.farming.HarvestSource
 import com.chamchamcham.domain.farming.IrrigationAmount
 import com.chamchamcham.domain.farming.IrrigationMethod
 import com.chamchamcham.domain.farming.PesticideAmountUnit
@@ -67,62 +66,71 @@ object FarmingRecordVoiceToolSchema {
             "채우고 seedlingCount/seedlingUnit/propagationMethod는 비운다. plantingMethod=SEEDLING(모종 심기)이면 " +
             "seedlingCount/seedlingUnit만 채우고(propagationMethod는 선택), seedAmount/seedAmountUnit은 비운다.",
         mapOf(
-            "plantingMethod" to enumProperty("심기 방법(필수)", PlantingMethod.entries.map { it.name }),
-            "seedAmount" to mapOf("type" to "number", "description" to "파종량(plantingMethod=SEED일 때 필수)"),
-            "seedAmountUnit" to enumProperty("파종량 단위(plantingMethod=SEED일 때만)", SeedAmountUnit.entries.map { it.name }),
-            "seedlingCount" to mapOf("type" to "integer", "description" to "모종수(plantingMethod=SEEDLING일 때 필수)"),
-            "seedlingUnit" to enumProperty("모종수 단위(plantingMethod=SEEDLING일 때만)", SeedlingUnit.entries.map { it.name }),
+            "plantingMethod" to enumProperty("심은 방법(필수)", PlantingMethod.entries.map { it.name }),
+            "seedAmount" to mapOf("type" to "number", "description" to "심은 씨앗량(plantingMethod=SEED일 때 필수)"),
+            "seedAmountUnit" to enumProperty(
+                "심은 씨앗량 단위(plantingMethod=SEED일 때만). 항상 G이므로 사용자에게 묻지 말고 자동으로 채운다.",
+                SeedAmountUnit.entries.map { it.name },
+            ),
+            "seedlingCount" to mapOf("type" to "integer", "description" to "심은 갯수(plantingMethod=SEEDLING일 때 필수)"),
+            "seedlingUnit" to enumProperty(
+                "심은 갯수 단위(plantingMethod=SEEDLING일 때만). 항상 JU이므로 사용자에게 묻지 말고 자동으로 채운다.",
+                SeedlingUnit.entries.map { it.name },
+            ),
             "propagationMethod" to enumProperty(
-                "번식법(plantingMethod=SEEDLING일 때만 선택 입력 가능)",
+                "모종 번식법(plantingMethod=SEEDLING일 때만 선택 입력 가능)",
                 PropagationMethod.entries.map { it.name },
             ),
         ),
     )
 
     private fun wateringSchema() = objectProperty(
-        "관수 상세 (workType=WATERING일 때만)",
+        "물주기 상세 (workType=WATERING일 때만)",
         mapOf(
-            "irrigationAmount" to enumProperty("관수량", IrrigationAmount.entries.map { it.name }),
-            "irrigationMethod" to enumProperty("관수 방법", IrrigationMethod.entries.map { it.name }),
+            "irrigationAmount" to enumProperty("물의 양", IrrigationAmount.entries.map { it.name }),
+            "irrigationMethod" to enumProperty("물주기 방법", IrrigationMethod.entries.map { it.name }),
         ),
     )
 
     private fun fertilizingSchema() = objectProperty(
-        "시비 상세 (workType=FERTILIZING일 때 필수)",
+        "비료 주기 상세 (workType=FERTILIZING일 때 필수)",
         mapOf(
-            "materialName" to mapOf("type" to "string", "description" to "비료명(필수)"),
-            "amount" to mapOf("type" to "number", "description" to "시비량(필수)"),
-            "amountUnit" to enumProperty("시비량 단위(필수)", FertilizerAmountUnit.entries.map { it.name }),
-            "applicationMethod" to enumProperty("시비 방법", FertilizingMethod.entries.map { it.name }),
+            "materialName" to mapOf("type" to "string", "description" to "사용 비료(필수)"),
+            "amount" to mapOf("type" to "number", "description" to "비료 사용량(필수)"),
+            "amountUnit" to enumProperty("비료 사용량 단위(필수)", FertilizerAmountUnit.entries.map { it.name }),
+            "applicationMethod" to enumProperty("비료 주기 방법", FertilizingMethod.entries.map { it.name }),
         ),
     )
 
     private fun pestControlSchema() = objectProperty(
-        "병해충 방제 상세 (workType=PEST_CONTROL일 때 필수)",
+        "병해충 관리 상세 (workType=PEST_CONTROL일 때 필수)",
         mapOf(
             "pesticideName" to mapOf(
                 "type" to "string",
-                "description" to "농약명(필수). 사용자 발음이 부정확할 수 있으니 지침의 농약 목록에 비슷한 이름이 " +
+                "description" to "사용 농약(필수). 사용자 발음이 부정확할 수 있으니 지침의 농약 목록에 비슷한 이름이 " +
                     "있으면 확인 후 그 정확한 명칭을 사용하고, 목록에 없으면 들리는 대로 기록한다.",
             ),
-            "pesticideAmount" to mapOf("type" to "number", "description" to "농약량(필수)"),
-            "pesticideAmountUnit" to enumProperty("농약량 단위(필수)", PesticideAmountUnit.entries.map { it.name }),
+            "pesticideAmount" to mapOf("type" to "number", "description" to "농약 사용량(필수)"),
+            "pesticideAmountUnit" to enumProperty("농약 사용량 단위(필수)", PesticideAmountUnit.entries.map { it.name }),
             "totalSprayAmount" to mapOf("type" to "number", "description" to "총 살포량(필수)"),
-            "totalSprayAmountUnit" to enumProperty("총 살포량 단위(필수)", SprayAmountUnit.entries.map { it.name }),
-            "pestTarget" to mapOf("type" to "string", "description" to "방제 대상 병해충"),
+            "totalSprayAmountUnit" to enumProperty(
+                "총 살포량 단위(필수). 항상 ML이므로 사용자에게 묻지 말고 자동으로 채운다.",
+                SprayAmountUnit.entries.map { it.name },
+            ),
+            "pestTarget" to mapOf("type" to "string", "description" to "대상 병해충"),
         ),
     )
 
     private fun weedingSchema() = objectProperty(
-        "제초 상세 (workType=WEEDING일 때만)",
-        mapOf("weedingMethod" to enumProperty("제초 방법", WeedingMethod.entries.map { it.name })),
+        "잡초 관리 상세 (workType=WEEDING일 때만)",
+        mapOf("weedingMethod" to enumProperty("잡초 관리 방법", WeedingMethod.entries.map { it.name })),
     )
 
     private fun harvestSchema() = objectProperty(
         "수확 상세 (workType=HARVEST일 때 필수). 수확량은 항상 kg 기준이다. 사용자가 수확량을 모른다고 " +
             "말하면 harvestAmountUnknown=true로 설정하고 harvestAmount는 비운다. 수확 부위(medicinalPart)는 " +
             "선택 입력이다. 재배기간(growthPeriod)은 항상 개월 단위이며 필수 입력이다. " +
-            "마지막 수확 여부(isLastHarvest)도 필수 입력이다.",
+            "최종 수확 여부(isLastHarvest)도 필수 입력이다.",
         mapOf(
             "harvestAmount" to mapOf("type" to "number", "description" to "수확량(kg). 모르면 비운다."),
             "harvestAmountUnknown" to mapOf(
@@ -130,11 +138,10 @@ object FarmingRecordVoiceToolSchema {
                 "description" to "수확량을 모르면 true. 이때 harvestAmount는 비운다.",
             ),
             "medicinalPart" to enumProperty("수확 부위(선택)", CropUsePartCategory.entries.map { it.name }),
-            "harvestSource" to enumProperty("수확 출처", HarvestSource.entries.map { it.name }),
             "growthPeriod" to mapOf("type" to "integer", "description" to "재배기간(개월, 필수)"),
             "isLastHarvest" to mapOf(
                 "type" to "boolean",
-                "description" to "이 작물의 마지막 수확 여부(필수). 사용자가 말하지 않으면 예/아니오로 한 번만 묻는다.",
+                "description" to "이 작물의 최종 수확 여부(필수). 사용자가 말하지 않으면 예/아니오로 한 번만 묻는다.",
             ),
         ),
     )
