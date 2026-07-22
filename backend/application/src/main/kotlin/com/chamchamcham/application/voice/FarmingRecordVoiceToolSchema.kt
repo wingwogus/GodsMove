@@ -33,7 +33,10 @@ object FarmingRecordVoiceToolSchema {
             "name" to "save_farming_record",
             "description" to
                 "사용자가 말한 영농 작업 내용을 영농일지 항목으로 구조화한다. " +
-                "누락된 필수 항목이 있으면 이 도구를 호출하지 말고 사용자에게 먼저 되물어라.",
+                "필수 항목은 farmId·cropId·workType·memo이며, 작업 유형별 상세(planting/harvest 등)는 " +
+                "해당 유형일 때만 필요하다. 이 필수 항목이 누락됐으면 호출하지 말고 먼저 되물어라. " +
+                "다만 WATERING·WEEDING·PRUNING·ETC(기타)처럼 별도 상세가 없는 유형은 필수 4개만 갖춰지면 " +
+                "상세를 기다리지 말고 곧바로 이 도구를 호출한다.",
             "parameters" to mapOf(
                 "type" to "object",
                 "properties" to mapOf(

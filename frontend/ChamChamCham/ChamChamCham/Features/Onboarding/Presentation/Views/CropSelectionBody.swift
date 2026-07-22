@@ -42,51 +42,54 @@ struct CropSelectionBody: View {
     @State private var selectedCategoryCode: String?
     @State private var selectionLimitMessage: String?
 
+    /// `crops` sorted once whenever it changes, so tab switches and searches only filter — they never re-sort.
+    @State private var sortedCrops: [Crop] = []
+    /// O(1) id → crop lookup for the selected-chip labels, instead of a linear scan per chip.
+    @State private var cropsByID: [UUID: Crop] = [:]
+
     private var selectedCount: Int { selectedCropIDs.count }
 
+    /// `nil` means the "전체" tab: no category filter applied.
     private var filteredCrops: [Crop] {
-        let selectedCode = selectedCategory?.code
-        let byCategory = selectedCode.map { code in
-            crops.filter { $0.categoryCode == code }
-        } ?? crops
+        let byCategory = selectedCategoryCode.map { code in
+            sortedCrops.filter { $0.categoryCode == code }
+        } ?? sortedCrops
 
         let keyword = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        let filtered = keyword.isEmpty
+        return keyword.isEmpty
             ? byCategory
             : byCategory.filter { $0.name.localizedCaseInsensitiveContains(keyword) }
-
-        return filtered.sorted { lhs, rhs in
-            lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-        }
     }
 
-    private var selectedCategory: CropCategory? {
-        guard !categories.isEmpty else { return nil }
-        if let selectedCategoryCode,
-           let category = categories.first(where: { $0.code == selectedCategoryCode }) {
-            return category
-        }
-        return categories.first
+    /// Tab 0 is always "전체"; tabs 1... mirror `categories`.
+    private var categoryTabTitles: [String] {
+        ["전체"] + categories.map(\.label)
     }
 
     private var selectedCategoryIndex: Int {
-        guard let selectedCategory else { return 0 }
-        return categories.firstIndex { $0.code == selectedCategory.code } ?? 0
+        guard let selectedCategoryCode,
+              let index = categories.firstIndex(where: { $0.code == selectedCategoryCode }) else {
+            return 0
+        }
+        return index + 1
     }
 
     private var selectedCategoryBinding: Binding<Int> {
         Binding {
             selectedCategoryIndex
         } set: { index in
-            guard categories.indices.contains(index) else { return }
-            selectedCategoryCode = categories[index].code
+            if index == 0 {
+                selectedCategoryCode = nil
+            } else if categories.indices.contains(index - 1) {
+                selectedCategoryCode = categories[index - 1].code
+            }
             selectionLimitMessage = nil
         }
     }
 
     private var selectedCropChips: [SelectedCropChip] {
         selectedCropIDs.map { cropID in
-            let cropName = crops.first(where: { $0.id == cropID })?.name ?? "선택 작물"
+            let cropName = cropsByID[cropID]?.name ?? "선택 작물"
             return SelectedCropChip(id: cropID, name: cropName)
         }
     }
@@ -125,13 +128,16 @@ struct CropSelectionBody: View {
             // 키보드가 하단 트레이(선택 칩 + CTA)를 밀어 올리지 않도록 고정한다 (SearchView와 동일 패턴).
             .ignoresSafeArea(.keyboard, edges: .bottom)
         }
-        .task {
-            selectedCategoryCode = selectedCategoryCode ?? categories.first?.code
+        .task(id: crops) {
+            rebuildCropCaches()
         }
-        .onChange(of: categories) { _, categories in
-            guard selectedCategoryCode == nil else { return }
-            selectedCategoryCode = categories.first?.code
+    }
+
+    private func rebuildCropCaches() {
+        sortedCrops = crops.sorted { lhs, rhs in
+            lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
         }
+        cropsByID = Dictionary(uniqueKeysWithValues: crops.map { ($0.id, $0) })
     }
 
     @ViewBuilder
@@ -212,23 +218,13 @@ struct CropSelectionBody: View {
             .frame(height: 56)
     }
 
-    @ViewBuilder
     private var categoryTabs: some View {
-        if categories.isEmpty {
-            Text("카테고리를 불러오는 중...")
-                .appTypography(.labelMedium)
-                .foregroundStyle(Color.Text.muted)
-                .frame(height: 56)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 20)
-        } else {
-            AppTabBar(
-                titles: categories.map(\.label),
-                selection: selectedCategoryBinding,
-                scrollable: true
-            )
-            .frame(height: 56)
-        }
+        AppTabBar(
+            titles: categoryTabTitles,
+            selection: selectedCategoryBinding,
+            scrollable: true
+        )
+        .frame(height: 56)
     }
 
     private func cropRow(_ crop: Crop) -> some View {

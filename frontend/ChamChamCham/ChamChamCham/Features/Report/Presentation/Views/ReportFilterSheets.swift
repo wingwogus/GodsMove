@@ -101,7 +101,7 @@ struct ReportWorkTypeFilterSheet: View {
     }
 
     var body: some View {
-        AppFilterSheetScaffold(title: "영농 활동", height: 274) {
+        AppFilterSheetScaffold(title: "영농 활동") {
             AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm) {
                 ForEach(WorkType.allCases, id: \.self) { workType in
                     let selected = draft.contains(workType)

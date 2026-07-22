@@ -42,7 +42,7 @@ struct RecordCropFilterSheet: View {
     }
 
     var body: some View {
-        AppFilterSheetScaffold(title: "진행중인 작물", height: 274) {
+        AppFilterSheetScaffold(title: "진행중인 작물") {
             if crops.isEmpty {
                 Text("진행중인 작물이 없어요.")
                     .appTypography(.bodyMedium)
@@ -87,7 +87,7 @@ struct RecordWorkTypeFilterSheet: View {
     }
 
     var body: some View {
-        AppFilterSheetScaffold(title: "영농 활동", height: 274) {
+        AppFilterSheetScaffold(title: "영농 활동") {
             AppFlowLayout(spacing: Spacing.sm, lineSpacing: Spacing.sm) {
                 ForEach(WorkType.allCases, id: \.self) { workType in
                     let selected = draft.contains(workType)
