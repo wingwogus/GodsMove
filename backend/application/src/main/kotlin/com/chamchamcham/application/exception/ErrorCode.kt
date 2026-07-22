@@ -45,6 +45,7 @@ enum class ErrorCode(
     FARMING_RECORD_TOO_MANY_IMAGES("FARMING_005", "error.farming_record_too_many_images", 400),
     PESTICIDE_NOT_FOUND("PESTICIDE_001", "error.pesticide_not_found", 404),
     PEST_NOT_FOUND("PESTICIDE_002", "error.pest_not_found", 404),
+    PESTICIDE_SYNC_FAILED("PESTICIDE_003", "error.pesticide_sync_failed", 502),
     VOICE_SESSION_NOT_FOUND("VOICE_001", "error.voice_session_not_found", 404),
     VOICE_SESSION_INVALID_STATE("VOICE_002", "error.voice_session_invalid_state", 409),
     VOICE_SESSION_PROVIDER_UNAVAILABLE("VOICE_003", "error.voice_session_provider_unavailable", 503),

@@ -8,13 +8,15 @@ import javax.xml.XMLConstants
 import javax.xml.parsers.DocumentBuilderFactory
 
 /**
- * 데이터포털/PSIS류 XML 응답에서 반복되는 <item> 엘리먼트를 태그명 -> 텍스트값 맵으로 평탄화한다.
- * 실제 태그명(예: cropNm, aplyPestNm 등)은 API 키 발급 후 실응답으로 확정하고
- * [PsisPesticideRowMapper]에서만 매핑하면 되도록, 이 파서는 특정 필드명을 알 필요가 없게 만든다.
+ * PSIS(농약안전정보시스템) XML 응답(<service><list><item>...)에서 반복되는 <item> 엘리먼트를
+ * 태그명 -> 텍스트값 맵으로 평탄화한다. 실제 필드 매핑은 [PsisPesticideRowMapper]에서만 하면 되도록,
+ * 이 파서는 특정 필드명을 알 필요가 없게 만든다.
  */
 @Component
 class PsisPesticideResponseParser {
-    fun parse(xml: String): List<Map<String, String>> {
+    fun parse(xml: String): List<Map<String, String>> = parseEnvelope(xml).items
+
+    fun parseEnvelope(xml: String): PsisPesticideEnvelope {
         val factory = DocumentBuilderFactory.newInstance().apply {
             isNamespaceAware = false
             setFeature("http://apache.org/xml/features/disallow-doctype-decl", true)
@@ -25,14 +27,29 @@ class PsisPesticideResponseParser {
             setAttribute(XMLConstants.ACCESS_EXTERNAL_SCHEMA, "")
         }
         val document = factory.newDocumentBuilder().parse(InputSource(StringReader(xml)))
-        val itemNodes = document.getElementsByTagName("item")
 
-        return (0 until itemNodes.length).map { index ->
+        val itemNodes = document.getElementsByTagName("item")
+        val items = (0 until itemNodes.length).map { index ->
             val itemElement = itemNodes.item(index) as Element
             val children = itemElement.childNodes
             (0 until children.length)
                 .mapNotNull { children.item(it) as? Element }
                 .associate { it.tagName to it.textContent.trim() }
         }
+
+        return PsisPesticideEnvelope(
+            errorCode = firstTagText(document, "errorCode"),
+            errorMsg = firstTagText(document, "errorMsg"),
+            totalCount = firstTagText(document, "totalCount")?.toIntOrNull(),
+            items = items,
+        )
+    }
+
+    private fun firstTagText(document: org.w3c.dom.Document, tagName: String): String? {
+        val nodes = document.getElementsByTagName(tagName)
+        if (nodes.length == 0) {
+            return null
+        }
+        return (nodes.item(0) as Element).textContent.trim()
     }
 }

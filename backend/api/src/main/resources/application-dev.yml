@@ -91,7 +91,7 @@ kma:
 psis:
   pesticide:
     base-url: ${PSIS_PESTICIDE_BASE_URL:}
-    service-key: ${PSIS_PESTICIDE_SERVICE_KEY:}
+    api-key: ${PSIS_PESTICIDE_API_KEY:}
     timeout-millis: ${PSIS_PESTICIDE_TIMEOUT_MILLIS:10000}
 
 openai:

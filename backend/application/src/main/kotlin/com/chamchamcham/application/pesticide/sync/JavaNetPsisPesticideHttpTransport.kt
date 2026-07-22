@@ -10,17 +10,15 @@ import java.nio.charset.StandardCharsets
 import java.time.Duration
 
 /**
- * PSIS(농약안전정보시스템) 농약등록정보 API 호출 어댑터.
- *
- * base-url은 확정된 실제 엔드포인트가 아니라 자리표시자(placeholder)다. PSIS에서 API 키가
- * 발급되면 마이페이지에 표시되는 실제 요청 URL로 psis.pesticide.base-url 값을 교체해야 한다.
- * serviceKey는 공공데이터포털 인코딩 키가 그대로 전달되도록 pre-encoded URI로 붙인다(이중 인코딩 방지,
- * KmaWeatherProvider와 동일한 관례).
+ * PSIS(농약안전정보시스템) 농약등록정보 API 호출 어댑터. 실제 엔드포인트는
+ * http://psis.rda.go.kr/openApi/service.do 이며, apiKey는 PSIS 마이페이지에서 발급받은
+ * 인코딩 키가 그대로 전달되도록 pre-encoded URI로 붙인다(이중 인코딩 방지, KmaWeatherProvider와
+ * 동일한 관례).
  */
 @Component
 class JavaNetPsisPesticideHttpTransport(
     @Value("\${psis.pesticide.base-url:}") private val baseUrl: String,
-    @Value("\${psis.pesticide.service-key:}") private val serviceKey: String,
+    @Value("\${psis.pesticide.api-key:}") private val apiKey: String,
     @Value("\${psis.pesticide.timeout-millis:10000}") private val timeoutMillis: Long,
 ) : PsisPesticideHttpTransport {
     private val client: HttpClient by lazy {
@@ -31,10 +29,10 @@ class JavaNetPsisPesticideHttpTransport(
 
     override fun get(queryParams: Map<String, String>): String {
         check(baseUrl.isNotBlank()) { "psis.pesticide.base-url is not configured" }
-        check(serviceKey.isNotBlank()) { "psis.pesticide.service-key is not configured" }
+        check(apiKey.isNotBlank()) { "psis.pesticide.api-key is not configured" }
 
         val query = queryParams.entries.joinToString("&") { (key, value) -> "$key=$value" }
-        val uri = URI.create("$baseUrl?serviceKey=$serviceKey&$query")
+        val uri = URI.create("$baseUrl?apiKey=$apiKey&$query")
 
         val request = HttpRequest.newBuilder()
             .uri(uri)
