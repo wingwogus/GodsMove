@@ -64,4 +64,13 @@ class FarmingRecordVoiceToolSchemaTest {
     fun `최상위 필수 필드는 변하지 않는다`() {
         assertThat(parameters()["required"]).isEqualTo(listOf("farmId", "cropId", "workType", "memo"))
     }
+
+    @Test
+    fun `상세 없는 유형은 필수 4개만으로 곧바로 호출하라고 안내한다`() {
+        // ETC 등 상세 없는 유형에서 모델이 저장 도구를 끝내 호출하지 않던 버그 방지 회귀 테스트.
+        val description = schema["description"] as String
+
+        assertThat(description).contains("ETC")
+        assertThat(description).contains("곧바로 이 도구를 호출")
+    }
 }
